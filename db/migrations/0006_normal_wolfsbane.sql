@@ -1,0 +1,1 @@
+ALTER TABLE "club"."cms_site" ADD COLUMN "previous_appearance" jsonb;

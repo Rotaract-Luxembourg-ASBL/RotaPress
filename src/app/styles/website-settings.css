@@ -1,0 +1,260 @@
+.website-settings {
+  display: grid;
+  gap: 20px;
+  max-width: 1100px;
+}
+.website-settings-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.website-settings-panel {
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.website-settings-panel > header {
+  display: grid;
+  gap: 8px;
+}
+.website-settings-panel h2 {
+  font-family: var(--sans);
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.website-settings-panel > header p {
+  color: var(--muted);
+}
+.website-settings-panel label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  font-weight: 550;
+  font-size: 13px;
+}
+.website-settings-field {
+  max-width: 580px;
+}
+.website-settings .field-help {
+  font-weight: 400;
+}
+.website-settings .website-settings-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+}
+.website-settings-check input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+}
+.website-settings-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.website-settings-empty {
+  padding: 20px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+}
+.website-menu-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.website-menu-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.website-menu-position {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 12px;
+}
+.website-row-actions {
+  display: flex;
+  gap: 5px;
+}
+.website-settings .website-row-actions .button {
+  min-width: 36px;
+  min-height: 40px;
+  padding: 8px;
+}
+.website-parts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.website-part-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.website-part-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.website-part-heading svg {
+  color: var(--club-accent);
+}
+.website-part-choices {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+}
+.website-part-choices summary {
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.website-part-choices label {
+  margin-top: 14px;
+}
+.website-settings-secondary {
+  display: grid;
+  gap: 15px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.website-settings-secondary > .button {
+  justify-self: start;
+}
+.website-social-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+.website-social-row > .button {
+  min-height: 44px;
+  padding: 10px;
+}
+.website-branding {
+  display: grid;
+  gap: 20px;
+}
+.website-branding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.website-branding-field {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.website-branding-field legend {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.website-branding .media-picker-preview img {
+  object-fit: contain;
+}
+.website-branding-preview {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.website-branding-preview > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.website-branding-preview img {
+  max-width: 100%;
+  max-height: 90px;
+  object-fit: contain;
+  object-position: left center;
+}
+.website-settings-save {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+@media (max-width: 1000px) {
+  .website-menu-row {
+    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .website-row-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 640px) {
+  .website-settings-panel {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+  .website-menu-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+    gap: 12px;
+  }
+  .website-menu-position {
+    display: none;
+  }
+  .website-row-actions {
+    grid-column: auto;
+  }
+  .website-parts-grid,
+  .website-branding-grid,
+  .website-social-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .website-social-row {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .website-social-row > .button {
+    justify-self: end;
+  }
+  .website-settings-save {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .website-settings-save > .button {
+    width: 100%;
+  }
+}

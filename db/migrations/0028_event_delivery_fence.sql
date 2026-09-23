@@ -1,0 +1,1 @@
+ALTER TABLE "club"."event_module" ADD COLUMN "last_disabled_at" timestamp with time zone;

@@ -1,0 +1,25 @@
+/* Account and form routes inherit the same published identity as website pages. */
+.public-utility-page :is(h1, h2, h3) {
+  font-family: var(--cms-font);
+}
+
+.public-utility-page .auth-layout {
+  margin-top: 0;
+  padding-top: 48px;
+}
+
+.public-utility-page :is(.auth-flower, .membership-intro .large-asterisk) {
+  color: var(--club-accent);
+}
+
+.public-utility-page .forms-public-page {
+  max-width: 880px;
+}
+
+.public-utility-page :is(.panel, input, select, textarea) {
+  border-radius: var(--cms-radius);
+}
+
+.public-utility-page main {
+  min-width: 0;
+}

@@ -1,0 +1,263 @@
+/* Website and editor canvas only; administration retains its own typography. */
+.cms-public .cms-section-heading {
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+.cms-public :is(.cms-section-heading, .cms-section-copy) > h2 {
+  font-family: var(--cms-font);
+  font-size: clamp(1.8rem, 3.2cqw, 2.8rem);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.cms-public .cms-eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.cms-public .cms-feature-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  color: var(--accent);
+}
+.cms-public .cms-card > .cms-feature-icon {
+  margin-bottom: 24px;
+}
+.cms-public .cms-card > .cms-image {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  margin-bottom: 24px;
+  border-radius: var(--cms-radius);
+}
+.cms-public .cms-feature-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 5cqw, 80px);
+  align-items: center;
+}
+.cms-public .cms-feature-image-right .cms-feature-media {
+  order: 2;
+}
+.cms-public .cms-feature-media :is(.cms-image, .cms-image-placeholder) {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--cms-radius);
+}
+.cms-public .cms-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 30px 0;
+  display: grid;
+  gap: 24px;
+}
+.cms-public .cms-feature-list li {
+  display: flex;
+  align-items: start;
+  gap: 18px;
+}
+.cms-public :is(.cms-feature-list, .cms-programme-list) h3 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+}
+.cms-public .cms-programme-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cms-public .cms-programme-list li {
+  display: grid;
+  grid-template-columns: minmax(75px, 0.22fr) minmax(0, 1fr);
+  gap: 32px;
+  border-top: 1px solid var(--line);
+  padding-block: 24px;
+}
+.cms-public .cms-programme-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cms-public .cms-option-card {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 18px;
+}
+.cms-public .cms-option-card h3 {
+  font-size: 1.5rem;
+}
+.cms-public .cms-option-badge {
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: var(--cms-radius);
+  padding: 5px 10px;
+  width: fit-content;
+}
+.cms-public .cms-option-price {
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+.cms-public .cms-option-card ul {
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+.cms-public .cms-hero-slider {
+  position: relative;
+}
+.cms-public .cms-hero-slide {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: clamp(24px, 5cqw, 64px);
+  min-height: 580px;
+  border-radius: var(--cms-cover-radius);
+  overflow: hidden;
+  background: var(--cms-soft);
+}
+.cms-public .cms-hero-slide > :is(.cms-image, .cms-image-placeholder) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cms-public .cms-hero-panel {
+  position: relative;
+  max-width: 530px;
+  padding: clamp(24px, 4cqw, 48px);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: var(--cms-radius);
+}
+.cms-public .cms-hero-panel-right .cms-hero-slide {
+  justify-content: flex-end;
+}
+.cms-public .cms-hero-panel h1 {
+  font-family: var(--cms-font);
+  font-size: clamp(2rem, 5cqw, 3.5rem);
+  line-height: 1.07;
+  margin-bottom: 24px;
+}
+.cms-public .cms-hero-panel .button {
+  margin-top: 28px;
+}
+.cms-public .cms-hero-controls {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 20px;
+  padding-top: 14px;
+}
+.cms-public .cms-hero-controls button {
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.cms-public .cms-directory-heading {
+  max-width: 800px;
+  padding-block: 40px;
+}
+.cms-public .cms-directory-heading h1 {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-family: var(--cms-font);
+  margin-bottom: 18px;
+}
+.cms-public .cms-event-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-block: 24px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.cms-public .cms-event-filters a {
+  padding: 10px 18px;
+  border-radius: var(--cms-radius);
+}
+.cms-public .cms-event-filters a[aria-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.cms-public .cms-event-card {
+  padding: 0;
+  overflow: hidden;
+}
+.cms-public .cms-event-layout-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+.cms-public .cms-event-card > .cms-image {
+  border-radius: 0;
+  margin: 0;
+}
+.cms-public .cms-event-card-copy {
+  padding: 28px;
+  display: grid;
+  gap: 14px;
+}
+.cms-public .cms-event-card h3 {
+  font-family: var(--cms-font);
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+.cms-public .cms-event-venue {
+  font-weight: 600;
+}
+.cms-public .cms-event-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cms-public .cms-event-layout-list {
+  display: grid;
+  gap: 20px;
+}
+.cms-public .cms-event-layout-list .cms-event-card {
+  display: flex;
+  align-items: start;
+}
+.cms-public .cms-event-layout-list .cms-event-cover {
+  width: 28%;
+  max-width: 240px;
+}
+.cms-public :is(.cms-events-more, .cms-events-empty) {
+  margin-block: 28px;
+}
+@container (max-width: 700px) {
+  .cms-public .cms-feature-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cms-public .cms-feature-image-right .cms-feature-media {
+    order: initial;
+  }
+  .cms-public .cms-feature-media :is(.cms-image, .cms-image-placeholder) {
+    aspect-ratio: 4 / 3;
+  }
+  .cms-public .cms-hero-slide {
+    min-height: 640px;
+    align-items: end;
+    padding: 20px;
+  }
+  .cms-public .cms-hero-panel {
+    width: 100%;
+  }
+  .cms-public .cms-programme-list li {
+    gap: 18px;
+  }
+  .cms-public .cms-event-layout-list .cms-event-card {
+    display: block;
+  }
+  .cms-public .cms-event-layout-list .cms-event-cover {
+    width: 100%;
+    max-width: none;
+  }
+}

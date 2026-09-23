@@ -1,0 +1,75 @@
+.editor-context-menu {
+  position: fixed;
+  z-index: 500;
+  width: 248px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 6px;
+  background: white;
+  color: #202c28;
+  border: 1px solid #d4dbd8;
+  border-radius: 7px;
+  box-shadow: 0 8px 28px #10271d29;
+  font:
+    13px/1.4 Arial,
+    sans-serif;
+}
+
+.editor-context-menu p {
+  margin: 4px 9px 6px;
+  color: #5b6761;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.editor-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 9px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  text-align: left;
+  font: inherit;
+}
+
+.editor-context-menu button:hover:not(:disabled),
+.editor-context-menu button:focus-visible {
+  outline: 0;
+  background: #edf2f7;
+  color: #154fa5;
+}
+
+.editor-context-menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.editor-context-menu hr {
+  margin: 5px 0;
+  border: 0;
+  border-top: 1px solid #e4e8e5;
+}
+
+.editor-context-menu .editor-context-danger {
+  color: #a33126;
+}
+
+.editor-context-row {
+  display: flex;
+  gap: 3px;
+}
+
+.editor-context-row button {
+  padding: 7px 4px;
+  font-size: 11px;
+  text-align: center;
+  background: #f7f8f7;
+}
+
+.editor-context-row button[aria-checked="true"] {
+  background: #e2ebf9;
+  color: #154fa5;
+}

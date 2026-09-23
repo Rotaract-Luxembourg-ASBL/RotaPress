@@ -1,0 +1,2 @@
+ALTER TABLE "club"."site_domain" ADD COLUMN "event_id" uuid;--> statement-breakpoint
+ALTER TABLE "club"."site_domain" ADD CONSTRAINT "site_domain_event_scope" FOREIGN KEY ("event_id","organization_id") REFERENCES "club"."event"("id","organization_id") ON DELETE no action ON UPDATE no action;

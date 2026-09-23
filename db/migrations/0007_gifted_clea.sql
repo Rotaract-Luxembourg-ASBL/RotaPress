@@ -1,0 +1,3 @@
+ALTER TABLE "club"."cms_content" DROP CONSTRAINT "cms_content_kind";--> statement-breakpoint
+CREATE UNIQUE INDEX "cms_default_site_part" ON "club"."cms_content" USING btree ("organization_id","kind") WHERE "club"."cms_content"."kind" in ('header', 'footer') and "club"."cms_content"."archived_at" is null;--> statement-breakpoint
+ALTER TABLE "club"."cms_content" ADD CONSTRAINT "cms_content_kind" CHECK ("club"."cms_content"."kind" in ('page', 'section', 'header', 'footer'));

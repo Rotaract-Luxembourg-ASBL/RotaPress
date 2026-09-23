@@ -1,0 +1,320 @@
+@media (min-width: 1500px) {
+  .home-hero {
+    padding-block: 100px;
+  }
+
+  .community-art {
+    min-height: 470px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .content-width {
+    width: calc(100% - 64px);
+  }
+
+  .home-hero {
+    gap: 36px;
+  }
+
+  .community-art {
+    min-height: 390px;
+  }
+
+  .settings-grid {
+    gap: 26px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(190px, 0.8fr);
+  }
+
+  .auth-layout {
+    gap: 70px;
+  }
+}
+
+@media (max-width: 850px) {
+  .home-hero {
+    grid-template-columns: 1fr 1fr;
+    padding-block: 56px;
+  }
+
+  .hero-copy h1 {
+    font-size: 48px;
+  }
+
+  .community-art {
+    min-height: 350px;
+  }
+
+  .art-center {
+    font-size: 35px;
+  }
+
+  .art-center em {
+    font-size: 43px;
+  }
+
+  .art-caption {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .community-section {
+    gap: 35px;
+  }
+
+  .community-section h2 {
+    font-size: 29px;
+  }
+
+  .public-footer {
+    align-items: start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .auth-layout {
+    gap: 40px;
+    padding-inline: 32px;
+  }
+
+  .auth-panel {
+    padding: 26px;
+  }
+
+  .auth-introduction h1 {
+    font-size: 56px;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-aside {
+    display: none;
+  }
+
+  .membership-layout {
+    gap: 35px;
+  }
+
+  .membership-intro h1 {
+    font-size: 48px;
+  }
+
+  .membership-panel {
+    padding: 26px;
+  }
+
+  .page-heading h1 {
+    font-size: 42px;
+  }
+
+  .page-heading {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 620px) {
+  .content-width {
+    width: calc(100% - 40px);
+  }
+
+  .public-header {
+    min-height: 86px;
+    gap: 15px;
+  }
+
+  .public-header .brand {
+    font-size: 18px;
+    max-width: 58%;
+  }
+
+  .public-header nav {
+    gap: 14px;
+  }
+
+  .public-header nav > .text-link {
+    font-size: 12px;
+  }
+
+  .public-header .button {
+    min-height: 35px;
+    padding: 8px 10px;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .public-header > .text-link {
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .home-hero {
+    grid-template-columns: 1fr;
+    padding-block: 42px;
+    gap: 40px;
+  }
+
+  .hero-copy h1 {
+    font-size: 51px;
+    margin-top: 20px;
+  }
+
+  .hero-description {
+    font-size: 16px;
+  }
+
+  .community-art {
+    min-height: 340px;
+    border-radius: 130px 130px 5px 5px;
+  }
+
+  .art-center {
+    font-size: 41px;
+  }
+
+  .art-center em {
+    font-size: 50px;
+  }
+
+  .community-section {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-block: 36px;
+  }
+
+  .community-note {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 24px 0 0;
+  }
+
+  .community-section h2 {
+    font-size: 33px;
+  }
+
+  .public-footer {
+    font-size: 10px;
+  }
+
+  .footer-separator {
+    margin-inline: 7px;
+  }
+
+  .footer-links {
+    gap: 20px;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr;
+    gap: 27px;
+    padding: 0 20px 45px;
+    margin-top: 8px;
+  }
+
+  .auth-introduction {
+    padding-top: 8px;
+  }
+
+  .auth-introduction h1 {
+    font-size: 54px;
+    margin: 16px 0;
+  }
+
+  .auth-introduction p:not(.eyebrow) {
+    font-size: 15px;
+    max-width: 100%;
+  }
+
+  .auth-flower {
+    display: none;
+  }
+
+  .auth-panel {
+    padding: 25px 22px;
+  }
+
+  .auth-panel h2 {
+    font-size: 30px;
+    margin-bottom: 26px;
+  }
+
+  .setup-page {
+    padding-block: 36px;
+  }
+
+  .page-heading {
+    margin-bottom: 26px;
+  }
+
+  .page-heading h1 {
+    font-size: 38px;
+  }
+
+  .page-heading .muted {
+    font-size: 14px;
+  }
+
+  .panel {
+    padding: 24px 20px;
+  }
+
+  .form-columns {
+    grid-template-columns: 1fr;
+    gap: 21px;
+  }
+
+  .color-field {
+    flex-wrap: wrap;
+  }
+
+  .color-field .small {
+    margin-left: 0;
+    font-size: 11px;
+  }
+
+  .membership-layout {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding-block: 35px;
+  }
+
+  .membership-intro h1 {
+    font-size: 49px;
+    margin-block: 18px;
+  }
+
+  .membership-intro p:not(.eyebrow) {
+    font-size: 15px;
+  }
+
+  .membership-intro .large-asterisk {
+    display: none;
+  }
+
+  .membership-panel h2 {
+    font-size: 31px;
+  }
+
+  .form-actions {
+    gap: 12px;
+  }
+
+  .form-actions .button {
+    width: 100%;
+  }
+
+  .empty-state {
+    padding: 30px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

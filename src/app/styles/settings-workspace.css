@@ -1,0 +1,121 @@
+.settings-workspace {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.settings-workspace > div {
+  min-width: 0;
+}
+.settings-navigation {
+  display: grid;
+  gap: 0.4rem;
+  position: sticky;
+  top: 1rem;
+}
+.settings-navigation button {
+  text-align: left;
+  padding: 0.85rem;
+  border: 0;
+  background: transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.settings-navigation button[aria-current] {
+  background: #edf1e9;
+  font-weight: 700;
+}
+.settings-destination {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #dfe4e0;
+  border-radius: 0.7rem;
+  color: inherit;
+  text-decoration: none;
+}
+.settings-destination span {
+  color: #596b65;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.settings-facts {
+  display: grid;
+  gap: 1rem;
+}
+.settings-facts > div {
+  display: grid;
+  gap: 0.4rem;
+  padding-block: 0.8rem;
+  border-bottom: 1px solid #dfe4e0;
+}
+.settings-facts dt {
+  font-weight: 700;
+}
+.settings-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.seo-search-preview {
+  padding: 1.3rem;
+  border: 1px solid #dfe4e0;
+  border-radius: 0.7rem;
+}
+.seo-search-preview > span {
+  color: #596b65;
+  font-size: 0.8rem;
+}
+.seo-search-preview h3 {
+  color: #1a0dab;
+  font-size: 1.2rem;
+  margin-block: 0.6rem;
+}
+.directory-selected {
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid #dfe4e0;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+}
+.form-insertion-prompt {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  width: min(850px, calc(100% - 2rem));
+  background: white;
+  border: 1px solid #b5c5bb;
+  border-radius: 0.8rem;
+  padding: 1.2rem;
+  box-shadow: 0 8px 35px #10251c26;
+}
+.form-insertion-prompt p {
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0;
+}
+@media (max-width: 650px) {
+  .form-insertion-prompt {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 900px) {
+  .settings-workspace {
+    grid-template-columns: 1fr;
+  }
+  .settings-navigation {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

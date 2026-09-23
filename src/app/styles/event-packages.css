@@ -1,0 +1,133 @@
+.event-packages-workspace,
+.event-package-editor,
+.event-package-sources {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.event-packages-editing {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.7fr);
+  gap: 20px;
+  align-items: start;
+}
+.event-package-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.event-package-choice {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+.event-package-choice[aria-current="true"] {
+  border-color: var(--club-accent);
+  background: color-mix(in srgb, var(--club-accent) 7%, transparent);
+}
+.event-package-choice span,
+.event-package-editor header p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.event-package-fields,
+.event-package-source-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.event-package-source {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.event-package-source input[readonly] {
+  color: var(--muted);
+}
+.form-stack label.event-package-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.event-package-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--club-accent);
+}
+.event-package-editor .field-help,
+.event-package-sources .field-help {
+  margin: 0;
+}
+.event-package-published {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.event-package-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 20px;
+}
+.event-packages-block > h2 {
+  margin: 0 0 20px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+.event-package-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--club-accent) 4%, var(--panel));
+  overflow-wrap: anywhere;
+}
+.event-package-card :is(h3, p) {
+  margin: 0;
+}
+.event-package-card h3 {
+  font-size: 1.15rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.cms-design[data-tone="dark"] .event-package-card {
+  color: inherit;
+  background: rgb(255 255 255 / 6%);
+  border-color: rgb(255 255 255 / 25%);
+}
+.event-package-card > p:not(.event-package-price) {
+  white-space: pre-line;
+}
+.event-package-card .event-package-price {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+.event-package-card .button {
+  margin-top: auto;
+  white-space: normal;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .event-packages-editing,
+  .event-package-source-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .event-package-list {
+    gap: 10px;
+  }
+  .event-package-list .event-package-choice {
+    padding: 10px;
+  }
+}

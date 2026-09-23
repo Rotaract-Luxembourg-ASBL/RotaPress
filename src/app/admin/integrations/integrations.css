@@ -1,0 +1,170 @@
+.admin-layout .integration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+.admin-layout .integration-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 5px rgb(36 54 44 / 3%);
+}
+.admin-layout .integration-card-top,
+.admin-layout .integration-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.admin-layout .integration-card-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.625rem;
+  color: #f7f7fc;
+  background: #42435e;
+}
+.admin-layout .integration-card .status-badge {
+  align-items: center;
+  gap: 0.375rem;
+}
+.admin-layout .integration-state-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: #78827b;
+}
+.admin-layout .integration-state-dot.is-enabled {
+  background: #36724b;
+}
+.admin-layout .integration-category,
+.admin-layout .integration-detail-label {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+.admin-layout .integration-card-copy {
+  display: grid;
+  gap: 0.375rem;
+}
+.admin-layout .integration-card h2 {
+  font-size: 1.375rem;
+  margin: 0;
+}
+.admin-layout .integration-card-copy > p {
+  margin: 0;
+}
+.admin-layout .integration-card-connection {
+  display: grid;
+  gap: 0.125rem;
+  margin-top: auto;
+}
+.admin-layout .integration-card-actions {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.admin-layout .integration-catalogue-note {
+  color: var(--muted);
+  max-width: 48rem;
+  margin-top: 1.5rem;
+}
+.admin-layout .integration-settings {
+  max-width: 58rem;
+}
+@media (max-width: 600px) {
+  .admin-layout .integration-card {
+    padding: 1.25rem;
+  }
+  .admin-layout .integration-card-actions .button {
+    flex: 1;
+  }
+}
+.admin-layout .webhook-event-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.75rem;
+}
+.admin-layout .webhook-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.admin-layout .webhook-setup-steps {
+  padding-left: 1.5rem;
+  line-height: 1.7;
+}
+.admin-layout .webhook-receipts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.admin-layout .webhook-receipts li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-layout .google-settings-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.admin-layout .google-connection-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+.admin-layout .google-connection-facts dt {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.admin-layout .google-connection-facts dd {
+  margin: 0.375rem 0 0;
+  overflow-wrap: anywhere;
+}
+.admin-layout .google-settings .field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.admin-layout .google-setup-guide > div,
+.admin-layout .google-connection-actions[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+.admin-layout .google-setup-guide a,
+.admin-layout .google-setup-guide button {
+  justify-self: start;
+}
+.admin-layout .google-connection-actions {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.admin-layout .google-connection-actions summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.admin-layout .google-connection-actions button {
+  justify-self: start;
+}
+.admin-layout .google-settings input {
+  min-width: 0;
+  max-width: 100%;
+}

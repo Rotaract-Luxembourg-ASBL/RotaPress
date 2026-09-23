@@ -1,0 +1,65 @@
+.purchase-summary {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.purchase-summary section {
+  min-width: 0;
+}
+.purchase-summary h3 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+.purchase-records {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.purchase-records > li {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.purchase-record-heading {
+  display: grid;
+  gap: 5px;
+}
+.purchase-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.purchase-amounts dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.purchase-amounts dd {
+  margin: 3px 0 0;
+  font-weight: 600;
+}
+.purchase-summary .field-help,
+.purchase-download .field-help {
+  margin: 12px 0 0;
+}
+@media (max-width: 480px) {
+  .purchase-amounts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .purchase-amounts > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .purchase-summary .button,
+  .purchase-download .button {
+    white-space: normal;
+    text-align: center;
+  }
+}

@@ -1,0 +1,46 @@
+.guest-page {
+  max-width: 960px;
+}
+.guest-page h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.12;
+}
+.guest-page .content-row {
+  gap: 1.5rem;
+}
+.guest-page .content-row > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.guest-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding-block: 1rem;
+}
+.guest-facts dt {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.guest-facts dd {
+  margin: 0;
+}
+.guest-booking {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+}
+.guest-booking h2 {
+  text-transform: capitalize;
+}
+@media (max-width: 600px) {
+  .guest-facts {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .guest-page .content-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

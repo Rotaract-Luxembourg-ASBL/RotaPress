@@ -1,0 +1,101 @@
+.editor-insertion-boundaries {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.editor-insertion-boundary {
+  position: absolute;
+  inset-inline: 0;
+  height: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  border-top: 1px solid transparent;
+}
+
+.editor-insertion-boundary--before {
+  top: 0;
+}
+.editor-insertion-boundary--after {
+  bottom: 0;
+}
+
+.editor-insertion-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #c7d2d8;
+  border-radius: 50%;
+  background: #fff;
+  color: #23434b;
+  box-shadow: 0 2px 5px #13242e14;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  opacity: 0.65;
+  cursor: pointer;
+}
+
+.editor-insertion-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.editor-insertion-boundaries[data-active] .editor-insertion-boundary,
+.editor-insertion-boundary:has(.editor-insertion-button:hover),
+.editor-insertion-boundary:focus-within {
+  border-color: var(--club-accent, #25636b);
+}
+
+.editor-insertion-boundaries[data-active] .editor-insertion-button,
+.editor-insertion-button:hover,
+.editor-insertion-button:focus-visible {
+  opacity: 1;
+  background: var(--club-accent, #25636b);
+  color: #fff;
+  border-color: var(--club-accent, #25636b);
+}
+
+.editor-insertion-button:focus-visible {
+  outline: 2px solid #1c5eaa;
+  outline-offset: 3px;
+}
+
+.editor-insertion-boundaries[data-dragging] {
+  visibility: hidden;
+}
+.editor-insertion-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.editor-canvas-add-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px dashed #afbdc6;
+  border-radius: 6px;
+  background: #fff;
+  color: #23434b;
+  cursor: pointer;
+}
+
+.editor-canvas-add-block:hover,
+.editor-canvas-add-block:focus-visible {
+  border-color: var(--club-accent, #25636b);
+  background: #f1f7f7;
+  outline-offset: 3px;
+}
+
+.editor-canvas-add-block:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

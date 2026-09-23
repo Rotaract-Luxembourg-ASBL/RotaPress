@@ -1,0 +1,57 @@
+/* The same section navigation for settings, website management and calendars. */
+.admin-layout .admin-section-nav {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--panel);
+}
+.admin-layout .admin-section-nav > button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem;
+  min-height: 2.75rem;
+  margin: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: left;
+}
+.admin-layout .admin-section-nav > button:hover {
+  background: #f5f7f3;
+  color: var(--ink);
+}
+.admin-layout
+  .admin-section-nav
+  > :is([aria-pressed="true"], [aria-current="page"]) {
+  background: #edf1eb;
+  color: var(--ink);
+  font-weight: 650;
+}
+.admin-section-nav > button svg {
+  flex-shrink: 0;
+}
+.admin-section-nav > button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.integration-section {
+  margin-top: 1.75rem;
+}
+.integration-section > p {
+  margin-block: 0.4rem 1.25rem;
+  font-size: 0.875rem;
+}
+.calendar-schedule-workspace > .admin-collection {
+  margin-bottom: 1.5rem;
+}
+.admin-layout .calendar-selected-header h2 {
+  font-size: 1.25rem;
+}
+.admin-layout .calendar-library small {
+  font-size: 0.8125rem;
+}

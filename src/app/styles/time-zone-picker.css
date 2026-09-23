@@ -1,0 +1,62 @@
+.time-zone-picker {
+  position: relative;
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 0 1 280px;
+}
+.time-zone-picker > label {
+  font-size: 0.85rem;
+}
+.time-zone-picker > input {
+  width: 100%;
+  min-width: 0;
+}
+.time-zone-options {
+  position: relative;
+  border: 1px solid var(--line, #cbd5ce);
+  background: var(--panel, white);
+  color: var(--ink, #172c24);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 20px #172c2414;
+  overflow: hidden;
+}
+.time-zone-options ul {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+}
+.time-zone-options li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border-radius: 0.3rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.time-zone-options li:hover,
+.time-zone-options li.is-active {
+  background: #edf2ed;
+  color: #172c24;
+}
+.time-zone-options [aria-selected="true"] {
+  font-weight: 650;
+}
+.time-zone-options > p,
+.calendar-form .time-zone-options > p {
+  padding: 0.65rem 0.85rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.time-zone-hint {
+  border-bottom: 1px solid var(--line, #cbd5ce);
+}
+.time-zone-picker > .field-help {
+  margin: 0;
+  font-size: 0.8rem;
+}

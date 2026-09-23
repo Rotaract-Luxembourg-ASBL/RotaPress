@@ -1,0 +1,119 @@
+.event-prizes-workspace,
+.event-prize-editor,
+.event-prize-list {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.event-prizes-editing {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.7fr);
+  gap: 20px;
+  align-items: start;
+}
+.event-prize-choice {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+.event-prize-choice[aria-current="true"] {
+  border-color: var(--club-accent);
+  background: color-mix(in srgb, var(--club-accent) 7%, transparent);
+}
+.event-prize-choice span,
+.event-prize-editor header p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.event-prize-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.event-prize-editor :is(h3, h4) {
+  margin: 0;
+}
+.event-prize-editor .field-help {
+  margin: 0;
+}
+.event-prize-published,
+.event-prize-preview {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.event-prize-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 20px;
+}
+.event-prizes-block > h2 {
+  margin: 0 0 20px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+.event-prize-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--club-accent) 4%, var(--panel));
+  overflow-wrap: anywhere;
+}
+.event-prize-card .event-prize-image {
+  width: 100%;
+  height: auto;
+  max-height: 360px;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--club-accent) 5%, var(--panel));
+}
+.event-prize-card-content {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 28px);
+}
+.event-prize-card :is(h3, p) {
+  margin: 0;
+}
+.event-prize-card h3 {
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  line-height: 1.3;
+}
+.event-prize-description {
+  white-space: pre-wrap;
+}
+.event-prize-quantity {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.event-prize-donor {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.event-prize-donor-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+}
+.event-prize-donor-link img {
+  width: 64px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .event-prizes-editing,
+  .event-prize-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

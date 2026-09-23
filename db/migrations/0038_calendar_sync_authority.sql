@@ -1,0 +1,1 @@
+ALTER TABLE "club"."calendar_source" ADD COLUMN "authorized_at" timestamp with time zone DEFAULT now() NOT NULL;

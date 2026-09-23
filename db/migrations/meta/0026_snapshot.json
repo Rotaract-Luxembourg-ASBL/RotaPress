@@ -1,0 +1,6604 @@
+{
+  "id": "8335f1e4-8b10-4ef1-b9da-599978be7302",
+  "prevId": "be683260-659c-4bf6-bc2f-12b2f275ef30",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "club.account": {
+      "name": "account",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "account_user_idx": {
+          "name": "account_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_provider_identity_idx": {
+          "name": "account_provider_identity_idx",
+          "columns": [
+            {
+              "expression": "provider_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.rate_limit": {
+      "name": "rate_limit",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_request": {
+          "name": "last_request",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rate_limit_key_unique": {
+          "name": "rate_limit_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.session": {
+      "name": "session",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "auth_method": {
+          "name": "auth_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        }
+      },
+      "indexes": {
+        "session_user_idx": {
+          "name": "session_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.user": {
+      "name": "user",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.verification": {
+      "name": "verification",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "verification_identifier_idx": {
+          "name": "verification_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.audit_entry": {
+      "name": "audit_entry",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_entry_organization_created": {
+          "name": "audit_entry_organization_created",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audit_entry_organization_id_organization_id_fk": {
+          "name": "audit_entry_organization_id_organization_id_fk",
+          "tableFrom": "audit_entry",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_entry_actor_user_id_user_id_fk": {
+          "name": "audit_entry_actor_user_id_user_id_fk",
+          "tableFrom": "audit_entry",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.installation": {
+      "name": "installation",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "smallint",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "claim_hash": {
+          "name": "claim_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nominated_email": {
+          "name": "nominated_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claim_expires_at": {
+          "name": "claim_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "installation_organization_id_organization_id_fk": {
+          "name": "installation_organization_id_organization_id_fk",
+          "tableFrom": "installation",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "installation_singleton": {
+          "name": "installation_singleton",
+          "value": "\"club\".\"installation\".\"id\" = 1"
+        },
+        "installation_completion": {
+          "name": "installation_completion",
+          "value": "(\n    \"club\".\"installation\".\"completed_at\" is null and \"club\".\"installation\".\"organization_id\" is null\n  ) or (\n    \"club\".\"installation\".\"completed_at\" is not null and \"club\".\"installation\".\"organization_id\" is not null\n    and \"club\".\"installation\".\"claim_hash\" is null and \"club\".\"installation\".\"claim_expires_at\" is null\n  )"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.membership": {
+      "name": "membership",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "membership_organization_status": {
+          "name": "membership_organization_status",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "membership_organization_id_organization_id_fk": {
+          "name": "membership_organization_id_organization_id_fk",
+          "tableFrom": "membership",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "membership_user_id_user_id_fk": {
+          "name": "membership_user_id_user_id_fk",
+          "tableFrom": "membership",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "membership_organization_user": {
+          "name": "membership_organization_user",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "membership_role": {
+          "name": "membership_role",
+          "value": "\"club\".\"membership\".\"role\" in ('owner', 'administrator', 'editor', 'member')"
+        },
+        "membership_status": {
+          "name": "membership_status",
+          "value": "\"club\".\"membership\".\"status\" in ('pending', 'approved', 'suspended', 'rejected', 'former')"
+        },
+        "membership_pending_role": {
+          "name": "membership_pending_role",
+          "value": "\"club\".\"membership\".\"status\" != 'pending' or \"club\".\"membership\".\"role\" = 'member'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.organization": {
+      "name": "organization",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "singleton": {
+          "name": "singleton",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tagline": {
+          "name": "tagline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Europe/Luxembourg'"
+        },
+        "accent_color": {
+          "name": "accent_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'#25636b'"
+        },
+        "staff_auth_policy": {
+          "name": "staff_auth_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'email-or-google'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "organization_singleton_unique": {
+          "name": "organization_singleton_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "singleton"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "organization_singleton": {
+          "name": "organization_singleton",
+          "value": "\"club\".\"organization\".\"singleton\" = 1"
+        },
+        "organization_staff_auth_policy": {
+          "name": "organization_staff_auth_policy",
+          "value": "\"club\".\"organization\".\"staff_auth_policy\" in ('email-or-google', 'google')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.owner_recovery": {
+      "name": "owner_recovery",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nominated_email": {
+          "name": "nominated_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claim_hash": {
+          "name": "claim_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "owner_recovery_user": {
+          "name": "owner_recovery_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "owner_recovery_organization_id_organization_id_fk": {
+          "name": "owner_recovery_organization_id_organization_id_fk",
+          "tableFrom": "owner_recovery",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "owner_recovery_user_id_user_id_fk": {
+          "name": "owner_recovery_user_id_user_id_fk",
+          "tableFrom": "owner_recovery",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "owner_recovery_claim_hash_unique": {
+          "name": "owner_recovery_claim_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "claim_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.cms_content": {
+      "name": "cms_content",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "module_key": {
+          "name": "module_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cms_event_scope_index": {
+          "name": "cms_event_scope_index",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "module_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cms_event_module_page": {
+          "name": "cms_event_module_page",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "module_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"cms_content\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cms_content_organization_id_organization_id_fk": {
+          "name": "cms_content_organization_id_organization_id_fk",
+          "tableFrom": "cms_content",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_content_event_id_module_key_organization_id_event_module_event_id_key_organization_id_fk": {
+          "name": "cms_content_event_id_module_key_organization_id_event_module_event_id_key_organization_id_fk",
+          "tableFrom": "cms_content",
+          "tableTo": "event_module",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "module_key",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "event_id",
+            "key",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cms_content_id_org": {
+          "name": "cms_content_id_org",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cms_event_scope": {
+          "name": "cms_event_scope",
+          "value": "(\"club\".\"cms_content\".\"event_id\" is null and \"club\".\"cms_content\".\"module_key\" is null) or (\"club\".\"cms_content\".\"event_id\" is not null and \"club\".\"cms_content\".\"module_key\" is not null and \"club\".\"cms_content\".\"kind\" = 'page')"
+        },
+        "cms_content_kind": {
+          "name": "cms_content_kind",
+          "value": "\"club\".\"cms_content\".\"kind\" in ('page', 'section', 'header', 'footer')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.cms_revision": {
+      "name": "cms_revision",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "variant_id": {
+          "name": "variant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "social_image_id": {
+          "name": "social_image_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cms_revision_variant_created": {
+          "name": "cms_revision_variant_created",
+          "columns": [
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cms_revision_variant_id_cms_variant_id_fk": {
+          "name": "cms_revision_variant_id_cms_variant_id_fk",
+          "tableFrom": "cms_revision",
+          "tableTo": "cms_variant",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_revision_created_by_user_id_fk": {
+          "name": "cms_revision_created_by_user_id_fk",
+          "tableFrom": "cms_revision",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cms_revision_id_variant": {
+          "name": "cms_revision_id_variant",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "variant_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.cms_site": {
+      "name": "cms_site",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "draft": {
+          "name": "draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published": {
+          "name": "published",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_appearance": {
+          "name": "previous_appearance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cms_site_organization_id_organization_id_fk": {
+          "name": "cms_site_organization_id_organization_id_fk",
+          "tableFrom": "cms_site",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cms_site_organization_locale": {
+          "name": "cms_site_organization_locale",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "locale"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cms_site_locale": {
+          "name": "cms_site_locale",
+          "value": "\"club\".\"cms_site\".\"locale\" in ('en', 'fr', 'lb')"
+        },
+        "cms_site_version": {
+          "name": "cms_site_version",
+          "value": "\"club\".\"cms_site\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.cms_variant": {
+      "name": "cms_variant",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "content_id": {
+          "name": "content_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "draft_revision_id": {
+          "name": "draft_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "published_revision_id": {
+          "name": "published_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publication_version": {
+          "name": "publication_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "published_slug": {
+          "name": "published_slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "home_ever_published": {
+          "name": "home_ever_published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cms_variant_organization_id_organization_id_fk": {
+          "name": "cms_variant_organization_id_organization_id_fk",
+          "tableFrom": "cms_variant",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_variant_content_org": {
+          "name": "cms_variant_content_org",
+          "tableFrom": "cms_variant",
+          "tableTo": "cms_content",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "content_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cms_variant_content_locale": {
+          "name": "cms_variant_content_locale",
+          "nullsNotDistinct": false,
+          "columns": [
+            "content_id",
+            "locale"
+          ]
+        },
+        "cms_variant_schedule_scope": {
+          "name": "cms_variant_schedule_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "content_id",
+            "organization_id"
+          ]
+        },
+        "cms_variant_published_slug": {
+          "name": "cms_variant_published_slug",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "locale",
+            "published_slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cms_variant_locale": {
+          "name": "cms_variant_locale",
+          "value": "\"club\".\"cms_variant\".\"locale\" in ('en', 'fr', 'lb')"
+        },
+        "cms_variant_slug_publication": {
+          "name": "cms_variant_slug_publication",
+          "value": "\"club\".\"cms_variant\".\"published_slug\" is null or \"club\".\"cms_variant\".\"published_revision_id\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.cms_preview": {
+      "name": "cms_preview",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "content_id": {
+          "name": "content_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "cms_preview_expiry": {
+          "name": "cms_preview_expiry",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cms_preview_session": {
+          "name": "cms_preview_session",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cms_preview_user_id_user_id_fk": {
+          "name": "cms_preview_user_id_user_id_fk",
+          "tableFrom": "cms_preview",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_preview_content_id_organization_id_cms_content_id_organization_id_fk": {
+          "name": "cms_preview_content_id_organization_id_cms_content_id_organization_id_fk",
+          "tableFrom": "cms_preview",
+          "tableTo": "cms_content",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "content_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.event_revision": {
+      "name": "event_revision",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_version": {
+          "name": "event_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fields": {
+          "name": "fields",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pages": {
+          "name": "pages",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "event_revision_history": {
+          "name": "event_revision_history",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_revision_created_by_user_id_fk": {
+          "name": "event_revision_created_by_user_id_fk",
+          "tableFrom": "event_revision",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_revision_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_revision_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_revision",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "event_revision_action": {
+          "name": "event_revision_action",
+          "value": "\"club\".\"event_revision\".\"action\" in ('created','saved','published','restored','baseline')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_package": {
+      "name": "event_package",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "draft": {
+          "name": "draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "published_revision_id": {
+          "name": "published_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "package_event": {
+          "name": "package_event",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "package_source": {
+          "name": "package_source",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_package_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_package_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_package",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_package_source_id_event_id_organization_id_event_package_source_id_event_id_organization_id_fk": {
+          "name": "event_package_source_id_event_id_organization_id_event_package_source_id_event_id_organization_id_fk",
+          "tableFrom": "event_package",
+          "tableTo": "event_package_source",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "package_scope": {
+          "name": "package_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "package_version": {
+          "name": "package_version",
+          "value": "\"club\".\"event_package\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_package_revision": {
+      "name": "event_package_revision",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "package_id": {
+          "name": "package_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "package_revision_history": {
+          "name": "package_revision_history",
+          "columns": [
+            {
+              "expression": "package_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "package_revision_source": {
+          "name": "package_revision_source",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_package_revision_created_by_user_id_fk": {
+          "name": "event_package_revision_created_by_user_id_fk",
+          "tableFrom": "event_package_revision",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_package_revision_package_id_event_id_organization_id_event_package_id_event_id_organization_id_fk": {
+          "name": "event_package_revision_package_id_event_id_organization_id_event_package_id_event_id_organization_id_fk",
+          "tableFrom": "event_package_revision",
+          "tableTo": "event_package",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "package_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_package_revision_source_id_event_id_organization_id_event_package_source_id_event_id_organization_id_fk": {
+          "name": "event_package_revision_source_id_event_id_organization_id_event_package_source_id_event_id_organization_id_fk",
+          "tableFrom": "event_package_revision",
+          "tableTo": "event_package_source",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "package_revision_scope": {
+          "name": "package_revision_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "package_id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.event_package_source": {
+      "name": "event_package_source",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "event_package_source_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_package_source_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_package_source",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "package_source_scope": {
+          "name": "package_source_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id"
+          ]
+        },
+        "package_source_url": {
+          "name": "package_source_url",
+          "nullsNotDistinct": false,
+          "columns": [
+            "event_id",
+            "url"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "package_source_version": {
+          "name": "package_source_version",
+          "value": "\"club\".\"event_package_source\".\"version\" > 0"
+        },
+        "package_source_label": {
+          "name": "package_source_label",
+          "value": "length(\"club\".\"event_package_source\".\"label\") between 1 and 120"
+        },
+        "package_source_url_format": {
+          "name": "package_source_url_format",
+          "value": "\"club\".\"event_package_source\".\"url\" ~ '^https://luma[.]com/[A-Za-z0-9][A-Za-z0-9_-]{0,199}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_prize": {
+      "name": "event_prize",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "draft": {
+          "name": "draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "published_revision_id": {
+          "name": "published_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "prize_event": {
+          "name": "prize_event",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_prize_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_prize_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_prize",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "prize_scope": {
+          "name": "prize_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "prize_version": {
+          "name": "prize_version",
+          "value": "\"club\".\"event_prize\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_prize_revision": {
+      "name": "event_prize_revision",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "prize_id": {
+          "name": "prize_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "prize_revision_history": {
+          "name": "prize_revision_history",
+          "columns": [
+            {
+              "expression": "prize_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_prize_revision_created_by_user_id_fk": {
+          "name": "event_prize_revision_created_by_user_id_fk",
+          "tableFrom": "event_prize_revision",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_prize_revision_prize_id_event_id_organization_id_event_prize_id_event_id_organization_id_fk": {
+          "name": "event_prize_revision_prize_id_event_id_organization_id_event_prize_id_event_id_organization_id_fk",
+          "tableFrom": "event_prize_revision",
+          "tableTo": "event_prize",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "prize_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "prize_revision_scope": {
+          "name": "prize_revision_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "prize_id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.event": {
+      "name": "event",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'event-' || gen_random_uuid()::text"
+        },
+        "featured": {
+          "name": "featured",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "venue": {
+          "name": "venue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "published": {
+          "name": "published",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_at": {
+          "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creation_request_id": {
+          "name": "creation_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creation_review_token": {
+          "name": "creation_review_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "event_one_featured": {
+          "name": "event_one_featured",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"event\".\"featured\" = true",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_creation_request": {
+          "name": "event_creation_request",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "creation_request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"event\".\"creation_request_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_organization_start": {
+          "name": "event_organization_start",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "starts_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_organization_id_organization_id_fk": {
+          "name": "event_organization_id_organization_id_fk",
+          "tableFrom": "event",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_created_by_user_id_fk": {
+          "name": "event_created_by_user_id_fk",
+          "tableFrom": "event",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "event_scope": {
+          "name": "event_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        },
+        "event_slug_scope": {
+          "name": "event_slug_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "event_slug_format": {
+          "name": "event_slug_format",
+          "value": "\"club\".\"event\".\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(\"club\".\"event\".\"slug\") <= 160"
+        },
+        "event_creation_receipt": {
+          "name": "event_creation_receipt",
+          "value": "(\"club\".\"event\".\"creation_request_id\" is null and \"club\".\"event\".\"creation_review_token\" is null) or (\"club\".\"event\".\"creation_request_id\" is not null and \"club\".\"event\".\"creation_review_token\" is not null and \"club\".\"event\".\"creation_review_token\" ~ '^[a-f0-9]{64}$')"
+        },
+        "event_visibility": {
+          "name": "event_visibility",
+          "value": "\"club\".\"event\".\"visibility\" in ('public', 'unlisted', 'private')"
+        },
+        "event_version_positive": {
+          "name": "event_version_positive",
+          "value": "\"club\".\"event\".\"version\" > 0"
+        },
+        "event_date_order": {
+          "name": "event_date_order",
+          "value": "\"club\".\"event\".\"ends_at\" is null or \"club\".\"event\".\"ends_at\" > \"club\".\"event\".\"starts_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_manager": {
+      "name": "event_manager",
+      "schema": "club",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manager'"
+        }
+      },
+      "indexes": {
+        "event_responsible_manager": {
+          "name": "event_responsible_manager",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"event_manager\".\"role\" = 'manager'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_manager_user": {
+          "name": "event_manager_user",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_manager_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_manager_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_manager",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_manager_organization_id_user_id_membership_organization_id_user_id_fk": {
+          "name": "event_manager_organization_id_user_id_membership_organization_id_user_id_fk",
+          "tableFrom": "event_manager",
+          "tableTo": "membership",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id",
+            "user_id"
+          ],
+          "columnsTo": [
+            "organization_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "event_manager_event_id_user_id_pk": {
+          "name": "event_manager_event_id_user_id_pk",
+          "columns": [
+            "event_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "event_assignment_role": {
+          "name": "event_assignment_role",
+          "value": "\"club\".\"event_manager\".\"role\" in ('manager', 'editor', 'registration-manager')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.event_module": {
+      "name": "event_module",
+      "schema": "club",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "event_module_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_module_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_module",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "event_module_event_id_key_pk": {
+          "name": "event_module_event_id_key_pk",
+          "columns": [
+            "event_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "event_module_scope": {
+          "name": "event_module_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "event_id",
+            "key",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "event_module_key": {
+          "name": "event_module_key",
+          "value": "\"club\".\"event_module\".\"key\" in ('website', 'gallery', 'sponsors', 'forms', 'registration', 'portal', 'prizes')"
+        },
+        "event_module_state": {
+          "name": "event_module_state",
+          "value": "\"club\".\"event_module\".\"state\" in ('enabled', 'disabled', 'suspended')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.feature": {
+      "name": "feature",
+      "schema": "club",
+      "columns": {
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_disabled_at": {
+          "name": "last_disabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "feature_organization_id_organization_id_fk": {
+          "name": "feature_organization_id_organization_id_fk",
+          "tableFrom": "feature",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "feature_organization_id_key_pk": {
+          "name": "feature_organization_id_key_pk",
+          "columns": [
+            "organization_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "feature_key": {
+          "name": "feature_key",
+          "value": "\"club\".\"feature\".\"key\" in ('forms', 'events')"
+        },
+        "feature_version": {
+          "name": "feature_version",
+          "value": "\"club\".\"feature\".\"version\" > 0"
+        },
+        "feature_disabled_at": {
+          "name": "feature_disabled_at",
+          "value": "\"club\".\"feature\".\"enabled\" or \"club\".\"feature\".\"last_disabled_at\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.form": {
+      "name": "form",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "archived": {
+          "name": "archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "draft_revision": {
+          "name": "draft_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "draft": {
+          "name": "draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_version_id": {
+          "name": "published_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipients": {
+          "name": "recipients",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "retention_days": {
+          "name": "retention_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "form_event": {
+          "name": "form_event",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "form_organization_id_organization_id_fk": {
+          "name": "form_organization_id_organization_id_fk",
+          "tableFrom": "form",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "form_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "form_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "form",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "form_id_org": {
+          "name": "form_id_org",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        },
+        "form_event_scope": {
+          "name": "form_event_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "form_kind": {
+          "name": "form_kind",
+          "value": "\"club\".\"form\".\"kind\" in ('contact', 'membership', 'event', 'registration')"
+        },
+        "form_event_kind": {
+          "name": "form_event_kind",
+          "value": "(\"club\".\"form\".\"event_id\" is null and \"club\".\"form\".\"kind\" in ('contact', 'membership')) or (\"club\".\"form\".\"event_id\" is not null and \"club\".\"form\".\"kind\" in ('event', 'registration'))"
+        },
+        "form_draft_revision": {
+          "name": "form_draft_revision",
+          "value": "\"club\".\"form\".\"draft_revision\" > 0"
+        },
+        "form_retention_days": {
+          "name": "form_retention_days",
+          "value": "\"club\".\"form\".\"retention_days\" is null or \"club\".\"form\".\"retention_days\" between 1 and 36500"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.form_notification": {
+      "name": "form_notification",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submission_id": {
+          "name": "submission_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lease_token": {
+          "name": "lease_token",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error_code": {
+          "name": "last_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "form_notification_pending": {
+          "name": "form_notification_pending",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "form_notification_submission_scope": {
+          "name": "form_notification_submission_scope",
+          "tableFrom": "form_notification",
+          "tableTo": "form_submission",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "submission_id",
+            "form_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "form_id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "form_notification_submission_recipient": {
+          "name": "form_notification_submission_recipient",
+          "nullsNotDistinct": false,
+          "columns": [
+            "submission_id",
+            "recipient"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "form_notification_status": {
+          "name": "form_notification_status",
+          "value": "\"club\".\"form_notification\".\"status\" in ('pending', 'processing', 'sent', 'failed')"
+        },
+        "form_notification_attempts": {
+          "name": "form_notification_attempts",
+          "value": "\"club\".\"form_notification\".\"attempts\" >= 0"
+        },
+        "form_notification_lease": {
+          "name": "form_notification_lease",
+          "value": "(\"club\".\"form_notification\".\"status\" = 'processing') = (\"club\".\"form_notification\".\"lease_token\" is not null and \"club\".\"form_notification\".\"lease_expires_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.form_submission": {
+      "name": "form_submission",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answers": {
+          "name": "answers",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_by_user_id": {
+          "name": "submitted_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "membership_status": {
+          "name": "membership_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "form_submission_form_created": {
+          "name": "form_submission_form_created",
+          "columns": [
+            {
+              "expression": "form_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "form_submission_submitted_by_user_id_user_id_fk": {
+          "name": "form_submission_submitted_by_user_id_user_id_fk",
+          "tableFrom": "form_submission",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "submitted_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "form_submission_version_scope": {
+          "name": "form_submission_version_scope",
+          "tableFrom": "form_submission",
+          "tableTo": "form_version",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "version_id",
+            "form_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "form_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "form_submission_id_form_org": {
+          "name": "form_submission_id_form_org",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "form_id",
+            "organization_id"
+          ]
+        },
+        "form_submission_request": {
+          "name": "form_submission_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "form_id",
+            "request_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "form_submission_status": {
+          "name": "form_submission_status",
+          "value": "\"club\".\"form_submission\".\"status\" in ('new', 'reviewing', 'closed')"
+        },
+        "form_submission_membership": {
+          "name": "form_submission_membership",
+          "value": "\"club\".\"form_submission\".\"membership_status\" is null or (\"club\".\"form_submission\".\"membership_status\" in ('pending', 'approved') and \"club\".\"form_submission\".\"submitted_by_user_id\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.form_version": {
+      "name": "form_version",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "definition": {
+          "name": "definition",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "form_version_created_by_user_id_fk": {
+          "name": "form_version_created_by_user_id_fk",
+          "tableFrom": "form_version",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "form_version_form_scope": {
+          "name": "form_version_form_scope",
+          "tableFrom": "form_version",
+          "tableTo": "form",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "form_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "form_version_id_form_org": {
+          "name": "form_version_id_form_org",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "form_id",
+            "organization_id"
+          ]
+        },
+        "form_version_form_number": {
+          "name": "form_version_form_number",
+          "nullsNotDistinct": false,
+          "columns": [
+            "form_id",
+            "number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "form_version_number": {
+          "name": "form_version_number",
+          "value": "\"club\".\"form_version\".\"number\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.guest_access": {
+      "name": "guest_access",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registration_id": {
+          "name": "registration_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_user_id": {
+          "name": "registration_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "luma_guest_id": {
+          "name": "luma_guest_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipient_email": {
+          "name": "recipient_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claimed_by": {
+          "name": "claimed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {
+        "guest_access_native_active": {
+          "name": "guest_access_native_active",
+          "columns": [
+            {
+              "expression": "registration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"guest_access\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_provider_active": {
+          "name": "guest_access_provider_active",
+          "columns": [
+            {
+              "expression": "luma_guest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"guest_access\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_event_history": {
+          "name": "guest_access_event_history",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_recipient": {
+          "name": "guest_access_recipient",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recipient_email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_claimed_by": {
+          "name": "guest_access_claimed_by",
+          "columns": [
+            {
+              "expression": "claimed_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_created_by": {
+          "name": "guest_access_created_by",
+          "columns": [
+            {
+              "expression": "created_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_native_history": {
+          "name": "guest_access_native_history",
+          "columns": [
+            {
+              "expression": "registration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_access_provider_history": {
+          "name": "guest_access_provider_history",
+          "columns": [
+            {
+              "expression": "luma_guest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "guest_access_claimed_by_user_id_fk": {
+          "name": "guest_access_claimed_by_user_id_fk",
+          "tableFrom": "guest_access",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "claimed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "guest_access_created_by_user_id_fk": {
+          "name": "guest_access_created_by_user_id_fk",
+          "tableFrom": "guest_access",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "guest_access_event_scope": {
+          "name": "guest_access_event_scope",
+          "tableFrom": "guest_access",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "guest_access_registration_scope": {
+          "name": "guest_access_registration_scope",
+          "tableFrom": "guest_access",
+          "tableTo": "event_registration",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "registration_id",
+            "event_id",
+            "organization_id",
+            "registration_user_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "guest_access_provider_scope": {
+          "name": "guest_access_provider_scope",
+          "tableFrom": "guest_access",
+          "tableTo": "luma_guest_projection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "luma_guest_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "guest_access_source": {
+          "name": "guest_access_source",
+          "value": "(\"club\".\"guest_access\".\"registration_id\" is not null and \"club\".\"guest_access\".\"registration_user_id\" is not null and \"club\".\"guest_access\".\"luma_guest_id\" is null) or (\"club\".\"guest_access\".\"registration_id\" is null and \"club\".\"guest_access\".\"registration_user_id\" is null and \"club\".\"guest_access\".\"luma_guest_id\" is not null)"
+        },
+        "guest_access_claim": {
+          "name": "guest_access_claim",
+          "value": "(\"club\".\"guest_access\".\"claimed_by\" is null) = (\"club\".\"guest_access\".\"claimed_at\" is null)"
+        },
+        "guest_access_native_identity": {
+          "name": "guest_access_native_identity",
+          "value": "\"club\".\"guest_access\".\"registration_user_id\" is null or \"club\".\"guest_access\".\"claimed_by\" is null or \"club\".\"guest_access\".\"registration_user_id\" = \"club\".\"guest_access\".\"claimed_by\""
+        },
+        "guest_access_email": {
+          "name": "guest_access_email",
+          "value": "\"club\".\"guest_access\".\"recipient_email\" = lower(trim(\"club\".\"guest_access\".\"recipient_email\")) and length(\"club\".\"guest_access\".\"recipient_email\") between 3 and 254"
+        },
+        "guest_access_version": {
+          "name": "guest_access_version",
+          "value": "\"club\".\"guest_access\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.media_asset": {
+      "name": "media_asset",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_driver": {
+          "name": "storage_driver",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'local'"
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "uploader_id": {
+          "name": "uploader_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'image/webp'"
+        },
+        "original_name": {
+          "name": "original_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "alt": {
+          "name": "alt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "caption": {
+          "name": "caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "tags": {
+          "name": "tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "collection": {
+          "name": "collection",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "media_asset_organization_created": {
+          "name": "media_asset_organization_created",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "media_asset_organization_id_organization_id_fk": {
+          "name": "media_asset_organization_id_organization_id_fk",
+          "tableFrom": "media_asset",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "media_asset_uploader_id_user_id_fk": {
+          "name": "media_asset_uploader_id_user_id_fk",
+          "tableFrom": "media_asset",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "uploader_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "media_asset_storage_key_unique": {
+          "name": "media_asset_storage_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "storage_key"
+          ]
+        },
+        "media_asset_scope": {
+          "name": "media_asset_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "media_asset_visibility": {
+          "name": "media_asset_visibility",
+          "value": "\"club\".\"media_asset\".\"visibility\" in ('private', 'public')"
+        },
+        "media_asset_driver": {
+          "name": "media_asset_driver",
+          "value": "\"club\".\"media_asset\".\"storage_driver\" = 'local'"
+        },
+        "media_asset_mime": {
+          "name": "media_asset_mime",
+          "value": "\"club\".\"media_asset\".\"mime_type\" = 'image/webp'"
+        },
+        "media_asset_size": {
+          "name": "media_asset_size",
+          "value": "\"club\".\"media_asset\".\"size\" > 0 and \"club\".\"media_asset\".\"size\" <= 5242880"
+        },
+        "media_asset_pixels": {
+          "name": "media_asset_pixels",
+          "value": "\"club\".\"media_asset\".\"width\" > 0 and \"club\".\"media_asset\".\"height\" > 0 and \"club\".\"media_asset\".\"width\"::bigint * \"club\".\"media_asset\".\"height\" <= 20000000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.media_usage": {
+      "name": "media_usage",
+      "schema": "club",
+      "columns": {
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_key": {
+          "name": "owner_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published": {
+          "name": "published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "media_usage_asset": {
+          "name": "media_usage_asset",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "media_usage_organization_id_organization_id_fk": {
+          "name": "media_usage_organization_id_organization_id_fk",
+          "tableFrom": "media_usage",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "media_usage_asset_id_organization_id_media_asset_id_organization_id_fk": {
+          "name": "media_usage_asset_id_organization_id_media_asset_id_organization_id_fk",
+          "tableFrom": "media_usage",
+          "tableTo": "media_asset",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "asset_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "media_usage_organization_id_owner_key_asset_id_pk": {
+          "name": "media_usage_organization_id_owner_key_asset_id_pk",
+          "columns": [
+            "organization_id",
+            "owner_key",
+            "asset_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.event_registration": {
+      "name": "event_registration",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submission_id": {
+          "name": "submission_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_title": {
+          "name": "event_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'confirmed'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cancelled_at": {
+          "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "registration_active_person": {
+          "name": "registration_active_person",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"event_registration\".\"status\" = 'confirmed'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "registration_user": {
+          "name": "registration_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_registration_user_id_user_id_fk": {
+          "name": "event_registration_user_id_user_id_fk",
+          "tableFrom": "event_registration",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_registration_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "event_registration_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "event_registration",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_registration_form_id_event_id_organization_id_form_id_event_id_organization_id_fk": {
+          "name": "event_registration_form_id_event_id_organization_id_form_id_event_id_organization_id_fk",
+          "tableFrom": "event_registration",
+          "tableTo": "form",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "form_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "event_registration_submission_id_form_id_organization_id_form_submission_id_form_id_organization_id_fk": {
+          "name": "event_registration_submission_id_form_id_organization_id_form_submission_id_form_id_organization_id_fk",
+          "tableFrom": "event_registration",
+          "tableTo": "form_submission",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "submission_id",
+            "form_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "form_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "event_registration_submission_id_unique": {
+          "name": "event_registration_submission_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "submission_id"
+          ]
+        },
+        "registration_guest_scope": {
+          "name": "registration_guest_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "registration_status": {
+          "name": "registration_status",
+          "value": "(\"club\".\"event_registration\".\"status\" = 'confirmed' and \"club\".\"event_registration\".\"cancelled_at\" is null) or (\"club\".\"event_registration\".\"status\" = 'cancelled' and \"club\".\"event_registration\".\"cancelled_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.registration_settings": {
+      "name": "registration_settings",
+      "schema": "club",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authority": {
+          "name": "authority",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'none'"
+        },
+        "form_id": {
+          "name": "form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "capacity": {
+          "name": "capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "open": {
+          "name": "open",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "external_locked": {
+          "name": "external_locked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "registration_settings_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "registration_settings_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "registration_settings",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "registration_settings_form_id_event_id_organization_id_form_id_event_id_organization_id_fk": {
+          "name": "registration_settings_form_id_event_id_organization_id_form_id_event_id_organization_id_fk",
+          "tableFrom": "registration_settings",
+          "tableTo": "form",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "form_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "registration_authority": {
+          "name": "registration_authority",
+          "value": "(\"club\".\"registration_settings\".\"authority\" = 'none' and \"club\".\"registration_settings\".\"form_id\" is null and \"club\".\"registration_settings\".\"open\" = false) or (\"club\".\"registration_settings\".\"authority\" = 'native' and \"club\".\"registration_settings\".\"form_id\" is not null) or (\"club\".\"registration_settings\".\"authority\" = 'luma' and \"club\".\"registration_settings\".\"form_id\" is null and \"club\".\"registration_settings\".\"capacity\" is null)"
+        },
+        "registration_external_lock": {
+          "name": "registration_external_lock",
+          "value": "not \"club\".\"registration_settings\".\"external_locked\" or \"club\".\"registration_settings\".\"authority\" = 'luma'"
+        },
+        "registration_capacity": {
+          "name": "registration_capacity",
+          "value": "\"club\".\"registration_settings\".\"capacity\" is null or \"club\".\"registration_settings\".\"capacity\" > 0"
+        },
+        "registration_version": {
+          "name": "registration_version",
+          "value": "\"club\".\"registration_settings\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_availability": {
+      "name": "luma_availability",
+      "schema": "club",
+      "columns": {
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "luma_availability_organization_id_organization_id_fk": {
+          "name": "luma_availability_organization_id_organization_id_fk",
+          "tableFrom": "luma_availability",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "luma_availability_version": {
+          "name": "luma_availability_version",
+          "value": "\"club\".\"luma_availability\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_connection": {
+      "name": "luma_connection",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential": {
+          "name": "credential",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calendar_id": {
+          "name": "calendar_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "check_state": {
+          "name": "check_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unchecked'"
+        },
+        "check_code": {
+          "name": "check_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempted_at": {
+          "name": "attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_success_at": {
+          "name": "last_success_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "luma_connection_organization_id_organization_id_fk": {
+          "name": "luma_connection_organization_id_organization_id_fk",
+          "tableFrom": "luma_connection",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_connection_organization": {
+          "name": "luma_connection_organization",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id"
+          ]
+        },
+        "luma_connection_scope": {
+          "name": "luma_connection_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_connection_version": {
+          "name": "luma_connection_version",
+          "value": "\"club\".\"luma_connection\".\"version\" > 0"
+        },
+        "luma_connection_state": {
+          "name": "luma_connection_state",
+          "value": "\"club\".\"luma_connection\".\"check_state\" in ('unchecked', 'checking', 'verified', 'failed', 'disconnected')"
+        },
+        "luma_connection_credential": {
+          "name": "luma_connection_credential",
+          "value": "(\"club\".\"luma_connection\".\"check_state\" = 'disconnected') = (\"club\".\"luma_connection\".\"credential\" is null)"
+        },
+        "luma_connection_verified": {
+          "name": "luma_connection_verified",
+          "value": "\"club\".\"luma_connection\".\"check_state\" <> 'verified' or (\"club\".\"luma_connection\".\"calendar_id\" is not null and \"club\".\"luma_connection\".\"last_success_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_event_link": {
+      "name": "luma_event_link",
+      "schema": "club",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "draft_url": {
+          "name": "draft_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_url": {
+          "name": "published_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "luma_event_link_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "luma_event_link_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "luma_event_link",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "luma_link_version": {
+          "name": "luma_link_version",
+          "value": "\"club\".\"luma_event_link\".\"version\" > 0"
+        },
+        "luma_link_publication": {
+          "name": "luma_link_publication",
+          "value": "\"club\".\"luma_event_link\".\"published_at\" is null or \"club\".\"luma_event_link\".\"published_url\" is not null"
+        },
+        "luma_link_urls": {
+          "name": "luma_link_urls",
+          "value": "\"club\".\"luma_event_link\".\"draft_url\" ~ '^https://(luma[.]com|lu[.]ma)/[A-Za-z0-9_-]+$' and (\"club\".\"luma_event_link\".\"published_url\" is null or \"club\".\"luma_event_link\".\"published_url\" ~ '^https://(luma[.]com|lu[.]ma)/[A-Za-z0-9_-]+$')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_api_event": {
+      "name": "luma_api_event",
+      "schema": "club",
+      "columns": {
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_event_id": {
+          "name": "provider_event_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "attempted_at": {
+          "name": "attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_success_at": {
+          "name": "last_success_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "luma_api_event_index": {
+          "name": "luma_api_event_index",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "luma_api_source_scope": {
+          "name": "luma_api_source_scope",
+          "tableFrom": "luma_api_event",
+          "tableTo": "event_package_source",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "luma_api_event_event_id_organization_id_event_id_organization_id_fk": {
+          "name": "luma_api_event_event_id_organization_id_event_id_organization_id_fk",
+          "tableFrom": "luma_api_event",
+          "tableTo": "event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "luma_api_event_connection_id_organization_id_luma_connection_id_organization_id_fk": {
+          "name": "luma_api_event_connection_id_organization_id_luma_connection_id_organization_id_fk",
+          "tableFrom": "luma_api_event",
+          "tableTo": "luma_connection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "connection_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_api_event_scope": {
+          "name": "luma_api_event_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ]
+        },
+        "luma_api_provider_event": {
+          "name": "luma_api_provider_event",
+          "nullsNotDistinct": false,
+          "columns": [
+            "connection_id",
+            "provider_event_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_api_event_version": {
+          "name": "luma_api_event_version",
+          "value": "\"club\".\"luma_api_event\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_guest_projection": {
+      "name": "luma_guest_projection",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_guest_id": {
+          "name": "provider_guest_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approval_status": {
+          "name": "approval_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ticket_count": {
+          "name": "ticket_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "present": {
+          "name": "present",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_run_id": {
+          "name": "last_seen_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "luma_guest_api_source_scope": {
+          "name": "luma_guest_api_source_scope",
+          "tableFrom": "luma_guest_projection",
+          "tableTo": "luma_api_event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_guest_provider_identity": {
+          "name": "luma_guest_provider_identity",
+          "nullsNotDistinct": false,
+          "columns": [
+            "source_id",
+            "provider_guest_id"
+          ]
+        },
+        "luma_guest_scope": {
+          "name": "luma_guest_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "event_id",
+            "organization_id"
+          ]
+        },
+        "luma_guest_purchase_scope": {
+          "name": "luma_guest_purchase_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_guest_ticket_count": {
+          "name": "luma_guest_ticket_count",
+          "value": "\"club\".\"luma_guest_projection\".\"ticket_count\" >= 0 and \"club\".\"luma_guest_projection\".\"ticket_count\" <= 200"
+        },
+        "luma_guest_status": {
+          "name": "luma_guest_status",
+          "value": "\"club\".\"luma_guest_projection\".\"approval_status\" in ('approved', 'session', 'pending_approval', 'invited', 'declined', 'waitlist')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_sync_run": {
+      "name": "luma_sync_run",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guest_count": {
+          "name": "guest_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "luma_sync_history": {
+          "name": "luma_sync_history",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "started_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "luma_sync_api_source_scope": {
+          "name": "luma_sync_api_source_scope",
+          "tableFrom": "luma_sync_run",
+          "tableTo": "luma_api_event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_sync_request": {
+          "name": "luma_sync_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "event_id",
+            "request_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_sync_status": {
+          "name": "luma_sync_status",
+          "value": "\"club\".\"luma_sync_run\".\"status\" in ('running', 'succeeded', 'failed', 'interrupted')"
+        },
+        "luma_sync_completion": {
+          "name": "luma_sync_completion",
+          "value": "(\"club\".\"luma_sync_run\".\"status\" = 'running') = (\"club\".\"luma_sync_run\".\"finished_at\" is null)"
+        },
+        "luma_sync_count": {
+          "name": "luma_sync_count",
+          "value": "\"club\".\"luma_sync_run\".\"guest_count\" is null or \"club\".\"luma_sync_run\".\"guest_count\" between 0 and 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.cms_publication_job": {
+      "name": "cms_publication_job",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_id": {
+          "name": "content_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "variant_id": {
+          "name": "variant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_id": {
+          "name": "revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publication_version": {
+          "name": "publication_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_by": {
+          "name": "requested_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lease_token": {
+          "name": "lease_token",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "cms_publication_active": {
+          "name": "cms_publication_active",
+          "columns": [
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"cms_publication_job\".\"status\" in ('pending', 'processing')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cms_publication_due": {
+          "name": "cms_publication_due",
+          "columns": [
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"club\".\"cms_publication_job\".\"status\" in ('pending', 'processing')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cms_publication_history": {
+          "name": "cms_publication_history",
+          "columns": [
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cms_publication_job_requested_by_user_id_fk": {
+          "name": "cms_publication_job_requested_by_user_id_fk",
+          "tableFrom": "cms_publication_job",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "requested_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_publication_job_content_id_organization_id_cms_content_id_organization_id_fk": {
+          "name": "cms_publication_job_content_id_organization_id_cms_content_id_organization_id_fk",
+          "tableFrom": "cms_publication_job",
+          "tableTo": "cms_content",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "content_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_publication_job_variant_id_content_id_organization_id_cms_variant_id_content_id_organization_id_fk": {
+          "name": "cms_publication_job_variant_id_content_id_organization_id_cms_variant_id_content_id_organization_id_fk",
+          "tableFrom": "cms_publication_job",
+          "tableTo": "cms_variant",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "variant_id",
+            "content_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "content_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cms_publication_job_revision_id_variant_id_cms_revision_id_variant_id_fk": {
+          "name": "cms_publication_job_revision_id_variant_id_cms_revision_id_variant_id_fk",
+          "tableFrom": "cms_publication_job",
+          "tableTo": "cms_revision",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "revision_id",
+            "variant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "variant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cms_publication_request": {
+          "name": "cms_publication_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "request_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cms_publication_status": {
+          "name": "cms_publication_status",
+          "value": "\"club\".\"cms_publication_job\".\"status\" in ('pending', 'processing', 'succeeded', 'cancelled', 'failed')"
+        },
+        "cms_publication_attempts": {
+          "name": "cms_publication_attempts",
+          "value": "\"club\".\"cms_publication_job\".\"attempts\" between 0 and 3"
+        },
+        "cms_publication_version": {
+          "name": "cms_publication_version",
+          "value": "\"club\".\"cms_publication_job\".\"publication_version\" >= 0"
+        },
+        "cms_publication_lease": {
+          "name": "cms_publication_lease",
+          "value": "(\"club\".\"cms_publication_job\".\"status\" = 'processing' and \"club\".\"cms_publication_job\".\"lease_token\" is not null and \"club\".\"cms_publication_job\".\"lease_expires_at\" is not null) or (\"club\".\"cms_publication_job\".\"status\" <> 'processing' and \"club\".\"cms_publication_job\".\"lease_token\" is null and \"club\".\"cms_publication_job\".\"lease_expires_at\" is null)"
+        },
+        "cms_publication_completion": {
+          "name": "cms_publication_completion",
+          "value": "(\"club\".\"cms_publication_job\".\"status\" in ('pending', 'processing')) = (\"club\".\"cms_publication_job\".\"finished_at\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.partner": {
+      "name": "partner",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "draft": {
+          "name": "draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published": {
+          "name": "published",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous": {
+          "name": "previous",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "partner_organization": {
+          "name": "partner_organization",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "partner_organization_id_organization_id_fk": {
+          "name": "partner_organization_id_organization_id_fk",
+          "tableFrom": "partner",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "partner_version_positive": {
+          "name": "partner_version_positive",
+          "value": "\"club\".\"partner\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_reconciliation_job": {
+      "name": "luma_reconciliation_job",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_version": {
+          "name": "connection_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_version": {
+          "name": "event_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registration_version": {
+          "name": "registration_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_version": {
+          "name": "requested_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link_version": {
+          "name": "link_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_by": {
+          "name": "requested_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lease_token": {
+          "name": "lease_token",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "luma_job_active": {
+          "name": "luma_job_active",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"club\".\"luma_reconciliation_job\".\"status\" in ('pending', 'processing')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "luma_job_due": {
+          "name": "luma_job_due",
+          "columns": [
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"club\".\"luma_reconciliation_job\".\"status\" in ('pending', 'processing')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "luma_job_history": {
+          "name": "luma_job_history",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "luma_reconciliation_job_requested_by_user_id_fk": {
+          "name": "luma_reconciliation_job_requested_by_user_id_fk",
+          "tableFrom": "luma_reconciliation_job",
+          "tableTo": "user",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "requested_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "luma_job_api_source_scope": {
+          "name": "luma_job_api_source_scope",
+          "tableFrom": "luma_reconciliation_job",
+          "tableTo": "luma_api_event",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "luma_reconciliation_job_connection_id_organization_id_luma_connection_id_organization_id_fk": {
+          "name": "luma_reconciliation_job_connection_id_organization_id_luma_connection_id_organization_id_fk",
+          "tableFrom": "luma_reconciliation_job",
+          "tableTo": "luma_connection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "connection_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_job_request": {
+          "name": "luma_job_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "request_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_job_status": {
+          "name": "luma_job_status",
+          "value": "\"club\".\"luma_reconciliation_job\".\"status\" in ('pending', 'processing', 'succeeded', 'cancelled', 'failed')"
+        },
+        "luma_job_attempts": {
+          "name": "luma_job_attempts",
+          "value": "\"club\".\"luma_reconciliation_job\".\"attempts\" between 0 and 3"
+        },
+        "luma_job_versions": {
+          "name": "luma_job_versions",
+          "value": "\"club\".\"luma_reconciliation_job\".\"source_version\" > 0 and \"club\".\"luma_reconciliation_job\".\"connection_version\" > 0 and \"club\".\"luma_reconciliation_job\".\"event_version\" > 0 and \"club\".\"luma_reconciliation_job\".\"registration_version\" >= 0 and \"club\".\"luma_reconciliation_job\".\"requested_version\" > 0 and \"club\".\"luma_reconciliation_job\".\"link_version\" >= \"club\".\"luma_reconciliation_job\".\"requested_version\""
+        },
+        "luma_job_lease": {
+          "name": "luma_job_lease",
+          "value": "(\"club\".\"luma_reconciliation_job\".\"status\" = 'processing' and \"club\".\"luma_reconciliation_job\".\"lease_token\" is not null and \"club\".\"luma_reconciliation_job\".\"lease_expires_at\" is not null) or (\"club\".\"luma_reconciliation_job\".\"status\" <> 'processing' and \"club\".\"luma_reconciliation_job\".\"lease_token\" is null and \"club\".\"luma_reconciliation_job\".\"lease_expires_at\" is null)"
+        },
+        "luma_job_completion": {
+          "name": "luma_job_completion",
+          "value": "(\"club\".\"luma_reconciliation_job\".\"status\" in ('pending', 'processing')) = (\"club\".\"luma_reconciliation_job\".\"finished_at\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_webhook": {
+      "name": "luma_webhook",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secret": {
+          "name": "secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "event_types": {
+          "name": "event_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "luma_webhook_organization_id_organization_id_fk": {
+          "name": "luma_webhook_organization_id_organization_id_fk",
+          "tableFrom": "luma_webhook",
+          "tableTo": "organization",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_webhook_organization": {
+          "name": "luma_webhook_organization",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_webhook_version": {
+          "name": "luma_webhook_version",
+          "value": "\"club\".\"luma_webhook\".\"version\" > 0"
+        },
+        "luma_webhook_enabled": {
+          "name": "luma_webhook_enabled",
+          "value": "not \"club\".\"luma_webhook\".\"enabled\" or (\"club\".\"luma_webhook\".\"secret\" is not null and cardinality(\"club\".\"luma_webhook\".\"event_types\") > 0)"
+        },
+        "luma_webhook_types": {
+          "name": "luma_webhook_types",
+          "value": "\"club\".\"luma_webhook\".\"event_types\" <@ ARRAY['event.created','event.updated','event.canceled','guest.registered','guest.updated','guest.refunded']::text[]"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_webhook_receipt": {
+      "name": "luma_webhook_receipt",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "webhook_id": {
+          "name": "webhook_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_hash": {
+          "name": "body_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_event_id": {
+          "name": "provider_event_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "luma_webhook_receipt_recent": {
+          "name": "luma_webhook_receipt_recent",
+          "columns": [
+            {
+              "expression": "webhook_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "luma_webhook_receipt_webhook_id_luma_webhook_id_fk": {
+          "name": "luma_webhook_receipt_webhook_id_luma_webhook_id_fk",
+          "tableFrom": "luma_webhook_receipt",
+          "tableTo": "luma_webhook",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "webhook_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "luma_webhook_delivery_body": {
+          "name": "luma_webhook_delivery_body",
+          "nullsNotDistinct": false,
+          "columns": [
+            "webhook_id",
+            "body_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "luma_webhook_body_hash": {
+          "name": "luma_webhook_body_hash",
+          "value": "\"club\".\"luma_webhook_receipt\".\"body_hash\" ~ '^[a-f0-9]{64}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "club.luma_purchase_identity": {
+      "name": "luma_purchase_identity",
+      "schema": "club",
+      "columns": {
+        "guest_id": {
+          "name": "guest_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_user_id": {
+          "name": "provider_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "purchase_identity_event": {
+          "name": "purchase_identity_event",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_identity_source": {
+          "name": "purchase_identity_source",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "purchase_identity_guest_scope": {
+          "name": "purchase_identity_guest_scope",
+          "tableFrom": "luma_purchase_identity",
+          "tableTo": "luma_guest_projection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "guest_id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.luma_purchase_order": {
+      "name": "luma_purchase_order",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guest_id": {
+          "name": "guest_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_order_id": {
+          "name": "provider_order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "purchase_order_source_identity": {
+          "name": "purchase_order_source_identity",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_order_guest": {
+          "name": "purchase_order_guest",
+          "columns": [
+            {
+              "expression": "guest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_order_event": {
+          "name": "purchase_order_event",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "purchase_order_guest_scope": {
+          "name": "purchase_order_guest_scope",
+          "tableFrom": "luma_purchase_order",
+          "tableTo": "luma_guest_projection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "guest_id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "club.luma_purchase_refresh": {
+      "name": "luma_purchase_refresh",
+      "schema": "club",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guest_id": {
+          "name": "guest_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "failure_code": {
+          "name": "failure_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_email": {
+          "name": "recipient_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "api_version": {
+          "name": "api_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_version": {
+          "name": "connection_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guest_observed_at": {
+          "name": "guest_observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "purchase_refresh_request": {
+          "name": "purchase_refresh_request",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_refresh_guest_version": {
+          "name": "purchase_refresh_guest_version",
+          "columns": [
+            {
+              "expression": "guest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_refresh_event": {
+          "name": "purchase_refresh_event",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_refresh_source": {
+          "name": "purchase_refresh_source",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchase_refresh_connection": {
+          "name": "purchase_refresh_connection",
+          "columns": [
+            {
+              "expression": "connection_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "purchase_refresh_connection_scope": {
+          "name": "purchase_refresh_connection_scope",
+          "tableFrom": "luma_purchase_refresh",
+          "tableTo": "luma_connection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "connection_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "purchase_refresh_guest_scope": {
+          "name": "purchase_refresh_guest_scope",
+          "tableFrom": "luma_purchase_refresh",
+          "tableTo": "luma_guest_projection",
+          "schemaTo": "club",
+          "columnsFrom": [
+            "guest_id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "source_id",
+            "event_id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "purchase_refresh_versions": {
+          "name": "purchase_refresh_versions",
+          "value": "\"club\".\"luma_purchase_refresh\".\"version\" > 0 and \"club\".\"luma_purchase_refresh\".\"source_version\" > 0 and \"club\".\"luma_purchase_refresh\".\"api_version\" > 0 and \"club\".\"luma_purchase_refresh\".\"connection_version\" > 0"
+        },
+        "purchase_refresh_state": {
+          "name": "purchase_refresh_state",
+          "value": "(\"club\".\"luma_purchase_refresh\".\"status\" = 'running' and \"club\".\"luma_purchase_refresh\".\"finished_at\" is null and \"club\".\"luma_purchase_refresh\".\"snapshot\" is null) or (\"club\".\"luma_purchase_refresh\".\"status\" = 'failed' and \"club\".\"luma_purchase_refresh\".\"finished_at\" is not null and \"club\".\"luma_purchase_refresh\".\"snapshot\" is null) or (\"club\".\"luma_purchase_refresh\".\"status\" = 'succeeded' and \"club\".\"luma_purchase_refresh\".\"finished_at\" is not null and \"club\".\"luma_purchase_refresh\".\"snapshot\" is not null)"
+        },
+        "purchase_refresh_mode": {
+          "name": "purchase_refresh_mode",
+          "value": "\"club\".\"luma_purchase_refresh\".\"mode\" in ('fixture', 'live')"
+        },
+        "purchase_refresh_failure": {
+          "name": "purchase_refresh_failure",
+          "value": "(\"club\".\"luma_purchase_refresh\".\"status\" = 'failed' and \"club\".\"luma_purchase_refresh\".\"failure_code\" is not null and \"club\".\"luma_purchase_refresh\".\"failure_code\" in ('refresh_failed', 'identity_changed')) or (\"club\".\"luma_purchase_refresh\".\"status\" <> 'failed' and \"club\".\"luma_purchase_refresh\".\"failure_code\" is null)"
+        },
+        "purchase_refresh_email": {
+          "name": "purchase_refresh_email",
+          "value": "\"club\".\"luma_purchase_refresh\".\"recipient_email\" = lower(trim(\"club\".\"luma_purchase_refresh\".\"recipient_email\")) and length(\"club\".\"luma_purchase_refresh\".\"recipient_email\") between 3 and 254"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "club": "club"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

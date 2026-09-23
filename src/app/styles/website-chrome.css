@@ -1,0 +1,344 @@
+/* Shared template chrome. Saved content, branding and administration stay independent. */
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"]) {
+  & .cms-site-part .site-brand a {
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    gap: 14px;
+  }
+  & .cms-site-part .template-brand-identity {
+    flex-direction: row;
+  }
+  & .cms-site-part .template-brand-mark {
+    flex: 0 0 auto;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  & .cms-site-part .template-brand-mark .site-logo {
+    width: var(--site-brand-width, 128px);
+    height: auto;
+  }
+  & .cms-site-part .site-logo-large {
+    --site-brand-width: 144px;
+  }
+  & .cms-site-part .site-logo-small {
+    --site-brand-width: 100px;
+  }
+  & .cms-site-part .site-brand-name {
+    display: block;
+    min-width: 0;
+    max-width: 18ch;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  & .cms-site-part .template-brand-identity .site-brand-name {
+    border-inline-start: 1px solid var(--line);
+    padding-inline-start: 14px;
+  }
+  & .cms-site-part :is(a, summary):focus-visible {
+    outline: 2px solid var(--club-accent);
+    outline-offset: 4px;
+  }
+  & .site-header {
+    padding-block: 12px;
+    margin-block: 0;
+    color: var(--ink);
+    background: #fff;
+  }
+  & .site-header .site-row {
+    grid-template-columns: minmax(280px, 1fr) auto auto;
+    gap: 28px;
+    margin: 0;
+  }
+  & .site-header .site-column-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  /* Header tracks need the intrinsic width of individually styled blocks. */
+  & .site-header .site-column > .cms-design {
+    container-type: normal;
+  }
+  & .site-header .site-column-right > .cms-design {
+    width: auto;
+  }
+  & .site-header .site-column-right .button {
+    white-space: nowrap;
+    padding: 10px 16px;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+  }
+  & .site-header .site-column-right .button-outline {
+    border-color: transparent;
+    color: inherit;
+    background: transparent;
+  }
+  & .site-header .site-column-right .button-outline:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+  & .site-header .site-menu-wide {
+    gap: 18px;
+    flex-wrap: nowrap;
+  }
+  & .site-header .site-menu a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  & .site-footer {
+    display: grid;
+    /* Design wrappers contain inline size, so credits need a sized grid track. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 12rem);
+    gap: 24px;
+    width: 100%;
+    max-width: none;
+    margin-top: 64px;
+    padding: 40px max(24px, calc((100% - var(--cms-width)) / 2));
+    background: color-mix(in srgb, var(--club-accent) 3%, #fff);
+    color: var(--ink);
+    border-top: 3px solid var(--club-accent);
+  }
+  & .site-footer > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  & .site-footer > .cms-heading h2 {
+    margin: 0;
+    max-width: none;
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    letter-spacing: -0.035em;
+  }
+  & .site-footer .site-row {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) minmax(0, 1fr);
+    gap: 48px;
+    margin: 0;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  & .site-footer .site-column {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  & .site-footer .site-column :is(h2, h3) {
+    margin: 8px 0 2px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+  & .site-footer .cms-richtext {
+    max-width: 32ch;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+  & .site-footer .site-menu-vertical .site-menu-wide {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 28px;
+  }
+  & .site-footer .site-menu a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding-block: 4px;
+  }
+  & .site-footer a {
+    color: inherit;
+  }
+  & .site-footer .button-outline {
+    border-color: var(--line);
+    color: var(--ink);
+    background: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+  }
+  & .site-footer .button-outline:hover {
+    border-color: var(--club-accent);
+    color: var(--club-accent);
+  }
+  & .site-footer .site-social:empty {
+    display: none;
+  }
+  & .site-footer > .site-footer-text {
+    grid-column: 1;
+    margin: 0;
+    align-self: center;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+  &
+    .site-footer
+    > :is(.cms-richtext, .cms-design:has(> .cms-richtext)):last-child {
+    grid-column: 2;
+    align-self: center;
+    margin: 0;
+    font-size: 0.8125rem;
+    text-align: end;
+  }
+  & .site-footer > .cms-design:last-child > .cms-richtext {
+    font-size: inherit;
+  }
+}
+
+@container (max-width: 1080px) {
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .site-header {
+    & .site-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px 20px;
+    }
+    & .site-column-right {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+    & .site-menu-horizontal .site-menu-wide {
+      display: none;
+    }
+    & .site-menu-compact {
+      display: block;
+      position: relative;
+    }
+    & .site-menu-compact summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+    & .site-menu-compact summary::-webkit-details-marker {
+      display: none;
+    }
+    & .site-menu-compact summary::after {
+      content: "";
+      width: 12px;
+      height: 2px;
+      background: currentColor;
+      box-shadow:
+        0 -4px 0 currentColor,
+        0 4px 0 currentColor;
+    }
+    & .site-menu-compact[open] summary::after {
+      box-shadow: none;
+    }
+    & .site-menu-compact nav {
+      position: absolute;
+      z-index: 30;
+      inset-inline-end: 0;
+      top: calc(100% + 8px);
+      width: min(260px, calc(100vw - 48px));
+      display: grid;
+      gap: 2px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      box-shadow: 0 12px 32px #00000014;
+    }
+    & .site-menu-compact nav a {
+      padding: 8px 12px;
+      border-radius: 6px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    & .site-menu-compact nav a:hover {
+      background: var(--cms-soft);
+    }
+  }
+}
+
+@container (max-width: 700px) {
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .site-footer {
+    & .site-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px 24px;
+    }
+    & .site-column-left {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+@container (max-width: 500px) {
+  .cms-public:is(
+    [data-theme="rotary-service"],
+    [data-theme="rotaract-action"]
+  ) {
+    & .site-header .site-brand a {
+      gap: 8px;
+    }
+    & .site-header .template-brand-mark {
+      padding: 6px;
+    }
+    & .site-header .site-brand {
+      --site-brand-width: 96px;
+    }
+    & .site-header .site-brand-name {
+      font-size: 0.8125rem;
+      line-height: 1.3;
+      max-width: 15ch;
+    }
+    & .site-header .template-brand-identity .site-brand-name {
+      padding-inline-start: 8px;
+    }
+    & .site-header .site-menu-compact summary {
+      padding-inline: 10px;
+    }
+    & .site-header .site-row {
+      gap: 12px;
+    }
+    & .site-header .site-column-right {
+      justify-content: space-between;
+    }
+    & .site-footer .site-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    & .site-footer {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    & .site-footer .site-brand {
+      --site-brand-width: 112px;
+    }
+    & .site-footer .template-brand-mark {
+      padding: 8px;
+    }
+    & .site-footer .site-brand-name {
+      font-size: 0.9375rem;
+    }
+    & .site-footer > .site-footer-text,
+    &
+      .site-footer
+      > :is(.cms-richtext, .cms-design:has(> .cms-richtext)):last-child {
+      grid-column: 1 / -1;
+      text-align: start;
+    }
+    & .site-footer .site-menu {
+      width: 100%;
+    }
+    & .site-footer .site-menu-wide {
+      gap: 6px 24px;
+    }
+  }
+}
+
+@container (max-width: 360px) {
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .site-header
+    .site-brand {
+    --site-brand-width: 80px;
+  }
+}

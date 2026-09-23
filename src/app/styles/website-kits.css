@@ -1,0 +1,412 @@
+/* Public roots and Puck canvases only. No document or administration tokens. */
+.cms-public .site-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+}
+.cms-public .cms-feature-section:not(:has(.cms-feature-media)) {
+  grid-template-columns: 1fr;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"]) {
+  font-family: var(--cms-font);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  --serif: var(--cms-font);
+  --sans: var(--cms-font);
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  :is(h1, h2, h3) {
+  font-family: var(--cms-font);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.14;
+  text-wrap: balance;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  h2 {
+  font-size: clamp(1.7rem, 2.8vw, 2.55rem);
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  h3 {
+  font-size: 1.35rem;
+}
+.cms-public .club-text-identity {
+  font-size: 1.2rem;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+  max-width: 19rem;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .button {
+  border-radius: var(--cms-radius);
+  font-size: 0.9rem;
+  min-height: 44px;
+  font-weight: 700;
+  padding: 12px 22px;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .button-accent {
+  background: var(--club-accent);
+  color: var(--accent-foreground);
+  border-color: var(--club-accent);
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .site-menu
+  a {
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.cms-public .site-menu a:hover {
+  text-decoration: underline;
+}
+.cms-public:not([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .site-header
+  .site-column-right {
+  gap: 6px;
+}
+.cms-public:not([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .site-footer
+  .cms-richtext {
+  max-width: 25rem;
+}
+.cms-public:not([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .site-footer
+  > .cms-richtext:last-child {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-top: 36px;
+}
+.cms-public .cms-site-part .cms-design {
+  width: 100%;
+  margin: 0;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-hero
+  h1,
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-hero-slider
+  h1 {
+  font-size: clamp(2.5rem, 4.6vw, 4rem);
+  line-height: 1.06;
+}
+.cms-public[data-theme="rotary-service"] .cms-hero-slider {
+  margin-top: 24px;
+}
+.cms-public[data-theme="rotary-service"] .cms-hero-slide {
+  min-height: 580px;
+  border-radius: 0;
+}
+.cms-public[data-theme="rotary-service"] .cms-hero-slide > .cms-image {
+  border-radius: 0;
+}
+.cms-public[data-theme="rotary-service"] .cms-hero-panel {
+  width: min(540px, 51%);
+  background: #fff;
+  color: var(--ink);
+  padding: 44px;
+  border-top: 5px solid var(--kit-highlight);
+  border-radius: 0;
+}
+.cms-public[data-theme="rotaract-action"] .cms-hero {
+  background: var(--paper);
+  padding: 24px 0;
+  gap: 64px;
+  grid-template-columns: 1.05fr 1fr;
+  margin-top: 32px;
+}
+.cms-public[data-theme="rotaract-action"] .cms-hero-copy {
+  padding: 0;
+}
+.cms-public[data-theme="rotaract-action"] .cms-hero p {
+  font-size: 1.15rem;
+  max-width: 29rem;
+}
+.cms-public[data-theme="rotaract-action"] .cms-hero-image {
+  height: 470px;
+  border-radius: 120px 12px 120px 12px;
+  object-fit: cover;
+}
+.cms-public .cms-page-intro {
+  padding-block: 28px 8px;
+  max-width: 850px;
+}
+.cms-public .cms-page-intro h1 {
+  font-size: clamp(2rem, 3.8vw, 2.9rem);
+  margin: 12px 0 20px;
+}
+.cms-public .cms-page-intro p {
+  max-width: 43rem;
+}
+.cms-public .cms-intro-center {
+  margin-inline: auto;
+  text-align: center;
+}
+.cms-public .cms-intro-center p {
+  margin-inline: auto;
+}
+.cms-public .cms-eyebrow {
+  color: var(--club-accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cms-public .cms-page-collection .cms-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+.cms-public .cms-page-collection .cms-card {
+  padding: 0;
+  overflow: hidden;
+}
+.cms-public .cms-page-collection .cms-image {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  object-fit: cover;
+  height: auto;
+  border-radius: 0;
+}
+.cms-public .cms-card-copy {
+  padding: 24px;
+}
+.cms-public .cms-card-copy h3 {
+  margin: 0 0 16px;
+}
+.cms-public .cms-card-copy p {
+  margin-block: 0 22px;
+  font-size: 1rem;
+}
+.cms-public[data-theme="rotary-service"] .cms-card {
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.cms-public[data-theme="rotaract-action"] .cms-card {
+  border: 0;
+  background: var(--cms-soft);
+  box-shadow: none;
+}
+.cms-public[data-theme="rotaract-action"] .cms-card-copy {
+  border-bottom: 4px solid var(--club-accent);
+}
+.cms-public .cms-section-heading {
+  margin-bottom: 28px;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-event-layout-cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-event-cover {
+  max-height: 280px;
+  object-fit: cover;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-event-card:only-child {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  align-items: center;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-event-card:only-child
+  .cms-image {
+  height: 240px;
+}
+.cms-public .cms-collection-carousel .cms-card-grid {
+  grid-template-columns: 1fr;
+}
+.cms-public .cms-collection-carousel .cms-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.cms-public .cms-collection-empty {
+  border-block: 1px solid var(--line);
+  padding: 48px 0;
+  color: var(--muted);
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-feature-section {
+  gap: 64px;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-feature-media
+  .cms-image {
+  height: 380px;
+  object-fit: cover;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-feature-list:empty {
+  display: none;
+}
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+  .cms-callout {
+  padding: 48px;
+  border: 0;
+}
+.cms-public .cms-gallery figure {
+  margin: 0;
+  min-width: 0;
+}
+.cms-public .cms-gallery figcaption {
+  font-size: 0.85rem;
+  padding-top: 8px;
+}
+.cms-public .cms-gallery:empty {
+  display: none;
+}
+.cms-public .cms-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 48px;
+  align-items: start;
+}
+.cms-public .cms-columns-wide-right {
+  grid-template-columns: 1fr 1.6fr;
+}
+.cms-public .cms-columns-wide-left {
+  grid-template-columns: 1.6fr 1fr;
+}
+.cms-public .cms-columns > div {
+  min-width: 0;
+}
+.cms-public .forms-public > .field-help {
+  margin-top: 16px;
+}
+.cms-public .cms-columns .cms-card-grid {
+  grid-template-columns: 1fr;
+}
+.cms-public .cms-columns :is(.cms-block, .forms-public) {
+  margin-block: 0 24px;
+}
+.cms-public .kit-demo-banner {
+  background: #25252b;
+  color: #fff;
+  padding: 8px 24px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.cms-public .kit-demo-banner a {
+  color: #fff;
+  text-decoration: underline;
+}
+.kit-preview-tools {
+  background: #fff;
+  color: #24362c;
+  border-bottom: 1px solid #dfe3d9;
+  padding: 12px 24px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  font:
+    14px Arial,
+    sans-serif;
+}
+@media (max-width: 950px) {
+  .cms-public .cms-page-collection .cms-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cms-public[data-theme="rotary-service"] .cms-hero-panel {
+    width: 65%;
+  }
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .cms-feature-section {
+    gap: 32px;
+  }
+}
+/* Retain compact navigation for shared headers outside the two templates. */
+@container (max-width: 850px) {
+  .cms-public .site-header .site-column-right {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cms-public .site-header .site-menu-horizontal .site-menu-wide {
+    display: none;
+  }
+  .cms-public .site-header .site-menu-compact {
+    display: block;
+  }
+}
+@media (max-width: 620px) {
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .cms-event-card:only-child {
+    display: block;
+  }
+  .cms-public .cms-columns {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .cms-feature-section {
+    grid-template-columns: 1fr;
+  }
+  .cms-public .cms-feature-image-right .cms-feature-media {
+    order: initial;
+  }
+  .kit-preview-tools {
+    gap: 8px 16px;
+    padding: 8px 20px;
+    font-size: 0.75rem;
+  }
+  .kit-preview-tools strong {
+    width: 100%;
+  }
+  .cms-public:is(
+    [data-theme="rotary-service"],
+    [data-theme="rotaract-action"]
+  ) {
+    --cms-block-gap: 40px;
+  }
+  .cms-public .cms-page-collection .cms-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .cms-public .cms-collection-carousel .cms-card {
+    display: block;
+  }
+  .cms-public[data-theme="rotary-service"] .cms-hero-slide {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+  .cms-public[data-theme="rotary-service"]
+    .cms-hero-slide
+    > .cms-hero-slide-image {
+    position: static;
+    height: 240px;
+  }
+  .cms-public[data-theme="rotary-service"] .cms-hero-panel {
+    width: 100%;
+    padding: 28px 8px;
+    position: static;
+  }
+  .cms-public[data-theme="rotaract-action"] .cms-hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 24px;
+  }
+  .cms-public[data-theme="rotaract-action"] .cms-hero-image {
+    height: 290px;
+    border-radius: 64px 8px;
+  }
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .cms-feature-media
+    .cms-image {
+    height: 280px;
+  }
+  .cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"])
+    .cms-callout {
+    padding: 28px;
+  }
+  .cms-public .cms-page-intro {
+    padding-top: 0;
+  }
+  .cms-public .cms-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

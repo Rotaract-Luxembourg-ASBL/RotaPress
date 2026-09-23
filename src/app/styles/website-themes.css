@@ -1,0 +1,41 @@
+/* All theme tokens stop at this root. Shared block types remain unchanged. */
+.cms-public {
+  background: var(--paper);
+  color: var(--ink);
+}
+.cms-public .content-width {
+  max-width: var(--cms-width);
+}
+.cms-public .cms-page-title {
+  font-family: var(--cms-font);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.2;
+  margin-block: 32px 48px;
+}
+.cms-public .cms-block {
+  margin-block: var(--cms-block-gap);
+}
+.cms-public :is(.cms-card, .cms-callout) {
+  border-radius: var(--cms-radius);
+}
+.cms-public .cms-cover {
+  border-radius: var(--cms-cover-radius);
+}
+.cms-public .cms-card {
+  background: var(--panel);
+}
+.cms-public :is(.cms-callout, .cms-cover-tone-sage) {
+  background: var(--cms-soft);
+  color: var(--ink);
+}
+.cms-public .cms-cover-tone-paper {
+  background: var(--paper);
+  color: var(--ink);
+}
+.cms-public .cms-cover-tone-ink {
+  background: var(--ink);
+  color: #ffffff;
+}
+.cms-public[data-theme="minimal"] .button {
+  border-radius: var(--cms-radius);
+}

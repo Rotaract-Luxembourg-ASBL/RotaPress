@@ -1,0 +1,231 @@
+# RotaPress local development
+
+The local environment is one Node application and this repository's PostgreSQL
+and Mailpit containers, with private uploaded images in `.data/uploads`.
+No cloud credentials are needed. The [website and media guide](../guides/cms-and-media.md)
+describes page editing, publication, languages and image visibility.
+
+## Requirements and first start
+
+Use Node.js 24 to bootstrap installation and a running Docker installation with
+Compose. Project scripts use the pinned Node.js 24.21.0 runtime downloaded by pnpm;
+setup and doctor reject older runtimes. Windows requires Docker Desktop's Linux
+container engine. The scripts report missing prerequisites; they do not install
+operating-system software or modify unrelated containers.
+
+Run these commands from the repository root:
+
+```text
+node scripts/pnpm.mjs install
+node scripts/pnpm.mjs setup
+node scripts/pnpm.mjs doctor
+node scripts/pnpm.mjs dev
+```
+
+The bootstrap downloads the exact `packageManager` version, verifies its archive
+integrity and keeps its executable and package caches in ignored `.local/`.
+It invokes project scripts explicitly. An already-installed matching pnpm works
+too, but use `pnpm run setup`: plain `pnpm setup` is pnpm's own shell-configuration
+command and does not run this application's setup script.
+
+`devEngines.runtime` pins the project Node version; `pnpm-lock.yaml` records its
+download checksums. `pnpm run` and `pnpm exec`, including the bootstrap commands
+above, use this runtime. A plain `node` command outside pnpm still uses the system
+installation. Check it with `node scripts/pnpm.mjs exec node --version`.
+Update the runtime pin and lockfile together when applying security
+releases; run doctor and verification afterward. This does not install system-wide
+software.
+
+Setup preserves existing secrets and data. It creates dedicated `rotapress` and
+`rotapress_test` databases, applies reviewed migrations, and prepares a one-hour
+claim for `local-owner@example.test`. An optional synthetic nomination is:
+
+```text
+node scripts/pnpm.mjs setup --owner-email another-owner@example.test
+```
+
+An existing unexpired claim is preserved. After it expires, rerun setup to issue
+a new one. Completed installations stay locked; rerunning setup cannot create
+another owner.
+
+Setup also creates a separate `INTEGRATION_ENCRYPTION_KEY` for optional API
+credentials, preserving an existing key and refusing to replace a missing key when
+saved credentials exist. Keep it with protected recovery secrets. Live Luma API
+requests default to blocked; [connection operation](../guides/luma.md#connections) explains
+the local fixture, authorization boundary and remaining integration work.
+
+## Server configuration
+
+Normal setup generates only four values in `.env.local`: `DATABASE_URL`,
+`BETTER_AUTH_SECRET`, `APP_URL` and `INTEGRATION_ENCRYPTION_KEY`. Keep this file
+private and preserve both secrets when restarting, upgrading or restoring.
+Database migration credentials remain separate in ignored `.local/` files.
+
+Configure Google and SMTP/Resend in **Administration > Integrations**. The local
+email connection uses the project's Mailpit automatically; `SMTP_HOST`, `SMTP_PORT`,
+`MAIL_FROM`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are no longer runtime
+settings. Existing saved integration credentials are retained. If an older
+development installation uses Google environment credentials, save those through
+Integrations before updating; retain an email owner session during the transition.
+
+Advanced operator controls are optional and default to `false` when absent:
+
+| Control | Permits after separate authorization |
+| --- | --- |
+| `LUMA_API_REQUESTS_ENABLED` | Live Luma API requests |
+| `FORM_WEBHOOK_REQUESTS_ENABLED` | Outgoing form notifications to configured webhooks |
+| `CALENDAR_FEED_REQUESTS_ENABLED` | Reads from configured external calendar feeds |
+| `EMAIL_REMOTE_DELIVERY_ENABLED` | Delivery through configured SMTP/Resend connections |
+
+These are installation restrictions, not duplicate provider settings. Saving a
+connection in the panel does not override them. An operator can supply an explicit
+override and restart the app and jobs after the real integration has been authorized.
+Nothing in local setup turns them on or sends real participant email.
+
+Setup preserves an existing encryption key and refuses to generate a replacement
+while any encrypted Google, Luma, form webhook, Calendar import or email connection
+data exists. Restore the original key with the database backup in that situation.
+
+## Local URLs and protected ownership
+
+| Resource | Address |
+| --- | --- |
+| Public website | http://127.0.0.1:3000 |
+| Administration | http://127.0.0.1:3000/admin |
+| Initial setup | http://127.0.0.1:3000/setup |
+| Sign in | http://127.0.0.1:3000/sign-in |
+| Captured email | http://127.0.0.1:18025 |
+| Public health | http://127.0.0.1:3000/api/health |
+| PostgreSQL | 127.0.0.1:55432 |
+| Mailpit SMTP | 127.0.0.1:11025 |
+
+All published service ports bind to loopback. Do not expose Mailpit or create a
+public tunnel. Mailpit captures mail locally and has no external relay configured.
+
+Open `.local/setup-info.json` locally for the nominated address, then sign in
+using the real Better Auth email code delivered to Mailpit. Open the nominated
+address's latest message in the mail viewer to read that short-lived code.
+Paste the value from `.local/setup-claim.txt` into the setup form, supply the club
+identity and finish setup. The claim alone cannot grant ownership: the current
+verified identity must match the nomination. Never paste these local files into
+Git, issue descriptions, screenshots or status notes.
+
+The generic club accepts email verification. Configure Google from
+**Integrations → Google sign-in**; see [setup and security](../guides/google-authentication.md).
+Google configuration and its staff
+policy are separate; a linked Google account does not turn an email-authenticated
+session into a Google session. Live Google OAuth remains unverified until an
+authorized actual provider flow is completed. Luma link mode and API connection
+storage work locally; live Luma API validation remains unverified.
+
+## Stop, restart and production build
+
+Stop the foreground web application with `Ctrl+C`. These service commands preserve
+the PostgreSQL and Mailpit volumes:
+
+```text
+node scripts/pnpm.mjs services:stop
+node scripts/pnpm.mjs services:start
+node scripts/pnpm.mjs services:status
+node scripts/pnpm.mjs dev
+```
+
+The development launcher also processes pending form notifications and scheduled CMS publication every
+30 seconds, starting after five seconds. Ctrl+C stops both the web app and its
+active job invocation. A bounded batch can also be run explicitly:
+
+```text
+node scripts/pnpm.mjs jobs:run
+```
+
+`start` runs the production web server only. While using that command locally,
+run `jobs:run` separately to deliver pending notifications and publish due revisions. See
+[forms and submissions](../guides/forms.md) and [scheduled publication](../guides/scheduled-publication.md)
+for job state, session requirements and retry behavior.
+
+For the production build, stop any existing app using port 3000, then run:
+
+```text
+node scripts/pnpm.mjs build
+node scripts/pnpm.mjs start
+```
+
+Do not use `docker compose down --volumes` as a startup remedy. Setup does not
+reset a database or replace another project's port binding. `doctor` checks
+actual Docker, service, runtime-role, migration, Mailpit and app-port readiness.
+
+## Database authority and verification
+
+If Windows reserves the default ports, set `APP_URL` in the local runtime
+configuration to an available loopback origin and restart `dev`. For example,
+use port 4100 for development. For smoke tests and `verify`, PowerShell:
+
+```powershell
+$env:ROTAPRESS_SMOKE_PORT = '4101'
+node scripts/pnpm.mjs verify
+```
+
+The override is validated and binds only to 127.0.0.1. It does not change the
+dedicated test database or Windows port reservations.
+
+`.env.local` contains only runtime configuration. The `rotapress_app` role has
+no superuser, database creation, role creation or schema creation authority.
+Schema ownership and migration credentials live separately in
+`.local/migration.env`; container bootstrap secrets are in `.local/services.env`.
+The web process never loads those files. Public schema creation and public access
+to the application schema are revoked. Audit rows are append-only for the runtime
+role; installation and recovery claim issuance require the privileged local tool.
+CMS revisions are also append-only for the runtime role. CMS and media tables
+remain in the private application schema; browsers use authorized application
+routes rather than database credentials.
+
+Migration commands use a PostgreSQL advisory lock. They only accept known local
+database identities at the project's fixed loopback port:
+
+```text
+node scripts/pnpm.mjs db:generate
+node scripts/pnpm.mjs db:migrate
+node scripts/pnpm.mjs db:migrate:test
+node scripts/pnpm.mjs check
+node scripts/pnpm.mjs test:critical
+node scripts/pnpm.mjs browser:install
+node scripts/pnpm.mjs test:smoke
+node scripts/pnpm.mjs verify
+```
+
+Critical checks use `.local/test.env` and `rotapress_test`, never the developer
+database. Browser checks exercise library email authentication through Mailpit.
+Install Chromium once with `browser:install`; it stays in this project's `.local/browsers`.
+`test:smoke` requires a completed production build and free loopback port 3001;
+`verify` builds before running it and starts/stops its isolated browser server.
+See [testing](testing.md) for the critical catalogue and focused commands.
+Do not point these scripts at a remote database.
+
+The 800-line checker includes untracked authored files. Its exceptions are
+package lockfiles, Drizzle-generated `db/migrations/meta/*.json`, properly marked
+generated types, and generated/build/vendor/private-data directories. Generated SQL is checked.
+
+## Local owner recovery
+
+The privileged recovery command requires an existing verified, approved owner:
+
+```text
+node scripts/pnpm.mjs recover:owner --email local-owner@example.test
+```
+
+It revokes that owner's existing sessions, invalidates prior unused recovery
+claims, records an audit entry and writes a 15-minute claim to ignored
+`.local/recovery-claim.txt`. Sign in again as that nominated owner and open
+`http://127.0.0.1:3000/recovery`. Successful consumption restores the generic
+email-or-Google staff policy. It cannot add a new owner, approve an applicant,
+recover another identity or reopen installation setup.
+
+Database/file backup and restore commands are not yet supplied.
+Do not treat preserved Docker volumes as a tested backup or recovery procedure.
+
+## Dependency versions
+
+Use the pinned manifest, lockfile and container definitions as the version source.
+Update them together when applying dependency changes; do not maintain a second
+version table in documentation. See [architecture](architecture.md) and
+[release limitations](roadmap.md).

@@ -1,0 +1,1 @@
+ALTER TABLE "club"."cms_variant" ADD COLUMN "home_ever_published" boolean DEFAULT false NOT NULL;

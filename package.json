@@ -1,0 +1,78 @@
+{
+  "name": "rotapress",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.21.0",
+      "onFail": "download"
+    }
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "recover:owner": "node scripts/recover_owner.mjs",
+    "services:start": "node scripts/services.mjs start",
+    "services:stop": "node scripts/services.mjs stop",
+    "services:status": "node scripts/services.mjs status",
+    "db:migrate": "node scripts/db_migrate.mjs",
+    "db:migrate:test": "node scripts/db_migrate.mjs --test",
+    "dev": "node scripts/dev.mjs",
+    "jobs:run": "node --conditions=react-server --import tsx scripts/jobs.ts",
+    "start": "next start --hostname 127.0.0.1",
+    "build": "next build",
+    "check:files": "node scripts/check_source_size.mjs",
+    "check:types": "tsc --noEmit",
+    "check": "node scripts/pnpm.mjs check:files && node scripts/pnpm.mjs check:types && node scripts/pnpm.mjs lint",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"db/schema/*.ts\" \"tests/**/*.{ts,tsx}\"",
+    "test:critical": "vitest run",
+    "test:smoke": "playwright test",
+    "browser:install": "node scripts/install_browser.mjs",
+    "verify": "node scripts/pnpm.mjs check && node scripts/pnpm.mjs test:critical && node scripts/pnpm.mjs build && node scripts/pnpm.mjs test:smoke",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "0.5.1",
+    "@puckeditor/core": "0.23.0",
+    "better-auth": "1.7.5",
+    "drizzle-orm": "0.45.2",
+    "ical.js": "2.2.1",
+    "next": "16.3.6",
+    "nodemailer": "10.0.10",
+    "pg": "8.23.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sanitize-html": "2.17.7",
+    "server-only": "0.0.1",
+    "sharp": "0.35.4",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.3.6",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.6",
+    "@types/nodemailer": "8.0.2",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/sanitize-html": "2.16.1",
+    "drizzle-kit": "0.31.10",
+    "eslint": "10.11.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.12.0",
+    "prettier": "3.9.8",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.1"
+  }
+}

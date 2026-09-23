@@ -1,0 +1,235 @@
+/* Authentication and first ownership. */
+.auth-layout {
+  max-width: 1160px;
+  margin: 45px auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 110px;
+  padding: 0 48px 70px;
+  align-items: start;
+}
+
+.auth-introduction {
+  padding-top: 45px;
+}
+
+.auth-introduction .eyebrow {
+  color: var(--club-accent);
+}
+
+.auth-introduction h1 {
+  font-size: clamp(52px, 6vw, 82px);
+  margin: 22px 0 24px;
+}
+
+.auth-introduction p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 17px;
+  max-width: 380px;
+  line-height: 1.85;
+}
+
+.auth-flower {
+  font-size: 130px;
+  line-height: 1;
+  margin-top: 40px;
+  color: #a7b494;
+}
+
+.auth-panel {
+  box-shadow: 0 12px 35px #354a2b05;
+  padding: 34px;
+}
+
+.auth-panel > .eyebrow {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.auth-panel h2 {
+  font-size: 34px;
+  margin-bottom: 30px;
+}
+
+.auth-panel .form-stack .muted strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.otp-input {
+  font-size: 24px;
+  letter-spacing: 0.45em;
+  text-align: center;
+  min-height: 56px;
+}
+
+.auth-alternative {
+  border-top: 1px solid var(--line);
+  margin-top: 27px;
+  padding-top: 22px;
+}
+
+.auth-footnote {
+  padding-top: 22px;
+}
+
+.setup-page {
+  padding-block: 55px 70px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(220px, 1fr);
+  gap: 46px;
+  align-items: start;
+}
+
+.section-description {
+  margin-bottom: 26px;
+}
+
+.setup-aside,
+.settings-aside {
+  padding: 25px 8px 20px;
+}
+
+.setup-aside h2,
+.settings-aside h2 {
+  font-size: 38px;
+  margin-block: 15px 23px;
+}
+
+.setup-aside p:not(.eyebrow),
+.settings-aside > p:not(.eyebrow) {
+  color: var(--muted);
+  margin-bottom: 22px;
+  line-height: 1.85;
+}
+
+.setup-aside strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.large-asterisk {
+  display: block;
+  font-family: var(--sans);
+  font-size: 100px;
+  line-height: 1;
+  color: var(--club-accent);
+  margin-bottom: 30px;
+}
+
+.membership-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+  padding-block: 75px;
+  max-width: 1110px;
+}
+
+.membership-intro h1 {
+  font-size: 60px;
+  margin-block: 24px;
+}
+
+.membership-intro p:not(.eyebrow) {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 380px;
+}
+
+.membership-intro .large-asterisk {
+  color: #a3b391;
+  margin-top: 26px;
+}
+
+.membership-panel {
+  margin-top: 8px;
+  padding: 36px;
+}
+
+.membership-panel h2 {
+  font-size: 34px;
+  margin-top: 18px;
+}
+
+.membership-panel > p:not(.eyebrow) {
+  margin-block: 20px;
+  color: var(--muted);
+}
+
+.membership-panel .button {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.membership-account {
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.membership-panel .account-email {
+  border: 1px solid var(--line);
+  padding: 10px 13px;
+  font-size: 13px;
+  background: var(--paper);
+  border-radius: 4px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  background: #f0e9d8;
+  border: 1px solid #e1d6bb;
+  color: #695a2e;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 30px;
+  margin-top: 15px;
+}
+
+.status-approved {
+  color: #365a37;
+  background: #eaf1e3;
+  border-color: #cddac3;
+}
+
+.status-rejected,
+.status-suspended {
+  color: #813e36;
+  background: #f7e9e1;
+  border-color: #e7ccc0;
+}
+
+.google-sign-in {
+  width: 100%;
+  background: white;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  border-radius: 0.55rem;
+  gap: 0.85rem;
+  font-weight: 500;
+  min-height: 48px;
+}
+.google-sign-in:hover {
+  background: #f2f5fa;
+}
+.google-sign-in svg {
+  flex-shrink: 0;
+}
+.auth-provider-divider {
+  text-align: center;
+  color: #65706c;
+  margin-block: 1.2rem;
+  font-size: 0.9rem;
+}
+.signed-in-actions {
+  display: grid;
+  gap: 1rem;
+}

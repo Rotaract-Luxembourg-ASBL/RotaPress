@@ -1,0 +1,570 @@
+/* Member home, profile and connected feature screens. */
+.member-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(255px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.member-home-primary,
+.member-home-aside {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.member-card {
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.member-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.member-card-heading p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 5px;
+}
+.member-card-heading > svg {
+  color: #7c929c;
+  flex-shrink: 0;
+}
+.member-card-heading > .text-link {
+  padding-top: 2px;
+}
+.member-upcoming {
+  padding-bottom: 16px;
+}
+.member-agenda,
+.member-response-list,
+.member-booking-preview {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.member-agenda li + li {
+  border-top: 1px solid #edf1f4;
+}
+.member-agenda a {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 20px 0;
+}
+.member-agenda a:hover .member-agenda-copy > strong {
+  color: var(--club-accent);
+  text-decoration: underline;
+}
+.member-date {
+  width: 54px;
+  flex-shrink: 0;
+  text-align: center;
+  background: #f0f5f6;
+  border-radius: 8px;
+  padding: 6px;
+}
+.member-date small {
+  display: block;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--club-accent);
+}
+.member-date strong {
+  font-size: 23px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.member-agenda-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.member-agenda-copy > strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.member-agenda-copy > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.member-agenda-copy .member-activity-time {
+  color: var(--club-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+.member-row-arrow {
+  margin-left: auto;
+  color: #6d8792;
+}
+.member-card-footnote {
+  border-top: 1px solid #edf1f4;
+  padding-top: 14px;
+  margin-top: 10px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.member-account-card {
+  background: linear-gradient(135deg, #eef5f5, #f9fcfc);
+  border-color: #d8e6e7;
+}
+.member-account-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: white;
+  color: var(--club-accent);
+  margin-bottom: 20px;
+}
+.member-account-card h2 {
+  font-size: 1.25rem;
+  margin-top: 7px;
+}
+.member-account-card p {
+  color: var(--muted);
+  margin-top: 9px;
+  font-size: 13px;
+}
+.member-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--club-accent);
+}
+.member-card-link:hover {
+  text-decoration: underline;
+}
+.member-empty {
+  padding: 22px 12px 28px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.member-empty > svg {
+  color: #62838b;
+  background: #f0f5f6;
+  border-radius: 10px;
+  box-sizing: content-box;
+  padding: 12px;
+  margin-bottom: 3px;
+}
+.member-empty p {
+  color: var(--muted);
+  max-width: 355px;
+  font-size: 13px;
+}
+.member-empty > .button {
+  margin-top: 6px;
+}
+.member-empty-copy {
+  color: var(--muted);
+  font-size: 13px;
+}
+.member-response-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.member-response-list li + li {
+  border-top: 1px solid var(--line);
+}
+.member-response-preview .member-empty {
+  padding: 0 0 4px;
+  text-align: left;
+  justify-items: start;
+  gap: 4px;
+}
+.member-response-preview .member-empty > svg {
+  display: none;
+}
+.member-response-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.member-response-list time {
+  font-size: 12px;
+  color: var(--muted);
+}
+.member-response-list h3 {
+  overflow-wrap: anywhere;
+}
+.member-row-icon {
+  color: #7b919d;
+}
+.member-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f0f5f4;
+  color: #376657;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.member-booking-preview li {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 10px 0;
+}
+.member-booking-preview strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.member-reminder-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+  color: var(--club-accent);
+}
+.member-reminder-link > span:first-of-type {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.member-reminder-link strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.member-reminder-link span span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.member-section-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  margin: -4px 0 24px;
+  overflow-x: auto;
+}
+.member-section-tabs a {
+  padding: 8px 0 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.member-section-tabs a[aria-current] {
+  border-color: var(--club-accent);
+  color: var(--club-accent);
+}
+.member-bookings > h2,
+.member-booking-detail > h2 {
+  margin-bottom: 10px;
+}
+.member-bookings > p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-block: 12px;
+}
+.member-bookings .content-rows {
+  margin-block: 16px;
+}
+.member-bookings .content-row {
+  background: transparent;
+  padding: 18px 0;
+  gap: 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.member-bookings .content-row strong {
+  font-size: 14px;
+}
+.member-bookings .content-row p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.member-booking-detail {
+  display: grid;
+  gap: 16px;
+}
+.member-booking-detail .guest-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.member-booking-detail .guest-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.member-booking-detail .guest-facts dd {
+  margin: 5px 0;
+}
+.member-booking-detail .guest-booking {
+  background: #f3f7f8;
+  padding: 20px;
+  border-radius: 9px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.member-profile-form {
+  margin-bottom: 24px;
+}
+.member-profile-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.member-profile-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.member-profile-fields input,
+.member-profile-fields textarea,
+.member-profile-fields select {
+  width: 100%;
+  border: 1px solid #ced9e0;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  min-height: 44px;
+  background: #fff;
+  color: var(--ink);
+}
+.member-profile-fields input[readonly] {
+  background: #f7f9fa;
+  color: var(--muted);
+}
+.member-profile-fields .field-help {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+}
+.member-field-wide {
+  grid-column: 1 / -1;
+}
+.member-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 24px;
+}
+.member-save-bar > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.member-profile-form > .notice {
+  margin-bottom: 20px;
+}
+.member-portal .membership-panel {
+  padding: 24px;
+  margin: 0 0 24px;
+  max-width: none;
+  border-radius: 12px;
+}
+.member-portal .membership-panel h2 {
+  font-size: 1.15rem;
+  margin: 8px 0;
+}
+.member-portal .membership-panel > p:not(.eyebrow) {
+  font-size: 13px;
+  color: var(--muted);
+}
+.member-portal .membership-panel .eyebrow {
+  font-size: 10px;
+}
+.member-portal .membership-panel .status-badge {
+  margin-block: 10px;
+  font-size: 10px;
+}
+.member-portal .membership-account {
+  display: none;
+}
+.member-portal .member-check-status {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 36px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+.member-calendar .calendar-period h2 {
+  font-size: 1.1rem;
+}
+.member-calendar .calendar-filters {
+  font-size: 12px;
+}
+.member-calendar .calendar-toolbar {
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.member-calendar .calendar-view-footer {
+  font-size: 11px;
+}
+.member-calendar .calendar-subscription-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.member-calendar .calendar-empty h3 {
+  font-size: 1rem;
+}
+@media (min-width: 800px) {
+  .member-sidebar {
+    position: sticky;
+    top: 0;
+    max-height: 100dvh;
+    min-height: calc(100dvh - 80px);
+  }
+}
+@media (max-width: 1100px) {
+  .member-layout {
+    grid-template-columns: 194px minmax(0, 1fr);
+  }
+  .member-main {
+    padding-inline: 24px;
+  }
+  .member-home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-home-aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .member-reminder-link {
+    grid-column: 1 / -1;
+  }
+  .member-page-heading {
+    align-items: start;
+  }
+  .member-brand .site-brand-name {
+    max-width: 220px;
+  }
+}
+@media (max-width: 799px) {
+  .member-topbar {
+    height: 72px;
+    padding: 0 20px;
+    gap: 12px;
+  }
+  .member-topbar-actions {
+    gap: 12px;
+  }
+  .member-portal-label,
+  .member-sidebar {
+    display: none;
+  }
+  .member-menu-button {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .member-mobile-website {
+    display: flex;
+  }
+  .member-layout {
+    display: block;
+  }
+  .member-main {
+    padding: 28px 20px 20px;
+  }
+  .member-page-heading {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .member-main .member-card {
+    padding: 20px;
+  }
+  .member-home-aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-profile-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-calendar .calendar-toolbar,
+  .member-calendar .calendar-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .member-calendar .calendar-period {
+    flex-wrap: wrap;
+  }
+  .member-calendar .calendar-period h2 {
+    min-width: 0;
+    flex: 1;
+  }
+  .member-footer {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+@media (max-width: 520px) {
+  .member-website-link {
+    display: none;
+  }
+  .member-brand .site-brand-name {
+    font-size: 11px;
+    max-width: 110px;
+  }
+  .member-brand .site-logo-small .template-brand-mark .site-logo {
+    max-width: 66px;
+    width: 66px;
+  }
+  .member-brand .site-brand > a {
+    gap: 8px;
+  }
+  .member-brand {
+    max-width: 210px;
+  }
+  .member-brand .club-text-identity {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+  .member-topbar {
+    padding-inline: 16px;
+  }
+  .member-main {
+    padding-inline: 16px;
+  }
+  .member-card-heading {
+    gap: 10px;
+  }
+  .member-agenda a {
+    gap: 12px;
+  }
+  .member-agenda-copy > strong {
+    font-size: 14px;
+  }
+  .member-save-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .member-response-list li {
+    flex-wrap: wrap;
+  }
+  .member-response-list .member-pill {
+    margin-left: 32px;
+  }
+  .member-bookings .content-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

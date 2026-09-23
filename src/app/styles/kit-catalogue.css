@@ -1,0 +1,50 @@
+.kit-catalogue {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-block: 24px;
+}
+.kit-card {
+  padding: 0;
+  overflow: hidden;
+}
+.kit-card > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1440 / 700;
+  object-fit: cover;
+  object-position: top;
+  border-bottom: 1px solid var(--line);
+}
+.kit-card > div {
+  padding: 24px;
+}
+.kit-card h3 {
+  font-size: 1.5rem;
+}
+.kit-pattern-thumb {
+  height: 55px;
+  background: #f1f3f0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+.kit-pattern-thumb span {
+  background: #9aa99c;
+  height: 65%;
+  flex: 1;
+  border-radius: 2px;
+}
+.kit-pattern-thumb span:nth-child(2) {
+  height: 100%;
+  background: #ccd6ce;
+}
+@media (max-width: 700px) {
+  .kit-catalogue {
+    grid-template-columns: 1fr;
+  }
+}

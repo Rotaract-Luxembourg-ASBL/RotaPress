@@ -1,0 +1,81 @@
+.editor-image-container {
+  width: 100%;
+}
+
+.editor-image-resize-handle {
+  position: absolute;
+  z-index: 22;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid var(--editor-accent, #385b48);
+  border-radius: 3px;
+  background: #fff;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.editor-image-resize-handle[data-handle-side="right"] {
+  right: -7px;
+}
+
+.editor-image-resize-handle[data-handle-side="left"] {
+  left: -7px;
+}
+
+.editor-image-resize-handle[data-resize-handle="edge"] {
+  top: calc(50% - 7px);
+  cursor: ew-resize;
+}
+
+.editor-image-resize-handle[data-resize-handle="corner"] {
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.editor-image-resize-handle[data-resize-handle="corner"][data-handle-side="left"] {
+  cursor: nesw-resize;
+}
+
+.editor-image-resize-handle:focus-visible {
+  outline: 3px solid #2468cc;
+  outline-offset: 3px;
+}
+
+.editor-image-size {
+  position: absolute;
+  z-index: 21;
+  left: 8px;
+  top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #203e2be6;
+  color: #fff;
+  font: 11px/1.4 var(--font-sans, sans-serif);
+  pointer-events: none;
+}
+
+.editor-image-width-field label {
+  display: grid;
+  gap: 6px;
+}
+
+.editor-image-width-field button {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid #c9d4ca;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.editor-image-flip-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-image-flip-field input {
+  width: 16px;
+  height: 16px;
+}

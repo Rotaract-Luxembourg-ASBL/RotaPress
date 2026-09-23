@@ -1,0 +1,5 @@
+ALTER TABLE "club"."event" ADD COLUMN "cancelled_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "club"."event" ADD COLUMN "creation_request_id" uuid;--> statement-breakpoint
+ALTER TABLE "club"."event" ADD COLUMN "creation_review_token" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "event_creation_request" ON "club"."event" USING btree ("organization_id","created_by","creation_request_id") WHERE "club"."event"."creation_request_id" is not null;--> statement-breakpoint
+ALTER TABLE "club"."event" ADD CONSTRAINT "event_creation_receipt" CHECK (("club"."event"."creation_request_id" is null and "club"."event"."creation_review_token" is null) or ("club"."event"."creation_request_id" is not null and "club"."event"."creation_review_token" is not null and "club"."event"."creation_review_token" ~ '^[a-f0-9]{64}$'));

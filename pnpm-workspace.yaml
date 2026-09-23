@@ -1,0 +1,22 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+storeDir: .local/pnpm-store
+cacheDir: .local/pnpm-cache
+saveExact: true
+overrides:
+  "@esbuild-kit/core-utils>esbuild": 0.28.2
+minimumReleaseAgeExclude:
+  - tsx@4.23.15
+  # Exact security patch exceptions; keep the general release-age policy intact.
+  - '@next/env@16.3.6'
+  - '@next/eslint-plugin-next@16.3.6'
+  - '@next/swc-darwin-arm64@16.3.6'
+  - '@next/swc-darwin-x64@16.3.6'
+  - '@next/swc-linux-arm64-gnu@16.3.6'
+  - '@next/swc-linux-arm64-musl@16.3.6'
+  - '@next/swc-linux-x64-gnu@16.3.6'
+  - '@next/swc-linux-x64-musl@16.3.6'
+  - '@next/swc-win32-arm64-msvc@16.3.6'
+  - '@next/swc-win32-x64-msvc@16.3.6'
+  - next@16.3.6

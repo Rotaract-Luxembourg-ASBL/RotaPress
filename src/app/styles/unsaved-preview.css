@@ -1,0 +1,122 @@
+.unsaved-preview-dialog {
+  width: calc(100vw - 1.5rem);
+  max-width: none;
+  height: calc(100dvh - 1.5rem);
+  max-height: none;
+  padding: 0;
+  border: 1px solid #ccd2dc;
+  border-radius: 0.75rem;
+  background: #eef0f4;
+  color: #18283e;
+}
+.unsaved-preview-dialog[open],
+.unsaved-preview-panel {
+  display: flex;
+  flex-direction: column;
+}
+.unsaved-preview-dialog::backdrop {
+  background: #15253c99;
+}
+.unsaved-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: white;
+  border-bottom: 1px solid #ccd2dc;
+}
+.unsaved-preview-toolbar strong,
+.unsaved-preview-toolbar span {
+  display: block;
+}
+.unsaved-preview-toolbar span,
+.unsaved-preview-status {
+  font-size: 0.78rem;
+}
+.unsaved-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.unsaved-preview-actions button,
+.unsaved-preview-status button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #ccd2dc;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  background: white;
+  font-size: 0.8rem;
+}
+.unsaved-preview-actions button[aria-pressed="true"] {
+  background: #18283e;
+  color: white;
+}
+.unsaved-preview-status {
+  padding: 0.5rem 1rem;
+  min-height: 2rem;
+}
+.unsaved-preview-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+.unsaved-preview-stage iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: white;
+}
+.unsaved-preview-stage[data-device="phone"] iframe {
+  width: 390px;
+  max-width: 100%;
+}
+.unsaved-preview-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 42vw;
+  z-index: 90;
+  background: #eef0f4;
+  color: #18283e;
+  border-left: 1px solid #ccd2dc;
+}
+.unsaved-preview-panel .unsaved-preview-toolbar {
+  flex-direction: column;
+  align-items: flex-start;
+}
+@media (min-width: 1101px) {
+  .editor-workspace:has(.unsaved-preview-panel) {
+    width: 58vw;
+  }
+  .editor-workspace:has(.unsaved-preview-panel) .editor-document-label {
+    display: none;
+  }
+  .admin-main:has(.unsaved-preview-panel) {
+    padding-right: 44vw;
+  }
+}
+@media (max-width: 1100px) {
+  .unsaved-preview-panel {
+    width: 100%;
+  }
+  .preview-mode-button {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .unsaved-preview-dialog {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .unsaved-preview-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+}

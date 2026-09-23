@@ -1,0 +1,100 @@
+/* Event content blocks share the current CMS appearance and media renderer. */
+.event-contact-block,
+.event-share-block {
+  padding: clamp(20px, 4vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: var(--cms-radius, 18px);
+  background: var(--panel);
+}
+.event-contact-block h2,
+.event-share-block h2,
+.event-flyer-block h2 {
+  margin: 0 0 16px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+.event-contact-introduction {
+  white-space: pre-line;
+}
+.event-contact-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+.event-contact-links a {
+  color: var(--club-accent);
+  text-underline-offset: 3px;
+}
+.event-flyer-block {
+  text-align: center;
+}
+.event-flyer-block .cms-image-block {
+  margin-block: 20px 16px;
+}
+.event-flyer-block figcaption {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.event-share-actions {
+  max-width: 720px;
+}
+.event-share-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.event-share-link {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.event-share-link input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+.event-share-status {
+  min-height: 1.5em;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.event-share-block .field-help {
+  margin: 12px 0 0;
+}
+.event-page-panel .event-sharing-image h3 {
+  margin-bottom: 12px;
+}
+.event-page-panel .event-sharing-image .field-help {
+  margin: 12px 0 0;
+}
+.cms-design[data-tone="dark"] > :is(.event-contact-block, .event-share-block) {
+  background: transparent;
+  color: inherit;
+}
+.cms-design[data-tone="dark"]
+  :is(
+    .event-contact-links a,
+    .event-share-status,
+    .event-share-block .field-help,
+    .event-flyer-block > a
+  ) {
+  color: inherit;
+}
+@media (max-width: 480px) {
+  .event-share-buttons .button {
+    flex: 1 1 120px;
+  }
+}

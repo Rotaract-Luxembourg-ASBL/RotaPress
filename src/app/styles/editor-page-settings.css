@@ -1,0 +1,54 @@
+/* Metadata controls stay available independently of the selected content block. */
+.editor-document-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.editor-document-name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.editor-document-name svg {
+  flex-shrink: 0;
+}
+.editor-document-name:hover {
+  background: #eff1f3;
+}
+.editor-page-settings-button {
+  white-space: nowrap;
+}
+.editor-page-settings .editor-field-help {
+  margin: -8px 0 20px;
+  color: #656e78;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.editor-page-settings .editor-settings-group h3 {
+  font: 600 13px/1.5 var(--sans);
+  letter-spacing: 0;
+}
+.editor-page-settings .editor-settings-group > .editor-help {
+  margin: 8px 0 18px;
+}
+@media (max-width: 620px) {
+  .editor-toolbar-actions {
+    flex-wrap: wrap;
+  }
+  .editor-toolbar-actions .editor-page-settings-button {
+    margin-left: auto;
+  }
+  .editor-toolbar-actions .editor-preview-link {
+    flex-basis: 100%;
+    padding-block: 2px;
+  }
+}

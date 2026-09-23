@@ -1,0 +1,50 @@
+export const en = {
+  product: "RotaPress",
+  public: {
+    eyebrow: "A place to belong",
+    introduction: "Good things start with people.",
+    join: "Become a member",
+    signIn: "Sign in",
+    administration: "Administration",
+    footer: "A home for your community.",
+    emptyTitle: "Your community starts here.",
+    emptyDescription:
+      "Set up your club’s identity, welcome members, and make a space of your own.",
+    setup: "Set up your club",
+  },
+  common: {
+    loading: "Loading…",
+    retry: "Try again",
+    save: "Save changes",
+    saving: "Saving…",
+    saved: "Changes saved.",
+    signOut: "Sign out",
+    back: "Back to website",
+    error: "Something went wrong. Please try again.",
+  },
+  auth: {
+    eyebrow: "Welcome to your community",
+    title: "Come on in.",
+    description:
+      "A short email code is all you need to sign in. Membership is reviewed separately by your club.",
+    email: "Email address",
+    send: "Send verification code",
+    sending: "Sending code…",
+    code: "Verification code",
+    verify: "Verify and sign in",
+    verifying: "Verifying…",
+    sent: "Check your inbox for your verification code.",
+    change: "Use a different email",
+    google: "Continue with Google",
+  },
+  admin: {
+    title: "Club administration",
+    overview: "Overview",
+    members: "Members",
+    settings: "Settings",
+    viewSite: "View website",
+    accessTitle: "Your membership comes first.",
+    accessDescription:
+      "Administration is available to approved members with the required permissions.",
+  },
+};

@@ -1,0 +1,42 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+.npm/
+*.tgz
+
+# Generated Next.js output and tooling caches
+.next/
+out/
+dist/
+.cache/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+
+# Local configuration, credentials and private installation data
+.env
+.env.*
+!.env.example
+.local/
+.data/
+backups/
+*.bundle
+
+# Tests and diagnostics
+coverage/
+test-results/
+playwright-report/
+logs/
+*.log
+*.pid
+*.pid.lock
+report.*.json
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo

@@ -1,0 +1,81 @@
+/* Shared public themes and the same Puck canvas. Administration keeps its own style. */
+.cms-public:is([data-theme="rotary-service"], [data-theme="rotaract-action"]) {
+  & .cms-calendar {
+    --accent: var(--club-accent);
+    container-type: inline-size;
+    padding: clamp(16px, 3vw, 32px);
+    border: 1px solid var(--line);
+    border-radius: var(--cms-radius);
+    background: var(--panel);
+  }
+  & .cms-calendar > h2 {
+    margin: 0 0 24px;
+  }
+  & .calendar-view .calendar-toolbar .calendar-period h2 {
+    font-size: clamp(1.05rem, 2vw, 1.4rem);
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  & .calendar-empty h3 {
+    font-size: 1.15rem;
+    line-height: 1.4;
+  }
+  & .calendar-view .button {
+    padding: 8px 12px;
+  }
+  & .forms-public {
+    padding: clamp(20px, 3vw, 32px);
+    border: 1px solid var(--line);
+    border-radius: var(--cms-radius);
+    min-width: 0;
+    width: 100%;
+  }
+  & .forms-public h2 {
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    margin-top: 0;
+  }
+  & .forms-public h3 {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+  & .forms-public[data-form-corners="square"] {
+    border-radius: 0;
+  }
+  & .forms-public[data-form-corners="square"] .button {
+    border-radius: 0;
+  }
+  & .cms-form-preview {
+    min-width: 0;
+  }
+  & .cms-columns .cms-card-grid {
+    grid-template-columns: 1fr;
+  }
+  & .cms-columns .cms-card h3 {
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    line-height: 1.3;
+  }
+  & .site-footer .site-column-center .cms-button-row {
+    margin: 0;
+  }
+  & .site-footer .site-column-center .cms-button-row .button {
+    min-height: 36px;
+    border: 0;
+    padding: 4px 0;
+    background: transparent;
+    border-radius: 0;
+    text-align: left;
+  }
+}
+
+@container (max-width: 600px) {
+  .cms-calendar .calendar-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .cms-calendar .calendar-period {
+    justify-content: space-between;
+  }
+  .cms-calendar .calendar-period h2 {
+    min-width: 0;
+  }
+}

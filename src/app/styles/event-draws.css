@@ -1,0 +1,202 @@
+.prize-workspace-tabs {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.prize-workspace-tabs button {
+  flex-shrink: 0;
+}
+.event-draws {
+  min-width: 0;
+}
+.draw-workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding: 0;
+  margin: 1.75rem 0;
+  list-style: none;
+}
+.draw-workflow li {
+  display: grid;
+  gap: 0.5rem;
+}
+.draw-workflow span {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.draw-setup-note {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 0.625rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.draw-setup-note p {
+  margin-bottom: 0.75rem;
+}
+.draw-detail {
+  display: grid;
+  gap: 1.25rem;
+}
+.draw-detail > .inline-button {
+  justify-self: start;
+}
+.draw-detail .entry-totals {
+  margin: 0;
+}
+.draw-results,
+.draw-evidence {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: var(--panel);
+  min-width: 0;
+}
+.draw-evidence summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.draw-evidence p,
+.draw-evidence label {
+  margin-top: 1rem;
+}
+.draw-evidence ol {
+  padding-left: 1.25rem;
+}
+.draw-evidence li {
+  padding-block: 0.75rem;
+}
+.draw-candidate-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.draw-candidate-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.875rem;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.draw-candidate-list li:last-child {
+  border-bottom: 0;
+}
+.draw-candidate-list small {
+  display: block;
+  margin-top: 0.4rem;
+}
+.draw-dialog-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.draw-fields {
+  display: grid;
+  gap: 1.25rem;
+}
+.draw-fields label {
+  display: grid;
+  gap: 0.5rem;
+}
+.draw-fields .checkbox-label {
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+.draw-fields input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 0;
+  margin-top: 0.2rem;
+}
+.draw-fields .draw-prize-choice {
+  grid-template-columns: minmax(0, 1fr) 5rem;
+  align-items: center;
+}
+.draw-fields details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.draw-steps {
+  display: flex;
+  list-style: none;
+  gap: 1rem;
+  padding: 0 0 1.25rem;
+  margin: 0 0 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+.draw-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.draw-steps span {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #edf0f3;
+  flex-shrink: 0;
+}
+.draw-steps li[aria-current] {
+  color: var(--ink);
+  font-weight: 650;
+}
+.draw-steps li[aria-current] span {
+  background: #f3e9dc;
+}
+.draw-winner-choice {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+.draw-public-preview {
+  padding: 1rem;
+  background: #f5f7f2;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+.draw-public-preview .cms-block {
+  padding: 1rem 0;
+}
+.event-winner-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+}
+.event-winner-list li {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .draw-workflow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .draw-steps {
+    gap: 0.6rem;
+  }
+  .draw-steps li {
+    flex-direction: column;
+    align-items: start;
+    flex: 1;
+  }
+  .draw-candidate-list li {
+    flex-wrap: wrap;
+  }
+}

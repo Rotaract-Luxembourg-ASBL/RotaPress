@@ -1,0 +1,1 @@
+DROP INDEX "club"."cms_default_site_part";

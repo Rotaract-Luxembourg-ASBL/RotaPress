@@ -1,0 +1,60 @@
+/* Dedicated event presentation; no club-theme or administration selectors. */
+.cms-event-page {
+  font-family: var(--cms-font);
+  isolation: isolate;
+}
+.cms-event-page .content-width {
+  width: calc(100% - 64px);
+  max-width: var(--cms-width);
+}
+.cms-event-page .cms-content {
+  padding-block: 28px 80px;
+}
+.cms-event-page :is(h1, h2, h3, input, select, textarea, button) {
+  font-family: var(--cms-font);
+}
+.cms-event-page :is(h1, h2) {
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+.cms-event-page .cms-page-intro {
+  padding-block: 44px 28px;
+}
+.cms-event-page :is(.cms-page-title, .cms-hero h1, .cms-page-intro h1) {
+  font-size: clamp(2.4rem, 5vw, 4.6rem);
+  line-height: 1.06;
+}
+.cms-event-page .cms-event-summary {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  margin-block: 0 32px;
+}
+.cms-event-page .button {
+  border-radius: 9px;
+  font-weight: 650;
+}
+.cms-event-page .forms-public {
+  max-width: 720px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+.cms-event-page :focus-visible {
+  outline-color: var(--club-accent);
+}
+@media (max-width: 640px) {
+  .cms-event-page .content-width {
+    width: calc(100% - 32px);
+  }
+  .cms-event-page .cms-content {
+    padding-block: 20px 48px;
+  }
+  .cms-event-page .cms-page-intro {
+    padding-block: 24px 16px;
+  }
+  .cms-event-page :is(.forms-public, .cms-event-summary) {
+    padding: 20px;
+  }
+}
