@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { en } from "@/locales/en";
 
@@ -15,13 +16,19 @@ export function Brand({
 }) {
   return (
     <Link href="/" className="brand" aria-label={`${name} home`}>
-      <span className="brand-mark" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-      </span>
-      {!compact && <span>{name}</span>}
+      <Image
+        src={
+          compact || name !== en.product
+            ? "/brand/rotapress-mark.svg"
+            : "/brand/rotapress-logo.svg"
+        }
+        width={compact || name !== en.product ? 36 : 185}
+        height={36}
+        alt=""
+        className="rotapress-logo"
+        priority
+      />
+      {!compact && name !== en.product && <span>{name}</span>}
     </Link>
   );
 }

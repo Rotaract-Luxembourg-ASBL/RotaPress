@@ -3,6 +3,7 @@ import { parseEnv } from "node:util";
 import { spawn } from "node:child_process";
 import { startLumaFixture } from "../tests/browser/luma-provider-fixture.mjs";
 import { smokePort, smokeOrigin } from "./smoke_origin.mjs";
+import { compose } from "./local_common.mjs";
 
 const test = parseEnv(readFileSync(".local/test.env", "utf8"));
 const local = parseEnv(readFileSync(".env.local", "utf8"));
@@ -17,6 +18,7 @@ if (
   );
 }
 const fixture = await startLumaFixture();
+compose(["--profile", "development", "up", "--detach", "--wait", "mailpit"]);
 if (!/^[a-f0-9]{64}$/.test(process.env.ROTAPRESS_TEST_ENCRYPTION_KEY ?? ""))
   throw new Error("Browser fixture key is required.");
 const child = spawn(
@@ -42,6 +44,8 @@ const child = spawn(
       FORM_WEBHOOK_REQUESTS_ENABLED: "false",
       CALENDAR_FEED_REQUESTS_ENABLED: "false",
       EMAIL_REMOTE_DELIVERY_ENABLED: "false",
+      ROTAPRESS_ENVIRONMENT: "test",
+      EMAIL_PROVIDER: "development",
       LUMA_FIXTURE_ORIGIN: fixture.origin,
       NEXT_TELEMETRY_DISABLED: "1",
     },

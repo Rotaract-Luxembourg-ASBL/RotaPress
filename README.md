@@ -1,8 +1,10 @@
-# RotaPress
+![RotaPress — A home for your club.](public/brand/rotapress-readme.svg)
 
-An open-source website and club management platform for clubs and nonprofit
-organizations. Publish a website, manage membership, collect responses and run
-events from one application, with one club per installation.
+[Get started](#run-locally) · [Documentation](docs/README.md) · [Contribute](CONTRIBUTING.md) · [Brand assets](docs/guides/rotapress-brand.md)
+
+An open-source home for Rotary, Rotaract and other community organizations.
+Build your website, welcome members, collect responses and organize events
+from one application. One installation, your club, your identity.
 
 **Status: pre-release, under active development.** The application runs locally;
 production deployment and full backup/restore acceptance are still pending.
@@ -22,7 +24,7 @@ See the [roadmap and limitations](docs/development/roadmap.md).
 - **Maintain calendars:** recurring activities, public/member audiences, calendar
   imports, subscriptions and reminders.
 - **Connect services:** optional Google sign-in, Luma, SMTP and Resend integrations.
-  Local development uses email verification through Mailpit and needs no cloud account.
+  Configure the initial email sender before the first owner signs in.
 
 Google, Luma, remote calendar feeds and external email still need real-provider
 verification. Native paid checkout, check-in and production draw activation are
@@ -39,18 +41,33 @@ git clone https://github.com/Rotaract-Luxembourg-ASBL/RotaPress.git
 cd RotaPress
 node scripts/pnpm.mjs install
 node scripts/pnpm.mjs setup
-node scripts/pnpm.mjs dev
 ```
 
 If you already have a checkout, start with the install command. Use the wrapper
 shown above: plain `pnpm setup` is pnpm's own command, not this project's setup.
 
-1. Open [owner setup](http://127.0.0.1:3000/setup).
-2. Sign in as the nominated synthetic owner, `local-owner@example.test`, using
-   the email verification code in [Mailpit](http://127.0.0.1:18025).
-3. Read `.local/setup-claim.txt` on your own machine, enter that one-hour claim
-   in the setup form, and complete your club's details. Keep the claim private.
-4. Open [administration](http://127.0.0.1:3000/admin) and create your content.
+1. Configure **Resend or SMTP in the server environment** using the
+   [first-run email guide](docs/guides/email-setup.md). Owner verification needs
+   this sender before admin exists. Keep credentials private in `.env.local`.
+2. Nominate an inbox you control and start the app:
+
+   ```sh
+   node scripts/pnpm.mjs setup --owner-email your-real-address@example.org
+   node scripts/pnpm.mjs dev
+   ```
+
+3. Open [owner setup](http://127.0.0.1:3000/setup), request a verification code and
+   read it in your inbox. Verify the code, enter your club details and paste the
+   private one-hour claim from `.local/setup-claim.txt`.
+4. In [administration](http://127.0.0.1:3000/admin), open **Website → Templates**,
+   preview a Rotary or Rotaract website, and make it yours. Templates start as
+   private drafts; review your content before publishing.
+
+Setup guides you through email readiness, owner verification and club details.
+No demo members or events are created. Admin Email settings can replace the
+server sender afterward. If the claim expires, rerun setup with the same owner.
+For contributor work without a real sender, use the separate
+[development instructions](docs/development/local-development.md#development-email-only).
 
 Setup creates separate development and test databases, local secrets and protected
 owner setup. It preserves existing data and cannot claim an installed club again.
@@ -71,7 +88,7 @@ node scripts/pnpm.mjs doctor
 Verification runs the 800-line file guard, strict TypeScript, lint, focused tests
 against PostgreSQL, a production build and two principal Chromium journeys.
 Tests use a dedicated disposable database, separate from your development data.
-Provider fixtures and Mailpit checks do not establish live integration support.
+Synthetic tests do not establish live integration support or real inbox delivery.
 See [testing](docs/development/testing.md) for focused commands.
 
 ## Documentation
@@ -87,7 +104,7 @@ See [testing](docs/development/testing.md) for focused commands.
 
 One Next.js App Router application using TypeScript, PostgreSQL 17, Drizzle with
 the `pg` driver, Better Auth and Puck. Local files store uploads; PostgreSQL stores
-durable jobs; Mailpit captures development email. Exact versions live in
+durable jobs; a separate optional service captures synthetic development email. Exact versions live in
 [package.json](package.json), [pnpm-lock.yaml](pnpm-lock.yaml) and
 [compose.yaml](compose.yaml).
 

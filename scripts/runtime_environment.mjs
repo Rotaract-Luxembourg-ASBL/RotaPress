@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { readEnv, writeEnv } from "./local_common.mjs";
+import { appendFileSync } from "node:fs";
+import { readEnv } from "./local_common.mjs";
 
 /** Never replace a lost key while any feature still has encrypted saved data.
  * @param {string} runtimePath
@@ -20,8 +21,5 @@ export async function ensureIntegrationKey(runtimePath, client) {
     throw new Error(
       "Restore the existing integration encryption key before setup; saved credentials were preserved.",
     );
-  writeEnv(runtimePath, {
-    ...config,
-    INTEGRATION_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
-  });
+  appendFileSync(runtimePath, `\nINTEGRATION_ENCRYPTION_KEY=${randomBytes(32).toString("hex")}\n`, { encoding: "utf8", mode: 0o600 });
 }

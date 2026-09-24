@@ -132,7 +132,16 @@ export type EmailWorkspace = {
   encryptionReady: boolean;
   remoteEnabled: boolean;
   clubName: string;
-  localDefault: boolean;
+  server: {
+    provider: "smtp" | "resend" | "development" | null;
+    ready: boolean;
+    senderName: string | null;
+    senderEmail: string | null;
+    replyTo: string | null;
+    smtp: SmtpSettings | null;
+    hasSecret: boolean;
+    isDefault: boolean;
+  };
 };
 
 export const emailTemplateTargetSchema = z.strictObject({

@@ -401,11 +401,14 @@ describe("C02 Google configuration and session revision boundaries", () => {
   it("setup preserves an existing key and refuses replacement when encrypted integration data exists", async () => {
     const { owner } = await club();
     const path = resolve(".local", "runtime-guard-" + randomUUID() + ".env");
-    const original = "APP_URL=http://127.0.0.1:3000\n";
+    const original =
+      "APP_URL=http://127.0.0.1:3000\n# Keep operator formatting\nSMTP_PASSWORD='synthetic# value'\n";
     try {
       await writeFile(path, original, { mode: 0o600 });
       await ensureIntegrationKey(path, migrationPool);
       const generated = await readFile(path, "utf8");
+      expect(generated.startsWith(original)).toBe(true);
+      expect(parseEnv(generated).SMTP_PASSWORD).toBe("synthetic# value");
       expect(
         /^[a-f0-9]{64}$/.test(
           parseEnv(generated).INTEGRATION_ENCRYPTION_KEY ?? "",

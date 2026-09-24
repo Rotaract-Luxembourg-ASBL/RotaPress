@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ? {
           icon: [{ url: `/media/${site.branding.iconId}`, type: "image/webp" }],
         }
-      : undefined,
+      : { icon: [{ url: "/brand/rotapress-icon.svg", type: "image/svg+xml" }] },
   };
 }
 

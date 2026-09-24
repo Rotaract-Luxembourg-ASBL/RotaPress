@@ -89,10 +89,6 @@
     grid-template-columns: 1fr;
   }
 
-  .setup-aside {
-    display: none;
-  }
-
   .membership-layout {
     gap: 35px;
   }

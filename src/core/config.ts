@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { serverEmailConfiguration } from "@/infrastructure/email/server_email_configuration";
 
 const schema = z.object({
   DATABASE_URL: z.url(),
@@ -23,6 +24,11 @@ if (!parsed.success) {
   );
 }
 export const config = parsed.data;
+export const serverEmail = serverEmailConfiguration(
+  process.env,
+  config.APP_URL,
+  config.DATABASE_URL,
+);
 const database = new URL(config.DATABASE_URL);
 if (config.LUMA_FIXTURE_ORIGIN && database.pathname !== "/rotapress_test") {
   throw new Error("Provider fixtures require the disposable test database.");

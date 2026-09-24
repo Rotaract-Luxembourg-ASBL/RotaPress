@@ -61,6 +61,13 @@ expiring one-use setup claim also requires the nominated verified identity befor
 an installation can acquire its first owner. No default password or hidden local
 login bypass exists.
 
+The operator supplies the initial SMTP/Resend sender through protected server
+configuration before owner sign-in. Until installation completes, email codes
+can only be sent to the nominated owner with a valid claim. Admin sender settings
+can override that server sender after installation; a missing or failing provider
+never falls back to development capture. The optional development provider is
+restricted to explicit development/test mode and loopback origins/databases.
+
 Identity, approved membership, staff capability, event assignment and guest
 entitlement are separate. Every private operation checks current trusted scope;
 client roles, organization IDs and feature flags cannot grant authority. A linked

@@ -22,7 +22,7 @@ Fork the repository, clone your fork and create a branch for your change. Follow
 
 ```sh
 node scripts/pnpm.mjs install
-node scripts/pnpm.mjs setup
+node scripts/pnpm.mjs setup --development-mail
 node scripts/pnpm.mjs dev
 ```
 

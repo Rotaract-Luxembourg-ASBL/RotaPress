@@ -20,6 +20,10 @@ import {
 import { googleAuthStore } from "./google_configuration";
 import type { GoogleProviderConfiguration } from "./GoogleAuthStore";
 import { DomainError } from "../DomainError";
+import {
+  sendVerificationEmail,
+  withVerificationDelivery,
+} from "./verification_delivery";
 
 function createAuth(google: GoogleProviderConfiguration | null) {
   async function currentGoogleFlow() {
@@ -138,7 +142,9 @@ function createAuth(google: GoogleProviderConfiguration | null) {
         allowedAttempts: 3,
         storeOTP: "hashed",
         async sendVerificationOTP({ email, otp }) {
-          await mailer.sendVerificationCode(email, otp);
+          await sendVerificationEmail(() =>
+            mailer.sendVerificationCode(email, otp),
+          );
         },
       }),
     ],
@@ -153,6 +159,8 @@ export async function authenticationHandler(
   request: Request,
 ): Promise<Response> {
   const path = new URL(request.url).pathname;
+  if (path === "/api/auth/email-otp/send-verification-otp")
+    return withVerificationDelivery(() => auth.handler(request));
   if (
     path === "/api/auth/sign-in/social" ||
     path === "/api/auth/callback/google"

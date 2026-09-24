@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { DomainError } from "@/core/DomainError";
 import { installation, organization } from "../../../db/schema/club";
 import { EmailTemplateReader } from "@/integrations/email/EmailTemplateReader";
 import type { Database } from "../database/client";
@@ -49,7 +50,25 @@ export class ApplicationMailer {
       club?.id ?? null,
     );
   }
-  sendVerificationCode(email: string, code: string) {
+  async sendVerificationCode(email: string, code: string) {
+    const [state] = await this.db
+      .select()
+      .from(installation)
+      .where(eq(installation.id, 1));
+    if (!state?.completedAt) {
+      this.delivery.requireServerConnection();
+      if (
+        !state?.claimHash ||
+        !state.claimExpiresAt ||
+        state.claimExpiresAt.getTime() <= Date.now() ||
+        state.nominatedEmail.toLowerCase() !== email.trim().toLowerCase()
+      )
+        throw new DomainError(
+          "SETUP_EMAIL_UNAVAILABLE",
+          "Owner sign-in is unavailable for this address or the setup claim has expired. Contact the server administrator.",
+          409,
+        );
+    }
     return this.send(
       email,
       "verification",

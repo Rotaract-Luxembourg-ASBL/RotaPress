@@ -1,8 +1,8 @@
 # RotaPress local development
 
 The local environment is one Node application and this repository's PostgreSQL
-and Mailpit containers, with private uploaded images in `.data/uploads`.
-No cloud credentials are needed. The [website and media guide](../guides/cms-and-media.md)
+container, with private uploaded images in `.data/uploads`. Synthetic development
+mail capture is optional and requires no cloud credentials. The [website and media guide](../guides/cms-and-media.md)
 describes page editing, publication, languages and image visibility.
 
 ## Requirements and first start
@@ -17,7 +17,7 @@ Run these commands from the repository root:
 
 ```text
 node scripts/pnpm.mjs install
-node scripts/pnpm.mjs setup
+node scripts/pnpm.mjs setup --development-mail
 node scripts/pnpm.mjs doctor
 node scripts/pnpm.mjs dev
 ```
@@ -37,16 +37,28 @@ releases; run doctor and verification afterward. This does not install system-wi
 software.
 
 Setup preserves existing secrets and data. It creates dedicated `rotapress` and
-`rotapress_test` databases, applies reviewed migrations, and prepares a one-hour
-claim for `local-owner@example.test`. An optional synthetic nomination is:
+`rotapress_test` databases and applies reviewed migrations. The plain `setup`
+command leaves email disabled and asks for an owner nomination. For real email,
+follow [first-run email setup](../guides/email-setup.md).
 
-```text
-node scripts/pnpm.mjs setup --owner-email another-owner@example.test
-```
+## Development email only
 
-An existing unexpired claim is preserved. After it expires, rerun setup to issue
-a new one. Completed installations stay locked; rerunning setup cannot create
-another owner.
+`setup --development-mail` explicitly sets `ROTAPRESS_ENVIRONMENT=development`
+and `EMAIL_PROVIDER=development`, and starts Compose's `development` profile.
+It refuses to replace a configured SMTP/Resend provider or production environment.
+It nominates `local-owner@example.test` on a fresh installation; use
+`--owner-email another-owner@example.test` for a different synthetic account.
+
+Mailpit captures synthetic messages at `http://127.0.0.1:18025`. Its SMTP and HTTP
+ports bind to loopback. This is a developer inspection tool, not proof of real
+inbox ownership or production email delivery. Product setup screens never direct
+an owner to it. Never enable this profile or provider in production.
+
+The bootstrap writes the private one-hour claim to `.local/setup-claim.txt`.
+Use the synthetic development account and claim only in the local environment.
+An existing unexpired claim is preserved for the same nominee. Rerun setup after
+expiry; changing `--owner-email` before installation replaces the claim.
+Completed installations stay locked and rerunning setup cannot create another owner.
 
 Setup also creates a separate `INTEGRATION_ENCRYPTION_KEY` for optional API
 credentials, preserving an existing key and refusing to replace a missing key when
@@ -56,17 +68,20 @@ the local fixture, authorization boundary and remaining integration work.
 
 ## Server configuration
 
-Normal setup generates only four values in `.env.local`: `DATABASE_URL`,
-`BETTER_AUTH_SECRET`, `APP_URL` and `INTEGRATION_ENCRYPTION_KEY`. Keep this file
-private and preserve both secrets when restarting, upgrading or restoring.
-Database migration credentials remain separate in ignored `.local/` files.
+Setup generates the database connection, authentication and encryption secrets,
+plus explicit local environment/email settings in `.env.local`. Preserve the
+secrets when restarting, upgrading or restoring. Database migration credentials
+remain separate in ignored `.local/` files.
 
-Configure Google and SMTP/Resend in **Administration > Integrations**. The local
-email connection uses the project's Mailpit automatically; `SMTP_HOST`, `SMTP_PORT`,
-`MAIL_FROM`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are no longer runtime
-settings. Existing saved integration credentials are retained. If an older
-development installation uses Google environment credentials, save those through
-Integrations before updating; retain an email owner session during the transition.
+The first SMTP/Resend sender is configured in the **server environment before
+sign-in**, using [these settings](../guides/email-setup.md). Administration can
+select a replacement sender after installation. Google is configured in
+**Administration → Integrations**. Neither provider credentials nor server mail
+credentials are exposed in the public setup form.
+
+Existing checkouts no longer get an implicit development mailbox. Choose real
+server email, or explicitly opt into `setup --development-mail` for synthetic
+local work. This preserves existing integration records and installed content.
 
 Advanced operator controls are optional and default to `false` when absent:
 
@@ -77,7 +92,7 @@ Advanced operator controls are optional and default to `false` when absent:
 | `CALENDAR_FEED_REQUESTS_ENABLED` | Reads from configured external calendar feeds |
 | `EMAIL_REMOTE_DELIVERY_ENABLED` | Delivery through configured SMTP/Resend connections |
 
-These are installation restrictions, not duplicate provider settings. Saving a
+These controls restrict outgoing requests independently of provider settings. Saving a
 connection in the panel does not override them. An operator can supply an explicit
 override and restart the app and jobs after the real integration has been authorized.
 Nothing in local setup turns them on or sends real participant email.
@@ -102,13 +117,19 @@ data exists. Restore the original key with the database backup in that situation
 All published service ports bind to loopback. Do not expose Mailpit or create a
 public tunnel. Mailpit captures mail locally and has no external relay configured.
 
-Open `.local/setup-info.json` locally for the nominated address, then sign in
-using the real Better Auth email code delivered to Mailpit. Open the nominated
-address's latest message in the mail viewer to read that short-lived code.
-Paste the value from `.local/setup-claim.txt` into the setup form, supply the club
-identity and finish setup. The claim alone cannot grant ownership: the current
-verified identity must match the nomination. Never paste these local files into
-Git, issue descriptions, screenshots or status notes.
+Open `.local/setup-info.json` locally for the nominated address. Real owner
+onboarding requires receipt through the configured SMTP/Resend sender, as described
+in [first-run email setup](../guides/email-setup.md). Supply the club identity and
+the private installation claim to finish. The claim alone cannot grant ownership:
+the verified identity must match the nomination. Keep these local files out of Git,
+issue descriptions, screenshots and status notes.
+
+The first-run screens show email configuration, owner verification, club details
+and the workspace. **About owner access** explains the nominated inbox and private
+claim. Club details include Rotary blue and Rotaract cranberry
+color presets, plus a custom color. After setup, choose a complete website from
+**Website → Templates**; nothing is automatically published. See the
+[product identity and reusable brand assets](../guides/rotapress-brand.md).
 
 The generic club accepts email verification. Configure Google from
 **Integrations → Google sign-in**; see [setup and security](../guides/google-authentication.md).
@@ -152,7 +173,9 @@ node scripts/pnpm.mjs start
 
 Do not use `docker compose down --volumes` as a startup remedy. Setup does not
 reset a database or replace another project's port binding. `doctor` checks
-actual Docker, service, runtime-role, migration, Mailpit and app-port readiness.
+actual Docker, service, runtime-role, migration and app-port readiness. The
+development capture service is checked only when explicitly configured. Doctor
+does not send real email or certify external inbox delivery.
 
 ## Database authority and verification
 

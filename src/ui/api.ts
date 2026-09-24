@@ -27,6 +27,7 @@ export type CurrentUser = {
   capabilities: string[];
   features: FeatureFlags;
   installed: boolean;
+  setupEmailReady: boolean;
   googleConfigured: boolean;
 };
 

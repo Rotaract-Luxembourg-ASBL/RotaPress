@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <title>RotaPress</title>
+  <path fill="#17458f" fill-rule="evenodd" d="M8 8h27c13 0 21 7 21 18S48 44 35 44H20v12H8V8Zm12 12v12h15c6 0 9-2 9-6s-3-6-9-6H20Z"/>
+  <path fill="#d41367" d="M28 44h15l13 12H40L28 44Z"/>
+</svg>

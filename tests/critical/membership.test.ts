@@ -26,6 +26,7 @@ import { RecoveryService } from "../../src/core/installation/RecoveryService";
 import { OrganizationService } from "../../src/core/organization/OrganizationService";
 import { MembershipService } from "../../src/features/members/MembershipService";
 import type { Database } from "../../src/infrastructure/database/client";
+import { installationEmailChecks } from "./installation-email-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -33,6 +34,7 @@ let db: Database;
 let authorization: AuthorizationService;
 let installationService: InstallationService;
 let members: MembershipService;
+installationEmailChecks(() => ({ db, actor: syntheticActor, prepareClaim }));
 
 const identity = {
   name: "Fictional Community Club",
@@ -63,14 +65,12 @@ function requireTestDatabase(connectionString: string | undefined): string {
 async function syntheticActor(label: string): Promise<TrustedActor> {
   const userId = randomUUID();
   const email = `${label}-${userId}@example.test`;
-  await db
-    .insert(user)
-    .values({
-      id: userId,
-      name: `Synthetic ${label}`,
-      email,
-      emailVerified: true,
-    });
+  await db.insert(user).values({
+    id: userId,
+    name: `Synthetic ${label}`,
+    email,
+    emailVerified: true,
+  });
   return {
     userId,
     email,
@@ -216,14 +216,12 @@ describe("C02 membership authority and current staff policy", () => {
     ];
     for (const [index, example] of matrix.entries()) {
       const actor = await syntheticActor(`matrix-${index}`);
-      await db
-        .insert(membership)
-        .values({
-          organizationId: access.organizationId,
-          userId: actor.userId,
-          role: example.role,
-          status: example.status,
-        });
+      await db.insert(membership).values({
+        organizationId: access.organizationId,
+        userId: actor.userId,
+        role: example.role,
+        status: example.status,
+      });
       const forgedActor = {
         ...actor,
         role: "owner",
@@ -385,14 +383,12 @@ describe("C02 membership authority and current staff policy", () => {
         staffAuthPolicy: "google",
       }),
     ).rejects.toMatchObject({ code: "GOOGLE_SESSION_REQUIRED" });
-    await db
-      .insert(account)
-      .values({
-        id: randomUUID(),
-        userId: owner.userId,
-        providerId: "google",
-        accountId: randomUUID(),
-      });
+    await db.insert(account).values({
+      id: randomUUID(),
+      userId: owner.userId,
+      providerId: "google",
+      accountId: randomUUID(),
+    });
     await db
       .update(organization)
       .set({ staffAuthPolicy: "google" })

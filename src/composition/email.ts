@@ -1,5 +1,5 @@
 import "server-only";
-import { config } from "@/core/config";
+import { config, serverEmail } from "@/core/config";
 import { db } from "@/infrastructure/database/client";
 import { CredentialCipher } from "@/infrastructure/security/CredentialCipher";
 import { EmailTransport } from "@/infrastructure/email/EmailTransport";
@@ -10,16 +10,13 @@ import { CalendarEmailPreferences } from "@/features/calendar/CalendarEmailPrefe
 export const emailDelivery = new EmailDelivery(
   db,
   new CredentialCipher(config.INTEGRATION_ENCRYPTION_KEY),
-  new EmailTransport(config.EMAIL_REMOTE_DELIVERY_ENABLED === "true"),
-  {
-    provider: "local",
-    host: "127.0.0.1",
-    port: 11025,
-    from: {
-      name: "RotaPress",
-      address: "noreply@example.test",
-    },
-  },
+  new EmailTransport(
+    serverEmail.remoteEnabled,
+    undefined,
+    undefined,
+    serverEmail.localEnabled,
+  ),
+  serverEmail.connection,
 );
 export const calendarEmailPreferences = new CalendarEmailPreferences(
   db,

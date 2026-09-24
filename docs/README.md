@@ -11,6 +11,7 @@ unfinished release work.
 | --- | --- |
 | Edit pages, shared content and media | [Website and media](guides/cms-and-media.md) |
 | Set up a complete editable website | [Website templates](guides/website-kits.md) |
+| Use the RotaPress logo and repository artwork | [Product brand assets](guides/rotapress-brand.md) |
 | Publish a website or only its menu | [Website publication](guides/website-publication.md) |
 | Build forms and review responses | [Forms](guides/forms.md) |
 | Manage a personal account and bookings | [Member portal](guides/member-portal.md) |
@@ -25,6 +26,7 @@ unfinished release work.
 | Schedule a saved page revision | [Scheduled publication](guides/scheduled-publication.md) |
 | Manage calendars, imports and reminders | [Calendar](guides/calendar.md) |
 | Configure email delivery and templates | [Email](guides/email.md) |
+| Configure email before the first owner signs in | [First-run email setup](guides/email-setup.md) |
 | Configure Google authentication | [Google sign-in](guides/google-authentication.md) |
 | Connect Luma links, imports and purchases | [Luma](guides/luma.md) |
 

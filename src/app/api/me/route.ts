@@ -1,4 +1,5 @@
 import { services } from "@/composition/services";
+import { emailDelivery } from "@/composition/email";
 import { getActor } from "@/core/auth/actor";
 import { googleAuthStore } from "@/core/auth/google_configuration";
 import { handle, json } from "@/core/http";
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       }),
       features,
       installed: await services.installation.isComplete(),
+      setupEmailReady: emailDelivery.serverStatus().ready,
       googleConfigured: await googleAuthStore.enabled(),
     });
   });

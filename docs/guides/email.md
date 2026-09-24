@@ -6,9 +6,18 @@ alerts and Calendar notifications all use the same application mailer.
 
 ## Choose a sender
 
-The local installation starts with **Local capture**, using the existing Mailpit
-server. Its messages can be read at `http://127.0.0.1:18025`; they are not delivered
-to external mailboxes.
+First installation uses the **Server sender**, configured by the operator before
+owner sign-in. Follow [Email before the first sign-in](email-setup.md) to configure
+SMTP or Resend securely. Administration manages later connections and templates.
+The server sender remains selected until the owner explicitly chooses a replacement.
+
+Email settings reflect the selected environment provider automatically after an
+application and job runner restart. Its card is labeled **Managed by server
+environment** and shows the sender, reply-to and SMTP connection details, with
+credentials shown only as **Configured**. It stays visible when delivery is
+disabled. These settings are read-only here; admin connections do not rewrite
+the environment. **Current sender** or **Not selected** identifies which
+connection is in use, separately from the server's delivery permission.
 
 1. Choose **Add connection**, name it and select **Resend** or **SMTP provider**.
 2. Enter your sender name and verified sender address. Add an optional reply-to
@@ -109,8 +118,9 @@ signed-in preference management remains available.
 the existing `INTEGRATION_ENCRYPTION_KEY`, but does not contact the provider.
 Only enable remote sending after authorization for the actual provider, sender
 and recipient. Restart both the application and worker after changing the flag.
-The local baseline remains SMTP/Mailpit; this implementation does not authorize
-an online deployment or real participant mail.
+Missing sender settings stop delivery. Development capture requires an explicit
+local development/test environment and is rejected in production. It is never a
+fallback for a missing or failed sender.
 
 SMTP accepts public DNS hostnames on 465 (TLS) or 587 (required STARTTLS). It checks
 and pins public IPv4 resolution, verifies the hostname certificate, requires TLS
@@ -121,14 +131,15 @@ rejects redirects and bounds request time. Raw provider errors are discarded.
 
 Keep the encryption key in the installation backup. A selected provider failure
 also affects email sign-in. Retain an authorized owner session while changing
-delivery, and use it to return to local capture if needed. Operator recovery and
+delivery. **Test and use server sender** checks delivery before switching back
+to the server configuration; failure preserves the current sender. Operator recovery and
 external sender/domain verification must be exercised before an online release;
 See [release limitations](../development/roadmap.md).
 
 Reference contracts: [Resend sending API](https://resend.com/docs/api-reference/emails/send-email),
 [Resend idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys) and
-[Nodemailer SMTP/TLS](https://nodemailer.com/smtp). Local checks use Mailpit or
-injected transports; they do not prove a live Resend or external SMTP connection.
+[Nodemailer SMTP/TLS](https://nodemailer.com/smtp). Synthetic local checks do not
+prove live provider delivery or receipt in the nominated owner's inbox.
 
 ## Contributor contract
 
@@ -136,7 +147,8 @@ injected transports; they do not prove a live Resend or external SMTP connection
 `EmailTemplateReader` resolves published resource overrides and shared defaults.
 `ScopedEmailTemplateService` applies the owning feature's current permissions;
 composite foreign keys bind overrides to the same organization's calendar/form.
-`EmailDelivery` resolves the selected connection and decrypts its credential.
+`EmailDelivery` resolves the selected admin connection, or the configured server
+sender when none is selected. It decrypts only database credentials.
 `EmailTransport` implements the explicit SMTP/Resend providers. Features pass
 only the recipient and the permitted action context; they do not instantiate
 their own SMTP clients. New providers implement the narrow `MailTransport`

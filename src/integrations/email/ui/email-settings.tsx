@@ -8,6 +8,10 @@ import { Dialog } from "@/ui/dialog";
 import { Icon } from "@/ui/icon";
 import { EmailConnectionDialog } from "./email-connection-dialog";
 import { EmailTemplateEditor } from "./email-template-editor";
+import {
+  EmailServerConnection,
+  emailProviderLabel,
+} from "./email-server-connection";
 import { emailTemplateCatalogue } from "../email_templates";
 import type {
   EmailConnectionView,
@@ -49,7 +53,7 @@ export function EmailSettings() {
       );
       setReceipt(
         operation === "testConnection"
-          ? "Test sent to your signed-in email address. Local capture tests can be read in Mailpit."
+          ? "Test submitted to the sender for your signed-in email address. Check your inbox to confirm delivery."
           : operation === "publishTemplate"
             ? "Template published. Future emails use this design."
             : operation === "saveTemplate"
@@ -97,14 +101,25 @@ export function EmailSettings() {
         <Icon name="mail" />
         <div>
           <strong>
-            {selected
-              ? `Sending with ${selected.name}`
-              : "Sending to local Mailpit capture"}
+            {(selected && !data.remoteEnabled) ||
+            (!selected && data.server.provider && !data.server.ready)
+              ? "Email sending is disabled"
+              : selected
+                ? `Sending with ${selected.name}`
+                : !data.server.ready
+                  ? "Email delivery is unavailable"
+                  : data.server.provider === "development"
+                    ? "Development email capture"
+                    : "Sending with the server sender"}
           </strong>
           <p>
             {selected
               ? `${selected.senderName} · ${selected.senderEmail}`
-              : "Local emails stay in the development mailbox."}
+              : data.server.provider === "development"
+                ? "Development only. Messages do not reach a real inbox."
+                : data.server.provider
+                  ? `${emailProviderLabel(data.server.provider)} · ${data.server.senderName} · ${data.server.senderEmail}`
+                  : "Ask the server administrator to configure a sender, or add a connection below."}
           </p>
         </div>
       </div>
@@ -167,7 +182,7 @@ export function EmailSettings() {
         {!data.remoteEnabled && (
           <p className="email-local-note">
             Resend and SMTP connections can be saved now. Sending through an
-            external provider is disabled for this local installation.
+            external provider is disabled on this server.
           </p>
         )}
         {!data.canManageConnections && (
@@ -177,38 +192,13 @@ export function EmailSettings() {
           </Notice>
         )}
         <div className="email-connection-list">
-          <article className="panel email-connection-row">
-            <div className="email-provider-mark">
-              <Icon name="mail" />
-            </div>
-            <div className="email-connection-copy">
-              <h3>Local capture</h3>
-              <p>Mailpit · Development mailbox</p>
-              <span className="status-badge">
-                {data.localDefault ? "Current sender" : "Available"}
-              </span>
-            </div>
-            {data.canManageConnections && (
-              <div className="email-actions">
-                <button
-                  className="button button-outline"
-                  disabled={busy}
-                  onClick={() => void act("testConnection", actionValues())}
-                >
-                  Send test
-                </button>
-                {!data.localDefault && (
-                  <button
-                    className="button button-outline"
-                    disabled={busy}
-                    onClick={() => void act("useConnection", actionValues())}
-                  >
-                    Use local capture
-                  </button>
-                )}
-              </div>
-            )}
-          </article>
+          <EmailServerConnection
+            server={data.server}
+            canManage={data.canManageConnections}
+            busy={busy}
+            onTest={() => void act("testConnection", actionValues())}
+            onUse={() => void act("useConnection", actionValues())}
+          />
           {data.connections.map((c) => (
             <article
               className="panel email-connection-row"

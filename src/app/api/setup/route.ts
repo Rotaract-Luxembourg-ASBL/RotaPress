@@ -1,4 +1,5 @@
 import { services } from "@/composition/services";
+import { emailDelivery } from "@/composition/email";
 import { getActor } from "@/core/auth/actor";
 import { handle, HttpError, json, readMutation } from "@/core/http";
 
@@ -8,6 +9,7 @@ export async function POST(request: Request) {
     await services.limiter.consume("setup", "installation", 10);
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in before completing setup.");
+    emailDelivery.requireServerConnection();
     return json(await services.installation.complete(actor, body), 201);
   });
 }

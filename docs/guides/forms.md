@@ -133,11 +133,11 @@ This command uses the project's restricted runtime database configuration and
 does not run migrations. Restart the development launcher after changes to its
 worker startup code. Production scheduling is outside this local milestone.
 
-Local SMTP uses Mailpit, whose inbox is at `http://127.0.0.1:18025`. It captures
-messages without sending real participant email. Resend or another live mail
-provider is not enabled or verified by this local setup. Provider credentials
-are unnecessary for authoring forms, saving submissions and exercising local
-notification delivery.
+Notifications use the same configured sender as sign-in. Configure the initial
+sender through [first-run email setup](email-setup.md), then manage connections
+and templates in [Email settings](email.md). Development capture is optional and
+does not establish real inbox delivery. Provider credentials are unnecessary for
+authoring forms and saving submissions; queued email needs a working sender.
 
 ## Retention
 

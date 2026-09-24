@@ -76,6 +76,65 @@ export function emailServices(c: Context, enabled = true) {
 }
 
 export function emailChecks(get: () => Context) {
+  it("C13 email: reflects server settings even when disabled, without copying or exposing credentials", async () => {
+    const c = get();
+    const { owner, manager } = await c.club();
+    const s = emailServices(c, false);
+    const credential = secret();
+    const smtp = {
+      provider: "smtp",
+      from: { name: "Environment sender", address: "hello@example.test" },
+      replyTo: "replies@example.test",
+      settings: { host: "smtp.example.org", port: 587, username: "club" },
+      secret: credential,
+    } as const;
+    const configured = (sender: EmailTransportConnection) =>
+      new EmailSettingsService(
+        c.db,
+        c.authorization,
+        new EmailDelivery(
+          c.db,
+          s.delivery.cipher,
+          s.delivery.transport,
+          sender,
+        ),
+        origin,
+      );
+    const settings = configured(smtp);
+    await expect(settings.workspace(manager)).rejects.toMatchObject({
+      code: "ACCESS_DENIED",
+    });
+    const state = await settings.workspace(owner);
+    expect(state.server).toEqual({
+      provider: "smtp",
+      ready: false,
+      isDefault: true,
+      senderName: smtp.from.name,
+      senderEmail: smtp.from.address,
+      replyTo: smtp.replyTo,
+      smtp: smtp.settings,
+      hasSecret: true,
+    });
+    expect(state.connections).toHaveLength(0);
+    expect(JSON.stringify(state)).not.toContain(credential);
+    const updated = await configured({
+      provider: "resend",
+      secret: credential,
+      from: { name: "Updated server sender", address: "updated@example.test" },
+    }).workspace(owner);
+    expect(updated.server).toMatchObject({
+      provider: "resend",
+      ready: false,
+      senderEmail: "updated@example.test",
+      smtp: null,
+      replyTo: null,
+      hasSecret: true,
+    });
+    expect(JSON.stringify(updated)).not.toContain(credential);
+    expect(await c.db.select().from(emailConnection)).toHaveLength(0);
+    expect(s.send).not.toHaveBeenCalled();
+  });
+
   it("C13 email: keeps protected content, escapes templates and rejects injected headers or unknown variables", () => {
     const template = {
       ...emailTemplateCatalogue.calendar_update.defaults,
@@ -166,7 +225,7 @@ export function emailChecks(get: () => Context) {
       id: first.id,
       expectedVersion: first.version,
     });
-    expect(state.localDefault).toBe(false);
+    expect(state.server.isDefault).toBe(false);
     first = state.connections[0];
     await expect(
       s.settings.saveConnection(owner, {
@@ -206,6 +265,24 @@ export function emailChecks(get: () => Context) {
       s.mailer.sendVerificationCode(manager.email, "123456"),
     ).rejects.toThrow();
     expect(s.send.mock.calls.at(-1)?.[0].provider).toBe("resend");
+    s.send.mockRejectedValueOnce(new Error("synthetic server sender failure"));
+    await expect(
+      s.settings.useConnection(owner, { id: null, expectedVersion: 0 }),
+    ).rejects.toMatchObject({ code: "EMAIL_TEST_FAILED" });
+    expect(
+      (await s.settings.workspace(owner)).connections.find(
+        (c) => c.id === first.id,
+      )?.isDefault,
+    ).toBe(true);
+    const missingServer = new EmailSettingsService(
+      c.db,
+      c.authorization,
+      new EmailDelivery(c.db, s.delivery.cipher, s.delivery.transport, null),
+      origin,
+    );
+    await expect(
+      missingServer.useConnection(owner, { id: null, expectedVersion: 0 }),
+    ).rejects.toMatchObject({ code: "EMAIL_SETUP_REQUIRED" });
     state = await s.settings.useConnection(owner, {
       id: null,
       expectedVersion: 0,

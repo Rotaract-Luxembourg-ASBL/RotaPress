@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseEnv } from "node:util";
 
 export const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 export const local = resolve(root, ".local");
@@ -22,16 +23,7 @@ export function requireSupportedNode() {
 
 export function readEnv(path) {
   if (!existsSync(path)) throw new Error(`Missing ${path.replace(root, ".")}; run setup.`);
-  return Object.fromEntries(
-    readFileSync(path, "utf8")
-      .split(/\r?\n/u)
-      .filter((line) => line && !line.startsWith("#"))
-      .map((line) => {
-        const separator = line.indexOf("=");
-        if (separator < 1) throw new Error("Invalid local environment file.");
-        return [line.slice(0, separator), line.slice(separator + 1)];
-      }),
-  );
+  return parseEnv(readFileSync(path, "utf8"));
 }
 
 export function writePrivate(path, text) {

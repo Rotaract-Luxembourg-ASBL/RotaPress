@@ -67,6 +67,7 @@
   display: grid;
   gap: 0.125rem;
   margin-top: auto;
+  overflow-wrap: anywhere;
 }
 .admin-layout .integration-card-actions {
   padding-top: 1rem;

@@ -89,27 +89,19 @@
   margin-bottom: 26px;
 }
 
-.setup-aside,
 .settings-aside {
   padding: 25px 8px 20px;
 }
 
-.setup-aside h2,
 .settings-aside h2 {
   font-size: 38px;
   margin-block: 15px 23px;
 }
 
-.setup-aside p:not(.eyebrow),
 .settings-aside > p:not(.eyebrow) {
   color: var(--muted);
   margin-bottom: 22px;
   line-height: 1.85;
-}
-
-.setup-aside strong {
-  color: var(--ink);
-  font-weight: 500;
 }
 
 .large-asterisk {

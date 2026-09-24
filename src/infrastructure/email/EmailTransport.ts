@@ -40,6 +40,7 @@ export class EmailTransport implements MailTransport {
     private readonly resolve = (host: string) =>
       lookup(host, { all: true, family: 4 }),
     private readonly request: typeof fetch = fetch,
+    private readonly localEnabled = false,
   ) {}
   private async address(host: string) {
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -60,6 +61,8 @@ export class EmailTransport implements MailTransport {
   }
   async send(connection: EmailTransportConnection, message: OutgoingEmail) {
     try {
+      if (connection.provider === "local" && !this.localEnabled)
+        throw new Error("DEVELOPMENT_EMAIL_DISABLED");
       if (connection.provider !== "local" && !this.remoteEnabled)
         throw new Error("REMOTE_EMAIL_DISABLED");
       if (connection.provider === "resend") {

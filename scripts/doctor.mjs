@@ -4,6 +4,8 @@ import pg from "pg";
 import { assertLocalDatabase, compose, docker, local, portAvailable, readEnv, requireSupportedNode, root } from "./local_common.mjs";
 
 let failures = 0;
+const runtimeConfig = existsSync(resolve(root, ".env.local")) ? readEnv(resolve(root, ".env.local")) : {};
+const developmentMail = runtimeConfig.EMAIL_PROVIDER === "development";
 async function check(label, operation) {
   try {
     console.log(`OK ${label}: ${await operation()}`);
@@ -23,8 +25,8 @@ await check("Docker engine (start Docker Desktop if unavailable)", async () =>
   docker(["info", "--format", "{{.ServerVersion}}"], { stdio: "pipe" }).stdout.trim());
 await check("RotaPress local services (run node scripts/pnpm.mjs setup if unavailable)", async () => {
   const services = compose(["ps", "--services", "--status", "running"], { stdio: "pipe" }).stdout;
-  if (!services.includes("postgres") || !services.includes("mailpit")) throw new Error();
-  return "PostgreSQL and Mailpit running";
+  if (!services.includes("postgres") || (developmentMail && !services.includes("mailpit"))) throw new Error();
+  return developmentMail ? "PostgreSQL and development mail capture running" : "PostgreSQL running";
 });
 await check("runtime database is local and restricted", async () => {
   const env = readEnv(resolve(root, ".env.local"));
@@ -50,7 +52,7 @@ await check("separate test database configured", async () => {
   assertLocalDatabase(env.DATABASE_URL, ["rotapress_test"]);
   return "rotapress_test";
 });
-await check("Mailpit HTTP", async () => {
+if (developmentMail) await check("Development mail capture HTTP", async () => {
   const response = await fetch("http://127.0.0.1:18025/livez", { signal: AbortSignal.timeout(4000) });
   if (!response.ok) throw new Error();
   return "http://127.0.0.1:18025";
@@ -67,4 +69,6 @@ await check("configured local application", async () => {
   return `${origin.origin} RotaPress health endpoint responding`;
 });
 console.log(`Doctor finished with ${failures} issue(s). ${existsSync(resolve(root, ".env.local")) ? "Runtime environment exists." : "Run node scripts/pnpm.mjs setup."}`);
+if (!runtimeConfig.EMAIL_PROVIDER || runtimeConfig.EMAIL_PROVIDER === "disabled")
+  console.log("Owner sign-in needs a server email sender. Follow docs/guides/email-setup.md before requesting a code.");
 process.exitCode = failures ? 1 : 0;

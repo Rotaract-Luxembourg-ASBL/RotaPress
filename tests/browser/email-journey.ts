@@ -15,16 +15,30 @@ export async function emailJourney(page: Page, anonymous: Page) {
     (await anonymous.request.get("/api/admin/integrations/email")).status(),
   ).toBe(401);
   await page.goto("/admin/integrations");
+  const overview = page.getByRole("article", { name: "Email", exact: true });
+  await expect(overview).toContainText(
+    "Development capture · Server environment",
+  );
   await page.getByRole("link", { name: "Open Email", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Email", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Sending to local Mailpit capture"),
+    page.getByText("Development email capture", { exact: true }),
   ).toBeVisible();
+  const server = page.getByRole("article", {
+    name: "Server email connection",
+    exact: true,
+  });
+  await expect(server).toContainText("Managed by server environment");
+  await expect(server).toContainText((await workspace()).server.senderEmail!);
+  await expect(server).toContainText("Current sender");
+  await expect(server.getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "Send test", exact: true }).click();
   await expect(
-    page.getByText(/Test sent to your signed-in email address/),
+    page.getByText(
+      /Test submitted to the sender for your signed-in email address/,
+    ),
   ).toBeVisible();
   const me = (await page.request.get("/api/me").then((r) => r.json())) as {
     actor: { email: string };
@@ -113,6 +127,8 @@ export async function emailJourney(page: Page, anonymous: Page) {
   await expect(updated).not.toBeVisible();
   expect((await workspace()).connections).toHaveLength(0);
 
+  await disabledEnvironmentJourney(page);
+
   await page.getByRole("tab", { name: "Templates", exact: true }).click();
   await page
     .getByLabel("Heading", { exact: true })
@@ -196,4 +212,69 @@ export async function emailJourney(page: Page, anonymous: Page) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
   page.off("pageerror", collect);
+}
+
+/** UI fixture for the disabled remote sender; server redaction has PostgreSQL coverage. */
+async function disabledEnvironmentJourney(page: Page) {
+  const endpoint = "**/api/admin/integrations/email";
+  await page.route(endpoint, async (route) => {
+    const response = await route.fetch();
+    const data = (await response.json()) as EmailWorkspace;
+    await route.fulfill({
+      response,
+      json: {
+        ...data,
+        server: {
+          provider: "smtp",
+          ready: false,
+          isDefault: true,
+          hasSecret: true,
+          senderName: "Community sender",
+          senderEmail: "community@example.test",
+          replyTo: "reply@example.test",
+          smtp: { host: "smtp.example.org", port: 587, username: "community" },
+        },
+      },
+    });
+  });
+  try {
+    await page.goto("/admin/integrations");
+    const overview = page.getByRole("article", { name: "Email", exact: true });
+    await expect(overview).toContainText("SMTP · Server environment");
+    await expect(overview).toContainText("Delivery disabled");
+    await expect(overview).toContainText("community@example.test");
+    await page.getByRole("link", { name: "Open Email", exact: true }).click();
+    const server = page.getByRole("article", {
+      name: "Server email connection",
+      exact: true,
+    });
+    await expect(server).toContainText("Managed by server environment");
+    await expect(server).toContainText("Delivery disabled");
+    await expect(server).toContainText("smtp.example.org");
+    await expect(server).toContainText("587 · STARTTLS required");
+    await expect(
+      server.getByRole("button", { name: "Send test", exact: true }),
+    ).toBeDisabled();
+    await expect(server.getByRole("textbox")).toHaveCount(0);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await page.screenshot({
+        path: `.local/email-environment-${width}.png`,
+        fullPage: true,
+        mask: [page.locator(".admin-account")],
+      });
+    }
+  } finally {
+    await page.unroute(endpoint);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.reload();
+  }
+  await expect(
+    page.getByText("Development email capture", { exact: true }),
+  ).toBeVisible();
 }

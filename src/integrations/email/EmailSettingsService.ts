@@ -73,7 +73,10 @@ export class EmailSettingsService {
       encryptionReady: this.delivery.cipher.ready,
       remoteEnabled: this.delivery.transport.remoteEnabled,
       clubName: club.name,
-      localDefault: !connections.some((c) => c.isDefault),
+      server: {
+        ...this.delivery.serverStatus(),
+        isDefault: !connections.some((c) => c.isDefault),
+      },
     };
   }
   private conflict() {
@@ -176,6 +179,10 @@ export class EmailSettingsService {
         "ownership.manage",
         tx,
       );
+      if (!values.id) {
+        this.delivery.requireServerConnection();
+        await this.sendConnectionTest(actor, null);
+      }
       const [row] = values.id
         ? await tx
             .select()
@@ -229,8 +236,8 @@ export class EmailSettingsService {
       );
       if (!values.id)
         throw new DomainError(
-          "EMAIL_LOCAL_REQUIRED",
-          "Local capture belongs to server configuration.",
+          "EMAIL_SERVER_MANAGED",
+          "The server sender is managed in the server environment.",
           400,
         );
       const [row] = await tx
@@ -258,6 +265,41 @@ export class EmailSettingsService {
       });
     });
     return this.workspace(actor);
+  }
+  private async sendConnectionTest(
+    actor: TrustedActor,
+    row: typeof emailConnection.$inferSelect | null,
+  ) {
+    const content = renderEmail(
+      "form_submission",
+      {
+        ...emailTemplateCatalogue.form_submission.defaults,
+        subject: "RotaPress email connection test",
+        heading: "Your email connection works",
+        body: "This is a test requested from Email settings.",
+        buttonLabel: "Email settings",
+      },
+      {
+        clubName: "RotaPress",
+        actionUrl: new URL("/admin/integrations/email", this.origin).href,
+      },
+    );
+    try {
+      await this.delivery.test(
+        {
+          ...content,
+          to: actor.email,
+          messageId: `<test-${randomUUID()}@rotapress.local>`,
+        },
+        row ?? null,
+      );
+    } catch {
+      throw new DomainError(
+        "EMAIL_TEST_FAILED",
+        "The test could not be sent. Check the sender, credentials and server settings, then try again.",
+        422,
+      );
+    }
   }
   async testConnection(actor: TrustedActor, raw: unknown) {
     const values = connectionActionSchema.parse(raw);
@@ -288,36 +330,8 @@ export class EmailSettingsService {
           "Remote email delivery is disabled on this server. Your connection is saved for later.",
           409,
         );
-      const content = renderEmail(
-        "form_submission",
-        {
-          ...emailTemplateCatalogue.form_submission.defaults,
-          subject: "RotaPress email connection test",
-          heading: "Your email connection works",
-          body: "This is a test requested from Email settings.",
-          buttonLabel: "Email settings",
-        },
-        {
-          clubName: "RotaPress",
-          actionUrl: new URL("/admin/integrations/email", this.origin).href,
-        },
-      );
-      try {
-        await this.delivery.test(
-          {
-            ...content,
-            to: actor.email,
-            messageId: `<test-${randomUUID()}@rotapress.local>`,
-          },
-          row ?? null,
-        );
-      } catch {
-        throw new DomainError(
-          "EMAIL_TEST_FAILED",
-          "The test could not be sent. Check the sender, credentials and server settings, then try again.",
-          422,
-        );
-      }
+      if (!row) this.delivery.requireServerConnection();
+      await this.sendConnectionTest(actor, row ?? null);
       if (row)
         await tx
           .update(emailConnection)

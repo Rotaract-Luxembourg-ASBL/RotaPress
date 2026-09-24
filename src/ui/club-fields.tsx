@@ -17,11 +17,13 @@ export function ClubFields({
   onChange,
   grouped = false,
   showBranding = true,
+  brandPresets = false,
 }: {
   value: ClubSettings;
   onChange: (value: ClubSettings) => void;
   grouped?: boolean;
   showBranding?: boolean;
+  brandPresets?: boolean;
 }) {
   const timezoneList = useId();
   const timezones = Array.from(
@@ -118,19 +120,44 @@ export function ClubFields({
         </>
       )}
       {showBranding && (
-        <label>
-          Accent color
-          <div className="color-field">
-            <input
-              name="accentColor"
-              type="color"
-              value={value.accentColor}
-              onChange={(event) => update("accentColor", event.target.value)}
-            />
-            <span>{value.accentColor}</span>
-            <span className="muted small">Used on your public website</span>
-          </div>
-        </label>
+        <div className="form-stack">
+          {brandPresets && (
+            <fieldset className="setup-brand-presets">
+              <legend>Start with your community’s color</legend>
+              <div>
+                <button
+                  type="button"
+                  aria-pressed={value.accentColor.toLowerCase() === "#17458f"}
+                  onClick={() => update("accentColor", "#17458f")}
+                >
+                  <span className="setup-swatch setup-swatch-rotary" />
+                  Rotary blue
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={value.accentColor.toLowerCase() === "#d41367"}
+                  onClick={() => update("accentColor", "#d41367")}
+                >
+                  <span className="setup-swatch setup-swatch-rotaract" />
+                  Rotaract cranberry
+                </button>
+              </div>
+            </fieldset>
+          )}
+          <label>
+            Accent color
+            <div className="color-field">
+              <input
+                name="accentColor"
+                type="color"
+                value={value.accentColor}
+                onChange={(event) => update("accentColor", event.target.value)}
+              />
+              <span>{value.accentColor}</span>
+              <span className="muted small">Used on your public website</span>
+            </div>
+          </label>
+        </div>
       )}
     </>
   );

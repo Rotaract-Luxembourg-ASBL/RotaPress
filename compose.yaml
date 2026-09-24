@@ -20,6 +20,7 @@ services:
     restart: unless-stopped
 
   mailpit:
+    profiles: [development]
     image: axllent/mailpit:v1.31.1
     environment:
       MP_DATABASE: /data/mailpit.db

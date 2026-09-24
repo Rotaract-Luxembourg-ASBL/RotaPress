@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { parseEnv } from "node:util";
+import { setTimeout as delay } from "node:timers/promises";
 import { test, expect, type Page } from "@playwright/test";
 import { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
@@ -63,7 +64,27 @@ async function signIn(page: Page, email: string, next: string) {
   await page.goto(`/sign-in?next=${next}`);
   await expect(page.getByLabel("Your name", { exact: true })).toHaveCount(0);
   await page.getByLabel("Email address").fill(email);
-  await page.getByRole("button", { name: "Send verification code" }).click();
+  async function sendCode() {
+    const result = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+          "/api/auth/email-otp/send-verification-otp" &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Send verification code" }).click();
+    return result;
+  }
+  let response = await sendCode();
+  if (response.status() === 429) {
+    // All loopback clients share the real server bucket. Respect its retry
+    // interval when this multi-account journey consumes the five-code budget.
+    const retrySeconds = Number(response.headers()["x-retry-after"]);
+    expect(retrySeconds).toBeGreaterThan(0);
+    expect(retrySeconds).toBeLessThanOrEqual(60);
+    await delay(retrySeconds * 1000);
+    response = await sendCode();
+  }
+  expect(response.ok(), "The sender accepted the sign-in email").toBe(true);
   await expect(page.getByLabel("Verification code")).toBeVisible();
   const code = await mailboxCode(email, priorMessageIds);
   const stored = await database.query(
@@ -123,9 +144,48 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   page,
   browser,
 }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(210_000);
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/sign-in\?next=/);
+  await expect(
+    page.getByRole("heading", { name: "A secure beginning." }),
+  ).toBeVisible();
+  await page.goto("/setup");
+  await expect(
+    page.getByRole("link", { name: "Verify owner email" }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({
+    path: ".local/setup-brand-desktop.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByText("About owner access", { exact: true }).click();
+  await expect(
+    page.getByText("Email verification alone cannot claim this installation.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText(/Mailpit/)).toHaveCount(0);
+  const refused = await page.request.post(
+    "/api/auth/email-otp/send-verification-otp",
+    {
+      headers: { origin: smokeOrigin },
+      data: { email: applicantEmail, type: "sign-in" },
+    },
+  );
+  expect(refused.status()).toBe(409);
+  expect(await refused.text()).toContain("Owner sign-in is unavailable");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: ".local/setup-brand-phone.png",
+    fullPage: true,
+  });
   await signIn(page, ownerEmail, "/setup");
   await page
     .getByLabel("Club name", { exact: true })
@@ -136,11 +196,45 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   await page
     .getByLabel("About your club")
     .fill("A synthetic local club used to verify RotaPress.");
+  await page
+    .getByRole("button", { name: "Rotaract cranberry", exact: true })
+    .click();
+  await expect(page.locator('input[name="accentColor"]')).toHaveValue(
+    "#d41367",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: ".local/setup-details-phone.png",
+    fullPage: true,
+  });
+  await page
+    .getByLabel("Installation claim")
+    .fill("invalid-claim-for-local-browser-check-0000");
+  await page
+    .getByRole("button", { name: "Create club and claim ownership" })
+    .click();
+  await expect(page.locator(".setup-card").getByRole("alert")).toContainText(
+    "setup claim",
+  );
+  await expect(page.getByLabel("Club name", { exact: true })).toHaveValue(
+    "Fictional Community Club",
+  );
+  await expect(page.locator('input[name="accentColor"]')).toHaveValue(
+    "#d41367",
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByLabel("Installation claim").fill(claim);
   await page
     .getByRole("button", { name: "Create club and claim ownership" })
     .click();
   await expect(page).toHaveURL(/\/admin$/);
+  const savedClub = await page.request.get("/api/club");
+  expect((await savedClub.json()).accentColor).toBe("#d41367");
   const method = await database.query(
     'SELECT auth_method FROM club.session s JOIN club."user" u ON s.user_id=u.id WHERE u.email=$1',
     [ownerEmail],

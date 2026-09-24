@@ -49,6 +49,8 @@ export async function runLocalTestJobs(origin: string, lumaFixture = false) {
           FORM_WEBHOOK_REQUESTS_ENABLED: "false",
           CALENDAR_FEED_REQUESTS_ENABLED: "false",
           EMAIL_REMOTE_DELIVERY_ENABLED: "false",
+          ROTAPRESS_ENVIRONMENT: "test",
+          EMAIL_PROVIDER: "development",
           LUMA_FIXTURE_ORIGIN: fixture?.origin,
           INTEGRATION_ENCRYPTION_KEY: lumaFixture
             ? process.env.ROTAPRESS_TEST_ENCRYPTION_KEY
