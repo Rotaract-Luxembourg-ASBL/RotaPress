@@ -1,7 +1,8 @@
 # RotaPress documentation
 
 Start with the [project README](../README.md) and
-[local setup](development/local-development.md). RotaPress is pre-release; the
+[hosting guide](guides/hosting.md) or [local setup](development/local-development.md).
+RotaPress is pre-release; the
 [roadmap](development/roadmap.md) distinguishes current functionality from
 unfinished release work.
 
@@ -9,6 +10,7 @@ unfinished release work.
 
 | Task | Guide |
 | --- | --- |
+| Install on a server, update or restore | [Portable hosting](guides/hosting.md) |
 | Edit pages, shared content and media | [Website and media](guides/cms-and-media.md) |
 | Set up a complete editable website | [Website templates](guides/website-kits.md) |
 | Use the RotaPress logo and repository artwork | [Product brand assets](guides/rotapress-brand.md) |
@@ -34,6 +36,7 @@ unfinished release work.
 
 - [Local development](development/local-development.md)
 - [Architecture and directory layout](development/architecture.md)
+- [Container hosting contract](development/hosting.md)
 - [Testing and critical scenarios](development/testing.md)
 - [Product UX rules](development/product-ux.md)
 - [Shared administration workspaces](development/admin-workspaces.md)

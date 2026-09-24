@@ -4,6 +4,7 @@ import { getActor } from "@/core/auth/actor";
 import { googleAuthStore } from "@/core/auth/google_configuration";
 import { handle, json } from "@/core/http";
 import { featureForCapability } from "@/core/features/feature_catalogue";
+import { readSetupClaim } from "@/core/installation/setup_cookie";
 
 export async function GET(request: Request) {
   return handle(async () => {
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
     const responseAccess =
       eventAccess && (await services.events.hasResponseAccess(actor));
     const features = await services.authorization.features.installed();
+    const installed = await services.installation.isComplete();
     return json({
       actor: actor ? { email: actor.email } : null,
       membership: actor ? await services.members.own(actor) : null,
@@ -25,8 +27,13 @@ export async function GET(request: Request) {
         return !key || features[key];
       }),
       features,
-      installed: await services.installation.isComplete(),
+      installed,
       setupEmailReady: emailDelivery.serverStatus().ready,
+      setupClaimReady:
+        !installed &&
+        (await services.installation.acceptsClaim(
+          readSetupClaim(request.headers),
+        )),
       googleConfigured: await googleAuthStore.enabled(),
     });
   });

@@ -3,6 +3,8 @@ import { googleSignInSchema } from "@/core/auth/google_sign_in";
 import { currentGoogleSessionVersion } from "@/core/auth/google_session";
 import { z } from "zod";
 import { handle, HttpError, json, readMutation } from "@/core/http";
+import { config } from "@/core/config";
+import { authenticationAddress } from "@/core/auth/request_address";
 
 export const runtime = "nodejs";
 
@@ -15,10 +17,9 @@ const postPaths = new Set([
 
 async function authenticationResponse(request: Request): Promise<Response> {
   const headers = new Headers(request.headers);
-  // This loopback Node deployment has no trusted reverse proxy. Apply the same
-  // bounded local rate-limit bucket to callbacks and session reads as to sign-in.
-  headers.set("x-forwarded-for", "127.0.0.1");
-  headers.set("x-real-ip", "127.0.0.1");
+  const address = authenticationAddress(headers, config.ROTAPRESS_PROXY);
+  headers.set("x-forwarded-for", address);
+  headers.set("x-real-ip", address);
   // A framework GET request can come from a different Request implementation.
   // Pass primitive metadata instead of asking the native constructor to copy it.
   const forwarded =

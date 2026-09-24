@@ -37,6 +37,12 @@ Private runtime files belong in ignored `.env.local`, `.local/` and `.data/`.
 Dependencies, build output, screenshots, backups and local session records do
 not belong in the distributed source tree.
 
+Hosted operation uses the same application and migrations in a portable Docker
+image. The root startup supervisor prepares database roles and forward migrations,
+then runs web and bounded jobs as an unprivileged user with restricted credentials.
+PostgreSQL and uploads use persistent volumes; HTTPS terminates at the configured
+proxy. See the [hosting contract](hosting.md) for secrets, origins and recovery.
+
 ## Request and dependency flow
 
 Routes, server components and actions call application services. Services resolve

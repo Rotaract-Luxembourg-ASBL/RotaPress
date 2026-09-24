@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { type CurrentUser, errorMessage, request, useResource } from "./api";
 import { ClubFields, initialClubSettings } from "./club-fields";
 import { Arrow, Loading, Notice } from "./primitives";
@@ -24,6 +24,33 @@ export function SetupForm() {
   const [claim, setClaim] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [openingLink, setOpeningLink] = useState(true);
+  const linkProcessed = useRef(false);
+
+  useEffect(() => {
+    if (linkProcessed.current) return;
+    linkProcessed.current = true;
+    const incoming = new URLSearchParams(window.location.hash.slice(1)).get(
+      "setup",
+    );
+    if (!incoming) {
+      queueMicrotask(() => setOpeningLink(false));
+      return;
+    }
+    // The private claim never enters a query string, access log or browser storage.
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
+    void request("/api/setup/claim", {
+      method: "POST",
+      body: JSON.stringify({ claim: incoming }),
+    })
+      .then(refresh)
+      .catch((cause: unknown) => setError(errorMessage(cause)))
+      .finally(() => setOpeningLink(false));
+  }, [refresh]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +75,7 @@ export function SetupForm() {
     <SetupFrame
       step={me?.installed ? 3 : !me?.setupEmailReady ? 0 : me?.actor ? 2 : 1}
     >
+      {error && !me?.actor && <Notice>{error}</Notice>}
       {loadError ? (
         <section className="setup-card">
           <h1>Let’s get you started.</h1>
@@ -56,7 +84,7 @@ export function SetupForm() {
             Try again
           </button>
         </section>
-      ) : !me ? (
+      ) : !me || openingLink ? (
         <section className="setup-card">
           <h1>Getting your setup ready.</h1>
           <Loading />
@@ -96,7 +124,11 @@ export function SetupForm() {
             Verify owner email <Arrow />
           </Link>
           <div className="setup-checklist">
-            <h2>Two things to have ready</h2>
+            <h2>
+              {me.setupClaimReady
+                ? "Your setup link is ready"
+                : "Two things to have ready"}
+            </h2>
             <div>
               <Icon name="mail" />
               <p>
@@ -109,9 +141,15 @@ export function SetupForm() {
             <div>
               <Icon name="check" />
               <p>
-                <strong>Your installation claim</strong>
+                <strong>
+                  {me.setupClaimReady
+                    ? "Secure setup link received"
+                    : "Your installation claim"}
+                </strong>
                 <span>
-                  The private, one-use key created when you ran setup.
+                  {me.setupClaimReady
+                    ? "Just verify your email to continue. There is no setup key to copy."
+                    : "The private, one-use key created when you ran setup."}
                 </span>
               </p>
             </div>
@@ -142,26 +180,32 @@ export function SetupForm() {
                 onChange={setSettings}
                 brandPresets
               />
-              <div className="setup-claim">
-                <label>
-                  Installation claim
-                  <input
-                    name="claim"
-                    type="password"
-                    autoComplete="off"
-                    value={claim}
-                    onChange={(event) => setClaim(event.target.value)}
-                    maxLength={256}
-                    required
-                    aria-describedby="claim-help"
-                  />
-                </label>
-                <p id="claim-help" className="field-help">
-                  Paste the private installation claim supplied by your server
-                  administrator. It confirms that this installation belongs to
-                  you.
+              {me.setupClaimReady ? (
+                <p className="field-help">
+                  Your secure setup link is ready. Create your club to finish.
                 </p>
-              </div>
+              ) : (
+                <div className="setup-claim">
+                  <label>
+                    Installation claim
+                    <input
+                      name="claim"
+                      type="password"
+                      autoComplete="off"
+                      value={claim}
+                      onChange={(event) => setClaim(event.target.value)}
+                      maxLength={256}
+                      required
+                      aria-describedby="claim-help"
+                    />
+                  </label>
+                  <p id="claim-help" className="field-help">
+                    Paste the private installation claim supplied by your server
+                    administrator. It confirms that this installation belongs to
+                    you.
+                  </p>
+                </div>
+              )}
               <button
                 type="submit"
                 className="button button-accent button-full"

@@ -3,7 +3,8 @@ import { resolve } from "node:path";
 async function main() {
   // Configuration must load before importing server-only modules. No migrations
   // run here: the worker uses the same restricted runtime role as the app.
-  process.loadEnvFile(resolve(".env.local"));
+  if (process.env.ROTAPRESS_DEPLOYMENT !== "hosted")
+    process.loadEnvFile(resolve(".env.local"));
   const { services } = await import("../src/composition/services");
   const { pool } = await import("../src/infrastructure/database/client");
   try {
@@ -51,7 +52,7 @@ void main().catch(() => {
   // Never print exception details, addresses, answers or environment values.
   console.error(
     JSON.stringify({
-      event: "local_jobs_failed",
+      event: "jobs_failed",
       code: "JOB_RUN_UNAVAILABLE",
     }),
   );

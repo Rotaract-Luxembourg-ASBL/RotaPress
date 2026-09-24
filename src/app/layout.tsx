@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { connection } from "next/server";
 import { services } from "@/composition/services";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
+  // Club identity belongs to this running installation, never the build image.
+  await connection();
   const club = await services.organization.publicIdentity();
   const site = club ? await services.cms.publicSite(club.locale) : null;
   const name = club?.name ?? "RotaPress";

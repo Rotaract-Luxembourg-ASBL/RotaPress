@@ -28,6 +28,7 @@ export type CurrentUser = {
   features: FeatureFlags;
   installed: boolean;
   setupEmailReady: boolean;
+  setupClaimReady: boolean;
   googleConfigured: boolean;
 };
 

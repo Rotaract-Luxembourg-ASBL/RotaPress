@@ -15,6 +15,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "host": "node scripts/host.mjs",
     "doctor": "node scripts/doctor.mjs",
     "recover:owner": "node scripts/recover_owner.mjs",
     "services:start": "node scripts/services.mjs start",

@@ -1,0 +1,74 @@
+# Run the guided installer: node scripts/host.mjs
+services:
+  postgres:
+    image: postgres:17.11-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rotapress
+      POSTGRES_USER: rotapress_bootstrap
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run the hosting installer first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U rotapress_bootstrap -d rotapress"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [database]
+
+  web:
+    build: .
+    image: rotapress:${ROTAPRESS_IMAGE_TAG:-local}
+    restart: unless-stopped
+    init: true
+    env_file: ${ROTAPRESS_HOST_ENV:-.local/hosting/production.env}
+    environment:
+      BOOTSTRAP_DATABASE_URL: postgresql://rotapress_bootstrap:${POSTGRES_PASSWORD}@postgres:5432/rotapress
+      ROTAPRESS_DEPLOYMENT: hosted
+      ROTAPRESS_ENVIRONMENT: production
+      ROTAPRESS_PROXY: trusted
+      PORT: "3000"
+    volumes:
+      - uploads:/app/.data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 6
+    stop_grace_period: 30s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
+    networks: [database, edge]
+
+  https:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Run the hosting installer first}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - proxy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [edge]
+
+volumes:
+  database:
+  uploads:
+  certificates:
+  proxy_config:
+networks:
+  database:
+    internal: true
+  edge:

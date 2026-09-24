@@ -37,6 +37,7 @@ function createAuth(google: GoogleProviderConfiguration | null) {
     baseURL: config.APP_URL,
     secret: config.BETTER_AUTH_SECRET,
     trustedOrigins: [config.APP_URL],
+    advanced: { ipAddress: { ipAddressHeaders: ["x-real-ip"] } },
     database: drizzleAdapter(db, { provider: "pg", schema, transaction: true }),
     emailAndPassword: { enabled: false },
     socialProviders: google

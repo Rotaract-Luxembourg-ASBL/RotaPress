@@ -67,7 +67,7 @@ layer owning the behavior, with real PostgreSQL for constraints and scoped data.
 | C09 | Durable job replay, cancellation and stale publication work |
 | C10 | Explicit guest ownership, grants and immutable purchase evidence |
 | C11 | Demonstration entry decisions, frozen draws, replay and public winner privacy |
-| C12 | Release recovery target: clean migrations and database-plus-files restore; full recovery acceptance remains pending |
+| C12 | Portable container startup, migration replay, restricted roles, claim expiry, HTTPS, database-plus-files restore and overwrite refusal; public deployment acceptance is separate |
 | C13 | Calendar audiences, time zones, recurrence, import safety and owned subscriptions |
 
 Fix a confirmed authorization bypass, exposure or corruption with a focused
@@ -76,7 +76,7 @@ regression. Do not disable a security assertion to complete a slice.
 ## Browser journeys
 
 - **B01**, `tests/browser/identity.spec.ts`: protected installation, real email OTP,
-  membership and scoped administration/event/guest workflows.
+  private setup-link exchange, membership and scoped administration/event/guest workflows.
 - **B02**, `tests/browser/cms.spec.ts`: visual editing, publication, media, forms,
   website templates and calendar interactions.
 
@@ -91,6 +91,12 @@ checks do not simulate a successful live callback. Report these distinctions in
 the pull request and retain exact command outcomes in local handover notes.
 
 ## Migrations and generated files
+
+For a hosting change, also run the isolated Docker rehearsal described in the
+[hosting contract](hosting.md#recovery-and-validation). It uses real PostgreSQL
+17 and persistent upload volumes in unique disposable stacks, internal test TLS,
+and synthetic sender configuration without sending email. It leaves the normal
+development/test databases alone. It does not prove public TLS or live delivery.
 
 Schema changes need a clean replay in an explicitly disposable project target.
 Do not drop developer data, alter unrelated volumes or rewrite applied migrations.

@@ -102,13 +102,13 @@ export function SetupHelp() {
           five minutes.
         </p>
         <p>
-          You also need the private installation claim supplied by the server
-          administrator. Email verification alone cannot claim this
-          installation.
+          Open the private setup link created by the installer, or enter the
+          installation claim supplied by your administrator. Email verification
+          alone cannot claim this installation.
         </p>
         <p>
-          If a code cannot be delivered or the claim expires, ask the server
-          administrator to check the sender or renew the claim.
+          If a code cannot be delivered, check the configured sender. If your
+          setup link expires, the person running the installer can renew it.
         </p>
       </div>
     </details>

@@ -1,0 +1,7 @@
+{$APP_DOMAIN} {
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy web:3000 {
+    # Upstream is private. Overwrite browser-supplied client addresses.
+    header_up X-Real-IP {remote_host}
+  }
+}

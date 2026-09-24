@@ -150,7 +150,24 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   await expect(
     page.getByRole("heading", { name: "A secure beginning." }),
   ).toBeVisible();
-  await page.goto("/setup");
+  await page.goto(`/setup#setup=${claim}`);
+  await expect(
+    page.getByText("Your setup link is ready", { exact: true }),
+  ).toBeVisible();
+  expect(new URL(page.url()).hash).toBe("");
+  const setupCookie = (await page.context().cookies()).find(
+    (item) => item.name === "rotapress_setup",
+  );
+  expect(setupCookie?.httpOnly).toBe(true);
+  expect(await page.evaluate(() => document.cookie)).not.toContain(claim);
+  expect(
+    (
+      await page.request.post("/api/setup", {
+        headers: { origin: smokeOrigin },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
   await expect(
     page.getByRole("link", { name: "Verify owner email" }),
   ).toBeVisible();
@@ -212,15 +229,12 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
     path: ".local/setup-details-phone.png",
     fullPage: true,
   });
-  await page
-    .getByLabel("Installation claim")
-    .fill("invalid-claim-for-local-browser-check-0000");
-  await page
-    .getByRole("button", { name: "Create club and claim ownership" })
-    .click();
-  await expect(page.locator(".setup-card").getByRole("alert")).toContainText(
-    "setup claim",
-  );
+  await expect(page.getByLabel("Installation claim")).toHaveCount(0);
+  const invalidClaim = await page.request.post("/api/setup/claim", {
+    headers: { origin: smokeOrigin },
+    data: { claim: "x".repeat(43) },
+  });
+  expect(invalidClaim.status()).toBe(409);
   await expect(page.getByLabel("Club name", { exact: true })).toHaveValue(
     "Fictional Community Club",
   );
@@ -228,11 +242,23 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
     "#d41367",
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel("Installation claim").fill(claim);
   await page
     .getByRole("button", { name: "Create club and claim ownership" })
     .click();
   await expect(page).toHaveURL(/\/admin$/);
+  expect(
+    (await page.context().cookies()).some(
+      (item) => item.name === "rotapress_setup",
+    ),
+  ).toBe(false);
+  expect(
+    (
+      await page.request.post("/api/setup/claim", {
+        headers: { origin: smokeOrigin },
+        data: { claim },
+      })
+    ).status(),
+  ).toBe(409);
   const savedClub = await page.request.get("/api/club");
   expect((await savedClub.json()).accentColor).toBe("#d41367");
   const method = await database.query(

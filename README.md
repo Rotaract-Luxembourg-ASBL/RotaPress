@@ -1,13 +1,14 @@
 ![RotaPress — A home for your club.](public/brand/rotapress-readme.svg)
 
-[Get started](#run-locally) · [Documentation](docs/README.md) · [Contribute](CONTRIBUTING.md) · [Brand assets](docs/guides/rotapress-brand.md)
+[Host your club](#host-your-club) · [Run locally](#run-locally) · [Documentation](docs/README.md) · [Contribute](CONTRIBUTING.md) · [Brand assets](docs/guides/rotapress-brand.md)
 
 An open-source home for Rotary, Rotaract and other community organizations.
 Build your website, welcome members, collect responses and organize events
 from one application. One installation, your club, your identity.
 
-**Status: pre-release, under active development.** The application runs locally;
-production deployment and full backup/restore acceptance are still pending.
+**Status: pre-release, under active development.** Portable Docker hosting includes
+automatic database setup and migrations. Live deployment/provider acceptance is
+still separate from the local application and container checks.
 See the [roadmap and limitations](docs/development/roadmap.md).
 
 ## What you can do
@@ -28,7 +29,29 @@ See the [roadmap and limitations](docs/development/roadmap.md).
 
 Google, Luma, remote calendar feeds and external email still need real-provider
 verification. Native paid checkout, check-in and production draw activation are
-not supported. Configuring a domain does not provision hosting, DNS or HTTPS.
+not supported. Domain records in administration do not provision hosting or DNS;
+the standalone hosting installer supplies HTTPS for a domain pointing at its server.
+
+## Host your club
+
+On a Linux server with Docker Compose and Node.js 24, point your domain to the
+server, clone this repository and run:
+
+```sh
+node scripts/host.mjs
+```
+
+Enter your domain, owner email and verified email sender. The assistant prepares
+PostgreSQL, security keys, persistent uploads, HTTPS and background tasks. Open
+your private setup link, verify your email and introduce your club. No database
+commands or manual migrations are needed. The sender appears in Integrations
+after setup, with credentials hidden.
+
+Use the same Docker application on your preferred VPS, your own server or a
+compatible container platform. Updates back up first and run new migrations
+automatically. See the [hosting guide](docs/guides/hosting.md) for requirements,
+provider differences, updates and recovery. Hosting accounts, DNS and actual
+deployment remain under your control.
 
 ## Run locally
 
