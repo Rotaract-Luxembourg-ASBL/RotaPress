@@ -6,6 +6,13 @@ checks. This is not a claim of production acceptance or live-provider verificati
 
 ## Next: local release candidate
 
+Fresh-installation improvements include atomic template/theme setup, a Google-only
+staff screen with optional managed-domain configuration, richer public club identity,
+connected Club details blocks, club-name SEO titles and sandboxed custom HTML/JS.
+See [website/media](../guides/cms-and-media.md) and
+[Google sign-in](../guides/google-authentication.md). A successful local check or
+deployment still does not establish a completed live Google sign-in.
+
 Before a production-ready release:
 
 - Demonstrate clean installation and first-owner setup on a public host without demo data.

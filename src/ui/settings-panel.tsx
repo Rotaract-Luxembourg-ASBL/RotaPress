@@ -7,6 +7,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { type AdminSettings, errorMessage, request, useResource } from "./api";
 import { useCurrentUser } from "./admin-shell";
 import { ClubFields } from "./club-fields";
+import { StaffLoginFields } from "./staff-login-fields";
 import { Loading, Notice, PageHeading } from "./primitives";
 
 function SettingsForm({
@@ -106,6 +107,13 @@ function SettingsForm({
                 Configure Google sign-in
               </Link>
             </p>
+            <StaffLoginFields
+              value={settings.staffLogin}
+              onChange={(staffLogin) => {
+                setSettings({ ...settings, staffLogin });
+                setSaved(false);
+              }}
+            />
           </>
         )}
       </fieldset>

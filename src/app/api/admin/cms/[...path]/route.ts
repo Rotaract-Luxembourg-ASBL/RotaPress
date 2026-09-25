@@ -34,7 +34,13 @@ export async function GET(request: Request, context: Context) {
     if (path.length === 1 && path[0] === "website")
       return json(await services.websiteSetup.workspace(actor, locale));
     if (path.length === 2 && path[0] === "website" && path[1] === "review")
-      return json(await services.websiteSetup.reviewPublication(actor, locale, new URL(request.url).searchParams.get("scope") ?? "website"));
+      return json(
+        await services.websiteSetup.reviewPublication(
+          actor,
+          locale,
+          new URL(request.url).searchParams.get("scope") ?? "website",
+        ),
+      );
     if (path.length === 2 && path[0] === "site" && path[1] === "preview")
       return json(await services.cms.previewSite(actor, locale));
     if (path.length === 2 && path[0] === "site" && path[1] === "context") {
@@ -45,7 +51,7 @@ export async function GET(request: Request, context: Context) {
         services.cms.publicSite(locale),
         services.organization.publicIdentity(),
       ]);
-      return json({ site, clubName: club?.name ?? "RotaPress" });
+      return json({ site, club, clubName: club?.name ?? "RotaPress" });
     }
     if (path[0] === "content" && path.length >= 2 && path.length <= 3) {
       const detail = await services.cms.detail(actor, path[1], locale);

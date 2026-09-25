@@ -12,6 +12,7 @@ export async function generateMetadata() {
     services.calendar.reader.page(),
   ]);
   return publicMetadata({
+    clubName: (await services.organization.publicIdentity())?.name,
     site,
     title: design.title,
     description: design.introduction,

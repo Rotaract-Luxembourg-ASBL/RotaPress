@@ -6,6 +6,16 @@ Stable stored IDs remain `rotary-service` and `rotaract-action` for compatibilit
 
 ## Use a template
 
+Fresh owner setup asks about your club, its public identity and its first website.
+Choosing Rotary Service or Rotaract Action creates the complete private website
+and selects its matching theme in the same transaction as club creation. Choosing
+a community color alone is no longer presented as template installation. Review
+your selections before creating the club; Back preserves entered details. Blank
+website is available when you want to author everything yourself.
+
+Setup never publishes pages or resets a previously installed website. Existing
+installations keep their current theme, edited pages and published content.
+
 Open **Website → Templates** at `/admin/website?tab=templates`.
 
 1. **Preview template** opens a whole example with working page navigation. It is

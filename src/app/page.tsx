@@ -17,7 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
   );
   const site = await services.cms.publicSite(club.locale);
   return publicMetadata({
-    title: site.seo?.title || home.page?.title || club.name,
+    title: site.seo?.title || home.page?.title || "Home",
+    clubName: club.name,
     description:
       home.page?.description || site.seo?.description || club.description,
     socialImageId: home.page?.socialImageId,

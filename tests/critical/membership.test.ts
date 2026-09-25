@@ -27,6 +27,8 @@ import { OrganizationService } from "../../src/core/organization/OrganizationSer
 import { MembershipService } from "../../src/features/members/MembershipService";
 import type { Database } from "../../src/infrastructure/database/client";
 import { installationEmailChecks } from "./installation-email-cases";
+import { installationTemplateChecks } from "./installation-template-cases";
+import { defaultClubProfile } from "../../src/core/organization/club_profile";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -35,6 +37,12 @@ let authorization: AuthorizationService;
 let installationService: InstallationService;
 let members: MembershipService;
 installationEmailChecks(() => ({ db, actor: syntheticActor, prepareClaim }));
+installationTemplateChecks(() => ({
+  db,
+  authorization,
+  actor: syntheticActor,
+  prepareClaim,
+}));
 
 const identity = {
   name: "Fictional Community Club",
@@ -418,6 +426,7 @@ describe("C02 membership authority and current staff policy", () => {
     const publicIdentity = await configuredGoogle.publicIdentity();
     expect(publicIdentity).toEqual({
       ...identity,
+      profile: defaultClubProfile,
       name: "Updated Synthetic Club",
     });
     expect(publicIdentity).not.toHaveProperty("staffAuthPolicy");

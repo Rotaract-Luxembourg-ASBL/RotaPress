@@ -23,6 +23,7 @@ export async function generateMetadata({
     services.eventDirectory.publicDesign(parsed.data),
   ]);
   return publicMetadata({
+    clubName: (await services.organization.publicIdentity())?.name,
     site,
     title: design
       ? design.seoTitle || design.title

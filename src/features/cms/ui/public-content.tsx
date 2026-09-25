@@ -1,4 +1,6 @@
 import "server-only";
+import { ClubDetailsBlock } from "./club-details-block";
+import { CustomCodeBlock, CustomCodePreview } from "./custom-code-block";
 import { CalendarPublicBlock } from "./calendar-public-block";
 import { services } from "@/composition/services";
 import { PageIntroBlock, PageCollectionBlock } from "./page-collection";
@@ -113,6 +115,14 @@ export async function RenderContent({
           {(() => {
             const key = block.props.id;
             switch (block.type) {
+              case "ClubDetails":
+                return <ClubDetailsBlock {...block.props} />;
+              case "CustomCode":
+                return preview ? (
+                  <CustomCodePreview {...block.props} />
+                ) : (
+                  <CustomCodeBlock {...block.props} />
+                );
               case "Calendar":
                 return <CalendarPublicBlock {...block.props} />;
               case "EventHero":

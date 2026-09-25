@@ -1,4 +1,15 @@
 import { z } from "zod";
+export const hostedDomainSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(253)
+  .refine(
+    (value) =>
+      value === "" ||
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(value),
+    "Enter a domain such as rotaract.lu, without @ or https://.",
+  );
 
 export const googleClientIdSchema = z
   .string()
@@ -20,6 +31,7 @@ export const googleAuthSaveSchema = z
   .object({
     expectedVersion: z.int().nonnegative(),
     clientId: googleClientIdSchema,
+    hostedDomain: hostedDomainSchema.optional(),
     clientSecret: googleClientSecretSchema.optional(),
   })
   .strict();
@@ -38,6 +50,7 @@ export type GoogleAuthSettings = {
   configured: boolean;
   enabled: boolean;
   clientId: string;
+  hostedDomain: string;
   hasSecret: boolean;
   encryptionReady: boolean;
   verifiedAt: string | null;

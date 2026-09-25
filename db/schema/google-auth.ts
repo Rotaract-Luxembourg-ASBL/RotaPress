@@ -18,6 +18,7 @@ export const googleAuthConfiguration = club.table(
       .references(() => organization.id, { onDelete: "cascade" }),
     version: integer("version").notNull().default(1),
     clientId: text("client_id"),
+    hostedDomain: text("hosted_domain").notNull().default(""),
     clientSecret: text("client_secret"),
     enabled: boolean("enabled").notNull().default(false),
     verifiedAt: timestamp("verified_at", { withTimezone: true }),

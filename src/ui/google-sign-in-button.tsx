@@ -3,16 +3,20 @@
 export function GoogleSignInButton({
   onClick,
   disabled,
-  children = "Continue with Google",
+  children = "Sign in with Google",
+  theme = "light",
+  shape = "rounded",
 }: {
   onClick: () => void;
   disabled?: boolean;
   children?: React.ReactNode;
+  theme?: "light" | "dark" | "neutral";
+  shape?: "rounded" | "pill" | "square";
 }) {
   return (
     <button
       type="button"
-      className="button google-sign-in"
+      className={`button google-sign-in google-theme-${theme} google-shape-${shape}`}
       onClick={onClick}
       disabled={disabled}
     >

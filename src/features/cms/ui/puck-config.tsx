@@ -1,6 +1,7 @@
 "use client";
 
 import type { Config } from "@puckeditor/core";
+import { clubCodeConfig } from "./club-code-config";
 import { calendarBlockConfig } from "./calendar-block";
 import { collectionConfig } from "./page-collection-config";
 import type { Block, CmsSummary } from "../cms_schemas";
@@ -90,7 +91,12 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
     },
     directory: {
       title: "People & shared content",
-      components: ["PartnerCollection", "PageCollection", "SharedSection"],
+      components: [
+        "ClubDetails",
+        "PartnerCollection",
+        "PageCollection",
+        "SharedSection",
+      ],
     },
     event: {
       title: "Event content",
@@ -130,6 +136,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
         "Spacer",
       ],
     },
+    custom: { title: "Custom content", components: ["CustomCode"] },
     content: {
       title: "Images & sections",
       components: [
@@ -150,6 +157,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
     },
   },
   components: {
+    ...clubCodeConfig,
     Calendar: calendarBlockConfig,
     ...eventReferenceConfig,
     ...eventContentConfig,

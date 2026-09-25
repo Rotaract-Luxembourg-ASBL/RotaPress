@@ -47,6 +47,8 @@ function createAuth(google: GoogleProviderConfiguration | null) {
             clientSecret: google.clientSecret,
             accessType: "online",
             prompt: "select_account",
+            // Better Auth supplies the chooser hint AND checks Google's verified hd claim.
+            hd: google.hostedDomain || undefined,
           },
         }
       : {},

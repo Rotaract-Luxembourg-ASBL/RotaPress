@@ -111,6 +111,13 @@ const kits = new CmsKitService(
     new URL(config.APP_URL).hostname,
   ),
 );
+const websiteSetup = new WebsiteSetupService(
+  db,
+  authorization,
+  media,
+  cms,
+  kits,
+);
 const publicationScope = new CmsScopePolicy(
   db,
   authorization,
@@ -323,8 +330,8 @@ export const services = {
   cms,
   starter: new CmsStarterService(cms),
   kits,
-  websiteSetup: new WebsiteSetupService(db, authorization, media, cms, kits),
-  installation: new InstallationService(db),
+  websiteSetup,
+  installation: new InstallationService(db, websiteSetup),
   organization: new OrganizationService(db, authorization, googleAuthStore),
   googleAuth: new GoogleAuthSettingsService(
     db,

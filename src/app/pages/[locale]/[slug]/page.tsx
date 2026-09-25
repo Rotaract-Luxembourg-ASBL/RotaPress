@@ -22,6 +22,7 @@ export async function generateMetadata(context: Context): Promise<Metadata> {
   const page = await published(context);
   const canonical = `${config.APP_URL}/pages/${page.locale}/${page.slug}`;
   return publicMetadata({
+    clubName: (await services.organization.publicIdentity())?.name,
     title: page.title,
     description: page.description,
     socialImageId: page.socialImageId,

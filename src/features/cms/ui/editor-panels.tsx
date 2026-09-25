@@ -7,12 +7,15 @@ import type { EditorDocument } from "./use-editor-document";
 import { Icon as EditorIcon } from "@/ui/icon";
 import { isSitePart } from "../cms_schemas";
 import Link from "next/link";
+import { useSitePart } from "./site-part-blocks";
+import { clubPageTitle } from "../page_title";
 
 export type EditorDialogName =
   "revisions" | "duplicate" | "locale" | "help" | "schedule";
 
 export function PageSettings({ document: doc }: { document: EditorDocument }) {
   const { metadata, detail, setMetadata } = doc;
+  const { clubName } = useSitePart();
   const shared = isSitePart(detail.kind);
   return (
     <div className="editor-page-settings">
@@ -89,9 +92,19 @@ export function PageSettings({ document: doc }: { document: EditorDocument }) {
           >
             <h3>SEO &amp; social sharing</h3>
             <p className="editor-help">
-              The page title above is also the search title. Changes appear
-              publicly only after publication.
+              Your club name is added automatically to browser, search and
+              social titles. Page changes appear publicly after publication.
             </p>
+            <div className="seo-search-preview">
+              <span>Search preview</span>
+              <h3>
+                {clubPageTitle(
+                  metadata.title || "Page title",
+                  clubName || "Club name",
+                )}
+              </h3>
+              <p>{metadata.description}</p>
+            </div>
             <label>
               SEO description
               <textarea

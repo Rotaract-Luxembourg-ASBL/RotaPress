@@ -4,6 +4,7 @@ import { parseEnv } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import { test, expect, type Page } from "@playwright/test";
 import { Pool } from "pg";
+import type { CmsSummary } from "../../src/features/cms/cms_schemas";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { eventDraftJourney } from "./events-journey";
 import { googleAuthJourney } from "./google-auth-journey";
@@ -213,12 +214,13 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   await page
     .getByLabel("About your club")
     .fill("A synthetic local club used to verify RotaPress.");
-  await page
-    .getByRole("button", { name: "Rotaract cranberry", exact: true })
-    .click();
-  await expect(page.locator('input[name="accentColor"]')).toHaveValue(
-    "#d41367",
-  );
+  await page.getByLabel("Club type").selectOption("rotaract");
+  await page.getByLabel("District number", { exact: true }).fill("2160");
+  await page.getByLabel("City", { exact: true }).fill("Example city");
+  await page.getByLabel("Country", { exact: true }).fill("Example country");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("radio", { name: /Rotaract Action/ }).check();
+  await expect(page.getByLabel("Website accent color")).toHaveValue("#d41367");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -235,17 +237,28 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
     data: { claim: "x".repeat(43) },
   });
   expect(invalidClaim.status()).toBe(409);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByLabel("Club name", { exact: true })).toHaveValue(
     "Fictional Community Club",
   );
-  await expect(page.locator('input[name="accentColor"]')).toHaveValue(
-    "#d41367",
-  );
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("Website accent color")).toHaveValue("#d41367");
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page
     .getByRole("button", { name: "Create club and claim ownership" })
     .click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(/\/admin\/website\?tab=templates$/);
+  const setupWebsite = await page.request.get(
+    "/api/admin/cms/website?locale=en",
+  );
+  const installedWebsite = await setupWebsite.json();
+  expect(installedWebsite.site.draft.themeId).toBe("rotaract-action");
+  expect(
+    installedWebsite.contents.every(
+      (item: CmsSummary) => !item.publishedRevisionId,
+    ),
+  ).toBe(true);
   expect(
     (await page.context().cookies()).some(
       (item) => item.name === "rotapress_setup",
@@ -266,7 +279,7 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
     [ownerEmail],
   );
   expect(method.rows[0]?.auth_method).toBe("email-otp");
-  await googleAuthJourney(page, browser);
+  await googleAuthJourney(page, browser, database);
   await adminHeaderJourney(page);
 
   const applicantContext = await browser.newContext();

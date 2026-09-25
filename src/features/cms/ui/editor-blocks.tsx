@@ -12,6 +12,10 @@ import { eventOnlyBlockTypes } from "../../events/event_content";
 export const useEditorPuck = createUsePuck<typeof puckConfig>();
 const rootZone = "root:default-zone";
 const blockDescriptions: Record<string, string> = {
+  ClubDetails:
+    "Live club identity, district, city, country, meetings and Polaris from Settings",
+  CustomCode:
+    "Isolated HTML, CSS and JavaScript for custom interactive content",
   Calendar:
     "Merge selected calendars, recurring activities and published events",
   PageIntro: "Introduce a page with a heading and a short welcome",

@@ -22,13 +22,17 @@ const returnPath = "/admin/integrations/google";
 function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
   const [saved, setSaved] = useState(initial);
   const [clientId, setClientId] = useState(initial.clientId);
+  const [hostedDomain, setHostedDomain] = useState(initial.hostedDomain);
   const [clientSecret, setClientSecret] = useState("");
   const [review, setReview] = useState<GoogleReview>();
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [problem, setProblem] = useState<string>();
   const [receipt, setReceipt] = useState<string>();
-  const dirty = clientId !== saved.clientId || clientSecret !== "";
+  const dirty =
+    clientId !== saved.clientId ||
+    clientSecret !== "" ||
+    hostedDomain !== saved.hostedDomain;
   const secretRequired = !saved.hasSecret || clientId.trim() !== saved.clientId;
   const editingBlocked =
     !saved.canManage || !saved.encryptionReady || saved.staffRequiresGoogle;
@@ -49,6 +53,7 @@ function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
   function accept(next: GoogleAuthSettings) {
     setSaved(next);
     setClientId(next.clientId);
+    setHostedDomain(next.hostedDomain);
     setClientSecret("");
   }
   function open(action: GoogleReview) {
@@ -62,6 +67,7 @@ function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
     const result = googleAuthSaveSchema.safeParse({
       expectedVersion: saved.version,
       clientId,
+      hostedDomain,
       ...(clientSecret ? { clientSecret } : {}),
     });
     if (!result.success) {
@@ -110,6 +116,7 @@ function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
             ...(review === "save"
               ? {
                   clientId: clientId.trim(),
+                  hostedDomain,
                   ...(clientSecret ? { clientSecret } : {}),
                 }
               : {
@@ -278,6 +285,23 @@ function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
             className="form-stack forms-fieldset"
             disabled={busy || editingBlocked}
           >
+            <label>
+              Managed Google domain (optional)
+              <input
+                value={hostedDomain}
+                maxLength={253}
+                placeholder="rotaract.lu"
+                autoCapitalize="none"
+                spellCheck={false}
+                onChange={(event) => setHostedDomain(event.target.value)}
+              />
+            </label>
+            <p className="field-help">
+              Leave blank to accept any Google account, including Gmail. Set a
+              domain to require a managed Google Workspace account. Google’s
+              verified domain is checked on return; an email ending alone is not
+              enough. New staff still need owner approval.
+            </p>
             <label className="field">
               Google client ID
               <input

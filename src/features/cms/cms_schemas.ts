@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { clubDetailKeySchema } from "./club_details";
 import { siteSeoSchema } from "./site_seo";
 import { appearanceSchema, type Appearance } from "./appearance";
 import {
@@ -34,6 +35,27 @@ export function isSitePart(kind: CmsKind): kind is "header" | "footer" {
   return kind === "header" || kind === "footer";
 }
 const leafBlockSchemas = [
+  block("ClubDetails", {
+    title: shortText,
+    fields: z
+      .array(z.strictObject({ field: clubDetailKeySchema }))
+      .min(1)
+      .max(19)
+      .refine(
+        (items) =>
+          new Set(items.map((item) => item.field)).size === items.length,
+        "Choose each club detail once.",
+      ),
+    layout: z.enum(["list", "columns"]),
+    showLabels: z.boolean(),
+  }),
+  block("CustomCode", {
+    title: z.string().trim().min(1).max(160),
+    html: z.string().max(30_000),
+    css: z.string().max(15_000),
+    javascript: z.string().max(30_000),
+    height: z.number().int().min(80).max(1600),
+  }),
   block("Calendar", {
     title: shortText,
     calendarIds: z.array(z.uuid()).max(30),
@@ -228,6 +250,7 @@ export const cmsBlockSchema = z.discriminatedUnion("type", [
   }),
 ]);
 export const sitePartBlockTypes = [
+  "ClubDetails",
   "SiteRow",
   "SiteBrand",
   "SiteMenu",

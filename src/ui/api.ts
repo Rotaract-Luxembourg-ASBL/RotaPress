@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { en } from "@/locales/en";
 import type { FeatureFlags } from "@/core/features/feature_catalogue";
+import type { ClubProfile, StaffLogin } from "@/core/organization/club_profile";
 
 export type ClubSettings = {
   name: string;
@@ -11,10 +12,12 @@ export type ClubSettings = {
   locale: string;
   timezone: string;
   accentColor: string;
+  profile: ClubProfile;
 };
 
 export type AdminSettings = ClubSettings & {
   staffAuthPolicy: "email-or-google" | "google";
+  staffLogin: StaffLogin;
 };
 
 export type MembershipStatus =

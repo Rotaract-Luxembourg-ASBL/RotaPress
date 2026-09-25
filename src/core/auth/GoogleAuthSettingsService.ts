@@ -46,6 +46,7 @@ export class GoogleAuthSettingsService {
       configured: Boolean(current.clientId && current.clientSecret),
       enabled: current.enabled,
       clientId: current.clientId ?? "",
+      hostedDomain: current.hostedDomain,
       hasSecret: Boolean(current.clientSecret),
       encryptionReady: this.store.cipher.ready,
       verifiedAt: current.verifiedAt?.toISOString() ?? null,
@@ -68,6 +69,7 @@ export class GoogleAuthSettingsService {
       clientId: string | null;
       clientSecret: string | null;
       enabled: boolean;
+      hostedDomain: string;
     },
   ) {
     this.authorization.requireRecent(actor);
@@ -148,6 +150,7 @@ export class GoogleAuthSettingsService {
           );
         return {
           clientId: values.clientId,
+          hostedDomain: values.hostedDomain ?? current.hostedDomain,
           clientSecret: this.store.cipher.seal(
             secret,
             `google-auth:${current.organizationId}`,
@@ -176,6 +179,7 @@ export class GoogleAuthSettingsService {
         const secret = this.store.credential(current);
         return {
           clientId: current.clientId,
+          hostedDomain: current.hostedDomain,
           clientSecret: secret
             ? this.store.cipher.seal(
                 secret,
@@ -194,7 +198,12 @@ export class GoogleAuthSettingsService {
       actor,
       values.expectedVersion,
       "integration.google.disconnected",
-      () => ({ clientId: null, clientSecret: null, enabled: false }),
+      () => ({
+        clientId: null,
+        clientSecret: null,
+        enabled: false,
+        hostedDomain: "",
+      }),
     );
   }
 }

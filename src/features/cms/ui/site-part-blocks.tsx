@@ -7,9 +7,11 @@ import type { PublicSite } from "../cms_schemas";
 import { templateBrands } from "../template_brand";
 import { resolveWebsiteBranding } from "../site_identity";
 import { CmsImage, type BlockProps } from "./block-renderers";
+import type { PublicOrganization } from "@/core/organization/organization_schemas";
 
 export type SiteBlockContext = {
   clubName: string;
+  club?: PublicOrganization | null;
   site: Pick<
     PublicSite,
     "navigation" | "footerText" | "socialLinks" | "homeHref"
@@ -20,6 +22,9 @@ const Context = createContext<SiteBlockContext>({
   clubName: "",
   site: { navigation: [], footerText: "", socialLinks: [] },
 });
+export function useSitePart() {
+  return useContext(Context);
+}
 export function SitePartProvider({
   value,
   children,

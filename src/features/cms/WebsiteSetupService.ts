@@ -110,112 +110,116 @@ export class WebsiteSetupService {
     input: unknown,
   ): Promise<WebsiteWorkspace> {
     const parsed = templateInput.parse(input);
-    const template = kits[parsed.kitId];
-    await this.db.transaction(async (tx) => {
-      const { organizationId } = await this.authorization.lock(
-        actor,
-        "cms.edit",
-        tx,
-      );
-      const current = await this.site.get(actor, parsed.locale, tx);
-      if (current.version !== parsed.expectedVersion) this.conflict();
-      const installations = [
-        ...(current.draft.templateSetup?.installations ?? []),
-      ];
-      let selected = installations.find((item) => item.kitId === parsed.kitId);
-      let contactFormId = current.draft.contactFormId;
-      let activeIds: Set<string>;
-      if (selected) {
-        // A current setup may intentionally omit an archived optional page.
-        if (current.draft.templateSetup?.selectedKitId === parsed.kitId) return;
-        activeIds = await this.assertRecipes(
-          organizationId,
-          parsed.locale,
-          selected.recipes,
-          tx,
-        );
-      } else {
-        const access = await this.authorization.require(actor, "cms.edit", tx);
-        if (
-          access.capabilities.includes("forms.edit") &&
-          (await this.authorization.features.enabled(
-            organizationId,
-            "forms",
-            tx,
-          ))
-        ) {
-          const forms = new FormService(this.db, this.authorization);
-          if (contactFormId)
-            await forms.assertOwnedForms(organizationId, [contactFormId], tx);
-          else
-            contactFormId = (
-              await forms.createDraft(
-                actor,
-                {
-                  kind: "contact",
-                  templateId: "contact",
-                  title: "Contact the club",
-                },
-                tx,
-              )
-            ).id;
-        }
-        const imported = await this.kits.importDrafts(
-          actor,
-          {
-            kitId: parsed.kitId,
-            locale: parsed.locale,
-            namespace: parsed.kitId,
-            recipes: [...template.websiteRecipes],
-            confirmed: true,
-            ...(contactFormId ? { contactFormId } : {}),
-          },
-          tx,
-          { titlePrefix: "", cleanSlugs: true },
-        );
-        if (imported.kept)
-          throw new DomainError(
-            "TEMPLATE_COLLISION",
-            "A template path is already in use. Your existing pages were kept; try again.",
-            409,
-          );
-        selected = {
-          kitId: parsed.kitId,
-          recipes: imported.items.map(({ recipe, id }) => ({ recipe, id })),
-        };
-        installations.push(selected);
-        activeIds = new Set(selected.recipes.map((item) => item.id));
-      }
-      const id = (recipe: string) =>
-        selected!.recipes.find((item) => item.recipe === recipe)?.id ?? "";
-      const settings: SiteSettings = {
-        ...current.draft,
-        contactFormId,
-        themeId: parsed.kitId,
-        homePageId: id("home"),
-        eventsPageId: activeIds.has(id("events")) ? id("events") : null,
-        headerId: id("header"),
-        footerId: id("footer"),
-        navigation: template.menuRecipes
-          .filter((recipe) => activeIds.has(id(recipe)))
-          .map((recipe) => ({
-            pageId: id(recipe),
-            label: kitRecipes.find((item) => item.id === recipe)!.name,
-          })),
-        templateSetup: { selectedKitId: parsed.kitId, installations },
-      };
-      await this.site.saveDraft(
-        actor,
-        { locale: parsed.locale, expectedVersion: current.version, settings },
-        tx,
-      );
-      await new AuditRepository().record(tx, {
-        organizationId,
-        actorUserId: actor.userId,
-        action: "cms.website.template_selected",
-      });
-    });
+    await this.db.transaction((tx) => this.selectTemplate(actor, parsed, tx));
     return this.workspace(actor, parsed.locale);
+  }
+
+  /** Installation and later template selection share the same atomic draft workflow. */
+  async selectTemplate(
+    actor: TrustedActor,
+    input: unknown,
+    tx: Transaction,
+  ): Promise<void> {
+    const parsed = templateInput.parse(input);
+    const template = kits[parsed.kitId];
+    const { organizationId } = await this.authorization.lock(
+      actor,
+      "cms.edit",
+      tx,
+    );
+    const current = await this.site.get(actor, parsed.locale, tx);
+    if (current.version !== parsed.expectedVersion) this.conflict();
+    const installations = [
+      ...(current.draft.templateSetup?.installations ?? []),
+    ];
+    let selected = installations.find((item) => item.kitId === parsed.kitId);
+    let contactFormId = current.draft.contactFormId;
+    let activeIds: Set<string>;
+    if (selected) {
+      // A current setup may intentionally omit an archived optional page.
+      if (current.draft.templateSetup?.selectedKitId === parsed.kitId) return;
+      activeIds = await this.assertRecipes(
+        organizationId,
+        parsed.locale,
+        selected.recipes,
+        tx,
+      );
+    } else {
+      const access = await this.authorization.require(actor, "cms.edit", tx);
+      if (
+        access.capabilities.includes("forms.edit") &&
+        (await this.authorization.features.enabled(organizationId, "forms", tx))
+      ) {
+        const forms = new FormService(this.db, this.authorization);
+        if (contactFormId)
+          await forms.assertOwnedForms(organizationId, [contactFormId], tx);
+        else
+          contactFormId = (
+            await forms.createDraft(
+              actor,
+              {
+                kind: "contact",
+                templateId: "contact",
+                title: "Contact the club",
+              },
+              tx,
+            )
+          ).id;
+      }
+      const imported = await this.kits.importDrafts(
+        actor,
+        {
+          kitId: parsed.kitId,
+          locale: parsed.locale,
+          namespace: parsed.kitId,
+          recipes: [...template.websiteRecipes],
+          confirmed: true,
+          ...(contactFormId ? { contactFormId } : {}),
+        },
+        tx,
+        { titlePrefix: "", cleanSlugs: true },
+      );
+      if (imported.kept)
+        throw new DomainError(
+          "TEMPLATE_COLLISION",
+          "A template path is already in use. Your existing pages were kept; try again.",
+          409,
+        );
+      selected = {
+        kitId: parsed.kitId,
+        recipes: imported.items.map(({ recipe, id }) => ({ recipe, id })),
+      };
+      installations.push(selected);
+      activeIds = new Set(selected.recipes.map((item) => item.id));
+    }
+    const id = (recipe: string) =>
+      selected!.recipes.find((item) => item.recipe === recipe)?.id ?? "";
+    const settings: SiteSettings = {
+      ...current.draft,
+      contactFormId,
+      themeId: parsed.kitId,
+      homePageId: id("home"),
+      eventsPageId: activeIds.has(id("events")) ? id("events") : null,
+      headerId: id("header"),
+      footerId: id("footer"),
+      navigation: template.menuRecipes
+        .filter((recipe) => activeIds.has(id(recipe)))
+        .map((recipe) => ({
+          pageId: id(recipe),
+          label: kitRecipes.find((item) => item.id === recipe)!.name,
+        })),
+      templateSetup: { selectedKitId: parsed.kitId, installations },
+    };
+    await this.site.saveDraft(
+      actor,
+      { locale: parsed.locale, expectedVersion: current.version, settings },
+      tx,
+    );
+    await new AuditRepository().record(tx, {
+      organizationId,
+      actorUserId: actor.userId,
+      action: "cms.website.template_selected",
+    });
   }
 
   async publish(

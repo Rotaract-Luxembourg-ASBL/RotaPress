@@ -33,6 +33,34 @@ Email sign-in remains available for guests; an email session cannot satisfy the
 Google-only staff policy. The protected local owner recovery procedure remains in
 [local development](../development/local-development.md).
 
+Google-only policy removes the email form from `/sign-in` and staff destinations
+such as `/sign-in?next=/admin`. Member and guest entry points retain email codes.
+The staff screen shows the published club identity and explains owner approval.
+In **Settings → Sign-in & security**, customize its heading, welcome message,
+workspace label and Google button (light, dark or neutral; rounded, pill or square).
+The Google mark and sign-in wording are retained. These settings save immediately;
+public logo changes still follow Website publication.
+
+### Managed accounts or personal Gmail
+
+In **Integrations → Google sign-in**, leave **Managed Google domain** empty to
+accept any Google account, including Gmail. Enter a domain such as `rotaract.lu`
+to require managed accounts for that domain. Do not include `@` or a URL.
+This applies to all Google sign-ins, including member entry points; member/guest
+email codes remain a separate access method.
+
+The domain guides Google's account chooser and the pinned Better Auth provider
+checks Google's verified `hd` claim. An email suffix alone is insufficient.
+Google controls the chooser and may still offer an option to use another account;
+that does not bypass the server check. See [Google's hosted-domain documentation](https://developers.google.com/identity/openid-connect/openid-connect#hd-param).
+
+Changing a domain follows the credential review flow and invalidates previous
+Google sessions. If staff access is Google-only, first restore email-or-Google
+policy using your current Google session, save the domain, enable Google again,
+complete a real sign-in with an allowed account, and then restore Google-only.
+This preserves a recovery path when domain or credential settings are wrong.
+Membership and staff approval are always separate.
+
 ## Permissions, credentials and lifecycle
 
 - Staff with `integrations.manage` can read connection status and setup details.

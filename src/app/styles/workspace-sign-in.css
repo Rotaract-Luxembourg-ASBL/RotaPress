@@ -1,0 +1,133 @@
+.workspace-sign-in {
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+  padding: 64px max(24px, 8vw);
+  background: #f6f8fc;
+  color: #082643;
+}
+.workspace-sign-in-card {
+  width: min(100%, 460px);
+  display: grid;
+  gap: 24px;
+}
+.workspace-sign-in-card h1 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  line-height: 1.2;
+  margin: 0;
+}
+.workspace-sign-in-card > p {
+  margin: 0;
+  line-height: 1.6;
+}
+.workspace-sign-in-brand {
+  margin-bottom: 12px;
+}
+.workspace-sign-in-brand .site-brand {
+  margin: 0;
+}
+.workspace-sign-in-brand > p {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+.workspace-sign-in-policy {
+  border-top: 1px solid #d6dfeb;
+  padding-top: 24px;
+  font-size: 0.85rem;
+}
+.google-sign-in.google-theme-light {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+}
+.google-sign-in.google-theme-dark {
+  background: #131314;
+  color: #e3e3e3;
+  border: 1px solid #8e918f;
+}
+.google-sign-in.google-theme-neutral {
+  background: #f2f2f2;
+  color: #1f1f1f;
+  border: 1px solid transparent;
+}
+.google-sign-in.google-shape-rounded {
+  border-radius: 8px;
+}
+.google-sign-in.google-shape-pill {
+  border-radius: 999px;
+}
+.google-sign-in.google-shape-square {
+  border-radius: 0;
+}
+.google-sign-in svg {
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 50%;
+}
+.google-sign-in {
+  min-height: 44px;
+  font-family: Arial, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+.google-sign-in > span {
+  font-size: inherit;
+  line-height: 1.4;
+}
+.staff-login-preview {
+  padding: 20px;
+  background: #f6f8fc;
+  border-radius: 12px;
+}
+.setup-template-choice {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.setup-template-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.setup-template-options > label {
+  border: 1px solid #ccd4df;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+.setup-template-options > label:has(input:checked) {
+  border-color: #17458f;
+  box-shadow: 0 0 0 2px #17458f;
+}
+.setup-template-options > label:last-child {
+  grid-column: 1 / -1;
+}
+.setup-template-options img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 6px;
+}
+.setup-template-options input {
+  width: auto;
+  display: inline;
+}
+@media (max-width: 540px) {
+  .workspace-sign-in {
+    padding: 40px 24px;
+    align-items: start;
+  }
+  .workspace-sign-in-card {
+    margin: 24px auto;
+  }
+  .setup-template-options {
+    grid-template-columns: 1fr;
+  }
+}

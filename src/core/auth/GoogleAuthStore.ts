@@ -11,6 +11,7 @@ import {
 export type GoogleProviderConfiguration = {
   clientId: string;
   clientSecret: string;
+  hostedDomain: string;
   version: string;
 };
 type Configuration = {
@@ -18,6 +19,7 @@ type Configuration = {
   version: number;
   clientId: string | null;
   clientSecret: string | null;
+  hostedDomain: string;
   enabled: boolean;
   verifiedAt: Date | null;
 };
@@ -47,6 +49,7 @@ export class GoogleAuthStore {
       version: 0,
       clientId: null,
       clientSecret: null,
+      hostedDomain: "",
       enabled: false,
       verifiedAt: null,
     };
@@ -73,6 +76,7 @@ export class GoogleAuthStore {
     return {
       clientId: current.clientId,
       clientSecret: this.credential(current)!,
+      hostedDomain: current.hostedDomain,
       version: this.token(current),
     };
   }

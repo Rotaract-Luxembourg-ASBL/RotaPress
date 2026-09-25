@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const site = club ? await services.cms.publicSite(club.locale) : null;
   const name = club?.name ?? "RotaPress";
   return {
-    title: { default: site?.seo?.title || name, template: `%s · ${name}` },
+    title: { default: site?.seo?.title || name, template: `%s | ${name}` },
     description:
       site?.seo?.description ||
       club?.description ||

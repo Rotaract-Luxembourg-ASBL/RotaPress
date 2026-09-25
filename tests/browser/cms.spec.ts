@@ -17,6 +17,7 @@ import { clubFeaturesJourney } from "./club-features-journey";
 import { pageSettingsJourney } from "./page-settings-journey";
 import { kitJourney } from "./kit-journey";
 import { brandingJourney } from "./branding-journey";
+import { clubContentJourney } from "./club-content-journey";
 import { websitePublicationJourney } from "./website-publication-journey";
 import { eventDirectoryJourney } from "./event-directory-journey";
 import { calendarJourney } from "./calendar-journey";
@@ -671,5 +672,6 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await adminCollectionsJourney(page);
   await formStudioJourney(page, publicPage);
   await websitePublicationJourney(page, publicPage, origin);
+  await clubContentJourney(page, publicPage);
   await anonymousContext.close();
 });

@@ -39,7 +39,9 @@ export function PublicSiteShell({
 }) {
   return (
     <PublicAccountProvider preview={preview}>
-      <SitePartProvider value={{ clubName: club?.name ?? "Your club", site }}>
+      <SitePartProvider
+        value={{ clubName: club?.name ?? "Your club", club, site }}
+      >
         <div
           className={`public-site cms-public${eventAppearance ? " cms-event-page" : ""}${className ? ` ${className}` : ""}`}
           data-theme={eventAppearance ? undefined : site.themeId}

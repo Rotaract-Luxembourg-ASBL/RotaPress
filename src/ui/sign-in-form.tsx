@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  defaultStaffLogin,
+  type StaffLogin,
+} from "@/core/organization/club_profile";
+import { WorkspaceSignIn } from "./workspace-sign-in";
 import { authClient } from "@/core/auth/client";
 import { signInDestination } from "@/core/auth/sign_in_destination";
 import { en } from "@/locales/en";
@@ -20,9 +25,21 @@ function destination() {
 export function SignInForm({
   googleError = false,
   setup = false,
+  staffOnly = false,
+  appearance = defaultStaffLogin,
+  brand,
+  hostedDomain = "",
+  clubName = "your club",
+  returnTo,
 }: {
   googleError?: boolean;
   setup?: boolean;
+  staffOnly?: boolean;
+  appearance?: StaffLogin;
+  brand?: ReactNode;
+  hostedDomain?: string;
+  clubName?: string;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -31,7 +48,7 @@ export function SignInForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>(
     googleError
-      ? "Google sign-in did not finish. Start again or use email verification."
+      ? "Google sign-in did not finish. Start again with an allowed Google account."
       : undefined,
   );
   const {
@@ -80,7 +97,7 @@ export function SignInForm({
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: setup ? "/setup" : destination(),
+        callbackURL: setup ? "/setup" : (returnTo ?? destination()),
       });
       if (result.error)
         throw new Error(
@@ -95,6 +112,27 @@ export function SignInForm({
   const reauth =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("reauth") === "1";
+  if (staffOnly)
+    return (
+      <WorkspaceSignIn
+        appearance={appearance}
+        brand={brand}
+        domain={hostedDomain}
+        clubName={clubName}
+        loading={!me && !loadError}
+        available={Boolean(me?.googleConfigured)}
+        busy={busy}
+        error={error || loadError}
+        email={me?.actor?.email}
+        canContinue={
+          !reauth && Boolean(me?.capabilities.includes("admin.access"))
+            ? (returnTo ?? "/admin")
+            : false
+        }
+        onSignIn={() => void googleSignIn()}
+        onRetry={refresh}
+      />
+    );
   if (setup && !me)
     return (
       <SetupFrame step={0}>
@@ -184,7 +222,12 @@ export function SignInForm({
       {error && <Notice>{error}</Notice>}
       {!sent && me?.googleConfigured && (
         <>
-          <GoogleSignInButton disabled={busy} onClick={googleSignIn} />
+          <GoogleSignInButton
+            disabled={busy}
+            onClick={googleSignIn}
+            theme={appearance.buttonTheme}
+            shape={appearance.buttonShape}
+          />
           <p className="auth-provider-divider">or continue with email</p>
         </>
       )}

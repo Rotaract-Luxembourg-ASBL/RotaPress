@@ -45,9 +45,31 @@ Images support alternative text, captions, aspect ratio, fitting, focal position
 and sizing. Presentation edits do not rewrite the stored image. Sliders use manual
 controls rather than automatic movement.
 
-Rich text is sanitized on the server. Arbitrary scripts, executable uploads,
-unknown block versions and unapproved embeds are rejected. Publication also checks
+Rich text is sanitized on the server. Scripts cannot execute in ordinary text
+blocks or uploads. Unknown block versions are rejected. Publication also checks
 current scope, media visibility, referenced forms and feature availability.
+
+**Club details** displays selected public information from **Settings → Club &
+region**, including district/club numbers, location, contact details, charter date,
+sponsoring club, meetings and Polaris. Choose a list or columns and hide labels
+when appropriate. Empty values are omitted. It works in pages and shared parts;
+updating saved club identity updates connected blocks immediately. This is public
+information, never private membership records. A Polaris link opens the existing
+portal and does not import or authenticate members.
+
+**Custom HTML / JS** accepts bounded HTML, CSS and JavaScript inside an isolated
+frame with its own height and accessible title. It can run a self-contained widget,
+but cannot access the surrounding page, cookies, club APIs or editor. External
+scripts, images other than embedded data images, network requests and form
+submissions are blocked. Use normal CMS blocks for club media, forms and connected
+data. Draft code runs only after **Run code preview**; public execution requires
+deliberate page publication. Stop preview to discard its runtime state.
+
+Browser, search and social titles include the club name, for example **Home | Club
+name**. The page editor shows the resulting search title; do not repeat the club
+name in every page title. Existing recognized club suffixes are not duplicated.
+Website Search & sharing can override the homepage's title and description;
+changes to page/site drafts still require publication.
 
 A Form block uses a reusable form managed in **Forms**. Publish the form before
 publishing a page that uses it. Preview fields cannot submit real responses.

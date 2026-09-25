@@ -19,7 +19,9 @@ import { EditorLocale } from "./event-collection-editor";
 import { eventPageEditorHref } from "@/features/events/event_routes";
 import { FormInsertionPrompt } from "./form-insertion-prompt";
 
-type SiteContext = { site: PublicSite; clubName: string };
+type SiteContext = import("./site-part-blocks").SiteBlockContext & {
+  site: PublicSite;
+};
 function EditorForm({
   initial,
   context,
@@ -80,58 +82,67 @@ function EditorForm({
     ],
   );
   return (
-    <EditorLocale value={initial.locale}>
-      <InsertionProvider
-        disabled={doc.busy || doc.readOnly}
-        onInsert={(index) => {
-          setInsertionIndex(index);
-          setPanel("blocks");
-        }}
-      >
-        <div className="cms-puck editor-fullscreen">
-          <Puck<typeof puckConfig>
-            key={doc.editorKey}
-            config={config}
-            data={doc.data}
-            iframe={{ enabled: false }}
-            fieldTransforms={{ richtext: ({ value }) => value }}
-            overrides={{ componentOverlay: BoundaryOverlay }}
-            permissions={{
-              edit: !doc.readOnly && !doc.busy,
-              drag: !doc.readOnly && !doc.busy,
-              insert: !doc.readOnly && !doc.busy,
-              duplicate: !doc.readOnly && !doc.busy,
-              delete: !doc.readOnly && !doc.busy,
-            }}
-            height="100dvh"
-            onAction={doc.history.onAction}
-            onChange={(data) => {
-              doc.setData(data);
-              doc.clearMessage();
-            }}
-          >
-            {initial.kind === "page" && (
-              <FormInsertionPrompt disabled={doc.busy || doc.readOnly} />
-            )}
-            <EditorContextMenu
-              disabled={doc.busy || doc.readOnly}
-              onInsert={(index) => {
-                setInsertionIndex(index);
-                setPanel("blocks");
+    <SitePartProvider
+      value={
+        context ?? {
+          clubName: "",
+          site: { navigation: [], footerText: "", socialLinks: [] },
+        }
+      }
+    >
+      <EditorLocale value={initial.locale}>
+        <InsertionProvider
+          disabled={doc.busy || doc.readOnly}
+          onInsert={(index) => {
+            setInsertionIndex(index);
+            setPanel("blocks");
+          }}
+        >
+          <div className="cms-puck editor-fullscreen">
+            <Puck<typeof puckConfig>
+              key={doc.editorKey}
+              config={config}
+              data={doc.data}
+              iframe={{ enabled: false }}
+              fieldTransforms={{ richtext: ({ value }) => value }}
+              overrides={{ componentOverlay: BoundaryOverlay }}
+              permissions={{
+                edit: !doc.readOnly && !doc.busy,
+                drag: !doc.readOnly && !doc.busy,
+                insert: !doc.readOnly && !doc.busy,
+                duplicate: !doc.readOnly && !doc.busy,
+                delete: !doc.readOnly && !doc.busy,
               }}
-            />
-            <EditorWorkspace
-              document={doc}
-              canPublish={capabilities.includes("cms.publish")}
-              panel={panel}
-              setPanel={setPanel}
-              insertionIndex={insertionIndex}
-              setInsertionIndex={setInsertionIndex}
-            />
-          </Puck>
-        </div>
-      </InsertionProvider>
-    </EditorLocale>
+              height="100dvh"
+              onAction={doc.history.onAction}
+              onChange={(data) => {
+                doc.setData(data);
+                doc.clearMessage();
+              }}
+            >
+              {initial.kind === "page" && (
+                <FormInsertionPrompt disabled={doc.busy || doc.readOnly} />
+              )}
+              <EditorContextMenu
+                disabled={doc.busy || doc.readOnly}
+                onInsert={(index) => {
+                  setInsertionIndex(index);
+                  setPanel("blocks");
+                }}
+              />
+              <EditorWorkspace
+                document={doc}
+                canPublish={capabilities.includes("cms.publish")}
+                panel={panel}
+                setPanel={setPanel}
+                insertionIndex={insertionIndex}
+                setInsertionIndex={setInsertionIndex}
+              />
+            </Puck>
+          </div>
+        </InsertionProvider>
+      </EditorLocale>
+    </SitePartProvider>
   );
 }
 

@@ -99,14 +99,14 @@ export async function pageSettingsJourney(
     page.getByText("Published. The website now shows this saved revision."),
   ).toBeVisible();
   await visitor.goto(newPath);
-  await expect(visitor).toHaveTitle(new RegExp(title));
+  await expect(visitor).toHaveTitle(`${title} | Synthetic CMS Club`);
   await expect(visitor.locator('meta[name="description"]')).toHaveAttribute(
     "content",
     description,
   );
   await expect(visitor.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
-    title,
+    `${title} | Synthetic CMS Club`,
   );
   await expect(visitor.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",

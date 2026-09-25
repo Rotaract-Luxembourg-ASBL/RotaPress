@@ -38,6 +38,7 @@ export async function generateMetadata({
       ]
     : [];
   const metadata = publicMetadata({
+    clubName: (await services.organization.publicIdentity())?.name,
     title,
     description,
     canonical: url,

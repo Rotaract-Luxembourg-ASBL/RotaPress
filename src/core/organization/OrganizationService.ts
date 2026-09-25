@@ -31,6 +31,9 @@ export class OrganizationService {
   publicIdentity() {
     return this.repository.publicIdentity();
   }
+  signInPolicy() {
+    return this.repository.signInPolicy();
+  }
 
   async settings(actor: TrustedActor): Promise<OrganizationSettings> {
     const scope = await this.authorization.require(actor, "settings.manage");

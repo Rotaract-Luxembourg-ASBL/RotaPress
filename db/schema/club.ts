@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   check,
   index,
+  jsonb,
   pgSchema,
   smallint,
   text,
@@ -24,6 +25,8 @@ export const organization = club.table("organization", {
   name: text("name").notNull(),
   tagline: text("tagline").notNull().default(""),
   description: text("description").notNull().default(""),
+  profile: jsonb("profile").notNull().default({}),
+  staffLogin: jsonb("staff_login").notNull().default({}),
   locale: text("locale").notNull().default("en"),
   timezone: text("timezone").notNull().default("Europe/Luxembourg"),
   accentColor: text("accent_color").notNull().default("#25636b"),

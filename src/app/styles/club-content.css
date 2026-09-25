@@ -1,0 +1,30 @@
+.club-details dl {
+  display: grid;
+  gap: 16px;
+}
+.club-details-columns dl {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+.club-details dt {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+.club-details dd {
+  margin: 4px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.cms-custom-code {
+  width: 100%;
+  display: block;
+  border: 1px solid #d5dce4;
+  border-radius: 8px;
+  background: white;
+}
+.custom-code-preview {
+  display: grid;
+  gap: 16px;
+}
+.custom-code-preview > p {
+  font-size: 0.9rem;
+}

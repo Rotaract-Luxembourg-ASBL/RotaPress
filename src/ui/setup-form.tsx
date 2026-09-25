@@ -9,6 +9,8 @@ import { Arrow, Loading, Notice } from "./primitives";
 import { Icon } from "./icon";
 import { SetupFrame, SetupHelp, SetupEmailRequired } from "./setup-frame";
 import { SignOutButton } from "./sign-out-button";
+import { SetupWebsiteChoice } from "./setup-website-choice";
+import type { KitId } from "@/features/cms/kits/catalogue";
 
 export function SetupForm() {
   const router = useRouter();
@@ -22,6 +24,10 @@ export function SetupForm() {
     accentColor: "#17458f",
   });
   const [claim, setClaim] = useState("");
+  const [stage, setStage] = useState<"identity" | "website" | "review">(
+    "identity",
+  );
+  const [templateId, setTemplateId] = useState<KitId | null>("rotary-service");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [openingLink, setOpeningLink] = useState(true);
@@ -54,15 +60,19 @@ export function SetupForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (stage !== "review") {
+      setStage(stage === "identity" ? "website" : "review");
+      return;
+    }
     setBusy(true);
     setError(undefined);
     try {
       await request("/api/setup", {
         method: "POST",
-        body: JSON.stringify({ ...settings, claim }),
+        body: JSON.stringify({ ...settings, claim, templateId }),
       });
       setClaim("");
-      router.replace("/admin");
+      router.replace(templateId ? "/admin/website?tab=templates" : "/admin");
       router.refresh();
     } catch (cause: unknown) {
       setError(errorMessage(cause));
@@ -173,38 +183,122 @@ export function SetupForm() {
           </div>
           {error && <Notice>{error}</Notice>}
           <form onSubmit={submit} aria-busy={busy || undefined}>
+            <p className="setup-eyebrow" role="status">
+              {stage === "identity"
+                ? "1 of 3 · Your club"
+                : stage === "website"
+                  ? "2 of 3 · Your website"
+                  : "3 of 3 · Review and create"}
+            </p>
             <fieldset className="setup-fields form-stack" disabled={busy}>
               <legend className="sr-only">Club details and ownership</legend>
-              <ClubFields
-                value={settings}
-                onChange={setSettings}
-                brandPresets
-              />
-              {me.setupClaimReady ? (
-                <p className="field-help">
-                  Your secure setup link is ready. Create your club to finish.
-                </p>
-              ) : (
-                <div className="setup-claim">
+              {stage === "identity" && (
+                <ClubFields
+                  value={settings}
+                  onChange={(next) => {
+                    setSettings(next);
+                    if (next.profile.clubType !== settings.profile.clubType) {
+                      if (next.profile.clubType === "rotaract") {
+                        setTemplateId("rotaract-action");
+                        setSettings({ ...next, accentColor: "#d41367" });
+                      } else if (next.profile.clubType === "rotary") {
+                        setTemplateId("rotary-service");
+                        setSettings({ ...next, accentColor: "#17458f" });
+                      }
+                    }
+                  }}
+                  showBranding={false}
+                />
+              )}
+              {stage === "website" && (
+                <>
+                  <SetupWebsiteChoice
+                    value={templateId}
+                    onChange={(next) => {
+                      setTemplateId(next);
+                      if (next)
+                        setSettings({
+                          ...settings,
+                          accentColor:
+                            next === "rotary-service" ? "#17458f" : "#d41367",
+                        });
+                    }}
+                  />
                   <label>
-                    Installation claim
+                    Website accent color
                     <input
-                      name="claim"
-                      type="password"
-                      autoComplete="off"
-                      value={claim}
-                      onChange={(event) => setClaim(event.target.value)}
-                      maxLength={256}
-                      required
-                      aria-describedby="claim-help"
+                      type="color"
+                      value={settings.accentColor}
+                      onChange={(event) =>
+                        setSettings({
+                          ...settings,
+                          accentColor: event.target.value,
+                        })
+                      }
                     />
                   </label>
-                  <p id="claim-help" className="field-help">
-                    Paste the private installation claim supplied by your server
-                    administrator. It confirms that this installation belongs to
-                    you.
+                </>
+              )}
+              {stage === "review" && (
+                <>
+                  <h2>{settings.name}</h2>
+                  <p>
+                    {[settings.profile.city, settings.profile.country]
+                      .filter(Boolean)
+                      .join(", ")}
                   </p>
-                </div>
+                  <p>
+                    {templateId === "rotaract-action"
+                      ? "Rotaract Action"
+                      : templateId === "rotary-service"
+                        ? "Rotary Service"
+                        : "Blank website"}{" "}
+                    · {settings.locale.toUpperCase()} · {settings.timezone}
+                  </p>
+                  <p>
+                    Your website stays private until you review and publish it.
+                    Next, connect Google sign-in in Integrations, then choose
+                    your staff access policy in Settings.
+                  </p>
+                  {me.setupClaimReady ? (
+                    <p className="field-help">
+                      Your secure setup link is ready. Create your club to
+                      finish.
+                    </p>
+                  ) : (
+                    <div className="setup-claim">
+                      <label>
+                        Installation claim
+                        <input
+                          name="claim"
+                          type="password"
+                          autoComplete="off"
+                          value={claim}
+                          onChange={(event) => setClaim(event.target.value)}
+                          maxLength={256}
+                          required
+                          aria-describedby="claim-help"
+                        />
+                      </label>
+                      <p id="claim-help" className="field-help">
+                        Paste the private installation claim supplied by your
+                        server administrator. It confirms that this installation
+                        belongs to you.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+              {stage !== "identity" && (
+                <button
+                  type="button"
+                  className="button button-outline"
+                  onClick={() =>
+                    setStage(stage === "review" ? "website" : "identity")
+                  }
+                >
+                  Back
+                </button>
               )}
               <button
                 type="submit"
@@ -213,15 +307,17 @@ export function SetupForm() {
               >
                 {busy
                   ? "Creating your club…"
-                  : "Create club and claim ownership"}
+                  : stage === "review"
+                    ? "Create club and claim ownership"
+                    : "Continue"}
                 <Arrow />
               </button>
             </fieldset>
           </form>
           <SetupHelp />
           <p className="setup-footnote">
-            Next: your workspace, where you can choose a website template, add
-            content and invite your community.
+            Your choices are kept when you go back. You can update club details
+            and website design after setup.
           </p>
         </section>
       )}

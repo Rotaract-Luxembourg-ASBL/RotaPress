@@ -82,9 +82,10 @@ shown above: plain `pnpm setup` is pnpm's own command, not this project's setup.
 3. Open [owner setup](http://127.0.0.1:3000/setup), request a verification code and
    read it in your inbox. Verify the code, enter your club details and paste the
    private one-hour claim from `.local/setup-claim.txt`.
-4. In [administration](http://127.0.0.1:3000/admin), open **Website → Templates**,
-   preview a Rotary or Rotaract website, and make it yours. Templates start as
-   private drafts; review your content before publishing.
+4. Complete your club identity, choose a Rotary, Rotaract or blank website, and
+   review your choices. The selected template and theme are installed as private
+   drafts. In [administration](http://127.0.0.1:3000/admin), review your content
+   before publishing; **Website → Templates** can change the selection later.
 
 Setup guides you through email readiness, owner verification and club details.
 No demo members or events are created. Admin Email settings can replace the

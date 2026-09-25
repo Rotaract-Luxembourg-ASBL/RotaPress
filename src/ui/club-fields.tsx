@@ -2,6 +2,8 @@
 
 import type { ClubSettings } from "./api";
 import { useId } from "react";
+import { defaultClubProfile } from "@/core/organization/club_profile";
+import { ClubProfileFields } from "./club-profile-fields";
 
 export const initialClubSettings: ClubSettings = {
   name: "",
@@ -10,6 +12,7 @@ export const initialClubSettings: ClubSettings = {
   locale: "en",
   timezone: "Europe/Luxembourg",
   accentColor: "#a84432",
+  profile: defaultClubProfile,
 };
 
 export function ClubFields({
@@ -29,7 +32,7 @@ export function ClubFields({
   const timezones = Array.from(
     new Set([value.timezone, ...Intl.supportedValuesOf("timeZone")]),
   ).sort();
-  function update(key: keyof ClubSettings, text: string) {
+  function update(key: Exclude<keyof ClubSettings, "profile">, text: string) {
     onChange({ ...value, [key]: text });
   }
 
@@ -54,7 +57,6 @@ export function ClubFields({
           value={value.tagline}
           onChange={(event) => update("tagline", event.target.value)}
           maxLength={180}
-          required
           placeholder="A few words about what brings you together"
         />
       </label>
@@ -66,10 +68,13 @@ export function ClubFields({
           onChange={(event) => update("description", event.target.value)}
           maxLength={2000}
           rows={4}
-          required
           placeholder="Introduce your community and its purpose."
         />
       </label>
+      <ClubProfileFields
+        value={value.profile}
+        onChange={(profile) => onChange({ ...value, profile })}
+      />
       {grouped && (
         <>
           <div className="form-divider" />

@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { SiteSettings } from "@/features/cms/cms_schemas";
 import { defaultSiteSeo } from "@/features/cms/site_seo";
 import { MediaPicker } from "./media-picker";
+import { useResource, type ClubSettings } from "./api";
+import { clubPageTitle } from "@/features/cms/page_title";
 
 export function WebsiteSeoSettings({
   value,
@@ -12,6 +14,7 @@ export function WebsiteSeoSettings({
   onChange: (value: SiteSettings) => void;
 }) {
   const seo = value.seo ?? defaultSiteSeo;
+  const { data: club } = useResource<ClubSettings>("/api/admin/settings");
   function change(next: Partial<typeof seo>) {
     onChange({ ...value, seo: { ...seo, ...next } });
   }
@@ -29,14 +32,18 @@ export function WebsiteSeoSettings({
         </p>
       </div>
       <label>
-        Default search title
+        Homepage search title
         <input
           value={seo.title}
           maxLength={160}
-          placeholder="Use the club name"
+          placeholder="Use the homepage title"
           onChange={(e) => change({ title: e.target.value })}
         />
       </label>
+      <p className="field-help">
+        Your club name is appended automatically, for example Home |{" "}
+        {club?.name || "Club name"}. Keep individual page titles short.
+      </p>
       <label>
         Default search description
         <textarea
@@ -49,7 +56,7 @@ export function WebsiteSeoSettings({
       </label>
       <div className="seo-search-preview">
         <span>Search preview</span>
-        <h3>{seo.title || "Your club name"}</h3>
+        <h3>{clubPageTitle(seo.title || "Home", club?.name || "Club name")}</h3>
         <p>
           {seo.description ||
             "Your club introduction appears when a page has no description."}

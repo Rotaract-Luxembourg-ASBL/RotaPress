@@ -14,14 +14,17 @@ import {
   requireRecentActor,
   requireVerifiedActor,
   type TrustedActor,
+  type Transaction,
 } from "../authorization/AuthorizationService";
 import {
   organizationIdentitySchema,
   type PublicOrganization,
 } from "../organization/organization_schemas";
+import { kitIdSchema } from "@/features/cms/kits/catalogue";
 
 const installationInput = organizationIdentitySchema.extend({
   claim: z.string().min(32).max(256),
+  templateId: kitIdSchema.nullable().default(null),
 });
 
 function matchesClaim(raw: string, digest: string | null): boolean {
@@ -33,7 +36,16 @@ function matchesClaim(raw: string, digest: string | null): boolean {
 export class InstallationService {
   private readonly audit = new AuditRepository();
 
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly website?: {
+      selectTemplate(
+        actor: TrustedActor,
+        input: unknown,
+        tx: Transaction,
+      ): Promise<void>;
+    },
+  ) {}
 
   async isComplete(): Promise<boolean> {
     const [state] = await this.db
@@ -64,7 +76,7 @@ export class InstallationService {
   ): Promise<PublicOrganization> {
     requireVerifiedActor(actor);
     requireRecentActor(actor);
-    const { claim, ...identity } = installationInput.parse(input);
+    const { claim, templateId, ...identity } = installationInput.parse(input);
     return this.db.transaction(async (tx) => {
       // The singleton lock covers verification and every installation write. A second
       // contender sees the consumed claim only after the winner commits.
@@ -109,6 +121,19 @@ export class InstallationService {
           claimExpiresAt: null,
         })
         .where(eq(installation.id, 1));
+      if (templateId) {
+        if (!this.website) throw new Error("Website setup is unavailable.");
+        await this.website.selectTemplate(
+          actor,
+          {
+            kitId: templateId,
+            locale: identity.locale,
+            expectedVersion: 0,
+            confirmed: true,
+          },
+          tx,
+        );
+      }
       await this.audit.record(tx, {
         organizationId: created.id,
         actorUserId: actor.userId,

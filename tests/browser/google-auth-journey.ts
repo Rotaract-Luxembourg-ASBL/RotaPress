@@ -1,8 +1,13 @@
 import { expect, type Browser, type Page } from "@playwright/test";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
+import type { Pool } from "pg";
 
 /** B01 continuation: real OTP owner, synthetic credentials, no Google requests. */
-export async function googleAuthJourney(owner: Page, browser: Browser) {
+export async function googleAuthJourney(
+  owner: Page,
+  browser: Browser,
+  database: Pool,
+) {
   const endpoint = "/api/admin/integrations/google";
   const clientId = "123456789012-synthetic-browser.apps.googleusercontent.com";
   const context = await browser.newContext();
@@ -41,6 +46,7 @@ export async function googleAuthJourney(owner: Page, browser: Browser) {
         "enabled",
         "encryptionReady",
         "hasSecret",
+        "hostedDomain",
         "origin",
         "staffRequiresGoogle",
         "verifiedAt",
@@ -76,7 +82,7 @@ export async function googleAuthJourney(owner: Page, browser: Browser) {
     ).toBeVisible();
     await expect(
       visitor.getByRole("button", {
-        name: "Continue with Google",
+        name: "Sign in with Google",
         exact: true,
       }),
     ).toHaveCount(enabled ? 1 : 0);
@@ -247,6 +253,44 @@ export async function googleAuthJourney(owner: Page, browser: Browser) {
         fullPage: true,
         mask: [owner.locator(".admin-account")],
       });
+    }
+    // Policy fixture only: no Google identity/session or live callback is fabricated.
+    await database.query(
+      "UPDATE club.organization SET staff_auth_policy = 'google'",
+    );
+    try {
+      for (const width of [1440, 390]) {
+        await visitor.setViewportSize({ width, height: 900 });
+        await visitor.goto("/sign-in?next=/admin");
+        await expect(
+          visitor.getByRole("heading", { name: "Welcome to your workspace" }),
+        ).toBeVisible();
+        await expect(
+          visitor.getByRole("button", {
+            name: "Sign in with Google",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+        expect(
+          await visitor.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+        await visitor.screenshot({
+          path: `.local/feedback-captures/workspace-${width}.png`,
+          fullPage: true,
+        });
+      }
+      await visitor.goto("/sign-in?next=/membership");
+      await expect(visitor.getByLabel("Email address")).toBeVisible();
+      expect((await owner.request.get("/api/admin/settings")).status()).toBe(
+        403,
+      );
+    } finally {
+      await database.query(
+        "UPDATE club.organization SET staff_auth_policy = 'email-or-google'",
+      );
     }
     await owner
       .getByRole("button", { name: "Review disabling Google", exact: true })
