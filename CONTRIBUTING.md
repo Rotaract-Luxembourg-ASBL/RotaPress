@@ -15,6 +15,10 @@ Read the [architecture](docs/development/architecture.md),
 Continue the existing application; do not introduce another authentication
 system, database engine or content engine.
 
+Every feature change also needs an [API/MCP contract review](docs/development/automation.md):
+update shared operations, schemas, prompts and coverage as needed, record the
+reviewed contract, and pass `api:check`. Manual-only workflows require a stated reason.
+
 ## Development setup
 
 Fork the repository, clone your fork and create a branch for your change. Follow

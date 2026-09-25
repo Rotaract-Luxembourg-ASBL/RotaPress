@@ -26,3 +26,4 @@ export * from "./event-draws";
 export * from "./calendar";
 export * from "./calendar-sources";
 export * from "./email";
+export * from "./automation";

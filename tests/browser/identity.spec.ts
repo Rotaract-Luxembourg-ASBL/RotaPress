@@ -8,6 +8,7 @@ import type { CmsSummary } from "../../src/features/cms/cms_schemas";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { eventDraftJourney } from "./events-journey";
 import { googleAuthJourney } from "./google-auth-journey";
+import { automationJourney } from "./automation-journey";
 import { apiSecurityJourney } from "./api-security-journey";
 import { adminHeaderJourney } from "./admin-header-journey";
 import {
@@ -280,6 +281,7 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   );
   expect(method.rows[0]?.auth_method).toBe("email-otp");
   await googleAuthJourney(page, browser, database);
+  await automationJourney(page, browser, database);
   await adminHeaderJourney(page);
 
   const applicantContext = await browser.newContext();

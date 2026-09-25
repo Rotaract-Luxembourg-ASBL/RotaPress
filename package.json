@@ -29,7 +29,10 @@
     "build": "next build",
     "check:files": "node scripts/check_source_size.mjs",
     "check:types": "tsc --noEmit",
-    "check": "node scripts/pnpm.mjs check:files && node scripts/pnpm.mjs check:types && node scripts/pnpm.mjs lint",
+    "api:check": "node --conditions=react-server --import tsx scripts/check_automation_contract.ts",
+    "api:record": "node --conditions=react-server --import tsx scripts/check_automation_contract.ts --write",
+    "mcp": "node scripts/mcp_bridge.mjs",
+    "check": "node scripts/pnpm.mjs check:files && node scripts/pnpm.mjs api:check && node scripts/pnpm.mjs check:types && node scripts/pnpm.mjs lint",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"db/schema/*.ts\" \"tests/**/*.{ts,tsx}\"",
     "test:critical": "vitest run",
@@ -39,7 +42,9 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@better-auth/api-key": "1.7.5",
     "@js-temporal/polyfill": "0.5.1",
+    "@modelcontextprotocol/sdk": "1.30.1",
     "@puckeditor/core": "0.23.0",
     "better-auth": "1.7.5",
     "drizzle-orm": "0.45.2",

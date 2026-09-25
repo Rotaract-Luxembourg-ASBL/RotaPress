@@ -31,6 +31,9 @@ unfinished release work.
 | Configure email before the first owner signs in | [First-run email setup](guides/email-setup.md) |
 | Configure Google authentication | [Google sign-in](guides/google-authentication.md) |
 | Connect Luma links, imports and purchases | [Luma](guides/luma.md) |
+| Prepare content using AI, REST and MCP | [AI & API connections](guides/ai-and-api.md) |
+| Explore and test API operations | [REST reference and tester](guides/api-reference.md) |
+| Connect Claude, Codex or model-provider APIs | [MCP clients](guides/mcp-clients.md) |
 
 ## Develop RotaPress
 
@@ -38,6 +41,8 @@ unfinished release work.
 - [Architecture and directory layout](development/architecture.md)
 - [Container hosting contract](development/hosting.md)
 - [Testing and critical scenarios](development/testing.md)
+- [REST/MCP feature contract](development/automation.md)
+- [REST/MCP security boundaries](development/automation-security.md)
 - [Product UX rules](development/product-ux.md)
 - [Shared administration workspaces](development/admin-workspaces.md)
 - [Calendar provider contributions](contributing/calendar-providers.md)

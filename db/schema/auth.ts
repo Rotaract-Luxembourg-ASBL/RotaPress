@@ -12,6 +12,39 @@ import {
 const club = pgSchema("club");
 const instant = (name: string) => timestamp(name, { withTimezone: true });
 
+// Better Auth API-key plugin 1.7.5. Tokens are hashed by the library.
+export const apikey = club.table(
+  "apikey",
+  {
+    id: text("id").primaryKey(),
+    configId: text("config_id").notNull().default("default"),
+    name: text("name"),
+    start: text("start"),
+    referenceId: text("reference_id").notNull(),
+    prefix: text("prefix"),
+    key: text("key").notNull().unique(),
+    refillInterval: integer("refill_interval"),
+    refillAmount: integer("refill_amount"),
+    lastRefillAt: instant("last_refill_at"),
+    enabled: boolean("enabled").default(true),
+    rateLimitEnabled: boolean("rate_limit_enabled").default(true),
+    rateLimitTimeWindow: integer("rate_limit_time_window").default(60000),
+    rateLimitMax: integer("rate_limit_max").default(120),
+    requestCount: integer("request_count").default(0),
+    remaining: integer("remaining"),
+    lastRequest: instant("last_request"),
+    expiresAt: instant("expires_at"),
+    createdAt: instant("created_at").notNull(),
+    updatedAt: instant("updated_at").notNull(),
+    permissions: text("permissions"),
+    metadata: text("metadata"),
+  },
+  (table) => [
+    index("apikey_reference_idx").on(table.referenceId),
+    index("apikey_config_idx").on(table.configId),
+  ],
+);
+
 // Better Auth core schema, reviewed against the pinned release's database docs.
 export const user = club.table("user", {
   id: text("id").primaryKey(),

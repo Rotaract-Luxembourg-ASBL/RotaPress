@@ -22,7 +22,7 @@ import { withDefaultEventDesign } from "../events/event_design";
 import { CmsSiteService } from "./CmsSiteService";
 import { CmsReferencePolicy } from "./CmsReferencePolicy";
 import { sitePartStarter } from "./site_part_starter";
-import { copyPageTemplate } from "./page_templates";
+import { CmsCreationService } from "./CmsCreationService";
 import { CmsPublicReader } from "./CmsPublicReader";
 import { CmsEventParticipationReader } from "./CmsEventParticipationReader";
 import { FormService } from "../forms/FormService";
@@ -33,7 +33,7 @@ import {
   type CmsLocale,
   type PublicPage,
 } from "./cms_schemas";
-import { contentAssets, validateContent, revisionDto } from "./cms_validation";
+import { contentAssets, revisionDto } from "./cms_validation";
 
 import {
   variantInput,
@@ -129,98 +129,19 @@ export class CmsService {
 
   async create(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
     const parsed = createInput.parse(input);
-    if (
-      parsed.event &&
-      (parsed.kind !== "page" ||
-        (parsed.templateId !== "blank" &&
-          !(
-            parsed.event.moduleKey === "website" &&
-            (parsed.templateId.endsWith(":event-detail") ||
-              parsed.templateId.startsWith("event-layout:") ||
-              parsed.templateId === "event-reference")
-          )))
-    )
-      throw new DomainError(
-        "EVENT_PAGE_ONLY",
-        "Choose a blank page or an event layout for the main event page.",
-        422,
-      );
-    if (parsed.kind !== "page" && parsed.templateId !== "blank") {
-      throw new DomainError(
-        "PAGE_TEMPLATE_ONLY",
-        "Page templates can only start a new page.",
-        422,
-      );
-    }
-    const data = validateContent(
-      isSitePart(parsed.kind)
-        ? sitePartStarter(parsed.kind)
-        : parsed.event
-          ? withDefaultEventDesign(copyPageTemplate(parsed.templateId))
-          : copyPageTemplate(parsed.templateId),
-      parsed.kind,
+    const id = await this.db.transaction((tx) =>
+      this.createDraft(actor, parsed, tx),
     );
-    const id = await this.db.transaction(async (tx) => {
-      const { organizationId } = parsed.event
-        ? await this.scope.create(
-            actor,
-            parsed.event.id,
-            parsed.event.moduleKey,
-            tx,
-          )
-        : await this.authorization.lock(actor, "cms.edit", tx);
-      if (
-        parsed.event &&
-        (await this.repository.list(organizationId, tx, parsed.event.id)).some(
-          (item) =>
-            item.moduleKey === parsed.event!.moduleKey && !item.archived,
-        )
-      )
-        throw new DomainError(
-          "EVENT_PAGE_EXISTS",
-          "Open the existing feature page or add a language to it.",
-          409,
-        );
-      if (
-        isSitePart(parsed.kind) &&
-        (await this.repository.list(organizationId, tx)).some(
-          (item) => item.kind === parsed.kind && !item.archived,
-        )
-      ) {
-        throw new DomainError(
-          "SITE_PART_EXISTS",
-          "This shared site part already exists. Open it or add its language from the site editor.",
-          409,
-        );
-      }
-      const [content] = await tx
-        .insert(cmsContent)
-        .values({
-          organizationId,
-          kind: parsed.kind,
-          eventId: parsed.event?.id,
-          moduleKey: parsed.event?.moduleKey,
-        })
-        .returning();
-      await this.scope.validate(content, data, null, tx);
-      await this.revisions.createVariant(
-        tx,
-        actor,
-        organizationId,
-        content.id,
-        parsed.locale,
-        {
-          title: parsed.title,
-          slug: parsed.slug,
-          description: "",
-          socialImageId: null,
-          data,
-        },
-      );
-      await this.record(tx, actor, organizationId, "cms.created", content.id);
-      return content.id;
-    });
     return this.detail(actor, id, parsed.locale);
+  }
+
+  createDraft(actor: TrustedActor, input: unknown, tx: Transaction) {
+    return new CmsCreationService(
+      this.authorization,
+      this.repository,
+      this.scope,
+      this.revisions,
+    ).create(actor, input, tx);
   }
 
   async addLocale(actor: TrustedActor, input: unknown): Promise<CmsDetail> {

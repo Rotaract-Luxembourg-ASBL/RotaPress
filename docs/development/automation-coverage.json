@@ -1,0 +1,20 @@
+{
+  "features/calendar": { "operations": ["calendar_read"], "manual": "Publication, schedule writes, subscriptions, notifications and external feeds require the calendar workspace." },
+  "features/cms": { "operations": ["website_context", "website_list", "website_get", "website_create", "website_save", "content_import", "import_get"], "manual": "Publishing, scheduling, deleting, theme activation, navigation changes and executable code require the website editor." },
+  "features/events": { "operations": ["events_list", "events_get", "events_create", "events_save"], "manual": "Teams, modules, registrations, packages, prizes, purchases, entries, draws, cancellation and publication require scoped staff workflows." },
+  "features/forms": { "operations": ["forms_list", "forms_get", "forms_create", "forms_save"], "manual": "Responses, export, deletion, recipients, webhooks and publication remain outside automation." },
+  "features/guests": { "operations": [], "manual": "Guest identities, access grants and purchases are private participant workflows, not website content." },
+  "features/media": { "operations": ["media_list"], "manual": "Uploads, image bytes, deletion and visibility changes require Media; automation can reference existing image IDs." },
+  "features/members": { "operations": [], "manual": "Member accounts, applications, approvals and access changes are human-controlled private workflows." },
+  "features/partners": { "operations": ["directory_list", "directory_create", "directory_save"], "manual": "Publication, restoration and contact with partners remain manual." },
+  "integrations/automation": { "operations": ["source_read", "automation_capabilities", "automation_prompt"], "manual": "Connections are issued and revoked in the staff UI. Source requests require an explicit origin grant; all writes remain private drafts." },
+  "integrations/email": { "operations": [], "manual": "Provider credentials, templates, recipients and real delivery require staff configuration." },
+  "integrations/google": { "operations": [], "manual": "Provider credentials, domain policy and Google session verification require staff configuration." },
+  "integrations/luma": { "operations": [], "manual": "Provider credentials, synchronization, participant data and purchases require approved provider workflows." },
+  "integrations/ui": { "operations": [], "manual": "Presentation of integration settings; has no separate automation action." },
+  "core": { "operations": [], "manual": "Identity is readable through website_context; installation, ownership, memberships, domains, settings and feature switches remain manual." },
+  "infrastructure": { "operations": [], "manual": "Storage, databases, encryption and delivery adapters have no direct automation interface." },
+  "composition": { "operations": [], "manual": "Composition wires shared services into REST and MCP; it must not bypass service authorization." },
+  "app/api": { "operations": [], "manual": "Legacy cookie APIs remain staff workflows. Only explicitly registered v1 operations are callable through automation." },
+  "../db/schema": { "operations": [], "manual": "Schema changes require review of DTOs, migrations, scopes and both automation interfaces." }
+}

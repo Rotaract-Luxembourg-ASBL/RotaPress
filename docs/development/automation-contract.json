@@ -1,0 +1,24 @@
+{
+  "version": "1.1.0",
+  "contract": "d5c7f66321751413719ab7d327e4e43ebf3e13c5e7bea05ba450a8fc0b8fbdf5",
+  "domains": {
+    "../db/schema": "4e0467f02ba440ccfa8fdab9dac5919d0fdfb4f9607e972c5c737d66f17bf871",
+    "app/api": "cc56ed86ae10254cec8bd7aa97737b96fc24c59584ff667a4eeee43bc4ca0a37",
+    "composition": "6514afe4dc069d80660151c86ffa8930ad5e48bbe417150d1e37d72cd615b93f",
+    "core": "7affb66f4feb15fef9724cd16fc09d72ad8238323d702a99dfc5e8db5c730b6a",
+    "features/calendar": "31721f368c8183f9a74dcaa9dee8e9d52c05f04f525ef5bc614d5332e5952d89",
+    "features/cms": "5feae371b20770d670ad357b7a41142b63a5f92884a1aa7c081e45e7fdf9088f",
+    "features/events": "612f515b930f9d7e4a322f807c95f57925f4975fad60bf9c784bf8badac02141",
+    "features/forms": "82fd8eb2f212474b7fc969709546e80cc40f0e6c3599897b703939d96e65a7e2",
+    "features/guests": "fd6b3555bd1f4a31c3a88ab569fa3ec90d82807fe4e2a76367946310672f9f93",
+    "features/media": "b6274ed4ec6b68bdd03143c0737301d59ec2109215a24bb079441267b8b40f9b",
+    "features/members": "87104a95b1708806b3389705439c4b2676f0d52cfaee647b17dab9213f214bd3",
+    "features/partners": "fd838ebb4e920e6b19d6c26796c521315f2639a6380350e11b92fdddcce288b1",
+    "infrastructure": "9b1cff1da29fe958768765c39939428198b51897463dd3ba5b7ef0af30914fdb",
+    "integrations/automation": "3d03c85a5cdf962a98b98d17c4c049384d3aed2218c4cfa7384675ea05215020",
+    "integrations/email": "f9f0c2b34252b37462a3c16c5ce12ab9368851cca23b14023f6e330c09fee209",
+    "integrations/google": "d7fe9ddf18250e2c33f9d8d34975610cca738ecae3d369af8b0e40473238f00e",
+    "integrations/luma": "f9aa514a1c3e0df8544921a9e5d559c28fbd9a5d1cfc9e9726d40882d8aa008f",
+    "integrations/ui": "61e76f8036e15ea3e448890b8ff6a236edda0799bae50d208c54ae7af94cbd29"
+  }
+}

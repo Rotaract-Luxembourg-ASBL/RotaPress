@@ -80,6 +80,12 @@ client roles, organization IDs and feature flags cannot grant authority. A linke
 Google account cannot satisfy Google-only staff policy without a current Google
 session. Sensitive owner and integration changes require recent authentication.
 
+The content automation layer exposes versioned REST and MCP through one operation
+catalogue. Better Auth owns hashed connection keys bound to real staff sessions;
+every operation rechecks current scope and calls the existing domain services.
+Reference imports create private drafts in one transaction and retain immutable
+retry receipts. See the [API/MCP extension contract](automation.md).
+
 ## PostgreSQL and migrations
 
 Application tables live in the private `club` schema. The web process uses a

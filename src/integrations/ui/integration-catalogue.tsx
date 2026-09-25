@@ -6,6 +6,7 @@ import { BuiltinFeatureCards } from "./builtin-feature-cards";
 import { GoogleIntegrationCard } from "../google/ui/google-integration-card";
 import { EmailIntegrationCard } from "../email/ui/email-integration-card";
 import { SummaryStats } from "@/ui/collection";
+import { AutomationCard } from "../automation/ui/automation-card";
 
 export function IntegrationCatalogue() {
   const { capabilities, features } = useCurrentUser();
@@ -65,6 +66,7 @@ export function IntegrationCatalogue() {
               <LumaIntegrationCard />
               <GoogleIntegrationCard />
               <EmailIntegrationCard />
+              <AutomationCard />
             </div>
           </section>
           <p className="integration-catalogue-note">

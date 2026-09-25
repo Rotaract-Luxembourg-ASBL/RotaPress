@@ -6,6 +6,8 @@ export function signInDestination(next: string | null): string {
     "/admin/settings",
     "/admin/calendar",
     "/admin/integrations/google",
+    "/admin/integrations/automation",
+    "/admin/integrations/automation/docs",
     "/membership",
     "/recovery",
     "/guest",

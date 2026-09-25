@@ -1,0 +1,76 @@
+.automation-docs {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 90rem;
+}
+.automation-docs-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.automation-docs .panel {
+  min-width: 0;
+}
+.automation-docs label,
+.automation-docs form {
+  display: grid;
+  gap: 0.5rem;
+}
+.automation-docs form {
+  gap: 1rem;
+}
+.automation-docs select,
+.automation-docs input,
+.automation-docs textarea {
+  width: 100%;
+  min-width: 0;
+}
+.automation-docs textarea {
+  font: 0.875rem/1.5 var(--font-mono, monospace);
+}
+.automation-docs pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 28rem;
+  overflow: auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 0.8rem;
+}
+.automation-docs code,
+.automation-docs dd {
+  overflow-wrap: anywhere;
+}
+.automation-docs dd {
+  margin: 0.25rem 0 1rem;
+}
+.automation-docs dt {
+  font-weight: 600;
+}
+.automation-docs details {
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+}
+.automation-docs summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.automation-docs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.automation-docs li {
+  margin-bottom: 0.5rem;
+}
+@media (max-width: 1000px) {
+  .automation-docs-layout {
+    grid-template-columns: 1fr;
+  }
+}

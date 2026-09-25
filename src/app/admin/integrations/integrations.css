@@ -169,3 +169,64 @@
   min-width: 0;
   max-width: 100%;
 }
+.automation-settings {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 70rem;
+}
+.automation-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.automation-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  min-width: 0;
+}
+.automation-scopes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+}
+.admin-layout .automation-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+.admin-layout .automation-scope input {
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  min-height: 0;
+  padding: 0;
+  margin-top: 0.18rem;
+}
+.automation-settings code {
+  overflow-wrap: anywhere;
+}
+.automation-settings ol {
+  padding-left: 1.5rem;
+}
+.automation-settings li {
+  margin-bottom: 0.75rem;
+}
+.automation-connections {
+  list-style: none;
+  padding: 0;
+}
+.automation-connections li {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .automation-connections li {
+    flex-direction: column;
+  }
+}

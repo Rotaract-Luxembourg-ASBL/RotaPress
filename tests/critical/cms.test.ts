@@ -35,6 +35,7 @@ import { websiteChecks } from "./cms-website-cases";
 import { brandingChecks } from "./cms-branding-cases";
 import { websitePublicationChecks } from "./cms-website-publication-cases";
 import { eventDirectoryChecks } from "./event-directory-cases";
+import { automationImportChecks } from "./automation-import-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -44,6 +45,7 @@ let cms: CmsService;
 let media: MediaService;
 const storageBase = path.resolve(".local/test-uploads");
 const storageRoot = path.join(storageBase, `cms-${randomUUID()}`);
+automationImportChecks(() => ({ db, cms, authorization, installedClub }));
 sitePartChecks(() => ({ db, cms, media, actor, installedClub }));
 kitChecks(() => ({ db, cms, media, authorization, actor, installedClub }));
 websiteChecks(() => ({ db, cms, media, authorization, actor, installedClub }));

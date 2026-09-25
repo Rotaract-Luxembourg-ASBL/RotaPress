@@ -66,6 +66,9 @@ export async function applyDatabaseMigrations(connection) {
       "REVOKE UPDATE, DELETE, TRUNCATE ON club.form_version FROM rotapress_app",
     );
     await client.query(
+      "REVOKE UPDATE, DELETE, TRUNCATE ON club.automation_import FROM rotapress_app",
+    );
+    await client.query(
       "ALTER DEFAULT PRIVILEGES FOR ROLE rotapress_migrator IN SCHEMA club GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO rotapress_app",
     );
     await client.query(

@@ -32,9 +32,14 @@ See [hosting](../guides/hosting.md).
 
 ## Integration and hosting limits
 
+Content automation supplies versioned REST, MCP tools/resources/prompts and scoped,
+expiring staff connections. Reference content becomes private native drafts; every
+feature change requires an API/MCP contract review. See [AI & API](../guides/ai-and-api.md).
+
 | Area | Current boundary |
 | --- | --- |
 | Google sign-in | Protected configuration and local policy checks; actual provider sign-in still needs credentials and a real run |
+| AI & API | Private content drafts, manual publication, bearer-configured MCP/stdio clients; OAuth-only connectors and live-client acceptance are not implemented/established |
 | Luma | Links, protected connections, scoped import/notification/purchase workflows with synthetic fixtures; live verification pending |
 | Calendar feeds | Local file imports and injected feed checks; real remote feeds require separate verification |
 | Email | Server SMTP/Resend bootstrap precedes owner sign-in; development capture is opt-in and prohibited in production mode. Live delivery and total email-lockout recovery remain unverified |

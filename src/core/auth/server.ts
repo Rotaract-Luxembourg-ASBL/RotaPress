@@ -2,6 +2,7 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
+import { apiKey } from "@better-auth/api-key";
 import {
   APIError,
   addOAuthServerContext,
@@ -139,6 +140,17 @@ function createAuth(google: GoogleProviderConfiguration | null) {
       },
     },
     plugins: [
+      apiKey({
+        defaultPrefix: "rp_",
+        enableMetadata: true,
+        enableSessionForAPIKeys: false,
+        keyExpiration: {
+          defaultExpiresIn: 3600,
+          minExpiresIn: 1 / 288,
+          maxExpiresIn: 1 / 3,
+        },
+        rateLimit: { enabled: true, timeWindow: 60000, maxRequests: 120 },
+      }),
       emailOTP({
         otpLength: 6,
         expiresIn: 300,
@@ -162,6 +174,13 @@ export async function authenticationHandler(
   request: Request,
 ): Promise<Response> {
   const path = new URL(request.url).pathname;
+  // Only the scoped, session-bound integration service may manage API keys.
+  if (path.startsWith("/api/auth/api-key/"))
+    throw new DomainError(
+      "API_KEY_ROUTE_DISABLED",
+      "Manage connections in Integrations → AI & API.",
+      404,
+    );
   if (path === "/api/auth/email-otp/send-verification-otp")
     return withVerificationDelivery(() => auth.handler(request));
   if (

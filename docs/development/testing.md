@@ -17,7 +17,7 @@ node scripts/pnpm.mjs build
 node scripts/pnpm.mjs test:smoke
 ```
 
-`check` runs source size, strict types and lint. `browser:install` downloads
+`check` runs source size, the shared API/MCP contract, strict types and lint. `browser:install` downloads
 Chromium into the project's ignored local directory and is needed only once per
 browser version. `test:smoke` expects an existing production build and launches
 its own server on loopback port 3001.
@@ -69,6 +69,7 @@ layer owning the behavior, with real PostgreSQL for constraints and scoped data.
 | C11 | Demonstration entry decisions, frozen draws, replay and public winner privacy |
 | C12 | Portable container startup, migration replay, restricted roles, claim expiry, HTTPS, database-plus-files restore and overwrite refusal; public deployment acceptance is separate |
 | C13 | Calendar audiences, time zones, recurrence, import safety and owned subscriptions |
+| C14 | Scoped API/MCP keys, session/permission revocation, source boundaries, atomic private imports, response privacy, schema/example parity and the interactive tester |
 
 Fix a confirmed authorization bypass, exposure or corruption with a focused
 regression. Do not disable a security assertion to complete a slice.
@@ -76,7 +77,7 @@ regression. Do not disable a security assertion to complete a slice.
 ## Browser journeys
 
 - **B01**, `tests/browser/identity.spec.ts`: protected installation, real email OTP,
-  private setup-link exchange, membership and scoped administration/event/guest workflows.
+  private setup-link exchange, membership, AI/API/MCP connections and scoped administration/event/guest workflows.
 - **B02**, `tests/browser/cms.spec.ts`: visual editing, publication, media, forms,
   website templates and calendar interactions.
 

@@ -14,4 +14,5 @@ For interface changes, include useful desktop/phone screenshots with synthetic d
 
 - [ ] The change contains no credentials, local diagnostics or participant data.
 - [ ] Relevant documentation and focused checks are updated.
+- [ ] Feature changes include an API/MCP review: shared operations, schemas, prompts, coverage policy and `api:check` match the final behavior.
 - [ ] Authored files stay within the 800-line limit.
