@@ -30,6 +30,23 @@ export async function apiSecurityJourney(
   const anonymous = await browser.newContext();
   const headers = { origin: smokeOrigin };
   try {
+    // Unauthenticated traffic must not poison an owner's sensitive-operation quota.
+    for (const [path, attempts] of [
+      ["setup", 11],
+      ["recovery", 6],
+    ] as const)
+      for (let attempt = 0; attempt < attempts; attempt++)
+        await denied(
+          await anonymous.request.post(`/api/${path}`, { headers, data: {} }),
+          401,
+        );
+    await denied(
+      await owner.request.post("/api/recovery", {
+        headers,
+        data: { claim: "synthetic-invalid-owner-claim-0000000000000000" },
+      }),
+      409,
+    );
     const created = await owner.request.post("/api/admin/forms", {
       headers,
       data: { kind: "contact", title: "API security contact fixture" },

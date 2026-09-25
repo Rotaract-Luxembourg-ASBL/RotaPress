@@ -1,6 +1,7 @@
 import { services } from "@/composition/services";
 import { emailDelivery } from "@/composition/email";
 import { getActor } from "@/core/auth/actor";
+import { requireVerifiedActor } from "@/core/authorization/AuthorizationService";
 import { handle, HttpError, json, readMutation } from "@/core/http";
 import { config } from "@/core/config";
 import { readSetupClaim, setupCookie } from "@/core/installation/setup_cookie";
@@ -8,9 +9,11 @@ import { readSetupClaim, setupCookie } from "@/core/installation/setup_cookie";
 export async function POST(request: Request) {
   return handle(async () => {
     const body = await readMutation(request);
-    await services.limiter.consume("setup", "installation", 10);
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in before completing setup.");
+    requireVerifiedActor(actor);
+    // An unrelated caller must not consume the nominated owner's attempt budget.
+    await services.limiter.consume("setup", actor.userId, 10);
     emailDelivery.requireServerConnection();
     const input =
       body && typeof body === "object" && !Array.isArray(body)

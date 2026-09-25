@@ -73,6 +73,8 @@ layer owning the behavior, with real PostgreSQL for constraints and scoped data.
 
 Fix a confirmed authorization bypass, exposure or corruption with a focused
 regression. Do not disable a security assertion to complete a slice.
+The [security testing guide](security-testing.md) maps attack surfaces to the
+regressions, dependency checks and evidence needed for an assessment.
 
 ## Browser journeys
 

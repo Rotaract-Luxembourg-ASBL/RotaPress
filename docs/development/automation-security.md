@@ -43,6 +43,10 @@ and in `automation-coverage.json` before updating the contract receipt.
 `automation-contract.test.ts` covers output privacy, generic MCP failures, valid
 examples/references and tester transport restrictions. Import/concurrency cases
 run in `automation-import-cases.ts` against PostgreSQL.
+`adversarial-content.test.ts` rejects forged identity/prototype fields across
+every registered input and tests private/mixed DNS answers in all configurable
+outbound adapters. B01 also attempts unregistered publication, member, credential
+and prototype-named tools and checks their safe denial responses.
 
 B01 uses a real Better Auth OTP session and issued keys. Its automation helpers
 exercise REST/MCP/stdio, current-session and capability revocation, scope denial,
@@ -51,10 +55,12 @@ draft writes, output projections, and the desktop/phone documentation tester.
 Fixture changes stay in the dedicated browser database. No fabricated live identity
 or external AI-provider response is accepted as evidence.
 
-Before release, run `node scripts/pnpm.mjs audit --prod --audit-level high`, the
+Before release, run `node scripts/pnpm.mjs audit --audit-level low`, the
 affected regressions and full `verify` once for the completed slice. A dependency
 audit reports known advisories at that time; it is not a source audit or proof of
 absence of vulnerabilities. Machine-specific results belong in `.local/STATUS.md`.
+The [application security testing guide](security-testing.md) covers the wider
+authentication, content, media, provider and hosting boundaries.
 
 ## Remaining limits
 

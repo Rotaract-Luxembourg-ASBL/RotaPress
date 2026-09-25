@@ -1,6 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 import type { CmsDetail } from "../../src/features/cms/cms_schemas";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
+import {
+  customCodeSecurityProbe,
+  interceptCustomCodeProbe,
+} from "./custom-code-security";
 
 /** B02: real owner edits, publication, dynamic identity and an opaque JavaScript frame. */
 export async function clubContentJourney(owner: Page, visitor: Page) {
@@ -110,7 +114,8 @@ export async function clubContentJourney(owner: Page, visitor: Page) {
             html: '<button id="counter">Count: 0</button><p id="isolation"></p>',
             css: "button{padding:12px}",
             javascript:
-              'let count=0;document.getElementById("counter").onclick=()=>document.getElementById("counter").textContent="Count: "+(++count);try{parent.document.body.dataset.compromised="yes"}catch{document.getElementById("isolation").textContent="Parent access blocked"}',
+              'let count=0;document.getElementById("counter").onclick=()=>document.getElementById("counter").textContent="Count: "+(++count);try{parent.document.body.dataset.compromised="yes"}catch{document.getElementById("isolation").textContent="Parent access blocked"}' +
+              customCodeSecurityProbe,
             height: 180,
           },
         },
@@ -128,10 +133,25 @@ export async function clubContentJourney(owner: Page, visitor: Page) {
     owner.getByRole("button", { name: "Run code preview", exact: true }),
   ).toBeVisible();
   await expect(owner.locator("iframe.cms-custom-code")).toHaveCount(0);
+  const ownerProbe = await interceptCustomCodeProbe(owner);
+  // The editing canvas intercepts block clicks for selection. Execute the same
+  // sandbox in the authenticated saved-draft preview, before publication.
+  await owner.goto(`/admin/website/${page.id}/preview?locale=en`);
+  await expect(owner.locator("iframe.cms-custom-code")).toHaveCount(0);
+  await owner
+    .getByRole("button", { name: "Run code preview", exact: true })
+    .click();
+  await ownerProbe.check();
+  await owner
+    .getByRole("button", { name: "Stop code preview", exact: true })
+    .click();
+  await expect(owner.locator("iframe.cms-custom-code")).toHaveCount(0);
+  await ownerProbe.dispose();
   await post(`/api/admin/cms/content/${page.id}/publish`, {
     locale: "en",
     expectedRevisionId: page.draft.id,
   });
+  const visitorProbe = await interceptCustomCodeProbe(visitor);
   for (const width of [1440, 390]) {
     await visitor.setViewportSize({ width, height: 960 });
     await visitor.goto("/pages/en/club-information");
@@ -148,6 +168,7 @@ export async function clubContentJourney(owner: Page, visitor: Page) {
     ).toHaveAttribute("href", "https://portal.example.test/club");
     const frame = visitor.frameLocator('iframe[title="Counter widget"]');
     await expect(frame.getByText("Parent access blocked")).toBeVisible();
+    await visitorProbe.check();
     await frame.getByRole("button", { name: "Count: 0" }).click();
     await expect(frame.getByRole("button", { name: "Count: 1" })).toBeVisible();
     expect(
@@ -163,6 +184,7 @@ export async function clubContentJourney(owner: Page, visitor: Page) {
       fullPage: true,
     });
   }
+  await visitorProbe.dispose();
   const settings = await owner.request
     .get("/api/admin/settings")
     .then((response) => response.json());

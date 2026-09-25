@@ -20,6 +20,27 @@ export async function automationSecurityJourney(
     ...bearer,
     accept: "application/json, text/event-stream",
   };
+  for (const name of [
+    "website_publish",
+    "members_list",
+    "credentials_read",
+    "__proto__",
+  ]) {
+    const rejected = await api.post("/api/mcp", {
+      headers: mcpHeaders,
+      data: rpc(name),
+    });
+    expect(rejected.status()).toBe(200);
+    const result = (await rejected.json()).result;
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toBeUndefined();
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify({ error: "This operation is unavailable." }),
+      },
+    ]);
+  }
   expect(
     (
       await owner.request.post("/api/mcp", {

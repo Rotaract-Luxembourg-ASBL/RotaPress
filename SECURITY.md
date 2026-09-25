@@ -38,5 +38,6 @@ uses a restricted role; credentials and local diagnostics are excluded from Git.
 
 These are design requirements, not a claim of an exhaustive audit. See
 [architecture](docs/development/architecture.md), [testing](docs/development/testing.md)
-and feature guides for implemented boundaries. Confirmed access bypass, data
+and [security testing](docs/development/security-testing.md) for review methods
+and implemented boundaries. Confirmed access bypass, data
 exposure, credential leakage or corruption needs a fix and focused regression.

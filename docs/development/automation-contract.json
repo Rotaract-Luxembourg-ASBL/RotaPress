@@ -3,7 +3,7 @@
   "contract": "d5c7f66321751413719ab7d327e4e43ebf3e13c5e7bea05ba450a8fc0b8fbdf5",
   "domains": {
     "../db/schema": "4e0467f02ba440ccfa8fdab9dac5919d0fdfb4f9607e972c5c737d66f17bf871",
-    "app/api": "cc56ed86ae10254cec8bd7aa97737b96fc24c59584ff667a4eeee43bc4ca0a37",
+    "app/api": "afc38708922a613a061f78c1d1baa0550ca2afd9b710c15b4956e2df4a3db1ce",
     "composition": "6514afe4dc069d80660151c86ffa8930ad5e48bbe417150d1e37d72cd615b93f",
     "core": "7affb66f4feb15fef9724cd16fc09d72ad8238323d702a99dfc5e8db5c730b6a",
     "features/calendar": "31721f368c8183f9a74dcaa9dee8e9d52c05f04f525ef5bc614d5332e5952d89",

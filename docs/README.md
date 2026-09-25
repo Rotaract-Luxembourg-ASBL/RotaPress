@@ -41,6 +41,7 @@ unfinished release work.
 - [Architecture and directory layout](development/architecture.md)
 - [Container hosting contract](development/hosting.md)
 - [Testing and critical scenarios](development/testing.md)
+- [Security testing and assessment scope](development/security-testing.md)
 - [REST/MCP feature contract](development/automation.md)
 - [REST/MCP security boundaries](development/automation-security.md)
 - [Product UX rules](development/product-ux.md)
