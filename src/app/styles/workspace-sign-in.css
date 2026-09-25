@@ -28,6 +28,22 @@
 .workspace-sign-in-brand .site-brand {
   margin: 0;
 }
+.workspace-sign-in-brand .site-brand > a {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.workspace-sign-in-brand .site-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 112px;
+  max-height: 48px;
+  object-fit: contain;
+}
 .workspace-sign-in-brand > p {
   margin: 8px 0 0;
   font-size: 0.85rem;
