@@ -18,6 +18,7 @@ import {
   scheduleSchema,
 } from "@/features/calendar/calendar_schemas";
 import { automationScopeSchema } from "./scopes";
+import { publicationPolicy } from "./publication_policy";
 
 const id = z.uuid();
 const instant = z.iso.datetime({ offset: true });
@@ -175,7 +176,7 @@ export const operationDescriptionOutput = z.strictObject({
 });
 export const capabilitiesOutput = z.strictObject({
   version: z.string(),
-  publication: z.literal("manual-only"),
+  publication: publicationPolicy,
   sourceOrigins: z.array(z.string()),
   features: z.array(
     z.strictObject({

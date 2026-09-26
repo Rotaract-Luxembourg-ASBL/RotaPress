@@ -34,11 +34,6 @@ export async function OAuthConsentPage({
               Signed in as {actor?.email}
             </p>
             <OAuthConsent details={details} signedQuery={signedQuery} />
-            <p className="oauth-consent-return">
-              <Link href={`/api/automation/oauth/sign-in?${signedQuery}`}>
-                Sign in again to confirm your identity
-              </Link>
-            </p>
           </>
         ) : (
           <section className="oauth-consent-card">
@@ -56,9 +51,7 @@ export async function OAuthConsentPage({
               </Link>
             )}
             <p className="oauth-consent-return">
-              <Link href="/admin/integrations/automation">
-                Back to AI &amp; API
-              </Link>
+              <Link href="/admin/integrations/mcp">Back to MCP</Link>
             </p>
           </section>
         )}

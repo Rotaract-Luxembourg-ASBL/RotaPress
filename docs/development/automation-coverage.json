@@ -1,152 +1,151 @@
 {
-    "features/calendar":  {
-                              "operations":  [
-                                                 "calendar_read"
-                                             ],
-                              "manual":  "Publication, schedule writes, subscriptions, notifications and external feeds require the calendar workspace."
-                          },
-    "features/cms":  {
-                         "operations":  [
-                                            "website_context",
-                                            "website_list",
-                                            "website_get",
-                                            "website_create",
-                                            "website_save",
-                                            "content_import",
-                                            "import_get",
-                                            "website_design",
-                                            "website_preview"
-                                        ],
-                         "manual":  "Publishing, scheduling, deleting, theme activation, navigation changes and executable code require the website editor."
-                     },
-    "features/events":  {
-                            "operations":  [
-                                               "events_list",
-                                               "events_get",
-                                               "events_create",
-                                               "events_save",
-                                               "events_blueprints",
-                                               "events_prepare_preview",
-                                               "events_prepare",
-                                               "events_workspace",
-                                               "events_form_create",
-                                               "events_packages",
-                                               "events_package_save",
-                                               "events_prizes",
-                                               "events_prize_save",
-                                               "events_propose_settings",
-                                               "events_proposals"
-                                           ],
-                            "manual":  "Publication, teams, participant records, payments, entries, draws and cancellation require scoped staff workflows. AI prepares drafts and typed settings proposals; only recent cookie-authenticated staff can apply operational settings."
-                        },
-    "features/forms":  {
-                           "operations":  [
-                                              "forms_list",
-                                              "forms_get",
-                                              "forms_create",
-                                              "forms_save"
-                                          ],
-                           "manual":  "Responses, export, deletion, recipients, webhooks and publication remain outside automation."
-                       },
-    "features/guests":  {
-                            "operations":  [
-
-                                           ],
-                            "manual":  "Guest identities, access grants and purchases are private participant workflows, not website content."
-                        },
-    "features/media":  {
-                           "operations":  [
-                                              "media_list",
-                                              "media_get",
-                                              "media_upload",
-                                              "media_inspect",
-                                              "media_metadata_save"
-                                          ],
-                           "manual":  "New uploads are private. Image pixels need an explicit inspection scope. Public visibility and deletion remain manual."
-                       },
-    "features/members":  {
-                             "operations":  [
-
-                                            ],
-                             "manual":  "Member accounts, applications, approvals and access changes are human-controlled private workflows."
-                         },
-    "features/partners":  {
-                              "operations":  [
-                                                 "directory_list",
-                                                 "directory_create",
-                                                 "directory_save"
-                                             ],
-                              "manual":  "Publication, restoration and contact with partners remain manual."
-                          },
-    "integrations/automation":  {
-                                    "operations":  [
-                                                       "source_read",
-                                                       "automation_capabilities",
-                                                       "automation_prompt",
-                                                       "automation_website_prompt",
-                                                       "automation_event_prompt",
-                                                       "automation_review_prompt"
-                                                   ],
-                                    "manual":  "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and review OAuth consent; publication, transport switches and applying operational proposals are never tools."
-                                },
-    "integrations/email":  {
-                               "operations":  [
-
-                                              ],
-                               "manual":  "Provider credentials, templates, recipients and real delivery require staff configuration."
-                           },
-    "integrations/google":  {
-                                "operations":  [
-
-                                               ],
-                                "manual":  "Provider credentials, domain policy and Google session verification require staff configuration. Platform-wide login policy and appearance are human-managed Settings; REST and MCP never change authentication policy."
-                            },
-    "integrations/luma":  {
-                              "operations":  [
-
-                                             ],
-                              "manual":  "Provider credentials, synchronization, participant data and purchases require approved provider workflows."
-                          },
-    "integrations/ui":  {
-                            "operations":  [
-
-                                           ],
-                            "manual":  "Presentation of integration settings; has no separate automation action."
-                        },
-    "core":  {
-                 "operations":  [
-
-                                ],
-                 "manual":  "Identity is readable through website_context; installation, ownership, memberships, domains, settings and feature switches remain manual."
-             },
-    "infrastructure":  {
-                           "operations":  [
-
-                                          ],
-                           "manual":  "Storage, databases, encryption and delivery adapters have no direct automation interface."
-                       },
-    "composition":  {
-                        "operations":  [
-
-                                       ],
-                        "manual":  "Composition wires shared services into REST and MCP; it must not bypass service authorization."
-                    },
-    "app/api":  {
-                    "operations":  [
-
-                                   ],
-                    "manual":  "Legacy cookie APIs remain staff workflows. Only explicitly registered v1 operations are callable through automation."
-                },
-    "../db/schema":  {
-                         "operations":  [
-
-                                        ],
-                         "manual":  "Schema changes require review of DTOs, migrations, scopes and both automation interfaces."
-                     },
-    "app/automation-preview":  {
-                                   "operations":  [
-                                                      "website_preview"
-                                                  ],
-                                   "manual":  "One-use internal rendering only. Scripts and external requests are blocked; saved private media requires explicit inspection authority."
-                               }
+  "features/calendar": {
+    "operations": [
+      "calendar_read",
+      "calendar_create",
+      "calendar_save",
+      "calendar_archive",
+      "calendar_restore",
+      "calendar_schedule_create",
+      "calendar_schedule_save",
+      "calendar_schedule_archive",
+      "calendar_schedule_restore",
+      "calendar_page_save",
+      "calendar_publish",
+      "calendar_schedule_publish",
+      "calendar_page_publish"
+    ],
+    "manual": "Calendar and activity drafts, recurrence and page design use explicit grants and current versions. Publishing requires calendar:publish and an explicit request. Archive/restore of published items, subscription and delivery settings, and external feeds require the calendar workspace; native publication can trigger subscriber updates."
+  },
+  "features/cms": {
+    "operations": [
+      "website_context",
+      "website_list",
+      "website_get",
+      "website_create",
+      "website_save",
+      "content_import",
+      "import_get",
+      "website_design",
+      "website_preview",
+      "website_revision_get",
+      "website_restore",
+      "website_duplicate",
+      "website_locale_create",
+      "website_settings_save",
+      "website_publish",
+      "website_settings_publish"
+    ],
+    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance. Timed publication, deleting, template installation, private-media visibility and executable code require staff workflows."
+  },
+  "features/events": {
+    "operations": [
+      "events_list",
+      "events_get",
+      "events_create",
+      "events_save",
+      "events_blueprints",
+      "events_prepare_preview",
+      "events_prepare",
+      "events_workspace",
+      "events_form_create",
+      "events_packages",
+      "events_package_save",
+      "events_prizes",
+      "events_prize_save",
+      "events_propose_settings",
+      "events_proposals",
+      "events_publish",
+      "events_prize_publish"
+    ],
+    "manual": "Publishing saved event details or editorial prizes needs events:publish and an explicit request; existing page, public-media, domain permission and recent-authentication checks apply. Packages, teams, participant records, payments, entries, draws and cancellation require staff workflows. Only recent cookie-authenticated staff can apply operational settings proposals."
+  },
+  "features/forms": {
+    "operations": [
+      "forms_list",
+      "forms_get",
+      "forms_create",
+      "forms_save",
+      "forms_publish"
+    ],
+    "manual": "Publishing saved forms needs forms:publish, an explicit request and current form/event publisher authority. Responses, export, deletion, recipients and webhooks remain outside automation."
+  },
+  "features/guests": {
+    "operations": [],
+    "manual": "Guest identities, access grants and purchases are private participant workflows, not website content."
+  },
+  "features/media": {
+    "operations": [
+      "media_list",
+      "media_get",
+      "media_upload",
+      "media_inspect",
+      "media_metadata_save"
+    ],
+    "manual": "New uploads are private. Image pixels need an explicit inspection scope. Public visibility and deletion remain manual."
+  },
+  "features/members": {
+    "operations": [],
+    "manual": "Member accounts, applications, approvals and access changes are human-controlled private workflows."
+  },
+  "features/partners": {
+    "operations": [
+      "directory_list",
+      "directory_create",
+      "directory_save",
+      "directory_publish"
+    ],
+    "manual": "Publishing saved profiles needs directory:publish and an explicit request; images must already be public. Restoration and contacting partners remain manual."
+  },
+  "integrations/automation": {
+    "operations": [
+      "source_read",
+      "automation_capabilities",
+      "automation_prompt",
+      "automation_website_prompt",
+      "automation_event_prompt",
+      "automation_review_prompt"
+    ],
+    "manual": "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and approve actions; existing grants never widen automatically. Optional renewal and remembered consent avoid routine reapproval while current session and permission checks remain. New grants require recent sign-in. Publication needs an explicit grant, current authority, saved version and user request. Transport switches and applying operational proposals are never tools."
+  },
+  "integrations/email": {
+    "operations": [],
+    "manual": "Provider credentials, templates, recipients and real delivery require staff configuration."
+  },
+  "integrations/google": {
+    "operations": [],
+    "manual": "Provider credentials, domain policy and Google session verification require staff configuration. Platform-wide login policy and appearance are human-managed Settings; REST and MCP never change authentication policy."
+  },
+  "integrations/luma": {
+    "operations": [],
+    "manual": "Provider credentials, synchronization, participant data and purchases require approved provider workflows."
+  },
+  "integrations/ui": {
+    "operations": [],
+    "manual": "Presentation of integration settings; has no separate automation action."
+  },
+  "core": {
+    "operations": [],
+    "manual": "Identity is readable through website_context; installation, ownership, memberships, domains, settings and feature switches remain manual."
+  },
+  "infrastructure": {
+    "operations": [],
+    "manual": "Storage, databases, encryption and delivery adapters have no direct automation interface."
+  },
+  "composition": {
+    "operations": [],
+    "manual": "Composition wires shared services into REST and MCP; it must not bypass service authorization."
+  },
+  "app/api": {
+    "operations": [],
+    "manual": "Legacy cookie APIs remain staff workflows. Only explicitly registered v1 operations are callable through automation."
+  },
+  "../db/schema": {
+    "operations": [],
+    "manual": "Schema changes require review of DTOs, migrations, scopes and both automation interfaces."
+  },
+  "app/automation-preview": {
+    "operations": ["website_preview"],
+    "manual": "One-use internal rendering only. Scripts and external requests are blocked; saved private media requires explicit inspection authority."
+  }
 }

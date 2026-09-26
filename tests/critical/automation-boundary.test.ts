@@ -47,7 +47,7 @@ describe("C14 automation source and contract boundaries", () => {
     expect(
       connectionInput.safeParse({
         name: "Example",
-        scopes: ["website:publish"],
+        scopes: ["website:delete"],
       }).success,
     ).toBe(false);
   });
@@ -136,7 +136,7 @@ describe("C14 automation source and contract boundaries", () => {
       ),
     ).toBe(true);
   });
-  it("derives REST and MCP schemas from the same operations and exposes no publication or private participant actions", () => {
+  it("derives shared REST/MCP schemas, requires separate publication grants and excludes private participant actions", () => {
     const catalogue = operationCatalogue();
     const spec = openApiDocument();
     expect(catalogue).toHaveLength(operations.length);
@@ -147,14 +147,25 @@ describe("C14 automation source and contract boundaries", () => {
       });
       expect(entry.inputSchema.type).toBe("object");
       expect(entry.name).not.toMatch(
-        /publish|submission|guest|payment|draw|member|credential/,
+        /submission|guest|payment|draw|member|credential/,
       );
+      if (entry.name.endsWith("_publish")) {
+        expect(entry.scope).toMatch(/:publish$/);
+        expect(entry.readOnly).toBe(false);
+      }
     }
     expect(
-      operationCatalogue(["website:read"]).every(
-        (entry) => entry.readOnly,
-      ),
+      operationCatalogue(["website:read"]).every((entry) => entry.readOnly),
     ).toBe(true);
+    expect(
+      operationCatalogue([
+        "website:write",
+        "calendar:write",
+        "events:write",
+        "forms:write",
+        "directory:write",
+      ]).some((entry) => entry.name.endsWith("_publish")),
+    ).toBe(false);
   });
   it("uses explicit crawler groups before wildcard rules and matches percent-encoded paths", () => {
     expect(

@@ -5,12 +5,14 @@ import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { capture } from "./integration-credentials-journey";
 import { oauthPresetsJourney } from "./oauth-presets-journey";
 import { openOAuthFromAssistant } from "./oauth-navigation-journey";
+import { oauthManagementJourney } from "./oauth-management-journey";
 
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
   owner: Page,
   browser: Browser,
   database: Pool,
+  pageId: string,
 ) {
   const remote = await browser.newContext();
   const endpoint = "/api/admin/integrations/automation/oauth";
@@ -51,20 +53,22 @@ export async function oauthJourney(
       .getByRole("button", { name: "Select all", exact: true })
       .click();
     expect(await picker.getByRole("checkbox", { checked: true }).count()).toBe(
-      15,
+      await picker.getByRole("checkbox").count(),
     );
     await picker
       .getByRole("button", { name: "Clear all", exact: true })
       .click();
-    await picker
-      .getByRole("checkbox", { name: "Read website content", exact: true })
-      .check();
-    await panel
-      .getByRole("checkbox", {
-        name: "Create and edit website drafts",
-        exact: true,
-      })
-      .uncheck();
+    for (const name of [
+      "Read website content",
+      "Copy pages, add languages and restore drafts",
+      "Edit draft website menus and appearance",
+      "Publish website content and settings on request",
+      "Read calendars and activity schedules",
+      "Create and manage calendar and activity drafts",
+      "Edit draft calendar page design",
+      "Publish calendars, activities and page design on request",
+    ])
+      await picker.getByRole("checkbox", { name, exact: true }).check();
     await capture(owner, "mcp-oauth");
     const created = owner.waitForResponse(
       (response) =>
@@ -95,7 +99,6 @@ export async function oauthJourney(
       client_id: issued.clientId,
       redirect_uri: callback,
       resource: `${smokeOrigin}/api/mcp`,
-      scope: "website:read offline_access",
       state,
       code_challenge: createHash("sha256").update(verifier).digest("base64url"),
       code_challenge_method: "S256",
@@ -146,12 +149,16 @@ export async function oauthJourney(
         exact: true,
       }),
     ).toBeVisible();
-    await owner
-      .getByRole("checkbox", {
-        name: "Renew access for up to 8 hours while this staff session remains active",
-        exact: true,
-      })
-      .check();
+    for (const name of [
+      "Publish website content and settings on request",
+      "Publish calendars, activities and page design on request",
+    ])
+      await expect(
+        owner.getByRole("checkbox", { name, exact: true }),
+      ).toBeChecked();
+    await expect(
+      owner.getByRole("checkbox", { name: /^Keep connected/ }),
+    ).toBeChecked();
     await owner.setViewportSize({ width: 390, height: 844 });
     expect(
       await owner.evaluate(
@@ -163,6 +170,39 @@ export async function oauthJourney(
       fullPage: true,
     });
     if (viewport) await owner.setViewportSize(viewport);
+    const ownerSession = await owner.request.get("/api/auth/get-session");
+    expect(ownerSession.status()).toBe(200);
+    const { session } = (await ownerSession.json()) as {
+      session: { id: string };
+    };
+    const originalSession = await database.query<{ created_at: string }>(
+      "SELECT created_at::text FROM club.session WHERE id=$1",
+      [session.id],
+    );
+    expect(originalSession.rows.length).toBe(1);
+    try {
+      await database.query(
+        "UPDATE club.session SET created_at=now()-interval '16 minutes' WHERE id=$1",
+        [session.id],
+      );
+      const staleConsent = owner.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/automation/oauth/consent") &&
+          response.request().method() === "POST",
+      );
+      await owner
+        .getByRole("button", { name: "Allow selected actions", exact: true })
+        .click();
+      expect((await staleConsent).status()).toBe(401);
+      await expect(
+        owner.getByRole("link", { name: "Sign in to continue", exact: true }),
+      ).toBeVisible();
+    } finally {
+      await database.query(
+        "UPDATE club.session SET created_at=$2 WHERE id=$1",
+        [session.id, originalSession.rows[0].created_at],
+      );
+    }
     await owner
       .getByRole("button", { name: "Allow selected actions", exact: true })
       .click();
@@ -188,8 +228,18 @@ export async function oauthJourney(
     const tokens = (await tokenResult.json()) as {
       access_token: string;
       refresh_token: string;
+      scope: string;
     };
+    expect(tokens.scope.split(" ")).toEqual(
+      expect.arrayContaining([
+        "website:publish",
+        "calendar:publish",
+        "offline_access",
+      ]),
+    );
+    expect(tokens.scope.split(" ")).not.toContain("website:write");
     const bearer = { authorization: `Bearer ${tokens.access_token}` };
+    await oauthManagementJourney(remote.request, tokens.access_token, pageId);
     expect(
       (await remote.request.get("/api/mcp", { headers: bearer })).status(),
     ).toBe(405);
@@ -208,21 +258,79 @@ export async function oauthJourney(
           (row: { token: string }) => !tokens.access_token.includes(row.token),
         ),
     ).toBe(true);
+    await database.query(
+      "UPDATE club.oauth_access_token SET expires_at=now()-interval '1 second' WHERE client_id=$1",
+      [issued.clientId],
+    );
+    expect(
+      (await remote.request.get("/api/mcp", { headers: bearer })).status(),
+    ).toBe(401);
+    const refreshInput = {
+      grant_type: "refresh_token",
+      client_id: issued.clientId,
+      client_secret: issued.clientSecret,
+      refresh_token: tokens.refresh_token,
+    };
     const refreshed = await remote.request.post("/api/auth/oauth2/token", {
-      form: {
-        grant_type: "refresh_token",
-        client_id: issued.clientId,
-        client_secret: issued.clientSecret,
-        refresh_token: tokens.refresh_token,
-        resource: `${smokeOrigin}/api/mcp`,
-      },
+      form: refreshInput,
     });
     expect(refreshed.status()).toBe(200);
-    const rotated = (await refreshed.json()) as { access_token: string };
+    const rotated = (await refreshed.json()) as {
+      access_token: string;
+      refresh_token: string;
+    };
+    const retry = await remote.request.post("/api/auth/oauth2/token", {
+      form: refreshInput,
+    });
+    expect(retry.status()).toBe(200);
+    const replayed = (await retry.json()) as typeof rotated;
+    expect(replayed.access_token === rotated.access_token).toBe(true);
+    expect(replayed.refresh_token === rotated.refresh_token).toBe(true);
     expect(
       (
         await remote.request.get("/api/mcp", {
           headers: { authorization: `Bearer ${rotated.access_token}` },
+        })
+      ).status(),
+    ).toBe(405);
+    const reconnectVerifier = randomBytes(32).toString("base64url");
+    const reconnectState = randomBytes(24).toString("base64url");
+    const reconnectParams = new URLSearchParams(params);
+    reconnectParams.set("state", reconnectState);
+    reconnectParams.set(
+      "code_challenge",
+      createHash("sha256").update(reconnectVerifier).digest("base64url"),
+    );
+    // Matching grants reuse saved consent without another login or approval.
+    await openOAuthFromAssistant(
+      owner,
+      `${smokeOrigin}/api/auth/oauth2/authorize?${reconnectParams}`,
+    );
+    await expect(owner).toHaveURL(/\/synthetic-oauth-callback\?/);
+    const reconnect = new URL(owner.url());
+    expect(reconnect.searchParams.get("state") === reconnectState).toBe(true);
+    expect(reconnect.searchParams.get("iss")).toBe(`${smokeOrigin}/api/auth`);
+    const reconnectCode = reconnect.searchParams.get("code");
+    expect(Boolean(reconnectCode)).toBe(true);
+    const reconnected = await remote.request.post("/api/auth/oauth2/token", {
+      form: {
+        ...tokenInput,
+        code: reconnectCode!,
+        code_verifier: reconnectVerifier,
+      },
+    });
+    expect(reconnected.status()).toBe(200);
+    const reconnectTokens = (await reconnected.json()) as {
+      access_token: string;
+      scope: string;
+    };
+    expect(reconnectTokens.scope.split(" ").sort()).toEqual(
+      tokens.scope.split(" ").sort(),
+    );
+    expect(
+      (
+        await remote.request.get("/api/mcp", {
+          headers: { authorization: `Bearer ${reconnectTokens.access_token}` },
         })
       ).status(),
     ).toBe(405);

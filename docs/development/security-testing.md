@@ -21,23 +21,35 @@ and suspended members, limited staff, event guests, revoked sessions and scoped
 automation connections. A legitimate owner's successful request is only the
 positive control; repeat it with an unrelated identity and forged authority fields.
 
-| Surface             | Required checks and existing regression locations                                                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup and recovery  | Verified nominated identity, expiring one-use claim, replay/races, recent sign-in, and per-identity attempt isolation: `membership.test.ts`, `hosting.test.ts`, `owner-endpoint-boundary.test.ts`       |
-| Authentication      | Better Auth route allowlist, real session lookup, current Google session policy, callback claims, origin checks and revocation: `auth_boundary.test.ts`, `google-auth.test.ts`, B01                     |
-| Private API         | Server authorization on every path, organization/event/record scope, strict input, bounded bodies, no-store responses and generic internal errors: B01 `api-security-journey.ts`, owning domain tests   |
-| REST and MCP        | Identical scopes/services, unknown-tool denial, closed outputs, session/key revocation, manual publication and no participant/credential operations: C14 and B01 automation helpers                     |
-| CMS and files       | Private revisions/previews/media, nested sanitization, validated media references, safe upload types, bounded decoding and storage paths: `cms.test.ts`, `media.test.ts`, `media_boundary.test.ts`, B02 |
-| Custom HTML/JS      | Opaque frame origin, parent/cookie/storage isolation, top-navigation denial and blocked network probes in authenticated draft preview and public desktop/phone pages: B02 `custom-code-security.ts`     |
-| Untrusted content   | Obfuscated XSS, forged authority/prototype keys, private/mixed DNS targets and spreadsheet formula prefixes: `adversarial-content.test.ts`                                                              |
-| Forms and events    | Current form version, private answers/exports, scoped guest records, idempotency, capacity and transaction races: C05-C11 tests                                                                         |
-| Outbound requests   | Approved origins, public DNS pinning, redirect refusal, no forwarded cookies/credentials, byte/time limits: `automation-boundary.test.ts`, calendar and webhook tests                                   |
-| Provider input      | Signature, event/source/guest scope, deduplication and replay; notifications never confer entitlement: Luma, inbox and event tests                                                                      |
-| Hosting and secrets | Restricted runtime database role, forward-only migrations, storage separation, protected environment variables and excluded build artifacts: C12 and the hosting rehearsal                              |
+| Surface             | Required checks and existing regression locations                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Setup and recovery  | Verified nominated identity, expiring one-use claim, replay/races, recent sign-in, and per-identity attempt isolation: `membership.test.ts`, `hosting.test.ts`, `owner-endpoint-boundary.test.ts`            |
+| Authentication      | Better Auth route allowlist, real session lookup, current Google session policy, callback claims, origin checks and revocation: `auth_boundary.test.ts`, `google-auth.test.ts`, B01                          |
+| Private API         | Server authorization on every path, organization/event/record scope, strict input, bounded bodies, no-store responses and generic internal errors: B01 `api-security-journey.ts`, owning domain tests        |
+| REST and MCP        | Identical scopes/services, unknown-tool denial, closed outputs, session/key revocation, separately granted exact-target publication and no participant/credential operations: C14 and B01 automation helpers |
+| CMS and files       | Private revisions/previews/media, nested sanitization, validated media references, safe upload types, bounded decoding and storage paths: `cms.test.ts`, `media.test.ts`, `media_boundary.test.ts`, B02      |
+| Custom HTML/JS      | Opaque frame origin, parent/cookie/storage isolation, top-navigation denial and blocked network probes in authenticated draft preview and public desktop/phone pages: B02 `custom-code-security.ts`          |
+| Untrusted content   | Obfuscated XSS, forged authority/prototype keys, private/mixed DNS targets and spreadsheet formula prefixes: `adversarial-content.test.ts`                                                                   |
+| Forms and events    | Current form version, private answers/exports, scoped guest records, idempotency, capacity and transaction races: C05-C11 tests                                                                              |
+| Outbound requests   | Approved origins, public DNS pinning, redirect refusal, no forwarded cookies/credentials, byte/time limits: `automation-boundary.test.ts`, calendar and webhook tests                                        |
+| Provider input      | Signature, event/source/guest scope, deduplication and replay; notifications never confer entitlement: Luma, inbox and event tests                                                                           |
+| Hosting and secrets | Restricted runtime database role, forward-only migrations, storage separation, protected environment variables and excluded build artifacts: C12 and the hosting rehearsal                                   |
 
 Critical test filenames above are under `tests/critical`; B01/B02 helpers are
 under `tests/browser`. Read [REST/MCP boundaries](automation-security.md) for its
 specific review map and [hosting](hosting.md) for the isolated container rehearsal.
+Publication checks must reject missing grants, absent/false confirmation, stale
+saved targets and domain readiness/private-media blockers, while leaving unrelated
+drafts and dependencies unchanged. Existing credentials must retain their grants.
+Calendar audience and notification effects need domain checks; no real participant
+delivery is necessary for these regressions.
+
+For OAuth renewal, distinguish five-minute access expiry from a real need to sign
+in again. Cover remembered same/narrower consent, recent authentication for first
+or expanded grants, opting out of renewal, current-session revocation and the
+ten-second same-client/scope/resource refresh retry grace. Grace must not widen
+scope or accept a different resource. Refresh may omit only the fixed MCP resource;
+initial authorization/code exchange must still name it explicitly.
 
 For identity-protected sensitive actions, authenticate and verify the actor before
 charging their attempt quota. Key that quota with trusted identity, never a
@@ -112,7 +124,9 @@ The parent application's CSP currently permits inline scripts. Sanitization and
 the custom-code sandbox remain important boundaries; a nonce-based CSP would add
 defense in depth but is not proof of an existing XSS exploit. AI source text remains
 untrusted, even after sanitization. Grant minimal read/draft scopes and approved
-source origins, keep publication manual, and remember that a client can receive
+source origins; add publication grants only for intended requests and keep client
+approval enabled. The server cannot prove a human request from `confirmed: true`.
+Remember that a client can receive
 the private data its connection is explicitly allowed to read.
 
 Record commit, changed files, severity/impact, reproduction, fix, exact commands,

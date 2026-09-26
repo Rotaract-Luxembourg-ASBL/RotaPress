@@ -41,7 +41,7 @@ describe("C14 OAuth registration and consent boundaries", () => {
     ])
       expect(validOAuthRedirect(uri, "http://127.0.0.1:3000")).toBe(false);
   });
-  it("rejects browser authority, publication, client metadata fetch and machine grants", () => {
+  it("accepts explicit publication scopes but rejects browser authority, unknown actions, client metadata fetch and machine grants", () => {
     const valid = {
       name: "Synthetic assistant",
       redirectUris: ["https://client.example.org/callback"],
@@ -64,12 +64,23 @@ describe("C14 OAuth registration and consent boundaries", () => {
     expect(
       oauthClientInput.safeParse({ ...valid, scopes: ["website:publish"] })
         .success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       oauthConsentInput.safeParse({
         oauth_query: "signed",
         accept: true,
         scopes: ["website:publish"],
+      }).success,
+    ).toBe(true);
+    expect(
+      oauthClientInput.safeParse({ ...valid, scopes: ["website:delete"] })
+        .success,
+    ).toBe(false);
+    expect(
+      oauthConsentInput.safeParse({
+        oauth_query: "signed",
+        accept: true,
+        scopes: ["website:delete"],
       }).success,
     ).toBe(false);
     expect(

@@ -56,6 +56,48 @@ picker uses accessible published calendar names; private schedules are checked
 again by the server for every viewer. Add **Calendar** as a built-in destination
 in Website menus to link to the dedicated page.
 
+## Prepare calendars with AI or REST
+
+Enable Calendar and the desired integration, then select its calendar actions when
+creating an [MCP connection or REST token](ai-and-api.md). Existing connections keep
+their original grants; create a new one and approve fresh OAuth consent when needed.
+
+- **Read calendars and activity schedules** (`calendar:read`) supplies saved drafts,
+  published versions and current version numbers through `calendar_read`.
+- **Create and manage calendar and activity drafts** (`calendar:write`) creates and
+  edits calendar details and activities, including time zones, recurrence, skipped
+  dates, all-day activities and draft cancellation. It can also archive or restore
+  unpublished calendars and activities.
+- **Edit draft calendar page design** (`calendar:design`) prepares the `/calendar`
+  page's title, introduction, selected calendars, starting view and display time zone.
+- **Publish calendars, activities and page design** (`calendar:publish`) publishes
+  a specific saved target when explicitly requested. Use `calendar_publish`,
+  `calendar_schedule_publish` or `calendar_page_publish` with its current
+  `expectedVersion` and `confirmed: true`.
+
+Edits require the current `expectedVersion`. Read the workspace first, preserve
+fields you are not changing, and reread after a conflict instead of overwriting
+another person's changes. A failed or interrupted create may already have saved:
+check `calendar_read` before retrying to avoid duplicates.
+
+Saving edits or cancellation changes only the draft, including when the activity
+already has a published version. Automation cannot archive or unpublish a published
+item. Review drafts in Calendar, then publish there or explicitly request the
+specific publication through a connection with `calendar:publish`. Calendar details,
+activities and page design publish separately; no call publishes their dependencies.
+The selected audience still applies, and an unpublished calendar keeps its activities
+out of public views. Only published changes follow the normal notification rules.
+Imports, feed connections and subscription management remain in their existing
+workspaces.
+
+Keep the AI client's approval enabled for publication. The server verifies the
+grant, current staff access and saved version; `confirmed: true` does not prove
+a human request in the client's chat. See [publication grants and review](ai-and-api.md#publish-only-when-requested).
+
+Activity scheduling sets the dates and recurrence of an activity. Timed publication
+sets when saved content becomes public; it is a separate staff-controlled workflow
+and is not exposed by these calendar tools.
+
 ## Import files and connect feeds
 
 Open a calendar, then **Imports & sync → Import or connect**.

@@ -3,9 +3,10 @@
 RotaPress exposes one stateless Streamable HTTP MCP server at `/api/mcp`. Its
 tools use the same operations, scopes, input schemas and validated output schemas
 as REST. An assistant can read permitted content and prepare drafts automatically.
-It can also upload private images, inspect permitted pixels, preview saved pages
-and prepare event content. Publication remains manual. There is no AI model or
-model-provider key in RotaPress.
+It can also upload private images, inspect permitted pixels, preview saved pages,
+manage calendar drafts and prepare event content. Separate grants allow publication
+of specific saved content when you explicitly request it.
+There is no AI model or model-provider key in RotaPress.
 
 ## Start in the application
 
@@ -40,6 +41,14 @@ OpenAI Responses and Anthropic Messages. Hosted clients need a reachable HTTPS
 endpoint; local clients can reach loopback. Connection methods and model access
 depend on the chosen client's account and settings.
 
+New actions require new grants. Existing connections do not gain `website:manage`,
+`website:settings`, `calendar:write`, `calendar:design` or publication grants after an upgrade. Create a
+new connection with the needed actions and complete fresh OAuth consent, or issue
+a new MCP access key. When an OAuth request omits `scope`, it uses the actions
+registered for that connection, subject to consent and current staff permissions.
+Explicit requested subsets stay narrow: a client requesting only `website:read`
+will not receive write access even when the registered connection allows it.
+
 ## Claude Code and Codex
 
 Claude Code's `.mcp.json` can reference a protected environment variable:
@@ -59,16 +68,15 @@ Claude Code's `.mcp.json` can reference a protected environment variable:
 Launch the client with that variable available. See the
 [official Claude Code MCP guide](https://code.claude.com/docs/en/mcp).
 
-For Codex, add to `config.toml`:
+For Codex, copy the current `config.toml` snippet from **Integrations → MCP →
+Setup guide**. It includes your server URL, `bearer_token_env_var` and the current
+`enabled_tools` list. If you previously copied a shorter list, update it to include
+the website or calendar tools you intend to use. A client-side tool filter can hide
+an operation even when your connection grants it; it cannot grant server access.
+Enable client approval for publication tools; a tool allowlist alone does not
+verify that you requested a publication.
 
-```toml
-[mcp_servers.rotapress]
-url = "https://your-club.example/api/mcp"
-bearer_token_env_var = "ROTAPRESS_MCP_KEY"
-enabled_tools = ["automation_capabilities", "automation_prompt", "website_context", "website_list", "website_get", "source_read", "content_import", "import_get", "website_save"]
-```
-
-The environment variable contains the RotaPress key. See the
+The protected `ROTAPRESS_MCP_KEY` environment variable contains the MCP key. See the
 [official Codex MCP guide](https://developers.openai.com/codex/mcp/).
 
 ## Local stdio clients, including Claude Desktop
@@ -107,10 +115,15 @@ repository `.env` automatically, refuses redirects and keeps stdout for MCP.
 The in-app guide supplies Python examples using each provider's SDK. Set your
 provider key/model separately from `ROTAPRESS_MCP_KEY`. The examples allow only
 the selected content tools; they never put credentials in the model's prompt.
+Refresh copied `allowed_tools` or toolset filters from the current guide when
+adding calendar or website workflows, alongside the connection's required grants.
 
 OpenAI uses an MCP tool entry with `server_url`, `authorization` and `allowed_tools`.
-The example permits automatic calls only to its listed content tools. Provide the
-authorization again on each request. See
+The example's `require_approval` filter allows preparation tools without approval
+and always requests approval for publication tools. Its response can contain
+`mcp_approval_request`: your application must show the real user the proposed action
+and obtain approval before sending the approval response. Never auto-approve it.
+Provide the authorization again on each request. See
 [OpenAI's MCP guide](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).
 
 Anthropic uses `mcp_servers` with `authorization_token` and a matching `mcp_toolset`
@@ -160,21 +173,59 @@ For event work, ask the assistant to start with `automation_event_prompt`, inspe
 the available event blueprints, preview the preparation and create a private event
 with a stable request ID. It can prepare pages, forms, packages and prizes, return
 readiness blockers and propose registration or feature settings for human review.
+
+For website maintenance, ask for `website_revision_get`, `website_duplicate`,
+`website_locale_create`, `website_restore` or `website_settings_save` as appropriate.
+Copies use a stable request ID; edits and restores need the current revision or
+settings version. A new language starts an empty/native starter draft, not an
+automatic translation. Draft menus and appearance stay private until reviewed.
+
+For calendars, start with `calendar_read`, then create/edit calendars and activities,
+including recurrence, skipped dates or draft cancellation. `calendar_page_save`
+prepares the calendar page design. Use current versions, reread after conflicts,
+and check for a completed create before retrying it. Automation can archive or
+restore unpublished items; unpublishing and published archive/restore remain in
+Calendar. Activity dates and recurrence do not schedule future content publication.
+See [the action grants and workflows](ai-and-api.md#manage-website-and-calendar-drafts).
+
+For publication, first review the saved result, then explicitly name what should
+be published. Use `website_publish` for an exact content revision and
+`website_settings_publish` for settings or menu only; use `calendar_publish`,
+`calendar_schedule_publish`, `calendar_page_publish`, `forms_publish`,
+`events_publish`, `events_prize_publish` or `directory_publish` for their respective saved targets.
+Each needs its separate publication grant, current revision/version and
+`confirmed: true`. A call never publishes dependencies automatically or makes
+private media public. Published calendars retain their audience; published
+activities can trigger subscriber updates, and forms can accept responses.
+Editorial prize publication requires recent sign-in and cannot issue entries or
+run a draw. Package publication remains in administration because it can affect checkout.
+
+The client must honor the user's explicit request and should ask for approval
+before invoking a publication tool. RotaPress validates delegated authority and
+saved state, but a model's confirmation does not prove the human requested it.
+See [publishing only when requested](ai-and-api.md#publish-only-when-requested).
+
 See [media uploads and inspection](automation-media.md), [visual review](automation-preview.md)
 and the [workflow contract](../development/automation-workflows.md).
 
 ## Current boundaries
 
 Keys last at most eight hours and depend on a current staff session. OAuth access
-tokens last five minutes; optional rotating refresh is bounded by eight hours of
-consent and the current staff session. A permanent unattended service account is
+tokens last five minutes. **Keep connected** is selected by default during consent;
+refresh tokens last up to seven days and rotate while the originating staff session
+remains active. The client should refresh access automatically, not start a new
+browser authorization for every tool call. RotaPress can remember the same app's
+approved actions/resource; AI-app linking prompts and tool approvals remain under
+that app's control. Publication approval is separate and should stay enabled.
+A permanent unattended service account is
 not provided. OAuth clients must support an administrator-registered client with
 authorization-code flow and S256 PKCE. Anonymous dynamic registration and arbitrary
 remote client-metadata fetching are unavailable. See the [OAuth guide](automation-oauth.md)
 for registration, consent, expiry and revocation.
 
-The assistant cannot publish content, make media public, apply operational proposals,
-approve members, send notifications or run payments/draws. Verify the selected
+The assistant cannot unpublish/delete content, make media public, apply operational
+proposals, approve members, send arbitrary notifications or run payments/draws.
+Calendar publication retains its normal notification behavior. Verify the selected
 client on your installation by reading its capabilities, creating a private draft
 and confirming that revoking the connection blocks subsequent calls.
 

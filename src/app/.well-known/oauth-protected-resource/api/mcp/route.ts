@@ -1,7 +1,6 @@
 import {
   automationIssuer,
   automationResource,
-  oauthOptions,
 } from "@/core/auth/automation_oauth";
 export function GET() {
   return Response.json(
@@ -9,7 +8,8 @@ export function GET() {
       resource: automationResource,
       resource_name: "RotaPress AI & API",
       authorization_servers: [automationIssuer],
-      scopes_supported: oauthOptions.scopes,
+      // Actions vary by registered client. The authorization server documents
+      // supported scopes and defaults omitted scope to that client's selection.
       bearer_methods_supported: ["header"],
     },
     {

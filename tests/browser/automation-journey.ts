@@ -161,12 +161,16 @@ export async function automationJourney(
     expect((await api.get("/pages/en/ai-review-fixture")).status()).toBe(404);
     expect(
       (
-        await api.post(`/api/v1/website/content/${pageId}/publish`, {
+        await api.patch(`/api/v1/website/content/${pageId}/publish`, {
           headers: bearer,
-          data: {},
+          data: {
+            locale: "en",
+            expectedRevisionId: draft.draft.id,
+            confirmed: true,
+          },
         })
       ).status(),
-    ).toBe(404);
+    ).toBe(403);
     const edit = {
       locale: "en",
       expectedRevisionId: draft.draft.id,
@@ -204,14 +208,12 @@ export async function automationJourney(
         })
       ).status(),
     ).toBe(422);
-    expect(
-      (
-        await api.patch(`/api/v1/website/content/${pageId}`, {
-          headers: bearer,
-          data: edit,
-        })
-      ).status(),
-    ).toBe(200);
+    const saved = await api.patch(`/api/v1/website/content/${pageId}`, {
+      headers: bearer,
+      data: edit,
+    });
+    expect(saved.status()).toBe(200);
+    const savedDraft = (await saved.json()).data;
     expect(
       (
         await api.patch(`/api/v1/website/content/${pageId}`, {
@@ -244,9 +246,19 @@ export async function automationJourney(
       (await client.callTool({ name: "forms_list", arguments: {} })).isError,
     ).toBe(true);
     expect(
-      (await client.callTool({ name: "website_publish", arguments: {} }))
-        .isError,
+      (
+        await client.callTool({
+          name: "website_publish",
+          arguments: {
+            id: pageId,
+            locale: "en",
+            expectedRevisionId: savedDraft.draft.id,
+            confirmed: true,
+          },
+        })
+      ).isError,
     ).toBe(true);
+    expect((await api.get("/pages/en/ai-review-fixture")).status()).toBe(404);
     expect(
       (await client.readResource({ uri: "rotapress://capabilities" })).contents
         .length,
@@ -293,7 +305,7 @@ export async function automationJourney(
     await automationAvailabilityIsolation(owner, api, key, mcp.key);
     await automationMediaJourney(owner, api, key);
     await automationEventJourney(owner, api);
-    await oauthJourney(owner, browser, database);
+    await oauthJourney(owner, browser, database, pageId);
     await automationDocsJourney(owner, key, mcp.key);
     await automationSecurityJourney(owner, api, database, key, mcp.key);
     await database.query(

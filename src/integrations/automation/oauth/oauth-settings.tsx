@@ -152,6 +152,11 @@ export function OAuthSettings() {
         />
       )}
       <h3>Your OAuth connections</h3>
+      <p className="small muted">
+        Existing connections keep their original allowed actions. To add
+        actions, create a new connection with those permissions and reconnect
+        your AI app.
+      </p>
       {error ? (
         <button className="button button-outline" onClick={refresh}>
           Reload OAuth connections

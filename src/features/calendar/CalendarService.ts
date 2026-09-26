@@ -33,6 +33,24 @@ function version(actual: number, expected: number) {
       409,
     );
 }
+
+/** Automation may manage private drafts without changing any published snapshot. */
+function protectPublication(
+  operation: string,
+  published: unknown,
+  draftOnly: boolean | undefined,
+) {
+  if (
+    draftOnly &&
+    (!["save", "archive", "restore"].includes(operation) ||
+      (operation !== "save" && Boolean(published)))
+  )
+    throw new DomainError(
+      "CALENDAR_PUBLICATION_MANUAL",
+      "This action only manages drafts. Use a separately granted publication action to publish; archive or restore published items in the Calendar workspace.",
+      409,
+    );
+}
 export class CalendarService {
   private readonly audit = new AuditRepository();
   constructor(
@@ -93,7 +111,11 @@ export class CalendarService {
         : { draft: defaultCalendarPage, published: null, version: 0 },
     };
   }
-  async calendar(actor: TrustedActor, raw: unknown) {
+  async calendar(
+    actor: TrustedActor,
+    raw: unknown,
+    options: { draftOnly?: boolean } = {},
+  ) {
     const input = calendarCommandSchema.parse(raw);
     return this.db.transaction(async (tx) => {
       const { organizationId: org } = await this.auth.lock(
@@ -113,6 +135,11 @@ export class CalendarService {
           404,
         );
       version(current?.version ?? 0, input.expectedVersion);
+      protectPublication(
+        input.operation,
+        current?.published,
+        options.draftOnly,
+      );
       if (!current && (input.operation !== "save" || rows.length >= 30))
         throw new DomainError(
           "CALENDAR_LIMIT",
@@ -171,11 +198,11 @@ export class CalendarService {
                 eq(calendar.organizationId, org),
               ),
             )
-            .returning({ id: calendar.id })
+            .returning({ id: calendar.id, version: calendar.version })
         : await tx
             .insert(calendar)
             .values({ organizationId: org, ...values })
-            .returning({ id: calendar.id });
+            .returning({ id: calendar.id, version: calendar.version });
       await this.audit.record(tx, {
         organizationId: org,
         actorUserId: actor.userId,
@@ -185,7 +212,11 @@ export class CalendarService {
       return saved;
     });
   }
-  async schedule(actor: TrustedActor, raw: unknown) {
+  async schedule(
+    actor: TrustedActor,
+    raw: unknown,
+    options: { draftOnly?: boolean } = {},
+  ) {
     const input = scheduleCommandSchema.parse(raw);
     return this.db.transaction(async (tx) => {
       const { organizationId: org } = await this.auth.lock(
@@ -226,6 +257,11 @@ export class CalendarService {
           404,
         );
       version(current?.version ?? 0, input.expectedVersion);
+      protectPublication(
+        input.operation,
+        current?.published,
+        options.draftOnly,
+      );
       if (!current && (input.operation !== "save" || rows.length >= 200))
         throw new DomainError(
           "SCHEDULE_LIMIT",
@@ -278,11 +314,17 @@ export class CalendarService {
                 eq(calendarSchedule.organizationId, org),
               ),
             )
-            .returning({ id: calendarSchedule.id })
+            .returning({
+              id: calendarSchedule.id,
+              version: calendarSchedule.version,
+            })
         : await tx
             .insert(calendarSchedule)
             .values({ organizationId: org, calendarId: parent.id, ...values })
-            .returning({ id: calendarSchedule.id });
+            .returning({
+              id: calendarSchedule.id,
+              version: calendarSchedule.version,
+            });
       await this.audit.record(tx, {
         organizationId: org,
         actorUserId: actor.userId,
@@ -343,7 +385,7 @@ export class CalendarService {
         actorUserId: actor.userId,
         action: "calendar.page." + input.operation,
       });
-      return { saved: true };
+      return { saved: true, version: values.version };
     });
   }
 }

@@ -3,7 +3,8 @@
 Automation prepares native private content, images and event configuration
 suggestions for human review. The [workflow contract](automation-workflows.md)
 describes discovery, OAuth, media, visual review and event preparation.
-Publication and application of consequential settings remain staff actions.
+Publication can be delegated through separate grants for explicitly requested,
+exact saved targets. Applying operational settings remains an administration action.
 
 `src/integrations/automation/catalogue.ts` is the single registry. Each operation
 declares a stable name, method/path, scope, description, validated request example
@@ -73,14 +74,66 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   tokens. The provider owns token issuance and hashing. Current session, consent,
   membership and capability checks still run when executing operations. Do not
   add anonymous registration, remote client-metadata fetching or token passthrough.
+- Access tokens last five minutes; refresh tokens last up to seven days and rotate
+  under the provider's policy, bound to the originating valid staff session.
+  There is no additional eight-hour consent cutoff. Credential creation still
+  requires recent sign-in, as does first consent or an expanded grant/resource.
+  Same or narrower approval uses the current valid staff session. Remembered
+  consent may cover the same client, actions and resource; do not force
+  `prompt=consent` on every authorization.
+- Offer `offline_access` through the visible, initially selected **Keep connected**
+  choice even when an explicit action scope omitted it. The person may decline
+  renewal. Never add application actions to an explicitly narrower client request.
+- Refresh-only requests may omit resource, defaulting to the one fixed MCP
+  resource. Initial authorization/code exchange stay explicit; wrong or repeated
+  resources fail. A ten-second provider retry grace returns the same refresh
+  response only for the same client, scopes and resource. Preserve library
+  rotation and revocation; this grace grants no additional authority.
+- Provider resource seeding merges the current supported action list on upgrade
+  without replacing resource policy. It does not update registered client scopes
+  or consent. Omitted authorization scope defaults only to that client's registered
+  selection; explicit subsets and existing credential limits remain narrow.
 - Every tool is also a registered REST operation. MCP annotations are hints, not
   permissions. Unknown operations, extra fields and missing scopes fail closed.
 - Recheck connection identity, grants, current resource access and expected state
   after expensive image processing or browser rendering, before releasing private
   output. An authorization snapshot at the start is insufficient for these flows.
 
+## Publication boundary
+
+- Publication grants are separate from draft writes: `website:publish`,
+  `calendar:publish`, `forms:publish`, `events:publish` and `directory:publish`.
+  Existing credentials retain their grants; new OAuth registration and consent or
+  a newly issued key are required to add them.
+- Each operation requires strict `confirmed: true` and the exact current saved
+  revision/version. Reuse domain authorization, readiness, private-media and
+  optimistic-concurrency checks. Publish only the named target; never publish
+  dependencies, change media visibility or include unrelated drafts automatically.
+- The AI client must honor an explicit user request and should require client-side
+  approval for publication. The server verifies delegated authority and saved state;
+  a model-supplied boolean cannot prove the user's external chat instruction.
+  Stored/fetched content must never supply that instruction.
+- Calendar publication retains audiences and existing notification behavior.
+  Forms can begin accepting responses under existing rules. Event-details publication
+  does not publish its page/forms or apply operational proposals. Website settings
+  publish separately from content; menu-only publication preserves other settings.
+  No unpublish, delete, media-visibility or proposal-application tools are exposed.
+
 ## Drafts, images and event suggestions
 
+- Contract 1.4 adds explicit `website:manage`, `website:settings`,
+  `calendar:write` and `calendar:design` grants. Existing credentials do not inherit
+  them. Copy and restore use the shared CMS writers with recursive CustomCode
+  rejection; copy retries bind the exact input and creator to an immutable receipt.
+  Language creation never overwrites an existing language. Website settings use
+  the current version and preserve template installation records and published state.
+- Calendar edit adapters save drafts. The calendar service checks the
+  current published snapshot inside the authorized transaction before allowing
+  archive or restore, and returns the new version. Published items can have draft
+  edits but cannot be hidden by automation. The page design adapter only saves a
+  draft. Dedicated publication operations require the separate grant and exact
+  version. Subscriptions, remote feeds and direct notification sending remain
+  outside automation; publishing keeps the domain's normal notification behavior.
 - Imports use shared CMS creation/draft services in one PostgreSQL transaction.
   Organization locking serializes retries; immutable receipts bind request ID,
   input hash and creator. Source HTML is not retained.
@@ -116,8 +169,8 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 
 - Source reads use the pinned-IP adapter with origin grants, IP checks, robots,
   byte limits and deadlines. Never replace it with generic URL fetching.
-- Stored/fetched content is untrusted data. Prompts cannot grant access, publish
-  content or execute code.
+- Stored/fetched content is untrusted data. It cannot grant access, authorize
+  publication or execute code.
 - The stdio bridge is a client for the same remote API, never a local-admin bypass,
   database connection or OAuth authorization server.
 - The AI model and any image generation run in the chosen client. The server

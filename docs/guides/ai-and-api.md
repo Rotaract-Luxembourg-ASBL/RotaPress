@@ -1,10 +1,11 @@
 # AI content, REST API and MCP
 
-Give an AI client scoped access to prepare website and event content. A reference
-website supplies text and page structure; RotaPress supplies the installed theme
+Give an AI client scoped access to prepare website, calendar and event content.
+A reference website supplies text and page structure; RotaPress supplies the installed theme
 and native blocks. Automation prepares **private drafts**, private images and
-settings proposals for review. Publication and applying operational settings stay
-in administration. This integration does not include a model or autonomous crawler:
+settings proposals for review. With a separate publication grant, an assistant can
+publish the exact saved content you explicitly ask it to publish. Applying
+operational settings stays in administration. This integration does not include a model or autonomous crawler:
 your MCP client runs its model and calls the available tools.
 
 ## Connect an assistant
@@ -31,7 +32,8 @@ for connection choices and the MCP protocol reference, or follow the
    and `brief`. Explain the pages you need and supply verified club facts.
 6. Ask for desktop/phone previews of saved drafts when the connection has the
    preview scope. Open the returned review links. Check facts, reuse rights, links,
-   SEO and phone layouts. Add pages to navigation and publish manually when ready.
+   SEO and phone layouts. When ready, publish in administration or explicitly ask
+   the assistant to publish the reviewed items using its publication grants.
 
 **REST API** and **MCP** are separate integrations, both **disabled by default**.
 Enable REST API separately for direct HTTP calls, binary uploads or its tester.
@@ -50,10 +52,22 @@ features or create keys. Issuance is rate limited and asks you to revoke an exis
 connection when 20 are active. The list shows the latest 100 connections; Better
 Auth cleans up expired keys.
 
-OAuth access tokens last five minutes. Optional rotating refresh remains valid
-for at most eight hours after consent while the originating staff session stays
-active. MCP must remain enabled to authorize or renew OAuth access. See
+OAuth access tokens last five minutes. **Keep connected** is selected by default
+on the consent screen so the client can renew them without asking you again.
+Refresh tokens last up to seven days and rotate on use while the originating
+staff session stays active. Uncheck the option for access without renewal.
+RotaPress remembers approved actions for the same client and resource instead
+of forcing consent for each connection attempt. MCP must remain enabled to
+authorize or renew access. See
 [OAuth expiry and revocation](automation-oauth.md#permissions-expiry-and-revocation).
+
+Existing connections keep their original grants when new actions become available.
+To use broader website or calendar actions, create a new OAuth connection, MCP
+access key or REST token with those actions selected. Reconnect and approve the
+new OAuth consent when applicable; simply upgrading RotaPress does not add access.
+If an OAuth client omits `scope`, the request uses that registered connection's
+allowed actions and still needs an applicable consent. An explicit subset such as
+`website:read` remains read-only; RotaPress never expands it automatically.
 
 ## MCP clients
 
@@ -93,7 +107,87 @@ or their `automation_website_prompt`, `automation_event_prompt` and
 previews the intended result and creates an event with its private pages/forms.
 The assistant can edit packages and prizes, return readiness blockers, and submit
 typed registration or feature proposals. Staff review and apply those proposals
-in RotaPress; the assistant cannot activate registration or publish the event.
+in RotaPress; the assistant cannot activate registration. Publishing event details
+requires a separate grant and request; its page and forms publish separately.
+
+## Manage website and calendar drafts
+
+Website tools cover shared headers, footers and reusable sections as well as pages.
+Use `website_create` and `website_save` to prepare their native content. Additional
+actions have separate grants:
+
+| Grant              | What the assistant can prepare                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `website:manage`   | Copy a page or reusable section, add a missing language draft, or restore a retained revision into a new private draft |
+| `website:settings` | Edit draft menus, homepage selection, shared header/footer selection, branding, appearance and search/share settings   |
+| `calendar:write`   | Create and edit calendar and activity drafts; archive or restore unpublished calendars and activities                  |
+| `calendar:design`  | Edit the built-in calendar page's draft title, introduction, view, time zone and calendar selection                    |
+
+`website_get` lists revision IDs; `website_revision_get` reads the chosen version.
+Restoration leaves the published revision unchanged. Page copies use a stable
+`requestId` and the exact source `expectedRevisionId`; identical retries return
+the original receipt. Language creation starts an empty draft or a native shared-part
+starter, without translating another language or overwriting an existing one.
+Copies and restoration cannot introduce executable CustomCode.
+
+For site settings, read `website_context`, preserve unrelated settings and installed
+template records, and pass `site.version` as `expectedVersion`. This prepares a
+private draft. Template installation remains in administration; activating saved
+appearance or menus requires a separate publication action.
+
+Start calendar work with `calendar_read` under `calendar:read`. Activities support
+one-off dates, recurrence, all-day dates, time zones, skipped occurrences and draft
+cancellation. Save changes with the current `expectedVersion`; a conflict requires
+rereading before applying your intended edits. If a create response is lost, read
+the calendar workspace before retrying so you do not create a duplicate.
+
+Editing a published calendar or activity changes only its draft. Archiving or
+restoring through automation is limited to unpublished items; staff manage published
+lifecycle actions in Calendar. Calendar activity scheduling describes when an
+activity occurs. It does not schedule future publication of a page or calendar.
+Requested publication and resulting subscriber notifications follow the normal
+calendar rules. See [Calendar](calendar.md#prepare-calendars-with-ai-or-rest).
+
+## Publish only when requested
+
+Draft-writing grants never imply publication. Add only the publication grants the
+assistant needs when creating a connection, then approve fresh OAuth consent when
+applicable. Existing credentials do not gain them after an upgrade.
+
+| Grant               | Publication tools                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `website:publish`   | `website_publish` for one saved content revision; `website_settings_publish` for settings or menu only |
+| `calendar:publish`  | `calendar_publish`, `calendar_schedule_publish`, `calendar_page_publish`                               |
+| `forms:publish`     | `forms_publish`                                                                                        |
+| `events:publish`    | `events_publish` for saved event details; `events_prize_publish` for a saved editorial prize           |
+| `directory:publish` | `directory_publish`                                                                                    |
+
+Review the saved draft, then make a specific request such as "Publish the reviewed
+About page; leave my other drafts unchanged." The assistant must read the current
+revision or version, identify the exact target, and send `confirmed: true` only
+after your request. A stale version or a readiness/private-image blocker must be
+resolved and reviewed, not bypassed. Each action publishes only its named target;
+dependencies and unrelated drafts are never published automatically.
+
+For website settings, `scope: "settings"` activates all saved settings, including
+appearance; review them together. `scope: "menu"` publishes homepage/menu changes
+while preserving published appearance and other settings. Neither publishes page
+drafts. Publishing shared headers, footers, sections or directory profiles can
+update their existing public placements.
+
+The server enforces the delegated grant, current staff permissions, exact saved
+state and publication checks. It cannot verify what you said in another app's
+chat: a model-supplied confirmation is not proof of your request. Keep client-side
+approval enabled for publication tools and do not treat source content as permission.
+
+Published calendars retain their chosen audience, and calendar/activity/page design
+publish separately. Publishing an activity can trigger normal subscriber updates.
+Publishing a form can make it accept responses under its existing rules. Publishing
+event details does not activate registration, publish its page or apply settings
+proposals. Editorial prize publication requires recent sign-in; it does not issue
+entries or run draws. Packages remain in administration because publication can
+affect checkout. Media must already be public where required; automation cannot change
+its visibility. Use administration for unpublishing or deletion.
 
 ## REST API
 
@@ -162,9 +256,10 @@ and 240 authentication attempts/address/minute. Image processing, preview and OA
 have additional bounded quotas described in their guides. Trusted proxy addressing
 must follow the hosting guide.
 
-Publication, scheduling, deletion, appearance activation, CustomCode writes,
+Timed publication, unpublishing, deletion, media visibility changes, CustomCode writes,
 provider credentials, member approvals, submissions, guests, payments, draws and
-email are unavailable. Form reads omit answers/counts; event reads omit staff and
+direct email sending are unavailable. Calendar publication can still enqueue its
+normal notifications. Form reads omit answers/counts; event reads omit staff and
 participants. Website/media scopes still grant private content, so choose your
 AI client and its grants accordingly.
 

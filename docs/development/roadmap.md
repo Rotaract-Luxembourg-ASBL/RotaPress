@@ -48,32 +48,43 @@ setup guide and tool tests; credentials cannot cross integrations. Grouped actio
 pickers support select all, clear all and focused presets. MCP OAuth setup fills
 documented ChatGPT and Claude connector settings from an AI-app picker, with manual
 overrides in Advanced; it does not discover arbitrary platforms or account callbacks.
-Native page schemas and templates let assistants prepare website and event drafts;
-bounded private image uploads and saved-revision
+Native page schemas and templates let assistants prepare website and event drafts.
+Additional actions cover page copies, languages, revision restoration,
+draft menus/appearance, calendars, recurring activities and calendar page design.
+Existing connections require fresh registration and consent for these grants.
+Bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
-member applies them; publication stays manual. Every feature change requires an
+member applies them. Separate grants allow explicitly requested publication of exact
+saved website, calendar, form, event-detail and directory targets. Server checks
+retain readiness, media visibility, current authority and revision/version guards;
+dependencies never publish automatically. The AI client must honor the user's
+request and should require approval. Every feature change requires an
 API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
 [workflow architecture](automation-workflows.md).
 
-| Area           | Current boundary                                                                                                                                           |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                      |
-| AI & API       | Native content/media/event drafts, staff-reviewed settings, bearer/stdio and registered OAuth clients; no participant operations or unattended publication |
-| Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments          |
-| Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control          |
-| Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                               |
-| Email          | Server SMTP/Resend configuration precedes owner sign-in; development capture is opt-in and prohibited in production mode                                   |
-| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                               |
-| File storage   | Persistent disk images with bounded hosted backup/restore; object storage is not implemented                                                               |
-| Owner recovery | The local `.test` recovery command is not a hosted email-lockout procedure                                                                                 |
-| Hosting        | One application replica, PostgreSQL 17, persistent uploads, trusted HTTPS proxy and the hosted job supervisor                                              |
+| Area           | Current boundary                                                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                                                            |
+| AI & API       | Native drafts, staff-reviewed operational settings and separately granted requested publication; no participant operations, unpublish/delete, media visibility changes or unattended publication |
+| Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments                                                |
+| Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control                                                |
+| Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                                                                     |
+| Email          | Server SMTP/Resend configuration precedes owner sign-in; development capture is opt-in and prohibited in production mode                                                                         |
+| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                                                                     |
+| File storage   | Persistent disk images with bounded hosted backup/restore; object storage is not implemented                                                                                                     |
+| Owner recovery | The local `.test` recovery command is not a hosted email-lockout procedure                                                                                                                       |
+| Hosting        | One application replica, PostgreSQL 17, persistent uploads, trusted HTTPS proxy and the hosted job supervisor                                                                                    |
 
 External provider access defaults to disabled where operator flags apply. Saved
 configuration does not establish a working connection or authorize real mail.
 The exact setup and restrictions are in the relevant [guides](../README.md).
 
 OAuth implements Better Auth authorization-code consent with S256 PKCE and exact
-client registration. A hosted client connection needs a reachable HTTPS
+client registration. **Keep connected** defaults to selected, with five-minute
+access tokens and rotating refresh tokens lasting up to seven days while the
+originating staff session remains valid. Unchanged consent can be remembered;
+new grants still need approval. AI-app linking and tool-approval prompts remain
+client-controlled. A hosted client connection needs a reachable HTTPS
 installation and a supported client configuration. Verify consent, tool use and
 revocation in that client; local fixtures cannot establish ChatGPT/Claude support.
 See [OAuth setup](../guides/automation-oauth.md) and

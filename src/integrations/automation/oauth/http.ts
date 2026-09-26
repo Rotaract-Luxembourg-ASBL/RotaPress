@@ -19,7 +19,7 @@ const tokenInput = z.strictObject({
     .optional(),
   redirect_uri: z.url().max(1000).optional(),
   refresh_token: z.string().min(1).max(300).optional(),
-  resource: z.literal(automationResource),
+  resource: z.literal(automationResource).optional(),
   scope: z.string().max(2000).optional(),
 });
 const revokeInput = z.strictObject({
@@ -71,11 +71,20 @@ export async function oauthProtocolRequest(
         params.get("code_challenge_method") !== "S256" ||
         !/^[A-Za-z0-9_-]{43}$/.test(params.get("code_challenge") ?? "") ||
         !params.get("state") ||
-        !params.get("scope")
+        (params.has("scope") && !params.get("scope")?.trim())
       )
         return problem();
-      // Every connection receives a current human review, even if earlier consent exists.
-      params.set("prompt", "consent");
+      // An omitted scope uses Better Auth's registered client defaults. Never
+      // replace an explicitly requested subset with more allowed actions.
+      // Offer renewal even for clients that request only an application action.
+      // It remains visible and optional on consent; no application action is added.
+      if (params.has("scope")) {
+        const scopes = params.get("scope")!.split(/\s+/).filter(Boolean);
+        if (!scopes.includes("offline_access")) scopes.push("offline_access");
+        params.set("scope", scopes.join(" "));
+      }
+      // Better Auth remembers matching scope/resource consent. Honor an explicit
+      // client prompt, including consent/login/none, rather than forcing a review.
       forwarded = new Request(url, { headers });
     } else if (
       ["/oauth2/token", "/oauth2/revoke"].includes(path) &&
@@ -95,6 +104,12 @@ export async function oauthProtocolRequest(
         path === "/oauth2/token"
           ? tokenInput.parse(input)
           : revokeInput.parse(input);
+      if ("grant_type" in parsed && !parsed.resource) {
+        if (parsed.grant_type !== "refresh_token") return problem();
+        // This server has exactly one MCP resource. The provider also checks
+        // the stored refresh grant and client-resource registration.
+        parsed.resource = automationResource;
+      }
       headers.delete("cookie");
       headers.delete("content-length");
       headers.set("content-type", "application/x-www-form-urlencoded");

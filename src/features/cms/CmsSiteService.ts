@@ -184,9 +184,15 @@ export class CmsSiteService {
     });
   }
 
-  async publish(actor: TrustedActor, input: unknown): Promise<SiteDraft> {
+  async publish(
+    actor: TrustedActor,
+    input: unknown,
+    scope: WebsitePublicationScope = "website",
+  ): Promise<SiteDraft> {
     const parsed = siteVersionInput.parse(input);
-    await this.db.transaction((tx) => this.publishDraft(actor, parsed, tx));
+    await this.db.transaction((tx) =>
+      this.publishDraft(actor, parsed, tx, scope),
+    );
     return this.get(actor, parsed.locale);
   }
 

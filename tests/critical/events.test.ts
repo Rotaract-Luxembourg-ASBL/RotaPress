@@ -38,10 +38,12 @@ import { guestAccessChecks } from "./guest-access-cases";
 import { purchaseChecks } from "./purchase-cases";
 import { clubFeatureChecks } from "./club-feature-cases";
 import { calendarChecks } from "./calendar-cases";
+import { automationCalendarChecks } from "./automation-calendar-cases";
 import { calendarSourceChecks } from "./calendar-source-cases";
 import { emailChecks } from "./email-cases";
 import { emailScopeChecks } from "./email-scope-cases";
 import { automationProposalChecks } from "./automation-proposal-cases";
+import { automationContentPublicationChecks } from "./automation-content-publication-cases";
 
 let runtime: Pool;
 let migration: Pool;
@@ -49,9 +51,17 @@ let db: Database;
 let authorization: AuthorizationService;
 let events: EventService;
 automationProposalChecks(() => ({ db, authorization, events, actor, club }));
+automationContentPublicationChecks(() => ({
+  db,
+  authorization,
+  events,
+  actor,
+  club,
+}));
 emailChecks(() => ({ db, authorization, events, actor, club }));
 emailScopeChecks(() => ({ db, authorization, events, actor, club }));
 calendarChecks(() => ({ db, authorization, events, actor, club }));
+automationCalendarChecks(() => ({ db, authorization, events, actor, club }));
 calendarSourceChecks(() => ({ db, authorization, events, actor, club }));
 eventWebsiteChecks(() => ({ db, authorization, events, actor, club }));
 eventParticipationChecks(() => ({ db, authorization, events, actor, club }));

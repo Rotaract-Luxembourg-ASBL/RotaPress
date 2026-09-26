@@ -13,7 +13,11 @@ import {
   restRequest,
   testerFetch,
 } from "../../src/integrations/automation/ui/tester_request";
-import { contentTools } from "../../src/integrations/automation/client_examples";
+import {
+  contentTools,
+  openAiApprovalPolicy,
+  publicationTools,
+} from "../../src/integrations/automation/client_examples";
 
 // Protocol-only fixtures do not connect to a database or initialize Better Auth.
 vi.mock("../../src/core/config", () => ({
@@ -48,9 +52,10 @@ describe("C14 documented contracts and failure privacy", () => {
       for (const item of Object.values(value)) walk(item);
     }
     walk(spec);
-    expect(
-      contentTools.every((name) => operations.some((op) => op.name === name)),
-    ).toBe(true);
+    // Copied client snippets must not hide tools that the connection grants.
+    expect([...contentTools].sort()).toEqual(
+      operations.map((op) => op.name).sort(),
+    );
   });
   it("fails closed when a service unexpectedly includes sensitive fields", async () => {
     // This contract unit test never authenticates or constructs a staff session.
@@ -75,6 +80,26 @@ describe("C14 documented contracts and failure privacy", () => {
       status: 500,
     });
     expect(String(error)).not.toContain("synthetic-secret");
+  });
+  it("requires confirmation and client approval for every publication action", () => {
+    const publishing = operations.filter((op) =>
+      op.scope?.endsWith(":publish"),
+    );
+    expect(publishing.map((op) => op.name).sort()).toEqual(
+      [...publicationTools].sort(),
+    );
+    for (const op of publishing) {
+      expect(
+        op.input.safeParse({ ...op.example, confirmed: undefined }).success,
+        op.name,
+      ).toBe(false);
+      expect(
+        op.input.safeParse({ ...op.example, confirmed: false }).success,
+        op.name,
+      ).toBe(false);
+      expect(openAiApprovalPolicy.always.tool_names).toContain(op.name);
+      expect(openAiApprovalPolicy.never.tool_names).not.toContain(op.name);
+    }
   });
   it("returns a generic MCP resource error rather than internal provider/database text", async () => {
     // Inject only the dependency used by this handler. No identity or database is forged.

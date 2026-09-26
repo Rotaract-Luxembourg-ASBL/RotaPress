@@ -14,7 +14,8 @@ is `/admin/integrations/rest`; append `?tab=docs` to open the reference.
 4. Start with the capabilities endpoint. Search or select another endpoint to
    see its required permission, schemas, example input and cURL request.
 5. Inspect the HTTP status and response. **Send write request** performs a real
-   save. Review example IDs and facts first. Download OpenAPI for another client.
+   mutation, including publication for an authorized publish endpoint. Review
+   example IDs and facts first. Download OpenAPI for another client.
 
 Token generation requires a sign-in within the last 15 minutes. The screen provides
 **Sign in again** when renewal is needed. Tokens expire after 5 minutes to 8 hours
@@ -39,7 +40,9 @@ snapshot token returned by its preview operation.
   administration or apply event suggestions.
 - Keys expire after 5 minutes to 8 hours and never outlive their parent session.
   Sign-out, expiry, suspension and current capability changes are rechecked.
-- Keys cannot publish, schedule, delete, issue keys, change access, send mail,
+- Draft-write scopes do not publish. Publication requires a separate grant,
+  exact current saved target and `confirmed: true`.
+- Keys cannot schedule future publication, unpublish, delete, issue keys, change access, directly send mail,
   run CustomCode or read submissions, guests, payments and draw records.
 
 Grant only the scopes needed for the task. Reads can include private drafts and
@@ -72,44 +75,118 @@ tool does not override a disabled feature or supply a required additional grant.
 The interactive reference and downloadable OpenAPI are generated from the same
 registry that handles requests. Use them for every field, enum and required value.
 
-| REST path                       | Methods    | Scopes                                         |
-| ------------------------------- | ---------- | ---------------------------------------------- |
-| `/website/context`              | GET        | `website:read`                                 |
-| `/website/design`               | GET        | `website:read`                                 |
-| `/website/content`              | GET, POST  | `website:read`, `website:write`                |
-| `/website/content/{id}`         | GET, PATCH | `website:read`, `website:write`                |
-| `/website/content/{id}/preview` | POST       | `website:preview` and `website:read`           |
-| `/sources/read`                 | POST       | `sources:read`                                 |
-| `/imports`                      | POST       | `website:write`                                |
-| `/imports/{requestId}`          | GET        | `website:read`                                 |
-| `/media`                        | GET        | `media:read`                                   |
-| `/media/{id}`                   | GET        | `media:read`                                   |
-| `/media/uploads`                | POST       | `media:write`                                  |
-| `/media/{id}/image`             | GET        | `media:inspect`                                |
-| `/media/{id}/metadata`          | PATCH      | `media:write`                                  |
-| `/forms`                        | GET, POST  | `forms:read`, `forms:write`                    |
-| `/forms/{id}`                   | GET, PATCH | `forms:read`, `forms:write`                    |
-| `/events`                       | GET, POST  | `events:read`, `events:write`                  |
-| `/events/{id}`                  | GET, PATCH | `events:read`, `events:write`                  |
-| `/events/blueprints`            | GET        | `events:read`                                  |
-| `/events/preparation/preview`   | POST       | `events:prepare` plus preparation grants below |
-| `/events/preparation`           | POST       | `events:prepare` plus preparation grants below |
-| `/events/{id}/preparation`      | GET        | `events:read`                                  |
-| `/events/{id}/forms`            | POST       | `forms:write`                                  |
-| `/events/{id}/packages`         | GET        | `events:read`                                  |
-| `/events/{eventId}/packages`    | PATCH      | `events:prepare`                               |
-| `/events/{id}/prizes`           | GET        | `events:read`                                  |
-| `/events/{eventId}/prizes`      | PATCH      | `events:prepare`                               |
-| `/events/proposals`             | POST       | `events:prepare`                               |
-| `/events/{id}/proposals`        | GET        | `events:read`                                  |
-| `/directory`                    | GET, POST  | `directory:read`, `directory:write`            |
-| `/directory/{id}`               | PATCH      | `directory:write`                              |
-| `/calendar`                     | GET        | `calendar:read`                                |
+| REST path                                                 | Methods    | Scopes                                         |
+| --------------------------------------------------------- | ---------- | ---------------------------------------------- |
+| `/website/context`                                        | GET        | `website:read`                                 |
+| `/website/design`                                         | GET        | `website:read`                                 |
+| `/website/content`                                        | GET, POST  | `website:read`, `website:write`                |
+| `/website/content/{id}`                                   | GET, PATCH | `website:read`, `website:write`                |
+| `/website/content/{id}/preview`                           | POST       | `website:preview` and `website:read`           |
+| `/website/content/{id}/revisions/{revisionId}`            | GET        | `website:read`                                 |
+| `/website/content/{id}/restore`                           | PATCH      | `website:manage`                               |
+| `/website/content/{id}/copies`                            | POST       | `website:manage`                               |
+| `/website/content/{id}/languages`                         | POST       | `website:manage`                               |
+| `/website/settings`                                       | PATCH      | `website:settings`                             |
+| `/sources/read`                                           | POST       | `sources:read`                                 |
+| `/imports`                                                | POST       | `website:write`                                |
+| `/imports/{requestId}`                                    | GET        | `website:read`                                 |
+| `/media`                                                  | GET        | `media:read`                                   |
+| `/media/{id}`                                             | GET        | `media:read`                                   |
+| `/media/uploads`                                          | POST       | `media:write`                                  |
+| `/media/{id}/image`                                       | GET        | `media:inspect`                                |
+| `/media/{id}/metadata`                                    | PATCH      | `media:write`                                  |
+| `/forms`                                                  | GET, POST  | `forms:read`, `forms:write`                    |
+| `/forms/{id}`                                             | GET, PATCH | `forms:read`, `forms:write`                    |
+| `/events`                                                 | GET, POST  | `events:read`, `events:write`                  |
+| `/events/{id}`                                            | GET, PATCH | `events:read`, `events:write`                  |
+| `/events/blueprints`                                      | GET        | `events:read`                                  |
+| `/events/preparation/preview`                             | POST       | `events:prepare` plus preparation grants below |
+| `/events/preparation`                                     | POST       | `events:prepare` plus preparation grants below |
+| `/events/{id}/preparation`                                | GET        | `events:read`                                  |
+| `/events/{id}/forms`                                      | POST       | `forms:write`                                  |
+| `/events/{id}/packages`                                   | GET        | `events:read`                                  |
+| `/events/{eventId}/packages`                              | PATCH      | `events:prepare`                               |
+| `/events/{id}/prizes`                                     | GET        | `events:read`                                  |
+| `/events/{eventId}/prizes`                                | PATCH      | `events:prepare`                               |
+| `/events/proposals`                                       | POST       | `events:prepare`                               |
+| `/events/{id}/proposals`                                  | GET        | `events:read`                                  |
+| `/directory`                                              | GET, POST  | `directory:read`, `directory:write`            |
+| `/directory/{id}`                                         | PATCH      | `directory:write`                              |
+| `/calendar`                                               | GET        | `calendar:read`                                |
+| `/calendar/calendars`                                     | POST       | `calendar:write`                               |
+| `/calendar/calendars/{id}`                                | PATCH      | `calendar:write`                               |
+| `/calendar/calendars/{id}/archive`                        | PATCH      | `calendar:write`                               |
+| `/calendar/calendars/{id}/restore`                        | PATCH      | `calendar:write`                               |
+| `/calendar/calendars/{calendarId}/schedules`              | POST       | `calendar:write`                               |
+| `/calendar/calendars/{calendarId}/schedules/{id}`         | PATCH      | `calendar:write`                               |
+| `/calendar/calendars/{calendarId}/schedules/{id}/archive` | PATCH      | `calendar:write`                               |
+| `/calendar/calendars/{calendarId}/schedules/{id}/restore` | PATCH      | `calendar:write`                               |
+| `/calendar/page`                                          | PATCH      | `calendar:design`                              |
 
 Use query parameters for GET, and JSON for POST/PATCH. Do not repeat a path ID in
 the body or query. The tester's combined input moves IDs to the REST path for you;
 MCP arguments include the IDs directly. Unknown fields and repeated query fields
-are rejected. For `website_get`, include `locale=en`, `fr` or `lb`.
+are rejected. For `website_get` and `website_revision_get`, include `locale=en`,
+`fr` or `lb`.
+
+Website copies use a stable `requestId` and the exact current source revision.
+History reads are scoped to the page and language. Restoration saves a new draft;
+adding a language creates an empty draft without overwriting an existing language.
+Settings saves require the current `website_context.site.version` and preserve
+unrelated settings and template installation records. Appearance and navigation
+changes remain drafts until separately published.
+
+Calendar mutations return the saved `version` and Calendar review URL. Read
+`calendar_read` before editing and send the current `expectedVersion`. Full activity
+definitions support recurrence, skipped dates and cancellation drafts. Archive and
+restore operations accept only unpublished records. Editing a published item's
+draft preserves its public snapshot. Page design uses a separate grant. On an
+uncertain create response, list and inspect existing records before retrying.
+
+## Requested publication
+
+Use these endpoints only for an explicitly requested publication of reviewed saved
+content. Every body requires literal `confirmed: true` and the current concurrency
+field below. IDs in paths stay out of the REST body. Existing credentials do not
+gain publication grants; issue a new token with the required actions selected.
+
+| Method and path                                                 | Grant               | Current saved target                                                                 |
+| --------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------ |
+| `PATCH /website/content/{id}/publish`                           | `website:publish`   | `locale` and `expectedRevisionId` from the content draft                             |
+| `PATCH /website/settings/publish`                               | `website:publish`   | `locale`, `expectedVersion` from website context and `scope: "settings"` or `"menu"` |
+| `PATCH /calendar/calendars/{id}/publish`                        | `calendar:publish`  | Calendar `expectedVersion`                                                           |
+| `PATCH /calendar/calendars/{calendarId}/schedules/{id}/publish` | `calendar:publish`  | Activity `expectedVersion` and owning calendar                                       |
+| `PATCH /calendar/page/publish`                                  | `calendar:publish`  | Page-design `expectedVersion`                                                        |
+| `POST /forms/{id}/publish`                                      | `forms:publish`     | `expectedRevision` from `draftRevision`                                              |
+| `POST /events/{id}/publish`                                     | `events:publish`    | Event `expectedVersion`                                                              |
+| `POST /events/{eventId}/prizes/{id}/publish`                    | `events:publish`    | Editorial prize `expectedVersion` and owning event                                   |
+| `POST /directory/{id}/publish`                                  | `directory:publish` | Profile `expectedVersion`                                                            |
+
+Read the target immediately before publishing. A stale revision/version conflicts;
+do not silently substitute a newer unreviewed draft. The server also enforces
+current identity, publication capability, resource ownership and domain readiness.
+Private media and missing published dependencies remain blockers; calls never
+change visibility or publish dependencies automatically.
+
+`scope: "settings"` activates all saved website settings, including appearance;
+review them together. `scope: "menu"` activates homepage/menu selections while
+preserving published appearance and other settings. Neither publishes page drafts.
+Shared headers, footers, sections and directory profiles can update existing public
+placements. Event publication requires its enabled Website module and already
+published page; it does not publish forms/prizes or activate registration.
+Editorial prize publication requires recent sign-in and never issues entries or
+runs a draw. Package publication remains in administration because it can affect checkout.
+
+Calendar details, activities and page design publish independently and honor the
+saved audience; an unpublished calendar still prevents public activity display.
+Normal subscriber notifications can follow publication. Published forms can accept
+responses under their existing rules. Unpublish, delete and media-visibility
+operations are not exposed.
+
+When an AI client calls these endpoints, it must honor an explicit user request
+and should require client-side approval. The server validates delegated authority
+and saved state; `confirmed: true` does not prove a human's instruction in another
+app. See [publication workflow](ai-and-api.md#publish-only-when-requested).
 
 ## Design, images and visual review
 

@@ -32,3 +32,4 @@ export const duplicateInput = variantInput.extend({
   slug: slugSchema,
 });
 export const restoreInput = expectedInput.extend({ revisionId: z.uuid() });
+export const revisionReadInput = variantInput.extend({ revisionId: z.uuid() });

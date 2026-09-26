@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DomainError } from "@/core/authorization/AuthorizationService";
 import {
   createInput,
   saveInput,
@@ -17,12 +16,7 @@ import {
   websiteSummaryOutput,
 } from "./response_schemas";
 import { exampleId, importExample, pageExample } from "./examples";
-
-function hasCode(value: unknown): boolean {
-  if (!value || typeof value !== "object") return false;
-  if ("type" in value && value.type === "CustomCode") return true;
-  return Object.values(value).some(hasCode);
-}
+import { requireNonExecutableContent } from "./website_content_policy";
 export const websiteOperations = [
   operation(
     {
@@ -104,12 +98,7 @@ export const websiteOperations = [
       input: saveInput,
     },
     async ({ services: s, principal: p }, i) => {
-      if (hasCode(i.data))
-        throw new DomainError(
-          "AUTOMATION_CODE_DISABLED",
-          "Custom HTML and JavaScript require editing in the website editor.",
-          422,
-        );
+      requireNonExecutableContent(i.data);
       return s.cms.save(p.actor, i);
     },
   ),

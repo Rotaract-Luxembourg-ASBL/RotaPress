@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { publicationFor } from "./publication_policy";
 import { operation } from "./operation";
 import { exampleId, eventExample } from "./examples";
 import { eventPresets } from "@/features/events/event_templates";
@@ -157,7 +158,7 @@ export const eventOperations = [
             ...readiness.registration.reasons,
           ]),
         ],
-        publication: "manual-only" as const,
+        publication: publicationFor(p.scopes, "events"),
       };
     },
   ),

@@ -9,7 +9,7 @@ predefined OAuth client. Start in **Integrations**, enable **MCP**, then select
 OAuth lets the assistant open RotaPress for sign-in and consent. It receives a
 short-lived access token after you choose its actions. It never receives your
 RotaPress session cookie, email verification code or Google token. Its operations
-use the same permissions, private drafts and manual publication rules as the
+use the same permissions, private drafts and deliberate publication rules as the
 [API and MCP tools](ai-and-api.md).
 
 ## Connect ChatGPT, Claude or another MCP client
@@ -36,22 +36,28 @@ use the same permissions, private drafts and manual publication rules as the
 5. Finish connecting in the assistant. It opens your RotaPress site. Sign in
    with the account that created this connection, then review the requested
    actions and callback destination. Uncheck actions you do not want to grant.
-   Publishing remains a manual website/event editor action.
+   **Keep connected** is selected by default so the app can renew access without
+   repeated sign-in. Uncheck it if you only want a short connection without renewal.
+   Publication has separate actions: grant them only if you want to request
+   publication through this assistant. Draft-writing permission alone cannot publish.
 6. Select **Allow selected actions**. Return to the assistant and start with a
    bounded request, such as preparing one private event and its page. Review the
    returned drafts and visual previews before publication.
 
 Each administrator registers their own connection. Registration does not approve
 another member or give the assistant capabilities that the administrator lacks.
-Creating a connection and approving access require authentication within the last
-15 minutes. Use the visible sign-in link to confirm your identity again.
+Creating a connection, approving it for the first time or approving broader grants
+requires authentication within the last 15 minutes. Reusing the same or narrower
+approval uses your current valid staff session without asking you to sign in again
+just because 15 minutes have passed. A sign-in link appears when authentication
+needs renewal, with an explanation of why.
 
 ### Automatic settings and manual overrides
 
-| AI app | Callback filled by RotaPress |
-| --- | --- |
-| ChatGPT | `https://chatgpt.com/connector_platform_oauth_redirect` |
-| Claude web/desktop connector | `https://claude.ai/api/mcp/auth_callback` |
+| AI app                       | Callback filled by RotaPress                            |
+| ---------------------------- | ------------------------------------------------------- |
+| ChatGPT                      | `https://chatgpt.com/connector_platform_oauth_redirect` |
+| Claude web/desktop connector | `https://claude.ai/api/mcp/auth_callback`               |
 
 The ChatGPT default relies on RotaPress's matching issuer metadata and issuer
 identification support, as described in the
@@ -84,9 +90,25 @@ then verify the connection with the actual client and account you intend to use.
 
 ## Permissions, expiry and revocation
 
-- Access tokens expire after five minutes. The optional consent checkbox permits
-  refresh for at most eight hours after the latest approval, while the originating
-  staff session remains active. Refresh tokens rotate; reuse is rejected.
+- A client that omits `scope` requests the actions selected when its connection
+  was registered. These appear on the consent screen, where you can narrow them.
+  An explicitly requested subset stays narrow. Empty or repeated scope parameters
+  are rejected. RotaPress no longer forces every new connection to request only
+  website reading.
+- Existing connections retain their original allowed actions. To add publication,
+  calendar management, website settings or other new actions, create a connection with those
+  actions and reconnect the assistant. Check `automation_capabilities` afterward.
+- Access tokens expire after five minutes. With **Keep connected**, the client
+  renews them using rotating refresh tokens instead of asking you to connect
+  again. Refresh tokens last up to seven days and require the originating staff
+  session to remain active; consent has no separate eight-hour cutoff.
+- **Keep connected** is selected by default and can be declined. It adds only the
+  renewal permission (`offline_access`), including when the client omitted that
+  permission; it never adds website, calendar, publication or other actions.
+- Better Auth remembers approved actions for the same client and resource.
+  RotaPress does not force a fresh consent screen for the same or narrower grant.
+  First approval or broader permissions still need recent sign-in and approval;
+  a client can explicitly request the consent screen again.
 - Sign-out, session expiry, membership suspension, changed staff authentication
   policy, removed capabilities and revoked connections are checked on the server.
   A linked Google account does not substitute for a current Google session.
@@ -99,8 +121,15 @@ then verify the connection with the actual client and account you intend to use.
   target this exact resource and authorize MCP only. They are rejected by REST;
   create a separate REST API token if your application also needs HTTP endpoints.
 
-OAuth grants no publication, member approval, payment, draw execution or provider
-credential access. AI can only use operations listed for its connection. Private
+Publication requires the relevant `website:publish`, `calendar:publish`,
+`forms:publish`, `events:publish` or `directory:publish` grant, plus your explicit
+request for the target saved revision/version. Each publication call requires
+`confirmed: true` and current server authorization. Keep client approval enabled:
+the server cannot verify a human chat request from a model-supplied boolean.
+See [publication workflow and effects](ai-and-api.md#publish-only-when-requested).
+
+OAuth grants no member approval, payment, draw execution, media visibility changes
+or provider credential access. AI can only use operations listed for its connection. Private
 data supplied to an assistant is visible to that chosen client; choose scopes and
 the provider accordingly. Reference content is untrusted input, never permission
 to run new actions or disclose private records.
@@ -121,22 +150,41 @@ For an installation at `https://your-club.example`:
 | Human consent                 | `/oauth/consent`                                   |
 
 The authorization request includes `response_type=code`, `client_id`, the exact
-registered `redirect_uri`, nonempty `state`, explicit space-separated `scope`,
-`resource`, `code_challenge`, and `code_challenge_method=S256`. A human consent
-screen is always shown. The client must validate returned state and issuer.
+registered `redirect_uri`, nonempty `state`, `resource`, `code_challenge`, and
+`code_challenge_method=S256`. The optional space-separated `scope` selects a subset
+of the registered actions; omitting it uses the registered defaults. RotaPress
+offers `offline_access` for the visible **Keep connected** choice without expanding
+application actions. Better Auth can reuse remembered consent for the same client,
+actions and resource; RotaPress does not force `prompt=consent`. The client must
+validate returned state and issuer.
 
 The token endpoint accepts a bounded form request with `grant_type`, `client_id`,
 `resource`, and the appropriate code/verifier/callback or refresh token. A
 confidential client supplies `client_secret` using its registered secret-post
-method. JSON requests are also normalized to the same form validation. Resources
-cannot be omitted, changed or repeated. PKCE is required for public and
+method. JSON requests are also normalized to the same form validation. Initial
+authorization and code exchange require the explicit canonical resource. A refresh
+request may omit `resource`; it defaults only to this installation's fixed MCP
+endpoint. An explicit wrong or repeated resource is rejected. PKCE is required for public and
 confidential authorization-code clients. Machine grants, implicit flow, client
 assertions and arbitrary client metadata URLs are unavailable.
+
+Keep the replacement refresh token returned by each successful renewal. The
+provider allows a ten-second retry grace for the same client, scopes and resource
+when a refresh response is lost; it returns the same issued response. Later reuse
+of an old refresh token is rejected. The grace cannot extend grants or bypass
+session, consent or revocation checks.
 
 Unexpired access tokens are presented as `Authorization: Bearer <access_token>`.
 Unauthenticated enabled endpoints return an RFC 9728 `WWW-Authenticate` discovery
 challenge. Resource operations independently enforce their catalogue scopes and
 the actor's current permissions. Do not place tokens in URLs.
+
+The initial challenge and protected-resource metadata omit a global scope list
+because available actions depend on the registered connection. Supported scopes
+remain documented in authorization-server metadata. This follows the
+[MCP scope selection strategy](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization#scope-selection-strategy)
+and the authorization server's registered client defaults; it never expands a
+client's stored permission limit.
 
 Better Auth's pinned OAuth Provider owns client credentials, authorization codes,
 token hashing, rotation and revocation. RotaPress adds current club authorization,
@@ -156,10 +204,28 @@ and the [MCP authorization specification](https://modelcontextprotocol.io/specif
    new connection if you want to continue using the assistant.
 
 For a failed connection, check that MCP is enabled, the client supports predefined
-OAuth registration, and its callback and resource match exactly. Sign in again if
-the consent page requests recent authentication. A disabled integration returns 409;
-an expired or revoked credential requires reconnecting. Check current membership
-and staff Google policy before changing credentials.
+OAuth registration, and its callback and resource match exactly. A disabled
+integration returns 409. A five-minute access-token expiry should use refresh
+when **Keep connected** was approved. Reconnect if renewal was declined, the
+refresh token expired, the originating session ended, or access was revoked.
+Check current membership and staff Google policy before replacing credentials.
+
+Repeated prompts can come from different places:
+
+- **RotaPress sign-in** means a valid current staff session is needed.
+- **RotaPress consent** approves actions and renewal for the registered app.
+  Unchanged consent can be remembered; adding grants still requires approval.
+- **ChatGPT/Claude connection or tool approval** is controlled by that app.
+  RotaPress token renewal does not suppress those prompts. In particular,
+  publication-tool approval is separate from authentication and should stay enabled.
+
+If the AI app asks to reconnect after every action, confirm that **Keep connected**
+was approved and that the app stores and uses the latest rotated refresh token.
+For an older connection created without renewal, reconnect it once and approve
+that option. Previously expired or revoked refresh tokens can also need one
+reconnection after an update. Reuse the existing client ID and secret while its
+registration is still active; ordinary renewal does not require creating a new
+OAuth connection. Normal tool calls should not need a new OAuth browser flow.
 
 If opening the connection displays `Cross-origin access is not allowed.` before
 sign-in or consent, the installation is blocking the incoming browser navigation.

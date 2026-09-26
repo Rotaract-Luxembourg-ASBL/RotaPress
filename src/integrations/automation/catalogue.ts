@@ -6,6 +6,12 @@ import { previewOperations } from "./preview_operations";
 import { eventOperations } from "./event_operations";
 import { workflowOperations } from "./workflow_operations";
 import { designOperations } from "./design_operations";
+import { calendarOperations } from "./calendar_operations";
+import { websiteManagementOperations } from "./website_management_operations";
+import { websitePublicationOperations } from "./website_publication_operations";
+import { calendarPublicationOperations } from "./calendar_publication_operations";
+import { contentPublicationOperations } from "./content_publication_operations";
+import { publicationFor } from "./publication_policy";
 import { scopeDefinitions } from "./scopes";
 import { z } from "zod";
 import { capabilitiesOutput } from "./response_schemas";
@@ -27,7 +33,7 @@ export const operations: readonly Operation[] = [
       path: "/capabilities",
       scope: null,
       description:
-        "Discover this connection's operations, approved source origins and enabled features before editing. Publication always requires human review.",
+        "Discover this connection's operations, approved source origins and enabled features before editing. Publishing requires a separate grant and an explicit user request for the identified saved content.",
       input: z.strictObject({}),
       output: capabilitiesOutput,
       example: {},
@@ -54,14 +60,19 @@ export const operations: readonly Operation[] = [
     async (_context, input) => ({ prompt: adaptationPrompt(input) }),
   ),
   ...websiteOperations,
+  ...websiteManagementOperations,
   ...featureOperations,
   ...mediaOperations,
   ...previewOperations,
   ...eventOperations,
   ...workflowOperations,
   ...designOperations,
+  ...calendarOperations,
+  ...websitePublicationOperations,
+  ...calendarPublicationOperations,
+  ...contentPublicationOperations,
 ];
-export const contractVersion = "1.3.0";
+export const contractVersion = "1.5.1";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))
@@ -83,7 +94,7 @@ export async function capabilities(context: AutomationContext) {
   );
   return {
     version: contractVersion,
-    publication: "manual-only" as const,
+    publication: publicationFor(context.principal.scopes),
     sourceOrigins: context.principal.sourceOrigins,
     features: features.map(({ key, enabled, version }) => ({
       key,

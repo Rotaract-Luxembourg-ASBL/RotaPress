@@ -4,7 +4,11 @@ import { useCurrentUser } from "@/ui/admin-shell";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
 
 const groups = [
-  { name: "Website", prefix: "website:", hint: "Pages and private drafts" },
+  {
+    name: "Website",
+    prefix: "website:",
+    hint: "Pages, revisions, menus and appearance drafts",
+  },
   {
     name: "Media",
     prefix: "media:",
@@ -21,7 +25,11 @@ const groups = [
     hint: "Form definitions, never responses",
   },
   { name: "Directory", prefix: "directory:", hint: "Community profiles" },
-  { name: "Calendar", prefix: "calendar:", hint: "Calendar definitions" },
+  {
+    name: "Calendar",
+    prefix: "calendar:",
+    hint: "Calendars, recurring activities and page design",
+  },
   {
     name: "Reference websites",
     prefix: "sources:",
@@ -66,7 +74,8 @@ export function ScopePicker({
       <legend>{legend}</legend>
       <p id={helpId} className="small muted">
         Choose what this connection can do. Reads may include private drafts.
-        Publishing and participant records are never included.
+        Publishing needs its own selected permission and an explicit request.
+        Participant records are never included.
       </p>
       <div className="scope-picker-toolbar">
         <strong aria-live="polite">
@@ -106,7 +115,10 @@ export function ScopePicker({
             className="button button-outline"
             onClick={() =>
               onChange(
-                available.filter((scope) => scope.startsWith("website:")),
+                available.filter(
+                  (scope) =>
+                    scope.startsWith("website:") && !scope.endsWith(":publish"),
+                ),
               )
             }
           >

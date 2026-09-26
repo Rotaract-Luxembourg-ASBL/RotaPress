@@ -228,7 +228,9 @@ export function AutomationDocs({
             <dd>
               {current.readOnly
                 ? "Reads content or returns instructions."
-                : "Saves private content or a settings proposal in this club. Publication and approval stay manual."}
+                : current.scope?.endsWith(":publish")
+                  ? "Publishes the saved content to its configured audience. Confirm the exact target and version before sending."
+                  : "Saves private content or a settings proposal. Publishing needs a separate permission and explicit request."}
             </dd>
           </dl>
           <details>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { publicationPolicy } from "./publication_policy";
 import { eventFieldsSchema } from "@/features/events/event_schemas";
 import { eventTemplateSelectionSchema } from "@/features/events/event_templates";
 import { packageDraftSchema } from "@/features/events/package_schemas";
@@ -98,5 +99,5 @@ export const eventContentWorkspaceOutput = z.strictObject({
     externalLocked: z.boolean(),
   }),
   blockers: z.array(z.string()),
-  publication: z.literal("manual-only"),
+  publication: publicationPolicy,
 });

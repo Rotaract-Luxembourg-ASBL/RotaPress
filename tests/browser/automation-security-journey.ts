@@ -39,7 +39,12 @@ export async function automationSecurityJourney(
     expect(result.content).toEqual([
       {
         type: "text",
-        text: JSON.stringify({ error: "This operation is unavailable." }),
+        text: JSON.stringify({
+          error:
+            name === "website_publish"
+              ? "This connection needs website:publish."
+              : "This operation is unavailable.",
+        }),
       },
     ]);
   }

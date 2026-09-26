@@ -42,6 +42,7 @@ import {
   saveInput,
   duplicateInput,
   restoreInput,
+  revisionReadInput,
 } from "./cms_commands";
 type Variant = typeof cmsVariant.$inferSelect;
 
@@ -133,6 +134,42 @@ export class CmsService {
       this.createDraft(actor, parsed, tx),
     );
     return this.detail(actor, id, parsed.locale);
+  }
+
+  /** Retained content is scoped to its exact page and language; authors stay private. */
+  async revision(
+    actor: TrustedActor,
+    input: unknown,
+    executor: DatabaseExecutor = this.db,
+  ) {
+    const parsed = revisionReadInput.parse(input);
+    const { organizationId } = await this.scope.read(
+      actor,
+      parsed.id,
+      executor,
+    );
+    const { content, variant } = await this.load(
+      organizationId,
+      parsed.id,
+      parsed.locale,
+      executor,
+    );
+    const revision = await this.repository.revision(
+      variant.id,
+      parsed.revisionId,
+      executor,
+    );
+    if (!revision) this.notFound();
+    return {
+      id: content.id,
+      kind: content.kind,
+      locale: parsed.locale,
+      archived: content.archivedAt !== null,
+      eventOwned: content.eventId !== null,
+      draftRevisionId: variant.draftRevisionId!,
+      publishedRevisionId: variant.publishedRevisionId,
+      revision: revisionDto(revision, content.kind),
+    };
   }
 
   createDraft(actor: TrustedActor, input: unknown, tx: Transaction) {
@@ -561,8 +598,12 @@ export class CmsService {
   saveSite(actor: TrustedActor, input: unknown) {
     return this.site.save(actor, input);
   }
-  publishSite(actor: TrustedActor, input: unknown) {
-    return this.site.publish(actor, input);
+  publishSite(
+    actor: TrustedActor,
+    input: unknown,
+    scope: "website" | "menu" = "website",
+  ) {
+    return this.site.publish(actor, input, scope);
   }
   publicSite(locale: unknown) {
     return this.site.publicSite(locale);

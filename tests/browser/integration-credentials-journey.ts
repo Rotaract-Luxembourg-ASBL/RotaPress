@@ -24,7 +24,7 @@ export async function integrationCredentialsJourney(owner: Page) {
   });
   await scopes.getByRole("button", { name: "Select all", exact: true }).click();
   expect(await scopes.getByRole("checkbox", { checked: true }).count()).toBe(
-    15,
+    await scopes.getByRole("checkbox").count(),
   );
   await scopes.getByRole("button", { name: "Clear all", exact: true }).click();
   expect(await scopes.getByRole("checkbox", { checked: true }).count()).toBe(0);
@@ -32,14 +32,22 @@ export async function integrationCredentialsJourney(owner: Page) {
     owner.getByRole("button", { name: "Generate API token", exact: true }),
   ).toBeDisabled();
   await scopes
+    .getByRole("button", { name: "Website drafts", exact: true })
+    .click();
+  await expect(
+    scopes.getByRole("checkbox", {
+      name: "Publish website content and settings on request",
+      exact: true,
+    }),
+  ).not.toBeChecked();
+  await scopes
     .getByRole("button", { name: "Select all Website actions", exact: true })
     .click();
-  await scopes
-    .getByRole("checkbox", {
-      name: "Capture private website previews",
-      exact: true,
-    })
-    .uncheck();
+  for (const name of [
+    "Capture private website previews",
+    "Publish website content and settings on request",
+  ])
+    await scopes.getByRole("checkbox", { name, exact: true }).uncheck();
   await scopes
     .getByRole("checkbox", {
       name: "Read approved reference websites",
@@ -130,11 +138,13 @@ export async function integrationCredentialsJourney(owner: Page) {
     exact: true,
   });
   await mcpScopes
-    .getByRole("checkbox", {
-      name: "Create and edit website drafts",
-      exact: true,
-    })
-    .check();
+    .getByRole("button", { name: "Select all Website actions", exact: true })
+    .click();
+  for (const name of [
+    "Capture private website previews",
+    "Publish website content and settings on request",
+  ])
+    await mcpScopes.getByRole("checkbox", { name, exact: true }).uncheck();
   await mcpScopes
     .getByRole("checkbox", {
       name: "Read approved reference websites",

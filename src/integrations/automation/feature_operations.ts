@@ -103,7 +103,7 @@ export const featureOperations = [
       path: "/forms",
       scope: "forms:write",
       description:
-        "Create a private contact or membership form draft. Publication remains manual.",
+        "Create a private contact or membership form draft. Publishing requires the separate forms:publish grant and an explicit user request.",
       input: formCreateSchema,
     },
     async ({ services: s, principal: p }, i) =>
@@ -224,7 +224,7 @@ export const featureOperations = [
       path: "/directory/{id}",
       scope: "directory:write",
       description:
-        "Save a profile draft with expectedVersion. Publication remains manual.",
+        "Save a profile draft with expectedVersion. Publishing requires the separate directory:publish grant and an explicit user request.",
       input: partnerSaveSchema.extend({ id: z.uuid() }),
     },
     async ({ services: s, principal: p }, { id, ...i }) =>

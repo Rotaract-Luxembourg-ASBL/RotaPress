@@ -23,14 +23,19 @@ export const oauthOptions: OAuthOptions<string[]> = {
       allowedScopes: [...Object.keys(scopeDefinitions), "offline_access"],
     },
   ],
+  // Refresh this application's resource catalogue when new actions are added.
+  // Merge preserves unconfigured resource policy and never changes client grants.
+  resourceSeedMode: "merge",
   grantTypes: ["authorization_code", "refresh_token"],
   enforcePerClientResources: true,
   clientRegistrationDefaultResources: [automationResource],
   allowDynamicClientRegistration: false,
   allowUnauthenticatedClientRegistration: false,
   accessTokenExpiresIn: 300,
-  refreshTokenExpiresIn: 28800,
-  refreshTokenReuseInterval: 0,
+  // Renewal follows the current staff session instead of forcing daily consent.
+  refreshTokenExpiresIn: 60 * 60 * 24 * 7,
+  // The provider returns the same encrypted response for a matching short retry.
+  refreshTokenReuseInterval: 10,
   codeExpiresIn: 120,
   storeTokens: "hashed",
   prefix: { opaqueAccessToken: "rpo_", refreshToken: "rpr_" },

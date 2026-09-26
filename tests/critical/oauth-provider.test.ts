@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { parseEnv } from "node:util";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { oauthRenewalChecks } from "./oauth-renewal-cases";
 
 const delivery = vi.hoisted(() => ({ code: "" }));
 vi.mock("@/composition/email", async (original) => ({
@@ -69,7 +70,41 @@ beforeAll(async () => {
   const configuration = await import("../../src/core/config");
   origin = configuration.config.APP_URL;
   resource = `${origin}/api/mcp`;
+  // Simulate an installation whose persisted resource predates the new actions.
+  // Its unrelated policy must survive the provider's configured resource merge.
+  await migrationPool.query(
+    `INSERT INTO club.oauth_resource
+       (id,identifier,name,allowed_scopes,disabled,access_token_ttl,metadata)
+     VALUES($1,$2,$3,$4,true,180,$5)
+     ON CONFLICT(identifier) DO UPDATE SET
+       allowed_scopes=EXCLUDED.allowed_scopes, disabled=EXCLUDED.disabled,
+       access_token_ttl=EXCLUDED.access_token_ttl, metadata=EXCLUDED.metadata`,
+    [
+      `synthetic-resource-${randomBytes(8).toString("hex")}`,
+      resource,
+      "Synthetic legacy resource",
+      ["website:read", "calendar:read", "offline_access"],
+      { fixture: "oauth-resource-upgrade" },
+    ],
+  );
   ({ auth } = await import("../../src/core/auth/server"));
+  await auth.$context;
+  const { oauthOptions } = await import("../../src/core/auth/automation_oauth");
+  const seeded = await migrationPool.query(
+    "SELECT allowed_scopes,disabled,access_token_ttl,metadata FROM club.oauth_resource WHERE identifier=$1",
+    [resource],
+  );
+  expect(seeded.rows[0]).toEqual({
+    allowed_scopes: oauthOptions.scopes,
+    disabled: true,
+    access_token_ttl: 180,
+    metadata: { fixture: "oauth-resource-upgrade" },
+  });
+  // The application preserved disabled=true. Enable only this synthetic fixture.
+  await migrationPool.query(
+    "UPDATE club.oauth_resource SET disabled=false WHERE identifier=$1",
+    [resource],
+  );
   ({ pool: runtimePool } =
     await import("../../src/infrastructure/database/client"));
   ({ oauthConnections: connections, oauthAccess: access } =
@@ -134,13 +169,21 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await runtimePool?.end();
+  await migrationPool?.query(
+    "UPDATE club.oauth_resource SET disabled=false,access_token_ttl=NULL,metadata=NULL WHERE identifier=$1 AND metadata->>'fixture'='oauth-resource-upgrade'",
+    [resource],
+  );
   await migrationPool?.end();
 });
 
 async function authorize(
   clientId: string,
   callback: string,
-  scopes = "website:read offline_access",
+  scopes: string | null = "website:read offline_access",
+  expectedScopes = [
+    ...new Set([...(scopes?.split(" ") ?? []), "offline_access"]),
+  ],
+  selectedScopes = expectedScopes,
 ) {
   const verifier = randomBytes(32).toString("base64url");
   const state = randomBytes(24).toString("base64url");
@@ -148,9 +191,10 @@ async function authorize(
     client_id: clientId,
     redirect_uri: callback,
     resource,
-    scope: scopes,
+    ...(scopes === null ? {} : { scope: scopes }),
     state,
     response_type: "code",
+    prompt: "consent",
     code_challenge_method: "S256",
     code_challenge: createHash("sha256").update(verifier).digest("base64url"),
   });
@@ -168,11 +212,11 @@ async function authorize(
   expect(consent.pathname).toBe("/oauth/consent");
   const signed = consent.searchParams.toString();
   const details = await connections.details(actor, headers, signed);
-  expect(details.scopes).toEqual(scopes.split(" "));
+  expect(details.scopes).toEqual(expectedScopes);
   const result = await connections.consent(actor, headers, {
     oauth_query: signed,
     accept: true,
-    scopes: scopes.split(" "),
+    scopes: selectedScopes,
   });
   const returned = new URL(result.url);
   expect(returned.searchParams.get("state") === state).toBe(true);
@@ -189,6 +233,19 @@ async function exchange(input: Record<string, string>) {
     }),
   );
 }
+
+oauthRenewalChecks(() => ({
+  pool: migrationPool,
+  connections,
+  access,
+  actor,
+  headers,
+  origin,
+  resource,
+  protocol,
+  authorize,
+  exchange,
+}));
 
 describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
   it("binds discovery, PKCE, signed consent, exact audience, refresh, current policy and immediate revocation", async () => {
@@ -221,6 +278,9 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       code: flow.code,
       code_verifier: flow.verifier,
     };
+    const missingResource: Record<string, string> = { ...base };
+    delete missingResource.resource;
+    expect((await exchange(missingResource)).status).toBe(400);
     expect(
       (
         await exchange({
@@ -268,8 +328,15 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       client_id: issued.clientId,
       client_secret: issued.clientSecret!,
       refresh_token: token.refresh_token,
-      resource,
     };
+    expect(
+      (
+        await exchange({
+          ...refreshInput,
+          resource: "https://other.example.invalid/api/mcp",
+        })
+      ).status,
+    ).toBe(400);
     const refreshed = await exchange(refreshInput);
     expect(refreshed.status).toBe(200);
     const renewed = (await refreshed.json()) as {
@@ -277,6 +344,11 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       refresh_token: string;
     };
     expect(Boolean(await access.authenticate(renewed.access_token))).toBe(true);
+    const retried = await exchange(refreshInput);
+    expect(retried.status).toBe(200);
+    const replay = await retried.json();
+    expect(replay.access_token === renewed.access_token).toBe(true);
+    expect(replay.refresh_token === renewed.refresh_token).toBe(true);
     const { automationAvailability } =
       await import("../../src/composition/automation");
     await automationAvailability.change(actor, {
@@ -326,7 +398,11 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       "UPDATE club.membership SET status='approved' WHERE user_id=$1",
       [actor.userId],
     );
-    expect((await exchange(refreshInput)).ok).toBe(false); // Rotated refresh token cannot be reused.
+    await migrationPool.query(
+      "UPDATE club.oauth_refresh_token SET rotated_at=NOW()-INTERVAL '11 seconds', rotation_replay_expires_at=NOW()-INTERVAL '1 second' WHERE client_id=$1 AND rotated_at IS NOT NULL",
+      [issued.clientId],
+    );
+    expect((await exchange(refreshInput)).ok).toBe(false); // Reuse outside the retry window is rejected.
     await connections.revoke(actor, headers, issued.clientId);
     await expect(
       access.authenticate(renewed.access_token),
@@ -340,6 +416,153 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       ).ok,
     ).toBe(false);
   });
+  it("defaults omitted scope to registered actions and preserves an explicit narrower request", async () => {
+    const { GET: protectedResource } =
+      await import("../../src/app/.well-known/oauth-protected-resource/api/mcp/route");
+    const { withOAuthChallenge } =
+      await import("../../src/integrations/automation/oauth/challenge");
+    const metadata = await protectedResource().json();
+    expect(metadata).toMatchObject({
+      resource,
+      authorization_servers: [`${origin}/api/auth`],
+    });
+    expect(metadata).not.toHaveProperty("scopes_supported");
+    expect(
+      withOAuthChallenge(new Response(null, { status: 401 })).headers.get(
+        "WWW-Authenticate",
+      ),
+    ).toBe(
+      `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/api/mcp"`,
+    );
+    expect(await auth.api.getOAuthServerConfig()).toMatchObject({
+      scopes_supported: expect.arrayContaining([
+        "website:read",
+        "calendar:write",
+        "calendar:publish",
+        "website:settings",
+        "offline_access",
+      ]),
+    });
+
+    const callback = `${origin}/synthetic-default-actions`;
+    for (const selected of [
+      ["website:read"],
+      [
+        "calendar:read",
+        "calendar:write",
+        "calendar:publish",
+        "website:settings",
+      ],
+    ]) {
+      const client = await connections.create(actor, headers, {
+        name: "Synthetic default actions",
+        redirectUris: [callback],
+        scopes: selected,
+        sourceOrigins: [],
+      });
+      try {
+        const requests: { scope: string | null; expected: string[] }[] = [
+          { scope: null, expected: [...selected, "offline_access"] },
+          { scope: selected[0], expected: [selected[0], "offline_access"] },
+        ];
+        for (const request of requests) {
+          const flow = await authorize(
+            client.clientId,
+            callback,
+            request.scope,
+            request.expected,
+          );
+          const response = await exchange({
+            grant_type: "authorization_code",
+            client_id: client.clientId,
+            client_secret: client.clientSecret!,
+            redirect_uri: callback,
+            resource,
+            code: flow.code,
+            code_verifier: flow.verifier,
+          });
+          expect(response.status).toBe(200);
+          const token = (await response.json()) as {
+            access_token: string;
+            scope: string;
+          };
+          expect(token.scope.split(" ")).toEqual(request.expected);
+          expect(
+            (await access.authenticate(token.access_token)).scopes,
+          ).toEqual(
+            request.expected.filter((scope) => scope !== "offline_access"),
+          );
+        }
+        // New global actions and a narrowed consent do not change the client's ceiling.
+        expect(
+          (await connections.list(actor)).find(
+            (entry) => entry.clientId === client.clientId,
+          )?.scopes,
+        ).toEqual(selected);
+      } finally {
+        await connections.revoke(actor, headers, client.clientId);
+      }
+    }
+  });
+
+  it("rejects explicit empty, repeated and unregistered scopes without defaulting them", async () => {
+    const callback = `${origin}/synthetic-invalid-scope`;
+    const client = await connections.create(actor, headers, {
+      name: "Synthetic invalid scope boundary",
+      redirectUris: [callback],
+      scopes: ["website:read"],
+      sourceOrigins: [],
+    });
+    try {
+      const query = new URLSearchParams({
+        client_id: client.clientId,
+        redirect_uri: callback,
+        resource,
+        state: randomBytes(24).toString("base64url"),
+        response_type: "code",
+        code_challenge_method: "S256",
+        code_challenge: createHash("sha256")
+          .update(randomBytes(32))
+          .digest("base64url"),
+      });
+      const request = (params: URLSearchParams) =>
+        protocol(
+          new Request(`${origin}/api/auth/oauth2/authorize?${params}`, {
+            headers: new Headers([...headers, ["accept", "text/html"]]),
+          }),
+        );
+      for (const values of [
+        [""],
+        ["   "],
+        ["website:read", "calendar:write"],
+      ]) {
+        const invalid = new URLSearchParams(query);
+        for (const value of values) invalid.append("scope", value);
+        const response = await request(invalid);
+        expect(response.status).toBe(400);
+        expect(await response.json()).toMatchObject({
+          error: "invalid_request",
+        });
+        expect(response.headers.has("location")).toBe(false);
+      }
+      const unregistered = new URLSearchParams(query);
+      unregistered.set("scope", "website:read calendar:write");
+      const response = await request(unregistered);
+      expect(response.status).toBe(302);
+      const rejected = new URL(response.headers.get("location")!, origin);
+      expect(rejected.origin + rejected.pathname).toBe(callback);
+      expect(rejected.searchParams.get("error")).toBe("invalid_scope");
+      expect(rejected.searchParams.has("code")).toBe(false);
+      const stored = await migrationPool.query(
+        "SELECT count(*)::integer AS count FROM club.oauth_consent WHERE client_id=$1",
+        [client.clientId],
+      );
+      expect(stored.rows[0].count).toBe(0);
+    } finally {
+      await connections.revoke(actor, headers, client.clientId);
+    }
+  });
+
   it("binds REST tokens and MCP keys to their integration, including legacy key compatibility", async () => {
     const { automationAccess } =
       await import("../../src/composition/automation");
@@ -430,7 +653,13 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       authentication: "none",
     });
     expect(client.clientSecret).toBeUndefined();
-    const flow = await authorize(client.clientId, callback, "website:read");
+    const flow = await authorize(
+      client.clientId,
+      callback,
+      "website:read",
+      ["website:read", "offline_access"],
+      ["website:read"],
+    );
     const response = await exchange({
       grant_type: "authorization_code",
       client_id: client.clientId,
