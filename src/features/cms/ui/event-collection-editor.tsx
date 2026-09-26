@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import Link from "next/link";
 import type { Config } from "@puckeditor/core";
 import type { PuckBlocks } from "./puck-config";
 import type { CmsLocale } from "../cms_schemas";
@@ -10,28 +9,29 @@ import { EventCards } from "../../events/ui/event-cards";
 import { useResource } from "@/ui/api";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { useRefreshOnFocus } from "./event-editor-scope";
+import { ConnectedSource, ConnectionError } from "./connected-source";
 
 export const EditorLocale = createContext<CmsLocale>("en");
 function EventCollectionSource() {
   const { capabilities, features } = useCurrentUser();
   return (
-    <div className="field-help">
-      <p>
-        {features.events
-          ? "Events and their pages must be published before they appear here. Edit dates, booking options and event content in Events."
-          : "Events is disabled in Integrations. This block keeps its settings."}
-      </p>
-      {features.events && capabilities.includes("events.manage") && (
-        <Link className="text-link" href="/admin/events" target="_blank">
-          Manage events ↗
-        </Link>
-      )}
-    </div>
+    <ConnectedSource
+      name="Events"
+      icon="calendar"
+      enabled={features.events}
+      status="Automatic collection"
+      description="This block follows public events with a published event page in this language. Dates, booking options and provider connections are managed in Events; private events and drafts stay hidden."
+      href={
+        capabilities.includes("events.manage") ? "/admin/events" : undefined
+      }
+      action="Open Events"
+    />
   );
 }
+
 function EventCollectionPreview(props: PuckBlocks["EventCollection"]) {
   const locale = useContext(EditorLocale);
-  const { features, capabilities } = useCurrentUser();
+  const { features } = useCurrentUser();
   const { data, error, refresh } = useResource<{ items: PublicEventCard[] }>(
     features.events
       ? `/api/admin/events/catalogue?locale=${locale}&period=${props.period}&limit=${props.limit}`
@@ -50,9 +50,14 @@ function EventCollectionPreview(props: PuckBlocks["EventCollection"]) {
           retained.
         </p>
       ) : error ? (
-        <p role="alert">{error}</p>
+        <ConnectionError error={error} onRetry={refresh} />
       ) : data ? (
-        <EventCards items={data.items} locale={locale} layout={props.layout} />
+        <EventCards
+          items={data.items}
+          locale={locale}
+          layout={props.layout}
+          preview
+        />
       ) : (
         <p>Loading published events…</p>
       )}
@@ -61,11 +66,6 @@ function EventCollectionPreview(props: PuckBlocks["EventCollection"]) {
         website are published in this language. Drafts and private events are
         excluded.
       </p>
-      {features.events && capabilities.includes("events.manage") && (
-        <Link className="text-link" href="/admin/events" target="_blank">
-          Manage events ↗
-        </Link>
-      )}
     </section>
   );
 }

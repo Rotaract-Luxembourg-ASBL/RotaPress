@@ -5,6 +5,26 @@ import type { PuckBlocks } from "./puck-config";
 import { clubDetailKeys, clubDetailLabels } from "../club_details";
 import { ClubDetailsBlock } from "./club-details-block";
 import { CustomCodePreview } from "./custom-code-block";
+import { useCurrentUser } from "@/ui/admin-shell";
+import { ConnectedSource } from "./connected-source";
+
+function ClubDetailsSource() {
+  const { capabilities } = useCurrentUser();
+  return (
+    <ConnectedSource
+      name="Club & region"
+      icon="settings"
+      status="Saved club details"
+      description="Choose which public club details appear here. Their values are managed in Settings and update connected blocks when saved. Empty details are hidden. A Polaris link opens the existing portal; it does not connect member accounts."
+      href={
+        capabilities.includes("settings.manage")
+          ? "/admin/settings?tab=general"
+          : undefined
+      }
+      action="Edit club details"
+    />
+  );
+}
 
 const version = {
   type: "custom" as const,
@@ -18,7 +38,11 @@ export const clubCodeConfig: Pick<
   ClubDetails: {
     label: "Club details",
     fields: {
-      version,
+      version: {
+        type: "custom",
+        label: "Connected club details",
+        render: () => <ClubDetailsSource />,
+      },
       title: { type: "text", label: "Heading" },
       fields: {
         type: "array",

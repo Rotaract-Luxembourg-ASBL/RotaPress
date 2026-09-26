@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import type { Config } from "@puckeditor/core";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { useResource } from "@/ui/api";
@@ -7,9 +6,25 @@ import { ProjectCards } from "@/features/projects/ui/project-public";
 import type { PublicProject } from "@/features/projects/project_schemas";
 import type { PuckBlocks } from "./puck-config";
 import { useRefreshOnFocus } from "./event-editor-scope";
+import { ConnectedSource, ConnectionError } from "./connected-source";
+
+function ProjectCollectionSource() {
+  const { features, capabilities } = useCurrentUser();
+  return (
+    <ConnectedSource
+      name="Projects"
+      icon="outline"
+      enabled={features.projects}
+      status="Automatic collection"
+      description="This block follows published project stories. Change the progress filter below; edit stories and publish their updates in Projects. Private drafts and archived projects stay hidden."
+      href={capabilities.includes("cms.edit") ? "/admin/projects" : undefined}
+      action="Open Projects"
+    />
+  );
+}
 
 function ProjectCollectionPreview(props: PuckBlocks["ProjectCollection"]) {
-  const { features, capabilities } = useCurrentUser();
+  const { features } = useCurrentUser();
   const { data, error, refresh } = useResource<{ items: PublicProject[] }>(
     features.projects ? "/api/projects" : null,
   );
@@ -30,7 +45,7 @@ function ProjectCollectionPreview(props: PuckBlocks["ProjectCollection"]) {
           Projects is disabled in Integrations. This section keeps its settings.
         </p>
       ) : error ? (
-        <p role="alert">{error}</p>
+        <ConnectionError error={error} onRetry={refresh} />
       ) : !data ? (
         <p>Loading published projects…</p>
       ) : items.length ? (
@@ -45,11 +60,6 @@ function ProjectCollectionPreview(props: PuckBlocks["ProjectCollection"]) {
         Manage the stories in Projects. This section stays up to date with their
         published versions.
       </p>
-      {capabilities.includes("cms.edit") && (
-        <Link href="/admin/projects" target="_blank" className="text-link">
-          Manage projects ↗
-        </Link>
-      )}
     </section>
   );
 }
@@ -58,7 +68,11 @@ export const projectCollectionConfig: Config<PuckBlocks>["components"]["ProjectC
   {
     label: "Projects",
     fields: {
-      version: { type: "custom", visible: false, render: () => <></> },
+      version: {
+        type: "custom",
+        label: "Connected projects",
+        render: () => <ProjectCollectionSource />,
+      },
       title: { type: "text", label: "Heading" },
       introduction: { type: "textarea", label: "Introduction" },
       status: {

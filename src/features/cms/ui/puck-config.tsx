@@ -5,8 +5,8 @@ import { clubCodeConfig } from "./club-code-config";
 import { calendarBlockConfig } from "./calendar-block";
 import { projectCollectionConfig } from "./project-collection-editor";
 import { collectionConfig } from "./page-collection-config";
-import type { Block, CmsSummary } from "../cms_schemas";
-import { useResource } from "@/ui/api";
+import type { Block } from "../cms_schemas";
+import { SectionPicker } from "./reusable-section-picker";
 import {
   CallToActionBlock,
   CardsBlock,
@@ -43,38 +43,6 @@ export type PuckBlocks = {
   [T in Block["type"]]: Omit<Extract<Block, { type: T }>["props"], "id">;
 };
 const version = 1 as const;
-
-function SectionPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  const { data } = useResource<{ items: CmsSummary[] }>(
-    "/api/admin/cms/content",
-  );
-  return (
-    <label>
-      Reusable section
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Choose a section</option>
-        {data?.items
-          .filter((item) => item.kind === "section" && !item.archived)
-          .map((item) => (
-            <option key={`${item.id}-${item.locale}`} value={item.id}>
-              {item.title} ({item.locale})
-              {item.publishedRevisionId ? "" : " — draft"}
-            </option>
-          ))}
-      </select>
-      <span className="field-help">
-        Published pages use the section’s published revision in the same
-        language.
-      </span>
-    </label>
-  );
-}
 
 export const puckConfig: Config<PuckBlocks> = withDesign({
   root: {
@@ -175,7 +143,12 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
         formId: formField,
       },
       defaultProps: { version, formId: "" },
-      render: ({ formId }) => <FormEditorPreview formId={formId} />,
+      // Keep the observed element stable while the selected form loads.
+      render: ({ formId }) => (
+        <div className="cms-form-editor-block">
+          <FormEditorPreview formId={formId} />
+        </div>
+      ),
     },
     EventRegistration: {
       label: "Event registration",
@@ -483,8 +456,12 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
         version: { type: "custom", visible: false, render: () => <></> },
         sectionId: {
           type: "custom",
-          render: ({ value, onChange }) => (
-            <SectionPicker value={value} onChange={onChange} />
+          render: ({ value, onChange, readOnly }) => (
+            <SectionPicker
+              value={value}
+              onChange={onChange}
+              disabled={readOnly}
+            />
           ),
         },
       },

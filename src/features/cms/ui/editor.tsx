@@ -18,6 +18,8 @@ import { EditorContextMenu } from "./editor-context-menu";
 import { EditorLocale } from "./event-collection-editor";
 import { eventPageEditorHref } from "@/features/events/event_routes";
 import { FormInsertionPrompt } from "./form-insertion-prompt";
+import { editorRootZone } from "./editor-selection";
+import { useRefreshOnFocus } from "./event-editor-scope";
 
 type SiteContext = import("./site-part-blocks").SiteBlockContext & {
   site: PublicSite;
@@ -35,6 +37,8 @@ function EditorForm({
     initial.draft.data.content.length ? null : "blocks",
   );
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+  const [insertionZone, setInsertionZone] = useState(editorRootZone);
+  const [insertionRequest, setInsertionRequest] = useState(0);
   const config = useMemo<typeof puckConfig>(
     () =>
       context
@@ -93,8 +97,10 @@ function EditorForm({
       <EditorLocale value={initial.locale}>
         <InsertionProvider
           disabled={doc.busy || doc.readOnly}
-          onInsert={(index) => {
+          onInsert={(index, _type, zone = editorRootZone) => {
+            setInsertionRequest((request) => request + 1);
             setInsertionIndex(index);
+            setInsertionZone(zone);
             setPanel("blocks");
           }}
         >
@@ -125,8 +131,10 @@ function EditorForm({
               )}
               <EditorContextMenu
                 disabled={doc.busy || doc.readOnly}
-                onInsert={(index) => {
+                onInsert={(index, zone = editorRootZone) => {
+                  setInsertionRequest((request) => request + 1);
                   setInsertionIndex(index);
+                  setInsertionZone(zone);
                   setPanel("blocks");
                 }}
               />
@@ -137,6 +145,9 @@ function EditorForm({
                 setPanel={setPanel}
                 insertionIndex={insertionIndex}
                 setInsertionIndex={setInsertionIndex}
+                insertionZone={insertionZone}
+                setInsertionZone={setInsertionZone}
+                insertionRequest={insertionRequest}
               />
             </Puck>
           </div>
@@ -147,13 +158,14 @@ function EditorForm({
 }
 
 function ThemedEditor({ initial }: { initial: CmsDetail }) {
-  const { data, error } = useResource<SiteContext>(
+  const { data, error, refresh } = useResource<SiteContext>(
     `/api/admin/cms/site/context?locale=${initial.locale}`,
   );
-  return error ? (
-    <Notice>{error}</Notice>
-  ) : data ? (
+  useRefreshOnFocus(refresh);
+  return data ? (
     <EditorForm initial={initial} context={data} />
+  ) : error ? (
+    <Notice>{error}</Notice>
   ) : (
     <Loading />
   );

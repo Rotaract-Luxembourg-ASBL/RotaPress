@@ -6,9 +6,10 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { MediaPickerDialog } from "@/ui/media-picker";
 import type { Block } from "../cms_schemas";
 import type { puckConfig } from "./puck-config";
+import { locateEditorBlock } from "./editor-selection";
+import { getBlockMetadata } from "./editor-block-catalogue";
 
 const useContextPuck = createUsePuck<typeof puckConfig>();
-const zone = "root:default-zone";
 type Position = { id: string; left: number; top: number };
 
 /** Block actions use Puck's public dispatch, sharing toolbar undo and validation. */
@@ -17,7 +18,7 @@ export function EditorContextMenu({
   onInsert,
 }: {
   disabled: boolean;
-  onInsert: (index: number) => void;
+  onInsert: (index: number, zone: string) => void;
 }) {
   const dispatch = useContextPuck((state) => state.dispatch);
   const blocks = useContextPuck((state) => state.appState.data.content);
@@ -26,19 +27,22 @@ export function EditorContextMenu({
   const [replaceId, setReplaceId] = useState<string | null>(null);
   const menu = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
-  const index = blocks.findIndex((block) => block.props.id === position?.id);
-  const block = blocks[index];
-  const replacement = blocks.find((item) => item.props.id === replaceId);
+  const location = locateEditorBlock(blocks, position?.id);
+  const index = location?.index ?? -1;
+  const zone = location?.zone ?? "root:default-zone";
+  const block = location?.block;
+  const replacementLocation = locateEditorBlock(blocks, replaceId ?? undefined);
+  const replacement = replacementLocation?.block;
 
   useEffect(() => {
     if (disabled) return;
     function open(id: string, x: number, y: number, element: HTMLElement) {
-      const index = blocks.findIndex((item) => item.props.id === id);
-      if (index < 0) return;
+      const location = locateEditorBlock(blocks, id);
+      if (!location) return;
       returnFocus.current = element;
       dispatch({
         type: "setUi",
-        ui: { itemSelector: { index, zone } },
+        ui: { itemSelector: { index: location.index, zone: location.zone } },
         recordHistory: false,
       });
       setPosition({
@@ -64,18 +68,19 @@ export function EditorContextMenu({
           document.querySelectorAll<HTMLElement>(
             ".editor-canvas [data-puck-component]",
           ),
-        ).find((item) => {
-          const rect = item.getBoundingClientRect();
-          return (
-            event.clientX >= rect.left &&
-            event.clientX <= rect.right &&
-            event.clientY >= rect.top &&
-            event.clientY <= rect.bottom
-          );
-        });
+        )
+          .reverse()
+          .find((item) => {
+            const rect = item.getBoundingClientRect();
+            return (
+              event.clientX >= rect.left &&
+              event.clientX <= rect.right &&
+              event.clientY >= rect.top &&
+              event.clientY <= rect.bottom
+            );
+          });
       const id = element?.getAttribute("data-puck-component");
-      if (!element || !id || !blocks.some((item) => item.props.id === id))
-        return;
+      if (!element || !id || !locateEditorBlock(blocks, id)) return;
       event.preventDefault();
       event.stopPropagation();
       open(id, event.clientX, event.clientY, element);
@@ -103,8 +108,7 @@ export function EditorContextMenu({
           ".editor-canvas [data-puck-component]",
         ),
       ).find((item) => item.getAttribute("data-puck-component") === selectedId);
-      if (!element || !blocks.some((item) => item.props.id === selectedId))
-        return;
+      if (!element || !locateEditorBlock(blocks, selectedId)) return;
       event.preventDefault();
       const rect = element.getBoundingClientRect();
       open(selectedId, rect.left + 24, rect.top + 24, element);
@@ -211,7 +215,9 @@ export function EditorContextMenu({
             onKeyDown={keys}
           >
             <p>
-              {block.type === "Image" ? "Image tools" : `${block.type} block`}
+              {block.type === "Image"
+                ? "Image tools"
+                : getBlockMetadata(block.type).label}
             </p>
             {block.type === "Image" && (
               <>
@@ -279,12 +285,15 @@ export function EditorContextMenu({
                 <hr />
               </>
             )}
-            <button role="menuitem" onClick={() => act(() => onInsert(index))}>
+            <button
+              role="menuitem"
+              onClick={() => act(() => onInsert(index, zone))}
+            >
               Insert block before
             </button>
             <button
               role="menuitem"
-              onClick={() => act(() => onInsert(index + 1))}
+              onClick={() => act(() => onInsert(index + 1, zone))}
             >
               Insert block after
             </button>
@@ -298,7 +307,7 @@ export function EditorContextMenu({
             </button>
             <button
               role="menuitem"
-              disabled={index === blocks.length - 1}
+              disabled={index === (location?.siblings.length ?? 0) - 1}
               onClick={() => move(1)}
             >
               Move down
@@ -340,14 +349,11 @@ export function EditorContextMenu({
             }}
             onRemoved={(id) => {
               if (id !== replacement.props.assetId) return;
-              const destinationIndex = blocks.findIndex(
-                (item) => item.props.id === replacement.props.id,
-              );
-              if (destinationIndex >= 0)
+              if (replacementLocation)
                 dispatch({
                   type: "replace",
-                  destinationIndex,
-                  destinationZone: zone,
+                  destinationIndex: replacementLocation.index,
+                  destinationZone: replacementLocation.zone,
                   data: {
                     ...replacement,
                     props: { ...replacement.props, assetId: "" },
@@ -356,14 +362,11 @@ export function EditorContextMenu({
               setReplaceId(null);
             }}
             onInsert={(asset) => {
-              const destinationIndex = blocks.findIndex(
-                (item) => item.props.id === replacement.props.id,
-              );
-              if (destinationIndex >= 0)
+              if (replacementLocation)
                 dispatch({
                   type: "replace",
-                  destinationIndex,
-                  destinationZone: zone,
+                  destinationIndex: replacementLocation.index,
+                  destinationZone: replacementLocation.zone,
                   data: {
                     ...replacement,
                     props: {

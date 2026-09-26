@@ -1,6 +1,5 @@
 "use client";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Config } from "@puckeditor/core";
 import { useResource } from "@/ui/api";
 import { useCurrentUser } from "@/ui/admin-shell";
@@ -9,6 +8,8 @@ import type { PublicPartner } from "../../partners/partner_schemas";
 import { PartnerCollection } from "../../partners/ui/partner-collection";
 import { selectProfiles } from "../../partners/collection_selection";
 import type { PuckBlocks } from "./puck-config";
+import { useRefreshOnFocus } from "./event-editor-scope";
+import { ConnectedSource, ConnectionError } from "./connected-source";
 
 function usePartners() {
   const eventId = useMediaPickerEvent();
@@ -16,11 +17,29 @@ function usePartners() {
     `/api/admin/partners/selection${eventId ? `?eventId=${eventId}` : ""}`,
   );
   const { refresh } = resource;
-  useEffect(() => {
-    window.addEventListener("focus", refresh);
-    return () => window.removeEventListener("focus", refresh);
-  }, [refresh]);
+  useRefreshOnFocus(refresh);
   return resource;
+}
+
+function DirectorySource({
+  status = "Automatic category",
+  onRefresh,
+}: {
+  status?: string;
+  onRefresh?: () => void;
+}) {
+  const { capabilities } = useCurrentUser();
+  return (
+    <ConnectedSource
+      name="Community directory"
+      icon="members"
+      status={status}
+      description="Profiles stay connected to their published names, images and descriptions. Edit and publish profile updates in Community directory. Private member records stay private."
+      href={capabilities.includes("cms.edit") ? "/admin/partners" : undefined}
+      action="Open directory"
+      onRefresh={onRefresh}
+    />
+  );
 }
 
 export function PartnerPicker({
@@ -34,8 +53,7 @@ export function PartnerPicker({
   disabled?: boolean;
   initialCategory?: string;
 }) {
-  const { data, error } = usePartners();
-  const { capabilities } = useCurrentUser();
+  const { data, error, refresh } = usePartners();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(initialCategory);
   const items =
@@ -50,18 +68,31 @@ export function PartnerPicker({
     onChange(next);
   }
   return (
-    <div className="form-stack directory-picker">
-      <p className="field-help">
-        Selected profiles stay connected to their published names, images and
-        descriptions. Arrange their display order here.
-      </p>
-      {error && <p role="alert">{error}</p>}
+    <div className="editor-connection-picker directory-picker">
+      <DirectorySource
+        status={
+          error
+            ? "Connection unavailable"
+            : !data
+              ? "Loading profiles…"
+              : `${value.length} selected profile${value.length === 1 ? "" : "s"}`
+        }
+        onRefresh={refresh}
+      />
+      {error && <ConnectionError error={error} onRetry={refresh} />}
+      {value.length > 0 && (
+        <p className="field-help">Display order on this page</p>
+      )}
       {value.map((id, index) => (
         <div className="directory-selected" key={id}>
           <strong>
             {index + 1}.{" "}
             {data?.items.find((item) => item.id === id)?.name ??
-              "Unavailable profile — selection retained"}
+              (error
+                ? "Saved profile — selection retained"
+                : data
+                  ? "Unavailable profile — selection retained"
+                  : "Loading selected profile…")}
           </strong>
           <div className="cms-actions">
             <button
@@ -116,7 +147,12 @@ export function PartnerPicker({
         Add a published profile
         <select
           value=""
-          disabled={disabled || value.length >= 40}
+          disabled={
+            disabled ||
+            !data ||
+            value.length >= 40 ||
+            !items.some((item) => !value.includes(item.id))
+          }
           onChange={(e) => {
             if (e.target.value) onChange([...value, e.target.value]);
           }}
@@ -131,23 +167,29 @@ export function PartnerPicker({
             ))}
         </select>
       </label>
-      {data && !items.length && (
+      {data && !error && !items.length && (
         <p className="field-help">
-          No published profiles match. Publish a profile in the community
-          directory to make it available here.
+          {data.items.length
+            ? "No profiles match your filters. Try another search or category."
+            : "No published profiles yet. Publish a profile in Community directory to make it available here."}
         </p>
       )}
-      {capabilities.includes("cms.edit") && (
-        <Link href="/admin/partners" target="_blank" className="text-link">
-          Manage community directory ↗
-        </Link>
+      {value.length >= 40 && (
+        <p className="field-help">This block can show up to 40 profiles.</p>
       )}
+      {data &&
+        items.length > 0 &&
+        items.every((item) => value.includes(item.id)) && (
+          <p className="field-help">
+            All matching profiles are already selected.
+          </p>
+        )}
     </div>
   );
 }
 
 function PartnerPreview(props: PuckBlocks["PartnerCollection"]) {
-  const { data, error } = usePartners();
+  const { data, error, refresh } = usePartners();
   const items = selectProfiles(props, data?.items ?? []);
   return (
     <>
@@ -156,12 +198,21 @@ function PartnerPreview(props: PuckBlocks["PartnerCollection"]) {
         presentation={props.presentation}
         items={items}
       />
-      {(error || !items.length) && (
+      {error && (
+        <div className="cms-block">
+          <ConnectionError error={error} onRetry={refresh} />
+        </div>
+      )}
+      {!error && !data && (
+        <p className="cms-block field-help" role="status">
+          Loading published profiles…
+        </p>
+      )}
+      {!error && data && !items.length && (
         <p className="cms-block field-help">
-          {error ||
-            (props.selectionMode === "category"
-              ? "Published profiles in this category will appear automatically. Private drafts stay hidden."
-              : "Choose specific profiles in Content settings.")}
+          {props.selectionMode === "category"
+            ? "Published profiles in this category will appear automatically. Private drafts stay hidden."
+            : "Choose specific profiles in Content settings."}
         </p>
       )}
       {props.selectionMode === "category" && items.length > 0 && (
@@ -177,7 +228,11 @@ export const partnerBlockConfig: Config<PuckBlocks>["components"]["PartnerCollec
   {
     label: "Directory profiles",
     fields: {
-      version: { type: "custom", visible: false, render: () => <></> },
+      version: {
+        type: "custom",
+        label: "Connected directory",
+        render: () => <DirectorySource />,
+      },
       title: { type: "text", label: "Section heading" },
       selectionMode: {
         type: "radio",
@@ -225,6 +280,7 @@ export const partnerBlockConfig: Config<PuckBlocks>["components"]["PartnerCollec
           }
         : {
             category: { type: "custom", visible: false, render: () => <></> },
+            version: { type: "custom", visible: false, render: () => <></> },
           }),
     }),
     defaultProps: {

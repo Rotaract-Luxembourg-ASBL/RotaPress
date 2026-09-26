@@ -7,6 +7,13 @@ actual storage, proxy, sender and provider configuration.
 
 ## Current product scope
 
+The page editor groups its block library by content, layout and connected sources,
+keeps column insertion and selected-block location explicit, and provides source
+status and recovery actions for connected content. Source management stays in its
+own workspace and opens without discarding the page draft. The editor retains
+separate save/publication, language and audience boundaries; these controls do not
+test external provider connections. See [website editing](../guides/cms-and-media.md).
+
 Projects provides a simple showcase for volunteer actions and community
 initiatives, with private drafts, reviewed publication, reversible archival,
 public stories and a connected website block. It reuses website content

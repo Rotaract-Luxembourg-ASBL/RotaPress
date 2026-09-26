@@ -111,6 +111,7 @@ export function EditorToolbar({
         <button
           className="editor-icon-button editor-add-button"
           aria-label="Add blocks"
+          id="editor-open-library"
           title="Add blocks"
           aria-pressed={panel === "blocks"}
           disabled={doc.busy || doc.readOnly}
@@ -121,6 +122,7 @@ export function EditorToolbar({
         <button
           className="editor-icon-button"
           aria-label="List view"
+          id="editor-open-outline"
           title="List view"
           aria-pressed={panel === "outline"}
           onClick={() => togglePanel("outline")}
@@ -221,11 +223,14 @@ export function EditorToolbar({
         )}
         <button
           className="button button-outline button-small editor-page-settings-button"
+          id="editor-open-page-settings"
+          aria-label={settingsLabel}
+          title={settingsLabel}
           aria-controls="editor-page-panel"
           onClick={() => openPageSettings()}
         >
           <EditorIcon name="settings" />
-          {settingsLabel}
+          <span className="editor-page-settings-label">{settingsLabel}</span>
         </button>
         <details
           ref={menu}

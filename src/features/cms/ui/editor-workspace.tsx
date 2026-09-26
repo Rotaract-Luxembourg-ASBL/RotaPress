@@ -6,148 +6,14 @@ import { useState } from "react";
 import type { EditorDocument } from "./use-editor-document";
 import { EditorToolbar } from "./editor-toolbar";
 import { Icon as EditorIcon } from "@/ui/icon";
-import { BlockLibrary, BlockActions, useEditorPuck } from "./editor-blocks";
-import {
-  PageSettings,
-  DocumentDialog,
-  type EditorDialogName,
-} from "./editor-panels";
+import { BlockLibrary, useEditorPuck } from "./editor-blocks";
+import { DocumentDialog, type EditorDialogName } from "./editor-panels";
 import { Notice } from "@/ui/primitives";
 import { puckConfig } from "./puck-config";
 import { CanvasAddBlock } from "./editor-insertion";
 import { isSitePart } from "../cms_schemas";
-import { BlockDesignPanel } from "./block-design-panel";
-
-function Inspector({
-  document: doc,
-  close,
-  tab,
-  setTab,
-}: {
-  document: EditorDocument;
-  close: () => void;
-  tab: "page" | "block";
-  setTab: (tab: "page" | "block") => void;
-}) {
-  const selected = useEditorPuck((state) => state.selectedItem);
-  const [blockTab, setBlockTab] = useState<"content" | "design">("content");
-  return (
-    <>
-      <div
-        className="editor-inspector-tabs"
-        role="tablist"
-        aria-label="Inspector"
-      >
-        <button
-          id="editor-page-tab"
-          role="tab"
-          aria-selected={tab === "page"}
-          aria-controls="editor-page-panel"
-          onClick={() => setTab("page")}
-        >
-          {isSitePart(doc.detail.kind) ? "Site part" : "Page"}
-        </button>
-        <button
-          id="editor-block-tab"
-          role="tab"
-          aria-selected={tab === "block"}
-          aria-controls="editor-block-panel"
-          onClick={() => setTab("block")}
-        >
-          Block
-        </button>
-        <button
-          className="editor-icon-button"
-          aria-label="Close settings"
-          title="Close settings"
-          onClick={close}
-        >
-          <EditorIcon name="close" />
-        </button>
-      </div>
-      <div
-        id="editor-page-panel"
-        role="tabpanel"
-        aria-labelledby="editor-page-tab"
-        hidden={tab !== "page"}
-      >
-        <PageSettings document={doc} />
-      </div>
-      <div
-        id="editor-block-panel"
-        role="tabpanel"
-        aria-labelledby="editor-block-tab"
-        hidden={tab !== "block"}
-      >
-        {selected ? (
-          <>
-            <div className="editor-section-heading">
-              <h2>
-                {puckConfig.components[selected.type].label || selected.type}
-              </h2>
-              <p>Edit its content or adjust its design.</p>
-              <BlockActions disabled={doc.busy || doc.readOnly} />
-            </div>
-            <div
-              className="editor-inspector-tabs"
-              role="tablist"
-              aria-label="Block settings"
-            >
-              <button
-                id="block-content-tab"
-                role="tab"
-                aria-selected={blockTab === "content"}
-                aria-controls="block-content-panel"
-                onClick={() => setBlockTab("content")}
-              >
-                Content
-              </button>
-              <button
-                id="block-design-tab"
-                role="tab"
-                aria-selected={blockTab === "design"}
-                aria-controls="block-design-panel"
-                onClick={() => setBlockTab("design")}
-              >
-                Design
-              </button>
-            </div>
-            <fieldset
-              className="editor-fieldset"
-              disabled={doc.busy || doc.readOnly}
-            >
-              <div
-                id="block-content-panel"
-                role="tabpanel"
-                aria-labelledby="block-content-tab"
-                hidden={blockTab !== "content"}
-              >
-                <Puck.Fields />
-              </div>
-              <div
-                id="block-design-panel"
-                role="tabpanel"
-                aria-labelledby="block-design-tab"
-                hidden={blockTab !== "design"}
-              >
-                <BlockDesignPanel />
-              </div>
-            </fieldset>
-          </>
-        ) : (
-          <div className="editor-inspector-empty">
-            <EditorIcon name="outline" />
-            <h2>Select a block</h2>
-            <p>
-              Click content in the canvas or choose a block in List view to edit
-              its settings.
-            </p>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
+import { EditorInspector } from "./editor-inspector";
+import { editorRootZone, editorBlockCount } from "./editor-selection";
 
 export function EditorWorkspace({
   document: doc,
@@ -156,6 +22,9 @@ export function EditorWorkspace({
   setPanel,
   insertionIndex,
   setInsertionIndex,
+  insertionZone,
+  setInsertionZone,
+  insertionRequest,
 }: {
   document: EditorDocument;
   canPublish: boolean;
@@ -163,13 +32,14 @@ export function EditorWorkspace({
   setPanel: (panel: "blocks" | "outline" | null) => void;
   insertionIndex: number | null;
   setInsertionIndex: (index: number | null) => void;
+  insertionZone: string;
+  setInsertionZone: (zone: string) => void;
+  insertionRequest: number;
 }) {
   const selected = useEditorPuck((state) => state.selectedItem);
   const selectionId = selected?.props.id ?? "page";
   const dispatch = useEditorPuck((state) => state.dispatch);
-  const selectedIndex = useEditorPuck(
-    (state) => state.appState.ui.itemSelector?.index,
-  );
+  const selector = useEditorPuck((state) => state.appState.ui.itemSelector);
   const [hiddenForSelection, setHiddenForSelection] = useState<string | null>(
     null,
   );
@@ -194,6 +64,23 @@ export function EditorWorkspace({
   const closeSettings = () => {
     setHiddenForSelection(selectionId);
     setRequestedInspector(false);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(
+          selected ? "editor-open-block-settings" : "editor-open-page-settings",
+        )
+        ?.focus();
+    });
+  };
+  const closeLibrary = () => {
+    setPanel(null);
+    requestAnimationFrame(() =>
+      document
+        .getElementById(
+          panel === "outline" ? "editor-open-outline" : "editor-open-library",
+        )
+        ?.focus(),
+    );
   };
   const openPageSettings = (focusTitle = false) => {
     dispatch({
@@ -222,9 +109,8 @@ export function EditorWorkspace({
         canPublish={canPublish}
         panel={panel}
         togglePanel={(next) => {
-          setInsertionIndex(
-            selectedIndex === undefined ? null : selectedIndex + 1,
-          );
+          setInsertionIndex(selector ? selector.index + 1 : null);
+          setInsertionZone(selector?.zone ?? editorRootZone);
           setPanel(panel === next ? null : next);
           setRequestedInspector(false);
         }}
@@ -247,26 +133,55 @@ export function EditorWorkspace({
           <aside
             className="editor-library"
             aria-label={panel === "blocks" ? "Block library" : "Page outline"}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !event.defaultPrevented) {
+                event.stopPropagation();
+                closeLibrary();
+              }
+            }}
           >
             <header className="editor-panel-heading">
               <h2>{panel === "blocks" ? "Add a block" : "List view"}</h2>
               <button
                 className="editor-icon-button"
                 aria-label="Close block panel"
-                onClick={() => setPanel(null)}
+                onClick={closeLibrary}
               >
                 <EditorIcon name="close" />
               </button>
             </header>
             {panel === "blocks" ? (
               <BlockLibrary
+                key={`${insertionRequest}:${insertionZone}:${insertionIndex}`}
                 kind={doc.detail.kind}
                 insertionIndex={insertionIndex}
+                insertionZone={insertionZone}
                 disabled={doc.busy || doc.readOnly}
-                onInsert={() => setPanel(null)}
+                onInsert={() => {
+                  setPanel(null);
+                  setHiddenForSelection(null);
+                  setRequestedInspector(true);
+                  requestAnimationFrame(() =>
+                    document.getElementById("editor-block-tab")?.focus(),
+                  );
+                }}
               />
             ) : (
-              <div className="editor-outline">
+              <div
+                className="editor-outline"
+                onClick={(event) => {
+                  if (
+                    event.target instanceof Element &&
+                    event.target.closest("button")
+                  ) {
+                    if (window.matchMedia("(max-width: 900px)").matches)
+                      setPanel(null);
+                    setInspectorChoice(null);
+                    setHiddenForSelection(null);
+                    setRequestedInspector(true);
+                  }
+                }}
+              >
                 <p className="editor-help">
                   Select a block to edit. Drag to reorder.
                 </p>
@@ -290,6 +205,23 @@ export function EditorWorkspace({
                 : "Click content to edit"}
             </span>
             <div role="group" aria-label="Canvas width">
+              {selected && (
+                <button
+                  id="editor-open-block-settings"
+                  className="editor-selection-button"
+                  onClick={() => {
+                    setHiddenForSelection(null);
+                    setRequestedInspector(true);
+                    setInspectorChoice({ selectionId, tab: "block" });
+                    setPanel(null);
+                    requestAnimationFrame(() =>
+                      document.getElementById("editor-block-tab")?.focus(),
+                    );
+                  }}
+                >
+                  <EditorIcon name="controls" /> Block settings
+                </button>
+              )}
               {(["desktop", "tablet", "mobile"] as const).map((device) => (
                 <button
                   key={device}
@@ -309,6 +241,16 @@ export function EditorWorkspace({
               className="editor-canvas"
               data-width={width}
               inert={doc.readOnly || undefined}
+              onClick={(event) => {
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest("[data-puck-component]")
+                ) {
+                  setInspectorChoice(null);
+                  setHiddenForSelection(null);
+                  setRequestedInspector(true);
+                }
+              }}
             >
               <Puck.Preview />
               {doc.data.content.length > 0 && (
@@ -335,22 +277,31 @@ export function EditorWorkspace({
         </section>
         <aside
           className="editor-inspector"
+          onKeyDown={(event) => {
+            if (
+              event.key === "Escape" &&
+              !event.defaultPrevented &&
+              !(
+                event.target instanceof Element &&
+                event.target.closest("dialog")
+              )
+            ) {
+              event.stopPropagation();
+              closeSettings();
+            }
+          }}
           aria-label={
             isSitePart(doc.detail.kind)
               ? "Shared site part and block settings"
               : "Page and block settings"
           }
         >
-          <Inspector
+          <EditorInspector
             key={selectionId}
             document={doc}
             close={closeSettings}
             tab={inspectorTab}
-            setTab={(tab) =>
-              tab === "page"
-                ? openPageSettings()
-                : setInspectorChoice({ selectionId, tab })
-            }
+            setTab={(tab) => setInspectorChoice({ selectionId, tab })}
           />
         </aside>
       </div>
@@ -361,19 +312,7 @@ export function EditorWorkspace({
             : doc.detail.kind === "section"
               ? "Reusable section"
               : "Page"}{" "}
-          ·{" "}
-          {doc.data.content.reduce(
-            (count, item) =>
-              count +
-              1 +
-              (item.type === "SiteRow"
-                ? item.props.left.length +
-                  item.props.center.length +
-                  item.props.right.length
-                : 0),
-            0,
-          )}{" "}
-          blocks
+          · {editorBlockCount(doc.data.content)} blocks
         </span>
         <span>
           {doc.busy

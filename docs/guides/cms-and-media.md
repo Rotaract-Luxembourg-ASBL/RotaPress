@@ -15,6 +15,20 @@ add, reorder and edit content. Use **Page settings** for title, URL and search/s
 metadata. Headings in the page are separate content fields. Desktop, tablet and
 phone preview widths help review the result.
 
+The library groups blocks into **Content**, **Layout** and **Connected**. Search
+by what you need, such as an image, form or calendar; connected blocks identify
+the workspace that owns their content. Expand the destination summary to change
+**Insert into** and **Block position**. In a column, the before/after controls insert inside
+that column. **Add a block here** at the end of the canvas adds to the whole page.
+
+Selecting a block opens its content and design controls. The location above its
+name shows its column and position; select the parent name to edit the layout.
+Switching between **Page** and **Block** keeps your selected block and entered
+changes. **Block settings** reopens a closed inspector. On a phone, the library
+and settings open over the canvas; close them to return to the page. Escape
+closes either panel and returns focus to its toolbar control. Use the arrow keys
+to switch inspector tabs.
+
 1. Edit the details and blocks, then **Save draft**.
 2. Preview the saved draft with your authorized session.
 3. Publish the saved revision deliberately when ready.
@@ -78,6 +92,19 @@ A Form block uses a reusable form managed in **Forms**. Publish the form before
 publishing a page that uses it. Preview fields cannot submit real responses.
 Event-owned forms and participation blocks stay within their event scope.
 See [forms](forms.md) and [event design](event-page-design.md).
+
+Connected-source cards explain whether a form or reusable section has a published
+version, whether a collection follows published content automatically, or whether
+a feature is disabled. Source editors open in a new tab so your page draft stays
+in place. Return to refresh the available choices, or use **Refresh**. Failed
+loads offer **Try again** and retain saved selections; an unavailable selection
+is not silently cleared. Reusable sections are offered in the page's language.
+
+Manage event registration and Luma connections in **Events**, calendar feeds in
+**Calendar**, and questions in **Forms**. Selecting a website block does not
+configure a provider, publish its source, or make private records public. A source
+card describes the content available to the block; it is not a live-provider
+connection test.
 
 ## Languages and reusable sections
 

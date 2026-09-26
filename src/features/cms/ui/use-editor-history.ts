@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { AppState, Data, OnAction, PuckAction } from "@puckeditor/core";
 import type { PuckBlocks } from "./puck-config";
+import { locateEditorBlock } from "./editor-selection";
 
 type Snapshot = AppState<Data<PuckBlocks>>;
 type Dispatch = (action: PuckAction) => void;
@@ -39,18 +40,10 @@ export function useEditorHistory() {
 
       let editKey: string | null = null;
       if (action.type === "replace") {
-        const before = previous.data.content
-          .flatMap((block) =>
-            block.type === "SiteRow"
-              ? [
-                  block,
-                  ...block.props.left,
-                  ...block.props.center,
-                  ...block.props.right,
-                ]
-              : [block],
-          )
-          .find((block) => block.props.id === action.data.props.id);
+        const before = locateEditorBlock(
+          previous.data.content,
+          action.data.props.id,
+        )?.block;
         const changed = Object.keys(action.data.props).filter(
           (key) =>
             JSON.stringify(Reflect.get(before?.props ?? {}, key)) !==

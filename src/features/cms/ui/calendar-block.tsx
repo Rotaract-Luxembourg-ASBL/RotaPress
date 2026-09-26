@@ -1,11 +1,11 @@
 "use client";
 import type { ComponentConfig } from "@puckeditor/core";
-import Link from "next/link";
 import { useResource } from "@/ui/api";
 import { TimeZonePicker } from "@/ui/time-zone-picker";
 import { CalendarView } from "@/features/calendar/ui/calendar-view";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { useRefreshOnFocus } from "./event-editor-scope";
+import { ConnectedSource, ConnectionError } from "./connected-source";
 type Props = {
   version: 1;
   title: string;
@@ -27,65 +27,97 @@ function CalendarPicker({
     items: { id: string; name: string; audience: string }[];
   }>(features.calendar ? "/api/calendar/catalogue" : null);
   useRefreshOnFocus(refresh);
-  if (!features.calendar)
-    return (
-      <p className="field-help">
-        Calendar is disabled in Integrations. Your selection is kept.
-      </p>
-    );
+  const missing = data
+    ? value.filter((id) => !data.items.some((c) => c.id === id))
+    : [];
   return (
-    <fieldset className="calendar-choice-list" disabled={disabled}>
-      <legend>Calendars to include</legend>
-      <p className="field-help">
-        Leave unchecked to include every calendar the visitor may see. Member
-        calendars remain protected.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {!data && !error && <p role="status">Loading published calendars…</p>}
-      {data?.items.length === 0 && (
-        <p className="field-help">
-          No published calendars yet. Create a calendar and publish its audience
-          and activities in Calendar.
-        </p>
+    <div className="editor-connection-picker editor-calendar-picker">
+      <ConnectedSource
+        name="Calendar"
+        icon="calendar"
+        enabled={features.calendar}
+        status={
+          error
+            ? "Connection unavailable"
+            : !data
+              ? "Loading calendars…"
+              : value.length
+                ? `${value.length} selected calendar${value.length === 1 ? "" : "s"}`
+                : "All available calendars"
+        }
+        tone={error || missing.length ? "attention" : "neutral"}
+        description="This block follows published calendars and activities. Each visitor sees only the calendars their audience allows; member calendars stay protected."
+        href={
+          capabilities.includes("calendar.manage")
+            ? "/admin/calendar"
+            : undefined
+        }
+        action="Open Calendar"
+        onRefresh={refresh}
+      />
+      {features.calendar && (
+        <>
+          {error && <ConnectionError error={error} onRetry={refresh} />}
+          <fieldset
+            className="calendar-choice-list"
+            disabled={disabled || !data}
+          >
+            <legend>Calendars to include</legend>
+            <p className="field-help">
+              Leave unchecked to include all available calendars.
+            </p>
+            {data?.items.map((calendar) => (
+              <label className="checkbox-label" key={calendar.id}>
+                <input
+                  type="checkbox"
+                  checked={value.includes(calendar.id)}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.checked
+                        ? [...value, calendar.id]
+                        : value.filter((id) => id !== calendar.id),
+                    )
+                  }
+                />
+                {calendar.name}
+                {calendar.audience === "members" ? " (members)" : ""}
+              </label>
+            ))}
+            {missing.map((id) => (
+              <label className="checkbox-label" key={id}>
+                <input
+                  type="checkbox"
+                  checked
+                  onChange={() =>
+                    onChange(value.filter((entry) => entry !== id))
+                  }
+                />
+                Unavailable selection — uncheck to remove
+              </label>
+            ))}
+            {data?.items.length === 0 && (
+              <p className="field-help">
+                No published calendars available. Create and publish one in
+                Calendar.
+              </p>
+            )}
+          </fieldset>
+          {missing.length > 0 && (
+            <p className="editor-connection-selection">
+              Some saved selections are unavailable. They stay selected until
+              you remove them; review publication and audience in Calendar.
+            </p>
+          )}
+          <p className="field-help">
+            Calendar feeds and imports are configured in Calendar. Choosing a
+            calendar here does not create or change a provider connection.
+          </p>
+        </>
       )}
-      {data?.items.map((c) => (
-        <label className="checkbox-label" key={c.id}>
-          <input
-            type="checkbox"
-            checked={value.includes(c.id)}
-            onChange={(e) =>
-              onChange(
-                e.target.checked
-                  ? [...value, c.id]
-                  : value.filter((id) => id !== c.id),
-              )
-            }
-          />
-          {c.name}
-          {c.audience === "members" ? " (members)" : ""}
-        </label>
-      ))}
-      {data &&
-        value
-          .filter((id) => !data?.items.some((c) => c.id === id))
-          .map((id) => (
-            <label className="checkbox-label" key={id}>
-              <input
-                type="checkbox"
-                checked
-                onChange={() => onChange(value.filter((entry) => entry !== id))}
-              />
-              Unavailable selection — remove from block
-            </label>
-          ))}
-      {capabilities.includes("calendar.manage") && (
-        <Link className="text-link" href="/admin/calendar" target="_blank">
-          Manage calendars ↗
-        </Link>
-      )}
-    </fieldset>
+    </div>
   );
 }
+
 export const calendarBlockConfig: ComponentConfig<Props> = {
   label: "Calendar",
   fields: {

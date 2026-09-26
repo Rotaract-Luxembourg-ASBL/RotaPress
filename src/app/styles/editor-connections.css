@@ -1,0 +1,142 @@
+/* Connected content belongs to its feature workspace; these are editor controls. */
+.editor-connected-source {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #dbe3ed;
+  border-radius: 10px;
+  background: #f7f9fc;
+  color: #273549;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.editor-connected-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.editor-connected-icon {
+  display: grid;
+  flex: 0 0 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8eff8;
+  color: #255b9b;
+}
+.editor-connected-heading > div {
+  display: grid;
+  gap: 1px;
+}
+.editor-connected-heading small {
+  color: #647087;
+  font-size: 11px;
+}
+.editor-connected-heading strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+.editor-connected-source p {
+  margin: 0;
+  font-size: 13px;
+  color: #506076;
+}
+.editor-connection-status {
+  justify-self: start;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #e8edf4;
+  color: #44536a;
+  font-size: 11px;
+  font-weight: 650;
+}
+.editor-connection-status.is-ready {
+  color: #256342;
+  background: #e3f0e7;
+}
+.editor-connection-status.is-attention {
+  color: #7a531c;
+  background: #fff0d6;
+}
+.editor-connection-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.editor-connection-actions a,
+.editor-connection-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #255b9b;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.editor-connection-actions a:hover,
+.editor-connection-actions button:hover {
+  text-decoration: underline;
+}
+.editor-connection-tab-note {
+  font-size: 11px;
+  color: #69768a;
+}
+.editor-connection-error {
+  display: grid;
+  gap: 6px;
+  color: #963b32;
+}
+.editor-connection-error p {
+  margin: 0;
+  color: inherit;
+}
+.editor-connection-error button {
+  justify-self: start;
+}
+.editor-connection-picker {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.editor-connection-picker > label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.editor-connection-picker select {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.editor-connection-selection {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid #adc3de;
+  background: #f5f8fc;
+  color: #435570;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.editor-calendar-picker .calendar-choice-list {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+}
+@media (max-width: 620px) {
+  .editor-connection-actions a,
+  .editor-connection-actions button {
+    min-height: 44px;
+  }
+}

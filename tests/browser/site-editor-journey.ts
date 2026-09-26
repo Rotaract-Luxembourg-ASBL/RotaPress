@@ -150,9 +150,10 @@ export async function siteEditorJourney({
   await expect(page.locator(".editor-toolbar")).toBeVisible();
   const footerId = new URL(page.url()).pathname.split("/").pop()!;
   await page.getByRole("button", { name: "Add blocks", exact: true }).click();
+  await page.getByLabel("Insertion position", { exact: true }).click();
   await page
     .getByRole("combobox", { name: "Insert into", exact: true })
-    .selectOption({ label: "Row 1 · center column" });
+    .selectOption({ label: "Layout row 1 · center column" });
   await page
     .getByRole("button", { name: "Add Contact details block", exact: true })
     .click();

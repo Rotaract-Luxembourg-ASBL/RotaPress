@@ -16,8 +16,13 @@ import {
 import type { Block } from "../cms_schemas";
 import { Icon as EditorIcon } from "@/ui/icon";
 import type { puckConfig } from "./puck-config";
+import { editorRootZone, locateEditorBlock } from "./editor-selection";
 
-type InsertionRequest = (index: number, type?: Block["type"]) => void;
+type InsertionRequest = (
+  index: number,
+  type?: Block["type"],
+  zone?: string,
+) => void;
 type InsertionContextValue = { onInsert: InsertionRequest; disabled: boolean };
 const InsertionContext = createContext<InsertionContextValue | null>(null);
 const useInsertionPuck = createUsePuck<typeof puckConfig>();
@@ -57,14 +62,11 @@ export function BoundaryOverlay({
   componentType,
 }: BoundaryOverlayProps) {
   const insertion = useContext(InsertionContext);
-  const index = useInsertionPuck((state) =>
-    state.appState.data.content.findIndex(
-      (block) => block.props.id === componentId,
-    ),
-  );
+  const content = useInsertionPuck((state) => state.appState.data.content);
+  const location = locateEditorBlock(content, componentId);
   const isDragging = useInsertionPuck((state) => state.appState.ui.isDragging);
 
-  if (!insertion || index < 0) return <>{children}</>;
+  if (!insertion || !location) return <>{children}</>;
   const disabled = insertion.disabled || isDragging;
   return (
     <>
@@ -81,7 +83,11 @@ export function BoundaryOverlay({
             componentType={componentType}
             disabled={disabled}
             onInsert={() =>
-              insertion.onInsert(index + (position === "after" ? 1 : 0))
+              insertion.onInsert(
+                location.index + (position === "after" ? 1 : 0),
+                undefined,
+                location.zone,
+              )
             }
           />
         ))}
@@ -149,7 +155,9 @@ export function CanvasAddBlock({
       type="button"
       className="editor-canvas-add-block"
       disabled={insertion.disabled}
-      onClick={() => insertion.onInsert(atStart ? 0 : length, type)}
+      onClick={() =>
+        insertion.onInsert(atStart ? 0 : length, type, editorRootZone)
+      }
     >
       <EditorIcon name={type === "Image" ? "image" : "plus"} />
       <span>{label}</span>

@@ -23,6 +23,8 @@
 @import "./styles/editor-insertion.css";
 @import "./styles/editor-context-menu.css";
 @import "./styles/editor-image.css";
+@import "./styles/editor-workspace.css";
+@import "./styles/editor-connections.css";
 @import "./styles/admin.css";
 @import "./styles/admin-collections.css";
 @import "./styles/admin-workspaces.css";

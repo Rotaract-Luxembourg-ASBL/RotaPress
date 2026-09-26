@@ -162,7 +162,7 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
     .getByRole("combobox", { name: "Starting view", exact: true })
     .selectOption({ label: "Agenda" });
   await expect(
-    page.getByRole("link", { name: "Manage calendars ↗", exact: true }),
+    page.getByRole("link", { name: "Open Calendar", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(

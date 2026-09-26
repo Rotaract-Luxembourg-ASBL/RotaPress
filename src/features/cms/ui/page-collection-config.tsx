@@ -3,61 +3,27 @@
 import { useContext } from "react";
 import type { Config } from "@puckeditor/core";
 import type { PuckBlocks } from "./puck-config";
-import type { CmsSummary } from "../cms_schemas";
 import type { PageCard } from "../page_collection";
 import { useResource } from "@/ui/api";
 import { EditorLocale } from "./event-collection-editor";
 import { PageIntroBlock, PageCollectionBlock } from "./page-collection";
+import { PagePicker } from "./page-picker";
+import { useRefreshOnFocus } from "./event-editor-scope";
+import { ConnectionError } from "./connected-source";
 
-function PagePicker({
-  value,
-  onChange,
-}: {
-  value: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  const locale = useContext(EditorLocale);
-  const { data } = useResource<{ items: CmsSummary[] }>(
-    "/api/admin/cms/content",
-  );
-  return (
-    <fieldset>
-      <legend>Selected pages</legend>
-      <p className="field-help">
-        Cards use published titles, search descriptions and social images.
-        Unpublished pages stay absent.
-      </p>
-      {data?.items
-        .filter(
-          (item) =>
-            item.kind === "page" && item.locale === locale && !item.archived,
-        )
-        .map((item) => (
-          <label className="cms-checkbox" key={item.id}>
-            <input
-              type="checkbox"
-              checked={value.includes(item.id)}
-              onChange={(event) =>
-                onChange(
-                  event.target.checked
-                    ? [...value, item.id]
-                    : value.filter((id) => id !== item.id),
-                )
-              }
-            />
-            {item.title}
-            {!item.publishedRevisionId && " (draft)"}
-          </label>
-        ))}
-    </fieldset>
-  );
-}
 function CollectionPreview(props: PuckBlocks["PageCollection"]) {
   const locale = useContext(EditorLocale);
-  const { data, error } = useResource<{ items: PageCard[] }>(
+  const { data, error, refresh } = useResource<{ items: PageCard[] }>(
     `/api/admin/cms/page-cards?locale=${locale}`,
   );
-  if (error) return <p role="alert">{error}</p>;
+  useRefreshOnFocus(refresh);
+  if (error) return <ConnectionError error={error} onRetry={refresh} />;
+  if (!data)
+    return (
+      <p className="cms-block field-help" role="status">
+        Loading published pages...
+      </p>
+    );
   return (
     <PageCollectionBlock
       {...props}
@@ -156,7 +122,13 @@ export const collectionConfig: Pick<
       version,
       title: { type: "text" },
       introduction: { type: "textarea" },
-      pageIds: { type: "custom", render: (props) => <PagePicker {...props} /> },
+      pageIds: {
+        type: "custom",
+        label: "Page sources",
+        render: ({ value, onChange, readOnly }) => (
+          <PagePicker value={value} onChange={onChange} disabled={readOnly} />
+        ),
+      },
       layout: {
         type: "radio",
         options: [
