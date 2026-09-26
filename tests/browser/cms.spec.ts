@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { parseEnv } from "node:util";
 import { test, expect, type Page } from "@playwright/test";
 import { adminCollectionsJourney } from "./admin-collections-journey";
+import { mediaPickerJourney } from "./media-picker-journey";
 import { formStudioJourney } from "./form-studio-journey";
 import { Pool } from "pg";
 import sharp from "sharp";
@@ -282,9 +283,7 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   expect((await publicPage.request.get("/")).status()).toBe(404);
 
   await page.goto("/admin/media");
-  await page
-    .getByRole("button", { name: "Upload images", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Upload image", exact: true }).click();
   const png = await sharp({
     create: { width: 80, height: 60, channels: 3, background: "#a84432" },
   })
@@ -299,6 +298,9 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await page
     .getByLabel("Alternative text", { exact: true })
     .fill("A terracotta synthetic test image");
+  await page
+    .getByRole("dialog", { name: "Upload an image", exact: true })
+    .screenshot({ path: ".local/media-upload-dialog-desktop.png" });
   await page.getByRole("button", { name: "Upload private image" }).click();
   await expect(
     page.getByText("Image uploaded privately.", { exact: false }),
@@ -338,7 +340,9 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     name: "Choose an image",
     exact: true,
   });
+  await mediaPickerJourney(page);
   await picker.getByRole("button", { name: /Synthetic club image/ }).click();
+  await picker.screenshot({ path: ".local/media-picker-library-desktop.png" });
   await picker
     .getByRole("button", { name: "Insert image", exact: true })
     .click();

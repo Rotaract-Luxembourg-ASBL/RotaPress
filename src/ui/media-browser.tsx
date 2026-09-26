@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
+import { Icon } from "./icon";
 export type VisibilityFilter = "all" | "private" | "public";
 
 export function filterAssets(
@@ -44,7 +45,7 @@ export function MediaFilters({
         Search media
         <input
           type="search"
-          placeholder="Title, filename, collection or tag"
+          placeholder="Search by title, filename or tag"
           value={query}
           onChange={(event) => onQuery(event.target.value)}
         />
@@ -98,7 +99,7 @@ export function AssetGrid({
             />
             {selectedId === asset.id && (
               <span className="media-selection-check" aria-hidden="true">
-                ✓
+                <Icon name="check" />
               </span>
             )}
           </span>
@@ -118,7 +119,7 @@ export function AssetGrid({
     </div>
   ) : (
     <div className="media-empty">
-      <span aria-hidden="true">▧</span>
+      <Icon name="image" width={32} height={32} />
       <h3>No images to show</h3>
       <p>{emptyMessage}</p>
     </div>

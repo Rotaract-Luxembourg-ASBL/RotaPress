@@ -12,11 +12,11 @@ export function WebsiteStylePreview({ value }: { value: SiteSettings }) {
       aria-label="Style preview"
       style={websiteStyle(value)}
     >
-      <span className="website-style-preview-label">Live style sample</span>
+      <span className="website-style-preview-label">Your style preview</span>
       <div className="website-style-preview-card">
         <span className="website-style-preview-kicker">Your community</span>
         <h4>Good people. Shared purpose.</h4>
-        <p>See how your colors and headings work together before saving.</p>
+        <p>Your colors, headings and buttons, together.</p>
         <span className="website-style-preview-button">Button style</span>
       </div>
       <div
@@ -36,7 +36,8 @@ export function WebsiteStylePreview({ value }: { value: SiteSettings }) {
         ))}
       </div>
       <p className="website-style-preview-note">
-        Sample only. Administration keeps its own appearance.
+        A style sample, not a saved page. Administration keeps its own
+        appearance.
       </p>
     </aside>
   );

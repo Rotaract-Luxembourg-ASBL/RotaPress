@@ -111,4 +111,47 @@ export async function adminCollectionsJourney(page: Page) {
       .getByRole("definition")
       .first(),
   ).toHaveText(String(published.length));
+  await expect(
+    page.getByRole("region", { name: "Needs attention", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Continue editing", exact: true }),
+  ).toBeVisible();
+  const responseSummary = page.getByRole("region", {
+    name: "Response center overview",
+    exact: true,
+  });
+  await expect(
+    responseSummary.getByRole("link", { name: /New responses/ }),
+  ).toBeVisible();
+  for (const [device, width] of [
+    ["desktop", 1440],
+    ["phone", 390],
+  ] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `.local/admin-dashboard-${device}.png`,
+      fullPage: true,
+      mask: [page.locator(".admin-account")],
+    });
+  }
+  await responseSummary.getByRole("link", { name: /New responses/ }).click();
+  await expect(
+    page
+      .getByRole("group", { name: "Filter responses by status" })
+      .getByRole("button", { name: "New", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.goto("/admin/members?status=pending");
+  await expect(
+    page
+      .getByRole("group", { name: "Membership views" })
+      .getByRole("button", { name: /^Pending applications/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.setViewportSize({ width: 1440, height: 1000 });
 }

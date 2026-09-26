@@ -14,6 +14,9 @@
   display: grid;
   gap: 22px;
 }
+.website-sidebar .website-section-picker {
+  display: none;
+}
 .website-sidebar nav {
   display: grid;
   gap: 4px;
@@ -184,14 +187,24 @@
   }
   .website-sidebar {
     position: static;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 116px;
+    align-items: start;
+    gap: 10px;
   }
-  .website-sidebar nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .website-sidebar .website-section-picker,
+  .website-sidebar .website-language-picker {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    font-size: 12px;
   }
-  .website-sidebar nav button {
-    padding: 10px;
-    font-size: 0.85rem;
+  .website-sidebar select {
+    margin-top: 0;
+    min-width: 0;
+    font-size: 13px;
+  }
+  .admin-layout .website-sidebar > .admin-section-nav {
+    display: none;
   }
   .website-sidebar > p,
   .website-sidebar > a {

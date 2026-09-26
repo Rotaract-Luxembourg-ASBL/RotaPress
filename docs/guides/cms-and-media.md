@@ -100,6 +100,15 @@ sign-in and account entry surfaces use published identity; member and administra
 workspaces retain their application layout. Independent event pages keep their
 own appearance.
 
+Use **Logo & icon** to choose images or a theme mark, **Colors & type** to adjust
+your theme, accent and headings, and **Page layout** to find the page, header/footer
+or template editor. The logo and style samples update as you edit. Switching
+appearance tabs preserves entered changes. **Save settings** beside the title
+keeps a private draft; its status distinguishes unsaved changes, a saved draft and
+settings that match the published website. **Preview website** reviews the saved
+result; **Publish website** remains a separate reviewed action. Club name and
+contact details have one editor under **Settings → Club & region**.
+
 A template switch preserves existing custom content and explicit branding. It does
 not change membership, provider credentials, feature activation or image visibility.
 See [website publication](website-publication.md) for blocking-image review.
@@ -120,6 +129,15 @@ different records; embedding a block does not copy or authorize them.
 
 Upload or select images through Media or a block's central image picker. Uploads
 start **Private**. Save metadata and visibility separately from the page draft.
+
+Choose **Upload image**, browse or drop one file, review its thumbnail, title and
+alternative text, then upload. In the image picker, **Media library** shows searchable
+thumbnails and the selected image; **Edit image details** opens optional metadata
+controls. **Insert image** or **Replace image** confirms the selection. Switching
+between library and upload preserves an unfinished upload; leaving unsaved edits
+requires a deliberate discard. Caption, collection, tags and usage details stay
+available without crowding the common fields.
+
 Accepted files are single-frame PNG, JPEG or WebP, up to 5 MiB and 20 million pixels.
 The server checks signatures, decodes and reencodes images as WebP, and strips
 unnecessary metadata. SVG, GIF, HTML, archives and PDF are not accepted uploads.

@@ -132,11 +132,8 @@ export async function formStudioJourney(page: Page, visitor: Page) {
   await page.getByRole("link", { name: "View responses", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`formId=${form.id}`));
   await expect(
-    page
-      .getByRole("region", { name: "Matching response counts" })
-      .locator("strong")
-      .first(),
-  ).toHaveText("1");
+    page.getByText("Showing 1 of 1 matching response", { exact: true }),
+  ).toBeVisible();
   const { forms } = (await page.request
     .get("/api/admin/forms")
     .then((response) => response.json())) as { forms: FormDto[] };

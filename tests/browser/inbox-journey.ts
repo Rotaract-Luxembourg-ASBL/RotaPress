@@ -11,10 +11,32 @@ export async function inboxJourney(
 ) {
   expect((await visitor.request.get("/api/admin/inbox")).status()).toBe(401);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/admin/inbox");
+  await page.route(
+    "**/api/admin/inbox?**",
+    (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "Responses are temporarily unavailable.",
+        }),
+      }),
+    { times: 1 },
+  );
+  await page.goto("/admin/inbox?status=reviewing");
   await expect(
     page.getByRole("heading", { name: "Response center", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Retry responses", exact: true })
+    .click();
+  const statusFilter = page.getByRole("group", {
+    name: "Filter responses by status",
+    exact: true,
+  });
+  await expect(
+    statusFilter.getByRole("button", { name: "In progress", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page
     .getByRole("textbox", { name: "Search contacts and messages", exact: true })
     .fill("synthetic-contact@example.test");
@@ -22,6 +44,39 @@ export async function inboxJourney(
   await page
     .getByRole("combobox", { name: "Source form", exact: true })
     .selectOption(formId);
+  await expect(
+    page.getByRole("textbox", {
+      name: "Search contacts and messages",
+      exact: true,
+    }),
+  ).toHaveValue("synthetic-contact@example.test");
+  await expect(
+    statusFilter.getByRole("button", { name: "In progress", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const purpose = page.getByRole("combobox", {
+    name: "Form purpose",
+    exact: true,
+  });
+  await expect(purpose).not.toBeVisible();
+  await page.getByRole("button", { name: "More filters", exact: true }).click();
+  await purpose.selectOption("contact");
+  await page
+    .getByRole("button", { name: "Hide filters (1)", exact: true })
+    .click();
+  await expect(
+    page.getByText("Purpose: Website enquiries", { exact: true }),
+  ).toBeVisible();
+  await expect(purpose).not.toBeVisible();
+  await statusFilter.getByRole("button", { name: "New", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "No responses match these filters",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await statusFilter
+    .getByRole("button", { name: "All responses", exact: true })
+    .click();
   const responses = page.getByRole("region", {
     name: "Responses",
     exact: true,
@@ -60,9 +115,18 @@ export async function inboxJourney(
     status: "closed",
   });
   await page
-    .locator(".inbox-workspace")
+    .locator(".response-center")
     .screenshot({ path: ".local/contacts-inbox-desktop.png" });
   await page.setViewportSize({ width: 320, height: 900 });
+  await detail
+    .getByRole("button", { name: "Back to responses", exact: true })
+    .click();
+  await expect(response).toBeFocused();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: ".local/contacts-inbox-list-phone.png",
+    fullPage: true,
+  });
   await response.click();
   await expect(detail.getByRole("heading")).toBeFocused();
   await expect(detail.getByRole("heading")).toBeInViewport();

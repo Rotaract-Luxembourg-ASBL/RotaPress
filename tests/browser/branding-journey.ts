@@ -58,6 +58,7 @@ export async function brandingJourney(
   await picker
     .getByRole("button", { name: "Insert image", exact: true })
     .click();
+  await page.getByRole("tab", { name: "Colors & type", exact: true }).click();
   await page
     .getByRole("checkbox", { name: "Custom accent color", exact: true })
     .check();
@@ -65,6 +66,21 @@ export async function brandingJourney(
   await page
     .getByRole("combobox", { name: "Heading style", exact: true })
     .selectOption("serif");
+  const identityTab = page.getByRole("tab", {
+    name: "Logo & icon",
+    exact: true,
+  });
+  await identityTab.click();
+  await expect(
+    page.getByRole("textbox", { name: "Logo alternative text", exact: true }),
+  ).toHaveValue(logoAlt);
+  await identityTab.press("ArrowRight");
+  await expect(
+    page.getByRole("tab", { name: "Colors & type", exact: true }),
+  ).toBeFocused();
+  await expect(page.getByLabel("Accent color", { exact: true })).toHaveValue(
+    "#365a69",
+  );
   await expect(
     page.getByRole("button", { name: "Publish website", exact: true }),
   ).toBeDisabled();
@@ -76,6 +92,35 @@ export async function brandingJourney(
     iconId: assetId,
   });
   expect(saved.published).toEqual(before.published);
+  await page.reload();
+  await expect(
+    page.getByRole("textbox", { name: "Logo alternative text", exact: true }),
+  ).toHaveValue(logoAlt);
+  await expect(
+    page.getByText("Saved draft · Not published yet", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Colors & type", exact: true }).click();
+  const hex = page.getByRole("textbox", { name: "Hex color", exact: true });
+  await hex.fill("#bad");
+  await expect(
+    page.getByText("Unsaved changes", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Publish website", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Save settings", exact: true }),
+  ).toBeEnabled();
+  await hex.fill("#365a69");
+  await expect(
+    page.getByRole("button", { name: "Save settings", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("tab", { name: "Logo & icon", exact: true }).click();
+  await page.screenshot({
+    path: ".local/branding-settings-desktop.png",
+    fullPage: true,
+    mask: [page.locator(".admin-account")],
+  });
   await expect(
     page
       .locator(".admin-topbar")

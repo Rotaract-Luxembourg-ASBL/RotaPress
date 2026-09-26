@@ -104,6 +104,19 @@ function WebsiteLocale({ locale, tab }: { locale: CmsLocale; tab: string }) {
       </PageHeading>
       <div className="website-workspace-grid">
         <aside className="website-sidebar">
+          <label className="website-section-picker">
+            Website section
+            <select
+              value={tab}
+              onChange={(event) => navigate(event.target.value)}
+            >
+              {tabs.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <nav className="admin-section-nav" aria-label="Website management">
             {tabs.map((item) => (
               <button
@@ -117,7 +130,7 @@ function WebsiteLocale({ locale, tab }: { locale: CmsLocale; tab: string }) {
               </button>
             ))}
           </nav>
-          <label>
+          <label className="website-language-picker">
             Website language
             <select
               value={locale}
@@ -156,7 +169,7 @@ function WebsiteLocale({ locale, tab }: { locale: CmsLocale; tab: string }) {
             </Notice>
           )}
           {message && <Notice kind="success">{message}</Notice>}
-          {dirty && (
+          {dirty && !settingsPanel && (
             <Notice kind="info">
               You have unsaved settings. Return to Menus, Header &amp; footer or
               Branding &amp; appearance to save.

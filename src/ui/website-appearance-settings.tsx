@@ -1,31 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useId, useState, type KeyboardEvent } from "react";
 import { appearanceSchema, websiteThemes } from "@/features/cms/appearance";
 import type { CmsLocale, SiteSettings } from "@/features/cms/cms_schemas";
 import { WebsiteBrandingFields } from "./website-branding-fields";
 import { WebsiteStylePreview } from "./website-style-preview";
 
+const sections = [
+  { id: "identity", label: "Logo & icon" },
+  { id: "style", label: "Colors & type" },
+  { id: "layout", label: "Page layout" },
+] as const;
+type AppearanceSection = (typeof sections)[number]["id"];
+
 function HexColor({
   value,
   disabled,
   onChange,
+  onInvalid,
+  onInvalidChange,
 }: {
   value: string;
   disabled: boolean;
   onChange: (value: string) => void;
+  onInvalid: () => void;
+  onInvalidChange: (invalid: boolean) => void;
 }) {
+  const inputId = useId();
   const [text, setText] = useState(value);
   const [external, setExternal] = useState(value);
-  if (value !== external) {
+  const invalid = !/^#[0-9a-fA-F]{6}$/.test(text);
+  if (value !== external || (disabled && text !== value)) {
     setExternal(value);
     setText(value);
   }
+  useEffect(() => {
+    onInvalidChange(!disabled && invalid);
+  }, [disabled, invalid, onInvalidChange]);
+  useEffect(() => () => onInvalidChange(false), [onInvalidChange]);
   return (
-    <label>
-      Hex color
+    <div className="website-hex-color">
+      <label htmlFor={inputId}>Hex color</label>
       <input
+        id={inputId}
         type="text"
         disabled={disabled}
         value={text}
@@ -33,14 +51,27 @@ function HexColor({
         maxLength={7}
         required
         spellCheck={false}
+        aria-invalid={!disabled && invalid}
+        aria-describedby={!disabled && invalid ? `${inputId}-error` : undefined}
         title="Enter # followed by six hexadecimal characters, for example #365a69."
+        onInvalid={(event) => {
+          event.preventDefault();
+          const input = event.currentTarget;
+          onInvalid();
+          requestAnimationFrame(() => input.focus());
+        }}
         onChange={(event) => {
           setText(event.target.value);
           if (/^#[0-9a-fA-F]{6}$/.test(event.target.value))
             onChange(event.target.value);
         }}
       />
-    </label>
+      {!disabled && invalid && (
+        <span id={`${inputId}-error`} className="field-help" role="alert">
+          Enter # and six characters from 0–9 or a–f, for example #365a69.
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -52,6 +83,9 @@ export function WebsiteAppearanceSettings({
   canLeave,
   locale,
   dirty,
+  busy,
+  saveState,
+  onInvalidChange,
 }: {
   value: SiteSettings;
   onChange: (value: SiteSettings) => void;
@@ -60,47 +94,105 @@ export function WebsiteAppearanceSettings({
   canLeave: () => boolean;
   locale: CmsLocale;
   dirty: boolean;
+  busy: boolean;
+  saveState: string;
+  onInvalidChange: (invalid: boolean) => void;
 }) {
+  const [section, setSection] = useState<AppearanceSection>("identity");
+  const prefix = useId();
   const theme = websiteThemes[value.themeId];
   const settingsHref = (tab: string) =>
     `/admin/website?tab=${tab}&locale=${locale}`;
+  function navigate(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? sections.length - 1
+          : (index + (event.key === "ArrowRight" ? 1 : -1) + sections.length) %
+            sections.length;
+    setSection(sections[next].id);
+    event.currentTarget.parentElement
+      ?.querySelector<HTMLButtonElement>(
+        `[data-section="${sections[next].id}"]`,
+      )
+      ?.focus();
+  }
   return (
     <section
       className="website-settings-panel website-appearance"
       aria-label="Website branding and appearance settings"
     >
-      <header>
-        <h2>Branding &amp; appearance</h2>
-        <p>
-          Make your website feel like your club. Save privately, preview your
-          pages, then publish when ready.
-        </p>
+      <header className="website-appearance-heading">
+        <div>
+          <h2>Branding &amp; appearance</h2>
+          <p>
+            Choose your logo and website style. Changes stay private until
+            published.
+          </p>
+        </div>
+        <div className="website-appearance-save">
+          <span className="small muted" role="status">
+            {saveState}
+          </span>
+          <button
+            type="submit"
+            className="button button-accent"
+            disabled={busy || !dirty}
+          >
+            {busy ? "Saving…" : "Save settings"}
+          </button>
+        </div>
       </header>
-      <nav
-        className="website-appearance-jump-links"
+      <div
+        className="website-appearance-tabs"
+        role="tablist"
         aria-label="Appearance sections"
       >
-        <a href="#website-branding-title">Logo &amp; identity</a>
-        <a href="#website-colors-title">Colors &amp; typography</a>
-        <a href="#website-layout-title">Layout &amp; design</a>
-      </nav>
-      <WebsiteBrandingFields
-        value={value}
-        onChange={onChange}
-        canLeave={canLeave}
-        locale={locale}
-      />
-
-      <section
+        {sections.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            id={`${prefix}-${item.id}-tab`}
+            aria-controls={`${prefix}-${item.id}-panel`}
+            aria-selected={section === item.id}
+            tabIndex={section === item.id ? 0 : -1}
+            data-section={item.id}
+            onClick={() => setSection(item.id)}
+            onKeyDown={(event) => navigate(event, index)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div
+        role="tabpanel"
+        id={`${prefix}-identity-panel`}
+        aria-labelledby={`${prefix}-identity-tab`}
+        hidden={section !== "identity"}
+      >
+        <WebsiteBrandingFields
+          value={value}
+          onChange={onChange}
+          canLeave={canLeave}
+          locale={locale}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id={`${prefix}-style-panel`}
+        aria-labelledby={`${prefix}-style-tab`}
+        hidden={section !== "style"}
         className="website-appearance-section"
-        aria-labelledby="website-colors-title"
       >
         <header>
-          <span className="eyebrow">Website style</span>
-          <h3 id="website-colors-title">Colors &amp; typography</h3>
+          <h3>Colors &amp; typography</h3>
           <p className="field-help">
-            Choose a visual foundation, then fine-tune your accent and headings.
-            Your pages, menu and shared content are kept.
+            Choose a theme, then adjust its accent color and headings. The
+            sample updates as you edit.
           </p>
         </header>
         <div className="website-style-grid">
@@ -126,8 +218,7 @@ export function WebsiteAppearanceSettings({
               </select>
             </label>
             <p className="field-help">
-              {theme.description} Any custom accent or heading choice stays in
-              place when you change theme.
+              {theme.description} Your content and custom choices are kept.
             </p>
             <fieldset
               className="website-appearance-control"
@@ -165,6 +256,8 @@ export function WebsiteAppearanceSettings({
                   onChange={(accentColor) =>
                     onChange({ ...value, accentColor })
                   }
+                  onInvalid={() => setSection("style")}
+                  onInvalidChange={onInvalidChange}
                 />
               </div>
               <p className="field-help">
@@ -188,14 +281,13 @@ export function WebsiteAppearanceSettings({
                   })
                 }
               >
-                <option value="theme">Template default</option>
+                <option value="theme">Theme default</option>
                 <option value="sans">Modern sans serif</option>
                 <option value="serif">Classic serif</option>
               </select>
             </label>
             <p className="field-help">
-              Headings use the chosen style. Body text stays readable and
-              consistent across your website.
+              Applies to headings. Body text keeps the theme's readable style.
             </p>
             <button
               type="button"
@@ -210,36 +302,44 @@ export function WebsiteAppearanceSettings({
           </div>
           <WebsiteStylePreview value={value} />
         </div>
-      </section>
+        <details className="website-appearance-restore">
+          <summary>Restore a previous appearance</summary>
+          <p className="field-help">
+            Restore the previous published theme, color and headings as a saved
+            draft. Your logo, icon and page content stay the same.
+          </p>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={!canRestore}
+            onClick={onRestore}
+          >
+            Restore previous appearance to draft
+          </button>
+          {!canRestore && (
+            <p className="field-help">
+              {dirty
+                ? "Save your changes before restoring."
+                : "A previous published appearance will be available after you publish a different style."}
+            </p>
+          )}
+        </details>
+      </div>
 
-      <section
+      <div
+        role="tabpanel"
+        id={`${prefix}-layout-panel`}
+        aria-labelledby={`${prefix}-layout-tab`}
+        hidden={section !== "layout"}
         className="website-appearance-section"
-        aria-labelledby="website-layout-title"
       >
         <header>
-          <span className="eyebrow">Structure</span>
-          <h3 id="website-layout-title">Layout &amp; design</h3>
+          <h3>Edit your website layout</h3>
           <p className="field-help">
-            The {theme.name} theme supplies these defaults. Individual page
-            sections can use their own spacing and appearance.
+            Arrange content in its own editor. Your colors and branding stay
+            with your website.
           </p>
         </header>
-        <dl className="website-layout-defaults">
-          <div>
-            <dt>Content width</dt>
-            <dd>{theme.width}</dd>
-          </div>
-          <div>
-            <dt>Section spacing</dt>
-            <dd>{theme.blockGap}</dd>
-          </div>
-          <div>
-            <dt>Card corners</dt>
-            <dd>
-              {theme.radius === "0px" ? "Square" : `${theme.radius} rounded`}
-            </dd>
-          </div>
-        </dl>
         <div className="website-design-destinations">
           {[
             {
@@ -254,8 +354,8 @@ export function WebsiteAppearanceSettings({
             },
             {
               tab: "templates",
-              title: "Complete templates",
-              text: "Start a complete set of editable pages with a coordinated menu and shared parts.",
+              title: "Website templates",
+              text: "Choose a coordinated set of editable pages, menu, header and footer.",
             },
           ].map((item) => (
             <Link
@@ -271,16 +371,13 @@ export function WebsiteAppearanceSettings({
             </Link>
           ))}
         </div>
-      </section>
+      </div>
       <div className="website-appearance-preview-help">
-        <div>
-          <h3>Review your actual website</h3>
-          <p className="field-help">
-            {dirty
-              ? "Save settings first to include these changes in your website preview."
-              : "Preview your saved pages, branding and menu together. Publish the website to make them public."}
-          </p>
-        </div>
+        <p className="field-help">
+          {dirty
+            ? "Save settings to include these changes in Preview website. Publish website makes the reviewed changes public."
+            : "Preview your saved draft, then use Publish website when you are ready for visitors to see it."}
+        </p>
         {value.homePageId && !dirty && (
           <Link
             className="button button-outline"
@@ -291,22 +388,6 @@ export function WebsiteAppearanceSettings({
           </Link>
         )}
       </div>
-      <details className="website-settings-secondary website-appearance-restore">
-        <summary>Restore a previous appearance</summary>
-        <p className="field-help">
-          Restore the previous published theme, colors and heading style into
-          this draft. Your branding, page content and selected shared parts stay
-          the same.
-        </p>
-        <button
-          type="button"
-          className="button button-outline"
-          disabled={!canRestore}
-          onClick={onRestore}
-        >
-          Restore previous appearance to draft
-        </button>
-      </details>
     </section>
   );
 }

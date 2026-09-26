@@ -12,7 +12,7 @@ import {
 } from "./media-browser";
 import { Dialog } from "./dialog";
 import { Icon } from "./icon";
-import { CollectionToolbar, FilterTabs, SummaryStats } from "./collection";
+import { CollectionToolbar, FilterTabs } from "./collection";
 
 export { AssetGrid } from "./media-browser";
 export { MediaPicker } from "./media-picker";
@@ -55,7 +55,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
           onClick={() => setUploading(true)}
         >
           <Icon name="plus" />
-          Upload images
+          Upload image
         </button>
       </PageHeading>
       {error && (
@@ -76,42 +76,10 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
         </Notice>
       )}
       {requestedOpen && !linked.data && !linked.error && <Loading />}
-      {data && (
-        <SummaryStats
-          label="Media counts"
-          items={[
-            {
-              label: "Images",
-              value: data.assets.length,
-              hint: "Your shared media library",
-              icon: "image",
-              onClick: () => setVisibility("all"),
-              selected: visibility === "all",
-            },
-            {
-              label: "Public",
-              value: data.assets.filter(
-                (asset) => asset.visibility === "public",
-              ).length,
-              hint: "Available for public content",
-              icon: "check",
-              onClick: () => setVisibility("public"),
-              selected: visibility === "public",
-            },
-            {
-              label: "Private",
-              value: data.assets.filter(
-                (asset) => asset.visibility === "private",
-              ).length,
-              hint: "Protected from public access",
-              icon: "image",
-              onClick: () => setVisibility("private"),
-              selected: visibility === "private",
-            },
-          ]}
-        />
-      )}
-      <section className="admin-collection" aria-label="Your media">
+      <section
+        className="admin-collection media-collection"
+        aria-label="Your media"
+      >
         <div className="admin-collection-toolbar">
           <FilterTabs
             label="Media visibility"
@@ -162,7 +130,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
                 emptyMessage={
                   query || visibility !== "all"
                     ? "Try a different search or visibility filter."
-                    : "Choose Upload images to add your first private image."
+                    : "Choose Upload image to add your first private image."
                 }
               />
             </>
@@ -197,6 +165,9 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
             <MediaUpload
               onDirty={setDirty}
               onBusy={setBusy}
+              onCancel={() => {
+                if (!busy && canDiscard(dirty)) close();
+              }}
               onUploaded={(asset) => {
                 setSelected(asset);
                 setUploading(false);

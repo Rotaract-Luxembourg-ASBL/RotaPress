@@ -14,6 +14,13 @@ connected Club details blocks, club-name SEO titles and sandboxed custom HTML/JS
 See [website/media](../guides/cms-and-media.md) and
 [Google sign-in](../guides/google-authentication.md).
 
+Administration uses compact collection summaries and an action-focused Overview
+with review queues, recent drafts and upcoming events. Branding has focused editing
+tabs with visible save state, media uses thumbnail selection and previewed uploads,
+and Response center keeps secondary filters collapsed. These workflows reuse current
+authorization, private-media and deliberate-publication boundaries. See
+[administration workspaces](admin-workspaces.md) for count scope and interaction rules.
+
 The repository supplies local setup and a portable Docker hosting assistant with
 automatic migrations, persistent uploads, jobs, backup and fresh-stack restore.
 See [hosting](../guides/hosting.md) for operating instructions and

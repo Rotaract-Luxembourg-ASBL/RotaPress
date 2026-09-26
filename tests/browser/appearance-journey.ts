@@ -70,6 +70,7 @@ export async function appearanceJourney({
         getComputedStyle(root).getPropertyValue("--club-accent"),
       );
   const originalAccent = await accent(publicPage);
+  await page.getByRole("tab", { name: "Colors & type", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Website theme", exact: true })
     .selectOption("minimal");
@@ -83,6 +84,21 @@ export async function appearanceJourney({
   await expect(
     page.getByRole("textbox", { name: "Hex color", exact: true }),
   ).toHaveValue("#713650");
+  await page
+    .getByRole("textbox", { name: "Hex color", exact: true })
+    .fill("#bad");
+  await page.getByRole("tab", { name: "Logo & icon", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save settings", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Hex color", exact: true }),
+  ).toBeFocused();
+  await expect(
+    page
+      .getByRole("region", { name: "Website branding and appearance settings" })
+      .getByRole("alert"),
+  ).toContainText("Enter # and six characters");
   await page
     .getByRole("textbox", { name: "Hex color", exact: true })
     .fill("#365a69");
@@ -162,6 +178,7 @@ export async function appearanceJourney({
   await navigation
     .getByRole("button", { name: "Branding & appearance", exact: true })
     .click();
+  await page.getByRole("tab", { name: "Colors & type", exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: ".local/theme-settings-desktop.png",
@@ -232,7 +249,9 @@ export async function appearanceJourney({
       .get(`/api/admin/cms/content/${homeId}?locale=en`)
       .then((response) => response.json()),
   ).toEqual(originalContent);
-  await page.goto("/admin/website?tab=pages");
+  await page
+    .getByRole("combobox", { name: "Website section", exact: true })
+    .selectOption("pages");
   await page.getByRole("button", { name: "New page", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "New page", exact: true });
   await dialog

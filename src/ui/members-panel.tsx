@@ -184,14 +184,22 @@ function MemberAccess({
   );
 }
 
-export function MembersPanel() {
+export function MembersPanel({
+  initialView = "approved",
+}: {
+  initialView?: string;
+}) {
   const me = useCurrentUser();
   const { data, error, refresh } = useResource<{ members: Member[] }>(
     "/api/admin/members",
   );
   const [selected, setSelected] = useState<Member>();
   const [saved, setSaved] = useState(false);
-  const [view, setView] = useState("approved");
+  const [view, setView] = useState(
+    statuses.some((status) => status === initialView) || initialView === "all"
+      ? initialView
+      : "approved",
+  );
   const [query, setQuery] = useState("");
   const canManage = me.capabilities.includes("members.manage");
   const pending = data?.members.filter(

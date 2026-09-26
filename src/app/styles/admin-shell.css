@@ -1,8 +1,9 @@
 /* Club identity is shared with the portal; administration keeps its own tokens. */
 .admin-layout {
+  --admin-header-height: 4.25rem;
   display: grid;
   grid-template-columns: 14.5rem minmax(0, 1fr);
-  grid-template-rows: 5rem 1fr;
+  grid-template-rows: var(--admin-header-height) 1fr;
   min-height: 100dvh;
 }
 .admin-topbar {
@@ -13,8 +14,8 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  height: 5rem;
-  padding: 0 2rem;
+  height: var(--admin-header-height);
+  padding: 0 1.5rem;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
@@ -169,12 +170,12 @@
 .admin-sidebar {
   background: var(--panel);
   border-right: 1px solid var(--line);
-  padding: 1.75rem 1rem 1.5rem;
+  padding: 1.25rem 0.75rem 1rem;
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: 5rem;
-  height: calc(100dvh - 5rem);
+  top: var(--admin-header-height);
+  height: calc(100dvh - var(--admin-header-height));
   overflow-y: auto;
 }
 .admin-nav-label {

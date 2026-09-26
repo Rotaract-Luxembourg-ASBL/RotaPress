@@ -4,6 +4,7 @@ The main administration panels share a collection layout. Use it for Forms,
 Events, Calendar activities, Community directory, Members and website content.
 Media retains image thumbnails; Response center retains its message/detail view.
 Settings and Website use the same section navigation as the Calendar selector.
+On phones, Website uses a compact **Website section** selector beside language.
 
 The [administration header and account menu](../guides/member-portal.md#staff-access)
 share published club branding with the member portal and link to the personal
@@ -13,8 +14,8 @@ profile. Club membership and staff permissions remain separate.
 
 1. Read the page title and use its primary creation action when adding a record.
 2. Use workspace sections for different tasks, such as Events > Directory design.
-3. Read the count cards. Selecting an interactive card changes the list's status
-   or date filter. Search and other selected filters still apply.
+3. Read the compact count summaries. Selecting an interactive summary changes the
+   list's status or date filter. Search and other selected filters still apply.
 4. Narrow the list with counted status/category buttons, search and selectors.
    Clear filters recovers an empty search. The footer states how many records are shown.
 5. Open or edit a record with its visible action. Related tasks, such as Responses
@@ -50,10 +51,24 @@ underlying collection. Counts must follow the same authorization as the records.
 | Response center     | Counts cover all matching result pages, including form, status, search and date filters. People are grouped only from the current result page.                                                          |
 | Integrations        | Enabled/disabled counts describe built-in features, not successful provider delivery or live-provider verification.                                                                                     |
 
-Overview presents Forms, Events, Calendar, Website, Members and Response center
-only when the user has the corresponding capability and the feature is available.
-Failed or loading reads show an error/retry or loading state rather than a zero.
-Shortcuts point to each setting's existing owner.
+Overview combines a compact status strip, **Needs attention**, **Continue editing**,
+**Coming up** and links to each setting's existing owner. New responses and pending
+applications open their review filters directly. Recent drafts link to their editor;
+events show their saved time zone and distinguish published details from private
+drafts. Calendar schedules are not presented as individual upcoming occurrences.
+
+Every section uses existing authorized workspace results and disappears when its
+feature or capability is unavailable. Failed reads offer retry instead of a zero.
+Member/form summaries follow their existing list limits (500 memberships and 200
+recently updated forms); **About these counts** explains that scope. Website counts
+include language versions; response totals cover all matching pages. An empty
+attention list is not a claim that every record in a larger installation was reviewed.
+
+Response center has a compact status/search/form toolbar. Purpose and date filters
+open under **More filters**; their active values remain visible when collapsed.
+Media uses its counted visibility filters without a second row of summary cards.
+Shared headings, panels and list rows use compact spacing with readable labels and
+usable touch targets. Public branding does not style administration.
 
 ## Contributor pattern
 

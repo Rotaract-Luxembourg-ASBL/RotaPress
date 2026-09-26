@@ -6,59 +6,98 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { errorMessage, request, useResource } from "@/ui/api";
-import { StatusBadge, SummaryStats } from "@/ui/collection";
+import { FilterTabs, StatusBadge } from "@/ui/collection";
 import { Loading, Notice, PageHeading } from "@/ui/primitives";
-import type { InboxMessage, InboxPage } from "../inbox_schemas";
+import type { InboxMessage } from "../inbox_schemas";
 import type { SubmissionDto } from "../form_types";
 import { submissionStatuses, type SubmissionStatus } from "../form_schemas";
+import { useInboxPage } from "./use-inbox-page";
 
 const statusNames = { new: "New", reviewing: "In progress", closed: "Closed" };
+const purposeNames: Record<string, string> = {
+  contact: "Website enquiries",
+  membership: "Membership applications",
+  event: "Event forms",
+  registration: "Event registrations",
+};
+
+type InboxFilters = {
+  query: string;
+  status: string;
+  kind: string;
+  after: string;
+  before: string;
+};
 
 export function ContactsInbox() {
   const params = useSearchParams();
   const formId = params.get("formId") ?? "";
-  const initialQuery = params.get("q") ?? "";
+  const requestedStatus = params.get("status") ?? "";
+  const initialFilters: InboxFilters = {
+    query: params.get("q") ?? "",
+    status: submissionStatuses.some((value) => value === requestedStatus)
+      ? requestedStatus
+      : "",
+    kind: Object.hasOwn(purposeNames, params.get("kind") ?? "")
+      ? params.get("kind")!
+      : "",
+    after: params.get("after") ?? "",
+    before: params.get("before") ?? "",
+  };
   return (
     <InboxWorkspace
-      key={`${formId}:${initialQuery}`}
+      key={params.toString()}
       formId={formId}
-      initialQuery={initialQuery}
+      initialFilters={initialFilters}
+      initialView={params.get("view") === "people" ? "contacts" : "inbox"}
     />
   );
 }
 
 function InboxWorkspace({
   formId,
-  initialQuery,
+  initialFilters,
+  initialView,
 }: {
   formId: string;
-  initialQuery: string;
+  initialFilters: InboxFilters;
+  initialView: "inbox" | "contacts";
 }) {
   const user = useCurrentUser();
   const router = useRouter();
-  const [view, setView] = useState<"inbox" | "contacts">("inbox");
-  const [search, setSearch] = useState(initialQuery);
-  const [query, setQuery] = useState(initialQuery);
-  const [status, setStatus] = useState("");
-  const [kind, setKind] = useState("");
-  const [after, setAfter] = useState("");
-  const [before, setBefore] = useState("");
+  const [view, setView] = useState(initialView);
+  const [search, setSearch] = useState(initialFilters.query);
+  const [query, setQuery] = useState(initialFilters.query);
+  const [status, setStatus] = useState(initialFilters.status);
+  const [kind, setKind] = useState(initialFilters.kind);
+  const [after, setAfter] = useState(initialFilters.after);
+  const [before, setBefore] = useState(initialFilters.before);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<InboxMessage>();
   const [selectionRequest, setSelectionRequest] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const responseButtons = useRef(new Map<string, HTMLButtonElement>());
   const filters = new URLSearchParams({ q: query, page: String(page) });
   if (status) filters.set("status", status);
   if (formId) filters.set("formId", formId);
   if (kind) filters.set("kind", kind);
   if (after) filters.set("after", after);
   if (before) filters.set("before", before);
-  const { data, error, refresh } = useResource<InboxPage>(
+  const { data, forms, error, refresh } = useInboxPage(
     `/api/admin/inbox?${filters}`,
   );
-  function selectForm(value: string, contactQuery = "") {
+  function selectForm(value: string, onlyQuery?: string, nextView = view) {
     const next = new URLSearchParams();
     if (value) next.set("formId", value);
-    if (contactQuery) next.set("q", contactQuery);
+    if (nextView === "contacts") next.set("view", "people");
+    const searchQuery = onlyQuery ?? query;
+    if (searchQuery) next.set("q", searchQuery);
+    if (onlyQuery === undefined) {
+      if (status) next.set("status", status);
+      if (kind) next.set("kind", kind);
+      if (after) next.set("after", after);
+      if (before) next.set("before", before);
+    }
     router.push(`/admin/inbox${next.size ? `?${next}` : ""}`, {
       scroll: false,
     });
@@ -96,11 +135,24 @@ function InboxWorkspace({
     setPage(0);
     setSelected(undefined);
   }
+  function clearFilters() {
+    setQuery("");
+    setSearch("");
+    setStatus("");
+    selectForm("", "");
+    setKind("");
+    setAfter("");
+    setBefore("");
+    setPage(0);
+    setSelected(undefined);
+  }
+  const secondaryFilterCount = [kind, after, before].filter(Boolean).length;
+  const hasFilters = Boolean(query || status || formId || secondaryFilterCount);
   return (
-    <>
+    <div className="response-center">
       <PageHeading
         title="Response center"
-        description="Review website enquiries, membership applications and event responses in one workspace."
+        description="Review enquiries, applications and event responses."
       >
         {user.capabilities.includes("forms.edit") && (
           <Link href="/admin/forms" className="button button-outline">
@@ -108,25 +160,6 @@ function InboxWorkspace({
           </Link>
         )}
       </PageHeading>
-      {formId && (
-        <div className="response-form-context" role="status">
-          <div>
-            <strong>
-              Responses for{" "}
-              {data?.forms.find((item) => item.id === formId)?.title ??
-                "the selected form"}
-            </strong>
-            <p>Only responses to this form are shown.</p>
-          </div>
-          <button
-            type="button"
-            className="button button-outline button-small"
-            onClick={() => selectForm("")}
-          >
-            View all forms
-          </button>
-        </div>
-      )}
       <nav className="admin-workspace-tabs" aria-label="Response workspace">
         <button
           type="button"
@@ -149,167 +182,196 @@ function InboxWorkspace({
           People
         </button>
       </nav>
-      {data && (
-        <SummaryStats
-          label="Matching response counts"
-          items={[
-            {
-              label: "Matching responses",
-              value: data.total,
-              hint: "Across all matching result pages",
-              icon: "mail",
-            },
-            {
-              label: "New",
-              value: data.counts.new,
-              hint: "Within the current filters",
-              icon: "mail",
-            },
-            {
-              label: "In progress",
-              value: data.counts.reviewing,
-              hint: "Within the current filters",
-              icon: "edit",
-            },
-            {
-              label: "Closed",
-              value: data.counts.closed,
-              hint: "Within the current filters",
-              icon: "check",
-            },
-          ]}
-        />
-      )}
-      <section className="panel inbox-filters">
-        <form onSubmit={find} className="inbox-search">
+      <section className="inbox-controls" aria-label="Response filters">
+        <div className="inbox-status-filters">
+          <FilterTabs
+            label="Filter responses by status"
+            value={status}
+            onChange={(value) => {
+              setStatus(value);
+              setPage(0);
+              setSelected(undefined);
+            }}
+            options={[
+              { value: "", label: "All responses" },
+              ...submissionStatuses.map((value) => ({
+                value,
+                label: statusNames[value],
+              })),
+            ]}
+          />
+          {hasFilters && (
+            <button
+              type="button"
+              className="inline-button"
+              onClick={clearFilters}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+        <div className="inbox-toolbar">
+          <form onSubmit={find} className="inbox-search">
+            <label>
+              Search contacts and messages
+              <input
+                value={search}
+                maxLength={160}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Name, email or message"
+              />
+            </label>
+            <button className="button button-outline">Search</button>
+          </form>
           <label>
-            Search contacts and messages
+            Source form
+            <select
+              value={formId}
+              onChange={(event) => {
+                selectForm(event.target.value);
+                setPage(0);
+                setSelected(undefined);
+              }}
+            >
+              <option value="">All forms</option>
+              {formId && !forms?.some((item) => item.id === formId) && (
+                <option value={formId}>Selected form</option>
+              )}
+              {forms?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                  {item.eventTitle ? ` · ${item.eventTitle}` : ""}
+                  {item.archived ? " · archived" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="button button-outline"
+            aria-expanded={showFilters}
+            aria-controls="inbox-more-filters"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? "Hide filters" : "More filters"}
+            {secondaryFilterCount > 0 && ` (${secondaryFilterCount})`}
+          </button>
+        </div>
+        <div
+          id="inbox-more-filters"
+          className="inbox-filters"
+          hidden={!showFilters}
+        >
+          <label>
+            Form purpose
+            <select
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value);
+                setPage(0);
+                setSelected(undefined);
+              }}
+            >
+              <option value="">All purposes</option>
+              <option value="contact">Website enquiries</option>
+              <option value="membership">Membership applications</option>
+              <option value="event">Event forms</option>
+              <option value="registration">Event registrations</option>
+            </select>
+          </label>
+          <label>
+            Received from
             <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Name, email or message"
+              type="date"
+              value={after}
+              max={before || undefined}
+              onChange={(e) => {
+                setAfter(e.target.value);
+                setPage(0);
+                setSelected(undefined);
+              }}
             />
           </label>
-          <button className="button button-outline">Search</button>
-        </form>
-        <label>
-          Review status
-          <select
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(0);
-              setSelected(undefined);
-            }}
-          >
-            <option value="">All statuses</option>
-            {submissionStatuses.map((value) => (
-              <option key={value} value={value}>
-                {statusNames[value]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Source form
-          <select
-            value={formId}
-            onChange={(event) => {
-              selectForm(event.target.value);
-              setPage(0);
-              setSelected(undefined);
-            }}
-          >
-            <option value="">All forms</option>
-            {formId && !data?.forms.some((item) => item.id === formId) && (
-              <option value={formId}>Selected form</option>
-            )}
-            {data?.forms.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title}
-                {item.eventTitle ? ` · ${item.eventTitle}` : ""}
-                {item.archived ? " · archived" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Form purpose
-          <select
-            value={kind}
-            onChange={(e) => {
-              setKind(e.target.value);
-              setPage(0);
-              setSelected(undefined);
-            }}
-          >
-            <option value="">All purposes</option>
-            <option value="contact">Website enquiries</option>
-            <option value="membership">Membership applications</option>
-            <option value="event">Event forms</option>
-            <option value="registration">Event registrations</option>
-          </select>
-        </label>
-        <label>
-          Received from
-          <input
-            type="date"
-            value={after}
-            onChange={(e) => {
-              setAfter(e.target.value);
-              setPage(0);
-              setSelected(undefined);
-            }}
-          />
-        </label>
-        <label>
-          Received through
-          <input
-            type="date"
-            value={before}
-            onChange={(e) => {
-              setBefore(e.target.value);
-              setPage(0);
-              setSelected(undefined);
-            }}
-          />
-        </label>
-        <button
-          type="button"
-          className="inline-button"
-          onClick={() => {
-            setQuery("");
-            setSearch("");
-            setStatus("");
-            selectForm("");
-            setKind("");
-            setAfter("");
-            setBefore("");
-            setPage(0);
-            setSelected(undefined);
-          }}
-        >
-          Clear filters
-        </button>
-      </section>
-      {error && <Notice>{error}</Notice>}
-      {!data && !error && <Loading />}
-      {data && (
-        <>
-          <p className="muted">
-            Showing {data.messages.length} · Page {page + 1}
-            {formId
-              ? ` · ${data.forms.find((item) => item.id === formId)?.title ?? "Selected form"}`
-              : " · All permitted forms"}
-            . Date filters use UTC.
+          <label>
+            Received through
+            <input
+              type="date"
+              value={before}
+              min={after || undefined}
+              onChange={(e) => {
+                setBefore(e.target.value);
+                setPage(0);
+                setSelected(undefined);
+              }}
+            />
+          </label>
+          <p className="field-help">
+            Date filters use UTC. Changes apply immediately.
           </p>
+        </div>
+        {(formId || query || secondaryFilterCount > 0) && (
+          <div
+            className="inbox-active-filters"
+            aria-label="Active response filters"
+          >
+            {formId && (
+              <>
+                <strong>
+                  Responses for{" "}
+                  {forms?.find((item) => item.id === formId)?.title ??
+                    "the selected form"}
+                </strong>
+                <button
+                  type="button"
+                  className="inline-button"
+                  onClick={() => selectForm("")}
+                >
+                  View all forms
+                </button>
+              </>
+            )}
+            {query && <span>Search: {query}</span>}
+            {kind && <span>Purpose: {purposeNames[kind] ?? kind}</span>}
+            {after && <span>From {after}</span>}
+            {before && <span>Through {before}</span>}
+          </div>
+        )}
+      </section>
+      {error && (
+        <Notice>
+          {error}{" "}
+          <button type="button" className="inline-button" onClick={refresh}>
+            Retry responses
+          </button>
+        </Notice>
+      )}
+      {!data && !error && <Loading />}
+      {data && !error && (
+        <>
+          <div className="inbox-results-summary" role="status">
+            <p>
+              Showing {data.messages.length} of{" "}
+              <strong>
+                {data.total} matching{" "}
+                {data.total === 1 ? "response" : "responses"}
+              </strong>
+              {page > 0 && ` · Page ${page + 1}`}
+            </p>
+            <p aria-label="Matching response counts">
+              New {data.counts.new} · In progress {data.counts.reviewing} ·
+              Closed {data.counts.closed}
+              <span className="inbox-count-scope">
+                Across all filtered pages
+              </span>
+            </p>
+          </div>
           {view === "contacts" ? (
             <section className="panel">
               <h2>People in this view</h2>
               <p className="field-help">
-                Grouped by supplied email. Open a contact to search their
-                messages across all forms. Membership and guest access are
-                managed separately.
+                Grouped by supplied email from this result page. Open a contact
+                to search their messages across all forms. Membership and guest
+                access are managed separately.
               </p>
               {!contacts.size && <p>No contacts match these filters.</p>}
               <div className="inbox-contacts">
@@ -329,7 +391,7 @@ function InboxWorkspace({
                           setSearch(contact.email!);
                           setQuery(contact.email!);
                           setStatus("");
-                          selectForm("", contact.email!);
+                          selectForm("", contact.email!, "inbox");
                           setKind("");
                           setAfter("");
                           setBefore("");
@@ -346,14 +408,19 @@ function InboxWorkspace({
               </div>
             </section>
           ) : (
-            <div className="inbox-workspace">
+            <div className="inbox-workspace" data-selected={Boolean(selected)}>
               <section className="panel inbox-messages" aria-label="Responses">
                 {!data.messages.length && (
                   <div className="empty-state">
-                    <h2>Your inbox is clear</h2>
+                    <h2>
+                      {hasFilters
+                        ? "No responses match these filters"
+                        : "Your inbox is clear"}
+                    </h2>
                     <p>
-                      Responses to published forms and event registrations
-                      appear here.
+                      {hasFilters
+                        ? "Try another search or clear your filters to see all permitted responses."
+                        : "Responses to published forms and event registrations appear here."}
                     </p>
                   </div>
                 )}
@@ -361,6 +428,11 @@ function InboxWorkspace({
                   <button
                     type="button"
                     key={message.id}
+                    ref={(element) => {
+                      if (element)
+                        responseButtons.current.set(message.id, element);
+                      else responseButtons.current.delete(message.id);
+                    }}
                     className="inbox-message"
                     aria-pressed={selected?.id === message.id}
                     onClick={() => {
@@ -404,6 +476,13 @@ function InboxWorkspace({
                   message={selected}
                   selectionRequest={selectionRequest}
                   onSaved={refresh}
+                  onBack={() => {
+                    const id = selected.id;
+                    setSelected(undefined);
+                    requestAnimationFrame(() =>
+                      responseButtons.current.get(id)?.focus(),
+                    );
+                  }}
                 />
               ) : (
                 <section className="panel empty-state">
@@ -416,33 +495,35 @@ function InboxWorkspace({
               )}
             </div>
           )}
-          <div className="forms-actions">
-            <button
-              type="button"
-              className="button button-outline"
-              disabled={page === 0}
-              onClick={() => {
-                setPage(page - 1);
-                setSelected(undefined);
-              }}
-            >
-              Previous page
-            </button>
-            <button
-              type="button"
-              className="button button-outline"
-              disabled={!data.hasMore}
-              onClick={() => {
-                setPage(page + 1);
-                setSelected(undefined);
-              }}
-            >
-              Next page
-            </button>
-          </div>
+          {(page > 0 || data.hasMore) && (
+            <div className="forms-actions inbox-pagination">
+              <button
+                type="button"
+                className="button button-outline"
+                disabled={page === 0}
+                onClick={() => {
+                  setPage(page - 1);
+                  setSelected(undefined);
+                }}
+              >
+                Previous page
+              </button>
+              <button
+                type="button"
+                className="button button-outline"
+                disabled={!data.hasMore}
+                onClick={() => {
+                  setPage(page + 1);
+                  setSelected(undefined);
+                }}
+              >
+                Next page
+              </button>
+            </div>
+          )}
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -450,10 +531,12 @@ function MessagePanel({
   message,
   selectionRequest,
   onSaved,
+  onBack,
 }: {
   message: InboxMessage;
   selectionRequest: number;
   onSaved: () => void;
+  onBack: () => void;
 }) {
   const { data, error, refresh } = useResource<SubmissionDto>(
     `/api/admin/forms/submissions/${message.id}`,
@@ -495,6 +578,13 @@ function MessagePanel({
   }
   return (
     <section className="panel inbox-detail" aria-label="Selected response">
+      <button
+        type="button"
+        className="inline-button inbox-back"
+        onClick={onBack}
+      >
+        Back to responses
+      </button>
       <p className="eyebrow">{message.formTitle}</p>
       <h2 ref={heading} tabIndex={-1}>
         {message.name}
@@ -508,7 +598,14 @@ function MessagePanel({
           ? "Submitted with a verified account"
           : "Contact details supplied by the visitor"}
       </p>
-      {error && <Notice>{error}</Notice>}
+      {error && (
+        <Notice>
+          {error}{" "}
+          <button type="button" className="inline-button" onClick={refresh}>
+            Retry response
+          </button>
+        </Notice>
+      )}
       {failure && <Notice>{failure}</Notice>}
       {notice && <Notice kind="success">{notice}</Notice>}
       {!data && !error && <Loading />}

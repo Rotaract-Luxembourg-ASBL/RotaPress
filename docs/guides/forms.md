@@ -80,8 +80,13 @@ Anonymous attachments are not supported.
 ## Review privately
 
 The builder's **View responses** link opens Response center with that form selected.
-Search and filter by form, review status and received date. Counts cover all matching
-results; the inbox displays pages of 100 records. The existing per-form submission
+Use the compact status buttons, search and source-form selector above the responses.
+Open **More filters** for purpose and received dates; selected criteria remain
+visible when the controls are collapsed. Changing the source form keeps the other
+applied filters. **View all forms** removes just that form's scope, while **Clear
+filters** removes all criteria. Counts cover all matching results; the inbox displays
+pages of 100 records. On a phone, opening a response shows its detail; **Back to
+responses** returns to the list and selected item. The existing per-form submission
 list also remains available. CSV export preserves question labels and versions,
 neutralizes spreadsheet formulas and supports at most 5,000 responses per export.
 

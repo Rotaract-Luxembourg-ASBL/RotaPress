@@ -39,7 +39,19 @@ export function WebsiteSettings({
   const inFlight = useRef(false);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
-  const dirty = JSON.stringify(settings) !== JSON.stringify(saved.draft);
+  const [appearanceInvalid, setAppearanceInvalid] = useState(false);
+  const dirty =
+    appearanceInvalid ||
+    JSON.stringify(settings) !== JSON.stringify(saved.draft);
+  const published =
+    JSON.stringify(saved.draft) === JSON.stringify(saved.published);
+  const saveState = busy
+    ? "Saving settings…"
+    : dirty
+      ? "Unsaved changes"
+      : published
+        ? "Saved and published"
+        : "Saved draft · Not published yet";
   // Parent refreshes after reviewed publication or template selection. Never
   // replace entered settings with a newer server snapshot while they are dirty.
   if (site.version > saved.version && !dirty && !busy) {
@@ -88,7 +100,12 @@ export function WebsiteSettings({
     );
   }
   async function save(action: "save" | "restore" = "save") {
-    if (inFlight.current || (action === "restore" && dirty)) return;
+    if (
+      inFlight.current ||
+      appearanceInvalid ||
+      (action === "restore" && dirty)
+    )
+      return;
     inFlight.current = true;
     setBusy(true);
     setError(undefined);
@@ -189,7 +206,9 @@ export function WebsiteSettings({
       data-dirty={dirty}
     >
       {error && <Notice>{error}</Notice>}
-      {message && <Notice kind="success">{message}</Notice>}
+      {message && !appearanceInvalid && (
+        <Notice kind="success">{message}</Notice>
+      )}
       <fieldset className="website-settings-fieldset" disabled={busy}>
         {panel === "seo" && (
           <WebsiteSeoSettings value={settings} onChange={change} />
@@ -220,25 +239,26 @@ export function WebsiteSettings({
             canLeave={canLeave}
             locale={locale}
             dirty={dirty}
+            busy={busy}
+            saveState={saveState}
+            onInvalidChange={setAppearanceInvalid}
           />
         )}
       </fieldset>
-      <div className="website-settings-save">
-        <span className="small muted" role="status">
-          {busy
-            ? "Saving website settings…"
-            : dirty
-              ? "Unsaved settings"
-              : `Saved version ${saved.version}`}
-        </span>
-        <button
-          type="submit"
-          className="button button-accent"
-          disabled={busy || !dirty}
-        >
-          {busy ? "Saving…" : "Save settings"}
-        </button>
-      </div>
+      {panel !== "appearance" && (
+        <div className="website-settings-save">
+          <span className="small muted" role="status">
+            {saveState}
+          </span>
+          <button
+            type="submit"
+            className="button button-accent"
+            disabled={busy || !dirty}
+          >
+            {busy ? "Saving…" : "Save settings"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }
