@@ -27,3 +27,6 @@ export * from "./calendar";
 export * from "./calendar-sources";
 export * from "./email";
 export * from "./automation";
+export * from "./oauth";
+export * from "./automation-review";
+export * from "./automation-availability";

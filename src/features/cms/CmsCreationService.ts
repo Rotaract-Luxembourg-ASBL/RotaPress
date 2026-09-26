@@ -98,7 +98,7 @@ export class CmsCreationService {
         moduleKey: parsed.event?.moduleKey,
       })
       .returning();
-    await this.scope.validate(content, data, null, tx);
+    await this.scope.validate(content, data, null, tx, actor);
     await this.revisions.createVariant(
       tx,
       actor,

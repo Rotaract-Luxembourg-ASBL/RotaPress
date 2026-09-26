@@ -8,32 +8,35 @@ unfinished release work.
 
 ## Use RotaPress
 
-| Task | Guide |
-| --- | --- |
-| Install on a server, update or restore | [Portable hosting](guides/hosting.md) |
-| Edit pages, shared content and media | [Website and media](guides/cms-and-media.md) |
-| Set up a complete editable website | [Website templates](guides/website-kits.md) |
-| Use the RotaPress logo and repository artwork | [Product brand assets](guides/rotapress-brand.md) |
-| Publish a website or only its menu | [Website publication](guides/website-publication.md) |
-| Build forms and review responses | [Forms](guides/forms.md) |
-| Manage a personal account and bookings | [Member portal](guides/member-portal.md) |
-| Create and publish events | [Events](guides/events.md) |
-| Design an event page | [Event page design](guides/event-page-design.md) |
-| Take free registrations | [Event registration](guides/event-registration.md) |
-| Copy or cancel an event | [Starting copies and cancellation](guides/event-presets.md) |
-| Grant private event access | [Guest portal](guides/guest-portal.md) |
-| Publish prizes | [Prize gallery](guides/event-prizes.md) |
-| Review demonstration entries | [Entry register](guides/event-entries.md) |
-| Run a demonstration draw | [Draws and winners](guides/event-draws.md) |
-| Schedule a saved page revision | [Scheduled publication](guides/scheduled-publication.md) |
-| Manage calendars, imports and reminders | [Calendar](guides/calendar.md) |
-| Configure email delivery and templates | [Email](guides/email.md) |
-| Configure email before the first owner signs in | [First-run email setup](guides/email-setup.md) |
-| Configure Google authentication | [Google sign-in](guides/google-authentication.md) |
-| Connect Luma links, imports and purchases | [Luma](guides/luma.md) |
-| Prepare content using AI, REST and MCP | [AI & API connections](guides/ai-and-api.md) |
-| Explore and test API operations | [REST reference and tester](guides/api-reference.md) |
-| Connect Claude, Codex or model-provider APIs | [MCP clients](guides/mcp-clients.md) |
+| Task                                            | Guide                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------- |
+| Install on a server, update or restore          | [Portable hosting](guides/hosting.md)                       |
+| Edit pages, shared content and media            | [Website and media](guides/cms-and-media.md)                |
+| Set up a complete editable website              | [Website templates](guides/website-kits.md)                 |
+| Use the RotaPress logo and repository artwork   | [Product brand assets](guides/rotapress-brand.md)           |
+| Publish a website or only its menu              | [Website publication](guides/website-publication.md)        |
+| Build forms and review responses                | [Forms](guides/forms.md)                                    |
+| Manage a personal account and bookings          | [Member portal](guides/member-portal.md)                    |
+| Create and publish events                       | [Events](guides/events.md)                                  |
+| Design an event page                            | [Event page design](guides/event-page-design.md)            |
+| Take free registrations                         | [Event registration](guides/event-registration.md)          |
+| Copy or cancel an event                         | [Starting copies and cancellation](guides/event-presets.md) |
+| Grant private event access                      | [Guest portal](guides/guest-portal.md)                      |
+| Publish prizes                                  | [Prize gallery](guides/event-prizes.md)                     |
+| Review demonstration entries                    | [Entry register](guides/event-entries.md)                   |
+| Run a demonstration draw                        | [Draws and winners](guides/event-draws.md)                  |
+| Schedule a saved page revision                  | [Scheduled publication](guides/scheduled-publication.md)    |
+| Manage calendars, imports and reminders         | [Calendar](guides/calendar.md)                              |
+| Configure email delivery and templates          | [Email](guides/email.md)                                    |
+| Configure email before the first owner signs in | [First-run email setup](guides/email-setup.md)              |
+| Configure Google authentication                 | [Google sign-in](guides/google-authentication.md)           |
+| Connect Luma links, imports and purchases       | [Luma](guides/luma.md)                                      |
+| Prepare content using AI, REST and MCP          | [AI & API connections](guides/ai-and-api.md)                |
+| Explore and test API operations                 | [REST reference and tester](guides/api-reference.md)        |
+| Connect Claude, Codex or model-provider APIs    | [MCP clients](guides/mcp-clients.md)                        |
+| Connect an assistant using sign-in and consent  | [OAuth connections](guides/automation-oauth.md)             |
+| Upload and inspect private images with AI       | [Automation media](guides/automation-media.md)              |
+| Review saved page designs on desktop and phone  | [AI visual review](guides/automation-preview.md)            |
 
 ## Develop RotaPress
 
@@ -43,6 +46,7 @@ unfinished release work.
 - [Testing and critical scenarios](development/testing.md)
 - [Security testing and assessment scope](development/security-testing.md)
 - [REST/MCP feature contract](development/automation.md)
+- [AI website/event workflows and acceptance phases](development/automation-workflows.md)
 - [REST/MCP security boundaries](development/automation-security.md)
 - [Product UX rules](development/product-ux.md)
 - [Shared administration workspaces](development/admin-workspaces.md)

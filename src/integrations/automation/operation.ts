@@ -11,6 +11,8 @@ export type AutomationContext = {
   principal: AutomationPrincipal;
   imports: ContentImportService;
   sources: ReferenceWebsiteClient;
+  /** Recheck the connection after expensive work, before releasing private data. */
+  reauthorize?: () => Promise<AutomationPrincipal>;
 };
 export type Operation = {
   name: string;

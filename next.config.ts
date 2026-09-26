@@ -8,7 +8,7 @@ const policy =
 const config: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
-  serverExternalPackages: ["pg", "nodemailer"],
+  serverExternalPackages: ["pg", "nodemailer", "playwright-core"],
   outputFileTracingExcludes: {
     "/*": ["./.local/**/*", "./.data/**/*", "./.env*"],
   },
@@ -32,6 +32,17 @@ const config: NextConfig = {
       },
       // Only authorized preview documents may appear inside the same-origin editor.
       // Session, current scope and expiry checks still run on every preview request.
+      {
+        source: "/automation-preview",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-src 'none'; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'none'",
+          },
+        ],
+      },
       {
         source: "/admin/website/:id/preview",
         headers: [

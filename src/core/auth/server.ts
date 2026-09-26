@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
 import { apiKey } from "@better-auth/api-key";
+import { oauthProvider } from "@better-auth/oauth-provider";
 import {
   APIError,
   addOAuthServerContext,
@@ -10,6 +11,8 @@ import {
   getOAuthState,
 } from "better-auth/api";
 import * as schema from "../../../db/schema/auth";
+import * as oauthSchema from "../../../db/schema/oauth";
+import { automationOAuthValidation, oauthOptions } from "./automation_oauth";
 import { config } from "@/core/config";
 import { db } from "@/infrastructure/database/client";
 import { mailer } from "@/composition/email";
@@ -39,7 +42,11 @@ function createAuth(google: GoogleProviderConfiguration | null) {
     secret: config.BETTER_AUTH_SECRET,
     trustedOrigins: [config.APP_URL],
     advanced: { ipAddress: { ipAddressHeaders: ["x-real-ip"] } },
-    database: drizzleAdapter(db, { provider: "pg", schema, transaction: true }),
+    database: drizzleAdapter(db, {
+      provider: "pg",
+      schema: { ...schema, ...oauthSchema },
+      transaction: true,
+    }),
     emailAndPassword: { enabled: false },
     socialProviders: google
       ? {
@@ -140,6 +147,8 @@ function createAuth(google: GoogleProviderConfiguration | null) {
       },
     },
     plugins: [
+      oauthProvider(oauthOptions),
+      automationOAuthValidation(),
       apiKey({
         defaultPrefix: "rp_",
         enableMetadata: true,

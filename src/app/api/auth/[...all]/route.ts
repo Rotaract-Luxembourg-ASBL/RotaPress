@@ -61,6 +61,21 @@ async function authenticationResponse(request: Request): Promise<Response> {
 async function dispatch(request: Request) {
   return handle(async () => {
     const path = new URL(request.url).pathname.replace(/^\/api\/auth/, "");
+    if (
+      ["/oauth2/authorize", "/oauth2/token", "/oauth2/revoke"].includes(path)
+    ) {
+      const { oauthProtocolRequest } =
+        await import("@/integrations/automation/oauth/http");
+      return oauthProtocolRequest(request);
+    }
+    if (
+      path === "/.well-known/oauth-authorization-server" &&
+      request.method === "GET"
+    ) {
+      const { oauthServerMetadata } =
+        await import("@/integrations/automation/oauth/http");
+      return oauthServerMetadata();
+    }
     if (request.method === "POST") {
       if (!postPaths.has(path))
         return json({ error: "Unsupported authentication operation." }, 404);

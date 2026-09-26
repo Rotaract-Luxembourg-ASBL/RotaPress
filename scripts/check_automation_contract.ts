@@ -9,7 +9,7 @@ import {
 import { openApiDocument } from "../src/integrations/automation/openapi";
 import {
   automationPrompts,
-  adaptationPrompt,
+  renderAutomationPrompt,
 } from "../src/integrations/automation/prompts";
 
 async function main() {
@@ -92,7 +92,16 @@ async function main() {
         catalogue: operationCatalogue(),
         openapi: openApiDocument(),
         prompts: automationPrompts,
-        prompt: adaptationPrompt({ sourceUrl: "https://www.rotary.org/" }),
+        promptText: automationPrompts.map(({ name }) =>
+          renderAutomationPrompt(
+            name,
+            name === "adapt_reference_website"
+              ? { sourceUrl: "https://www.rotary.org/" }
+              : name === "review_page_design"
+                ? { pageId: "11111111-1111-4111-8111-111111111111" }
+                : { brief: "Prepare verified private content for review." },
+          ),
+        ),
       }),
     ),
     domains: Object.fromEntries(

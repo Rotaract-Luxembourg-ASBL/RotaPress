@@ -61,7 +61,7 @@ export class CmsDraftService {
         409,
       );
     const data = validateContent(parsed.data, content.kind);
-    await this.scope.validate(content, data, parsed.socialImageId, tx);
+    await this.scope.validate(content, data, parsed.socialImageId, tx, actor);
     await this.references.validateReferences(
       organizationId,
       data,

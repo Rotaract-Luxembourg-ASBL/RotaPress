@@ -143,6 +143,7 @@ export class CmsScopePolicy {
     data: CmsData,
     socialImageId: string | null,
     executor: DatabaseExecutor,
+    draftActor?: TrustedActor,
   ) {
     const calendarIds = [
       ...new Set(
@@ -200,7 +201,36 @@ export class CmsScopePolicy {
         `This feature does not support: ${[...new Set(unsupported.map((block) => block.type))].join(", ")}. Content was not changed.`,
         422,
       );
-    // Scoped event editors may select public club assets; private club media stays private.
+    // Draft preparation may use private images only under current club media
+    // authority. Event-only editors retain public-library access. Publication
+    // never supplies draftActor and always requires explicitly public images.
+    if (draftActor) {
+      let mediaScope;
+      try {
+        mediaScope = await this.authorization.require(
+          draftActor,
+          "media.manage",
+          executor,
+        );
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "ACCESS_DENIED")
+          throw error;
+      }
+      if (mediaScope) {
+        if (mediaScope.organizationId !== content.organizationId)
+          throw new DomainError(
+            "MEDIA_SCOPE_INVALID",
+            "These images are unavailable to this club.",
+            422,
+          );
+        await this.media.assertOwnedAssets(
+          content.organizationId,
+          contentAssets(data, socialImageId),
+          executor,
+        );
+        return;
+      }
+    }
     await this.media.assertPublicAssets(
       content.organizationId,
       contentAssets(data, socialImageId),

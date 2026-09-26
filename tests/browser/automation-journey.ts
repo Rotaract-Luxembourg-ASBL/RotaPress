@@ -7,6 +7,13 @@ import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { automationDocsJourney } from "./automation-docs-journey";
 import { automationSecurityJourney } from "./automation-security-journey";
+import { automationMediaJourney } from "./automation-media-journey";
+import { automationEventJourney } from "./automation-event-journey";
+import {
+  automationAvailabilityJourney,
+  automationAvailabilityIsolation,
+} from "./automation-availability-journey";
+import { oauthJourney } from "./oauth-journey";
 
 /** Real Better Auth OTP session and scoped key; all source/page text is synthetic. */
 export async function automationJourney(
@@ -17,14 +24,15 @@ export async function automationJourney(
   const endpoint = "/api/admin/integrations/automation";
   const anonymous = await browser.newContext();
   const viewport = owner.viewportSize();
+  await automationAvailabilityJourney(owner, anonymous.request);
   await owner.goto("/admin/integrations");
-  await owner
-    .getByRole("link", { name: "Manage AI & API", exact: true })
-    .click();
+  await owner.getByRole("link", { name: "Manage MCP", exact: true }).click();
   await expect(
     owner.getByRole("heading", { name: "AI & API", exact: true }),
   ).toBeVisible();
-  await owner.getByLabel("Connection name").fill("Synthetic content assistant");
+  await owner
+    .getByLabel("Connection name", { exact: true })
+    .fill("Synthetic content assistant");
   await owner
     .getByLabel("Reference websites", { exact: true })
     .fill("https://www.rotary.org");
@@ -340,6 +348,10 @@ export async function automationJourney(
       await bridge.close();
     }
 
+    await automationAvailabilityIsolation(owner, api, key);
+    await automationMediaJourney(owner, api, key);
+    await automationEventJourney(owner, api);
+    await oauthJourney(owner, browser, database);
     await automationDocsJourney(owner, key);
     await automationSecurityJourney(owner, api, database, key);
     await database.query(

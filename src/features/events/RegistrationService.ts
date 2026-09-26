@@ -269,10 +269,15 @@ export class RegistrationService {
     };
   }
 
-  async configure(actor: TrustedActor, eventId: string, input: unknown) {
+  async configure(
+    actor: TrustedActor,
+    eventId: string,
+    input: unknown,
+    transaction?: Transaction,
+  ) {
     z.uuid().parse(eventId);
     const values = registrationSettingsSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.scope.events.lockEvent(
         actor,
         eventId,
@@ -369,7 +374,8 @@ export class RegistrationService {
         targetId: eventId,
       });
       return this.settings(eventId, organizationId, tx);
-    });
+    };
+    return transaction ? apply(transaction) : this.db.transaction(apply);
   }
 
   async publicForm(actor: TrustedActor | null, eventId: string) {

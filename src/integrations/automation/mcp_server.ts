@@ -18,7 +18,8 @@ import {
 } from "./catalogue";
 import type { AutomationContext } from "./operation";
 import { inputJsonSchema, outputJsonSchema, successSchema } from "./operation";
-import { adaptationPrompt, automationPrompts } from "./prompts";
+import { automationPrompts, renderAutomationPrompt } from "./prompts";
+import { imageToolContent } from "./mcp_images";
 import { openApiDocument } from "./openapi";
 
 export function createMcpServer(context: AutomationContext) {
@@ -53,7 +54,13 @@ export function createMcpServer(context: AutomationContext) {
           destructiveHint: operation.method === "PATCH",
           idempotentHint:
             operation.readOnly ||
-            ["source_read", "content_import"].includes(operation.name),
+            [
+              "source_read",
+              "content_import",
+              "media_upload",
+              "events_prepare",
+              "events_propose_settings",
+            ].includes(operation.name),
           openWorldHint: operation.name === "source_read",
         },
       })),
@@ -72,7 +79,7 @@ export function createMcpServer(context: AutomationContext) {
     return {
       isError: !response.ok,
       ...(response.ok ? { structuredContent: result } : {}),
-      content: [{ type: "text", text: JSON.stringify(result) }],
+      content: imageToolContent(params.name, result, response.ok),
     };
   });
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
@@ -124,22 +131,27 @@ export function createMcpServer(context: AutomationContext) {
     prompts: automationPrompts,
   }));
   server.setRequestHandler(GetPromptRequestSchema, async ({ params }) => {
-    if (params.name !== "adapt_reference_website")
+    const definition = automationPrompts.find(
+      (prompt) => prompt.name === params.name,
+    );
+    if (!definition)
       throw new McpError(
         ErrorCode.InvalidParams,
         "This prompt is unavailable.",
       );
     const parsed = await handle(async () =>
-      json({ prompt: adaptationPrompt(params.arguments ?? {}) }),
+      json({
+        prompt: renderAutomationPrompt(params.name, params.arguments ?? {}),
+      }),
     );
     if (!parsed.ok)
       throw new McpError(
         ErrorCode.InvalidParams,
-        "Provide a public HTTPS sourceUrl, optional locale and content brief.",
+        "Provide the arguments listed for this workflow prompt.",
       );
     const result: { prompt: string } = await parsed.json();
     return {
-      description: automationPrompts[0].description,
+      description: definition.description,
       messages: [
         { role: "user", content: { type: "text", text: result.prompt } },
       ],

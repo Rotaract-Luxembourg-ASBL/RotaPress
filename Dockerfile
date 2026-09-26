@@ -14,8 +14,14 @@ RUN DATABASE_URL=postgresql://rotapress_app:unused@127.0.0.1/rotapress \
 FROM node:24.21.0-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 ROTAPRESS_DEPLOYMENT=hosted
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.browsers
 RUN groupadd --gid 10001 rotapress && useradd --uid 10001 --gid 10001 --no-create-home rotapress
 COPY --from=build /app/node_modules ./node_modules
+# Native preview rendering stays inside this image. Chromium must retain its
+# Linux sandbox; unsupported hosts return an actionable unavailable response.
+RUN node node_modules/playwright-core/cli.js install --with-deps chromium \
+    && chmod -R a+rX /app/.browsers \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/src ./src

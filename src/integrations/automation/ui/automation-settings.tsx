@@ -9,6 +9,7 @@ import {
   scopeDefinitions,
   type AutomationScope,
 } from "../scopes";
+import { OAuthSettings } from "../oauth/oauth-settings";
 
 const endpoint = "/api/admin/integrations/automation";
 type Connection = {
@@ -142,6 +143,7 @@ export function AutomationSettings() {
             <Notice kind="error">{problem || error}</Notice>
           )}
           {receipt && <Notice kind="success">{receipt}</Notice>}
+          <OAuthSettings />
           <section className="panel" aria-labelledby="automation-create-title">
             <h2 id="automation-create-title">Create a connection</h2>
             <p className="muted">
@@ -267,8 +269,8 @@ export function AutomationSettings() {
               <li>
                 Connect your MCP client to <code>/api/mcp</code> on this website
                 with the key in its Authorization header. Clients must support
-                custom bearer credentials; OAuth-only connectors are not
-                supported.
+                custom bearer credentials. For OAuth clients, create a
+                connection above and approve its requested actions.
               </li>
               <li>
                 For a local client using standard input/output, run{" "}

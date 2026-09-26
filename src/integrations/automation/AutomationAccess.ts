@@ -21,6 +21,7 @@ import {
   scopeDefinitions,
   type AutomationScope,
 } from "./scopes";
+import type { OAuthAccess } from "./oauth/OAuthAccess";
 
 export type AutomationPrincipal = {
   actor: TrustedActor;
@@ -36,6 +37,7 @@ export class AutomationAccess {
     private readonly db: Database,
     private readonly authorization: AuthorizationService,
     private readonly limiter: RequestLimiter,
+    private readonly oauth?: OAuthAccess,
   ) {}
 
   async create(actor: TrustedActor, input: unknown) {
@@ -158,12 +160,24 @@ export class AutomationAccess {
     return { revoked: true };
   }
 
-  async authenticate(request: Request): Promise<AutomationPrincipal> {
-    await this.limiter.consume(
-      "automation-auth",
-      authenticationAddress(request.headers, config.ROTAPRESS_PROXY),
-      240,
+  async authenticate(
+    request: Request,
+    options: { consumeQuota?: boolean } = {},
+  ): Promise<AutomationPrincipal> {
+    if (options.consumeQuota !== false)
+      await this.limiter.consume(
+        "automation-auth",
+        authenticationAddress(request.headers, config.ROTAPRESS_PROXY),
+        240,
+      );
+    const oauthBearer = /^Bearer (rpo_[A-Za-z0-9_-]{20,200})$/.exec(
+      request.headers.get("authorization") ?? "",
     );
+    if (oauthBearer && this.oauth)
+      return this.oauth.authenticate(
+        oauthBearer[1],
+        options.consumeQuota !== false,
+      );
     const bearer = /^Bearer (rp_[A-Za-z0-9_-]{20,200})$/.exec(
       request.headers.get("authorization") ?? "",
     );
@@ -192,7 +206,8 @@ export class AutomationAccess {
     );
     if (access.organizationId !== metadata.data.organizationId)
       this.unauthorized();
-    await this.limiter.consume("automation-request", result.key.id, 120);
+    if (options.consumeQuota !== false)
+      await this.limiter.consume("automation-request", result.key.id, 120);
     return {
       actor: current.actor,
       keyId: result.key.id,

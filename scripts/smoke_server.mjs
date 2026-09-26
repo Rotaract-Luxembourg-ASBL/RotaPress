@@ -39,6 +39,7 @@ const child = spawn(
       ...local,
       DATABASE_URL: test.DATABASE_URL,
       APP_URL: smokeOrigin,
+      PORT: smokePort,
       INTEGRATION_ENCRYPTION_KEY: process.env.ROTAPRESS_TEST_ENCRYPTION_KEY,
       LUMA_API_REQUESTS_ENABLED: "false",
       FORM_WEBHOOK_REQUESTS_ENABLED: "false",

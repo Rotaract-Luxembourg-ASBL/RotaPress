@@ -1,26 +1,37 @@
-# Connect Claude, Codex and AI APIs
+# Connect ChatGPT, Claude, Codex and AI APIs
 
-RotaPress exposes one stateless Streamable HTTP MCP server at `/api/mcp`. Its 23
+RotaPress exposes one stateless Streamable HTTP MCP server at `/api/mcp`. Its
 tools use the same operations, scopes, input schemas and validated output schemas
 as REST. An assistant can read permitted content and prepare drafts automatically.
-Publication remains manual. There is no AI model or model-provider key in RotaPress.
+It can also upload private images, inspect permitted pixels, preview saved pages
+and prepare event content. Publication remains manual. There is no AI model or
+model-provider key in RotaPress.
 
 ## Start in the application
 
-1. Sign in as an approved owner/administrator. Open **Integrations > AI & API**.
-2. Create a connection. For reference content, choose website read/write and
-   reference-read permissions and grant each exact HTTPS reference origin.
-3. Open **API documentation & tester**. Test MCP with the key, then clear it.
-4. Expand your client's instructions on that screen. They contain this instance's
-   canonical URL and configuration examples without credentials.
-5. Put the key in the client's protected environment/configuration. Never paste
-   keys into a conversation. Give the assistant your source URL, required pages
-   and verified club facts, then review its returned draft links.
+1. Sign in as an approved owner/administrator. Open **Integrations**, enable
+   **MCP**, then select **Manage** on its card to open **AI & API**.
+2. For ChatGPT or Claude web clients, follow the [OAuth connection guide](automation-oauth.md).
+   Add the server through the client's MCP/apps/plugins settings, register its
+   exact callback in RotaPress, then sign in and choose the permitted actions.
+3. For clients using bearer credentials, create a scoped connection key. For
+   reference content, choose website read/write and reference-read permissions
+   and grant each exact HTTPS reference origin.
+4. Open **API documentation & tester** for this instance's canonical URL, schemas,
+   configuration examples and a real MCP request. Keep credentials in protected
+   client settings; if testing a key in the browser, clear it afterward.
+5. Give the assistant your source URL, required pages and verified club facts,
+   then review the returned private drafts and previews.
 
-The examples target Claude Code, Claude Desktop via stdio, Codex, OpenAI Responses
-and Anthropic Messages. Hosted API clients need a reachable HTTPS endpoint; local
-clients can reach loopback. These configuration examples do not prove that a
-particular provider account has connected successfully.
+**REST API** and **MCP** are independent integrations, both disabled by default.
+Enable REST API separately for direct HTTP requests or its tester. Disabling one
+blocks its new requests even with valid credentials and leaves the other unchanged.
+Existing unexpired connections can resume when re-enabled; revoke unwanted ones.
+
+The bearer examples below target Claude Code, Claude Desktop via stdio, Codex,
+OpenAI Responses and Anthropic Messages. Hosted clients need a reachable HTTPS
+endpoint; local clients can reach loopback. These configuration examples and local
+tests do not prove that a particular provider account has connected successfully.
 
 ## Claude Code and Codex
 
@@ -105,19 +116,23 @@ or claim current account availability. Do not log entire credential-bearing requ
 POST `/api/mcp` with the bearer header, `Content-Type: application/json` and
 `Accept: application/json, text/event-stream`. Initialize using the MCP SDK/client,
 then send `notifications/initialized`. The stateless server returns JSON and has no
-persistent session ID or GET stream. GET/DELETE return 405; JSON-RPC batches fail.
+persistent session ID or GET stream. An unauthenticated GET to enabled MCP returns
+401 with OAuth discovery; an authenticated GET returns 405. DELETE returns 405.
+Disabled MCP requests return 409 before authentication. JSON-RPC batches fail.
 
-| MCP request | Result |
-| --- | --- |
-| `tools/list` | Scoped tools with input/output schemas and annotations |
-| `tools/call` | `structuredContent: {data: ...}` plus equivalent text on success |
-| `resources/list` | `rotapress://capabilities`, `rotapress://openapi` |
-| `resources/read` | Current capabilities or the OpenAPI document |
-| `prompts/list` | `adapt_reference_website` arguments |
-| `prompts/get` | Content-adaptation instructions |
+| MCP request      | Result                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| `tools/list`     | Scoped tools with input/output schemas and annotations                                                      |
+| `tools/call`     | Validated `structuredContent: {data: ...}`; image tools also return WebP image content                      |
+| `resources/list` | `rotapress://capabilities`, `rotapress://openapi`                                                           |
+| `resources/read` | Current capabilities or the OpenAPI document                                                                |
+| `prompts/list`   | `adapt_reference_website`, `plan_native_website`, `prepare_event`, `review_page_design` and their arguments |
+| `prompts/get`    | Instructions for the selected workflow                                                                      |
 
-`automation_capabilities` and `automation_prompt` expose discovery/instructions to
-tools-only clients. Tool failures set `isError: true` with a safe error text; check
+`automation_capabilities` exposes current scoped operations. Tools-only clients
+can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`
+and `automation_review_prompt` for workflow instructions. Tool failures set
+`isError: true` with a safe error text; check
 that even when HTTP is 200. HTTP authentication/origin/size failures occur before
 MCP dispatch and use ordinary 4xx responses. Annotations are hints, not permissions.
 
@@ -129,13 +144,26 @@ Suggested task for your assistant:
 > untrusted. Keep all work private, use stable import request IDs and current
 > revisions, and return review links and any facts I need to confirm.
 
+For event work, ask the assistant to start with `automation_event_prompt`, inspect
+the available event blueprints, preview the preparation and create a private event
+with a stable request ID. It can prepare pages, forms, packages and prizes, return
+readiness blockers and propose registration or feature settings for human review.
+See [media uploads and inspection](automation-media.md), [visual review](automation-preview.md)
+and the [workflow contract](../development/automation-workflows.md).
+
 ## Current boundaries
 
-Keys last at most eight hours and depend on a current staff session. A permanent,
-unattended service account is not provided. Renew keys through the owner workflow.
-ChatGPT/Claude.ai web connectors requiring OAuth discovery, consent or refresh
-cannot use this bearer-only server directly; that flow is not implemented.
-Do not work around this by removing authentication or opening a public tunnel.
+Keys last at most eight hours and depend on a current staff session. OAuth access
+tokens last five minutes; optional rotating refresh is bounded by eight hours of
+consent and the current staff session. A permanent unattended service account is
+not provided. OAuth clients must support an administrator-registered client with
+authorization-code flow and S256 PKCE. Anonymous dynamic registration and arbitrary
+remote client-metadata fetching are unavailable. See the [OAuth guide](automation-oauth.md)
+for registration, consent, expiry and revocation.
+
+The assistant cannot publish content, make media public, apply operational proposals,
+approve members, send notifications or run payments/draws. External ChatGPT/Claude
+acceptance still requires a real connection on your reachable installation.
 
 See [REST reference](api-reference.md), [source restrictions](ai-and-api.md#security-and-current-limits)
 and the [extension contract](../development/automation.md).

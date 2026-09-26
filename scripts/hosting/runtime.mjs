@@ -27,6 +27,8 @@ export function hostedEnvironment(source, credentials) {
     NEXT_TELEMETRY_DISABLED: "1",
     PATH: "/usr/local/bin:/usr/bin:/bin",
     HOME: "/tmp",
+    PORT: source.PORT ?? "3000",
+    PLAYWRIGHT_BROWSERS_PATH: "/app/.browsers",
     ...credentials,
   };
   for (const key of permitted)

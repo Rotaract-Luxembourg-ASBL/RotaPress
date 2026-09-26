@@ -26,6 +26,9 @@ See the [roadmap and limitations](docs/development/roadmap.md).
   imports, subscriptions and reminders.
 - **Connect services:** optional Google sign-in, Luma, SMTP and Resend integrations.
   Configure the initial email sender before the first owner signs in.
+- **Work with AI:** independently enable REST API or MCP in Integrations. Scoped
+  connections can prepare private pages, events and images, inspect native page
+  previews, and leave event settings for staff approval. Publication stays manual.
 
 Google, Luma, remote calendar feeds and external email still need real-provider
 verification. Native paid checkout, check-in and production draw activation are

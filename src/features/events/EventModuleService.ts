@@ -192,9 +192,9 @@ export class EventModuleService {
         : eventModules[key].dependencies;
   }
 
-  async change(actor: TrustedActor, input: unknown) {
+  async change(actor: TrustedActor, input: unknown, transaction?: Transaction) {
     const parsed = moduleChangeSchema.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         parsed.id,
@@ -300,7 +300,9 @@ export class EventModuleService {
         action: `event.module.${parsed.key}.${state}`,
         targetId: event.id,
       });
-    });
-    return this.events.detail(actor, parsed.id);
+    };
+    if (transaction) await apply(transaction);
+    else await this.db.transaction(apply);
+    return this.events.detail(actor, parsed.id, transaction);
   }
 }

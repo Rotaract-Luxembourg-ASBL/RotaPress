@@ -33,23 +33,36 @@ See [hosting](../guides/hosting.md).
 ## Integration and hosting limits
 
 Content automation supplies versioned REST, MCP tools/resources/prompts and scoped,
-expiring staff connections. Reference content becomes private native drafts; every
-feature change requires an API/MCP contract review. See [AI & API](../guides/ai-and-api.md).
+expiring staff connections. REST API and MCP are separately enabled in Integrations
+and both default to disabled. Native page schemas and templates let assistants
+prepare website and event drafts; bounded private image uploads and saved-revision
+screenshots support visual review. Event settings are suggestions until a staff
+member applies them; publication stays manual. Every feature change requires an
+API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
+[workflow phases and acceptance boundaries](automation-workflows.md).
 
-| Area | Current boundary |
-| --- | --- |
-| Google sign-in | Protected configuration and local policy checks; actual provider sign-in still needs credentials and a real run |
-| AI & API | Private content drafts, manual publication, bearer-configured MCP/stdio clients; OAuth-only connectors and live-client acceptance are not implemented/established |
-| Luma | Links, protected connections, scoped import/notification/purchase workflows with synthetic fixtures; live verification pending |
-| Calendar feeds | Local file imports and injected feed checks; real remote feeds require separate verification |
-| Email | Server SMTP/Resend bootstrap precedes owner sign-in; development capture is opt-in and prohibited in production mode. Live delivery and total email-lockout recovery remain unverified |
-| Domains | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting |
-| File storage | Persistent disk images with bounded backup/restore; object storage is not implemented |
-| Production | Portable Docker recipe with automatic bootstrap/migrations, HTTPS proxy, jobs and recovery; chosen public host and live-provider acceptance remain pending |
+| Area           | Current boundary                                                                                                                                                                       |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google sign-in | Protected configuration and local policy checks; actual provider sign-in still needs credentials and a real run                                                                        |
+| AI & API       | Native content/media/event drafts, isolated visual previews, staff-reviewed settings, bearer/stdio and predefined OAuth clients; actual external-client acceptance remains separate    |
+| Visual preview | Pinned Chromium and a supported sandboxed runtime are required; saved pixels do not verify interactive controls, delivery or payments                                                  |
+| Luma           | Links, protected connections, scoped import/notification/purchase workflows with synthetic fixtures; live verification pending                                                         |
+| Calendar feeds | Local file imports and injected feed checks; real remote feeds require separate verification                                                                                           |
+| Email          | Server SMTP/Resend bootstrap precedes owner sign-in; development capture is opt-in and prohibited in production mode. Live delivery and total email-lockout recovery remain unverified |
+| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                                                           |
+| File storage   | Persistent disk images with bounded backup/restore; object storage is not implemented                                                                                                  |
+| Production     | Portable Docker recipe with automatic bootstrap/migrations, HTTPS proxy, jobs and recovery; chosen public host and live-provider acceptance remain pending                             |
 
 External provider access defaults to disabled where operator flags apply. Saved
 configuration does not establish a working connection or authorize real mail.
 The exact setup and restrictions are in the relevant [guides](../README.md).
+
+OAuth implements Better Auth authorization-code consent with S256 PKCE and exact
+client registration. A real hosted client connection still needs a reachable HTTPS
+installation, the client's supported configuration and a completed consent/revoke
+check. Local fixtures or browser journeys do not prove ChatGPT/Claude acceptance.
+See [OAuth setup](../guides/automation-oauth.md) and
+[visual-preview requirements](../guides/automation-preview.md).
 
 ## Deferred product work
 

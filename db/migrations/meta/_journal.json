@@ -302,6 +302,20 @@
       "when": 1790366450503,
       "tag": "0042_lazy_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790375309769,
+      "tag": "0043_cultured_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790384048310,
+      "tag": "0044_nasty_warbird",
+      "breakpoints": true
     }
   ]
 }

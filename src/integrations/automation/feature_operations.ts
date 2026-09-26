@@ -59,7 +59,7 @@ export const featureOperations = [
       path: "/media",
       scope: "media:read",
       description:
-        "List media metadata for native blocks. Private bytes and visibility changes require the administration interface.",
+        "List media metadata for native blocks. Use media_inspect with its separate scope to read image pixels. Visibility and deletion remain manual.",
       input: pagination,
     },
     async ({ services: s, principal: p }, i) =>

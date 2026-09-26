@@ -1,6 +1,11 @@
 import { DomainError } from "@/core/authorization/AuthorizationService";
 import { websiteOperations } from "./website_operations";
 import { featureOperations } from "./feature_operations";
+import { mediaOperations } from "./media_operations";
+import { previewOperations } from "./preview_operations";
+import { eventOperations } from "./event_operations";
+import { workflowOperations } from "./workflow_operations";
+import { designOperations } from "./design_operations";
 import { scopeDefinitions } from "./scopes";
 import { z } from "zod";
 import { capabilitiesOutput } from "./response_schemas";
@@ -50,8 +55,13 @@ export const operations: readonly Operation[] = [
   ),
   ...websiteOperations,
   ...featureOperations,
+  ...mediaOperations,
+  ...previewOperations,
+  ...eventOperations,
+  ...workflowOperations,
+  ...designOperations,
 ];
-export const contractVersion = "1.1.0";
+export const contractVersion = "1.2.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))
