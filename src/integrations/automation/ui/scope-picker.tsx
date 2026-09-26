@@ -26,6 +26,11 @@ const groups = [
   },
   { name: "Directory", prefix: "directory:", hint: "Community profiles" },
   {
+    name: "Projects",
+    prefix: "projects:",
+    hint: "Volunteering stories, initiatives and verified outcomes",
+  },
+  {
     name: "Calendar",
     prefix: "calendar:",
     hint: "Calendars, recurring activities and page design",
@@ -55,6 +60,7 @@ export function ScopePicker({
       capabilities.includes(scopeDefinitions[scope].capability) &&
       (!scope.startsWith("forms:") || features.forms) &&
       (!scope.startsWith("events:") || features.events) &&
+      (!scope.startsWith("projects:") || features.projects) &&
       (!scope.startsWith("calendar:") || features.calendar),
   );
   const selected = available.filter((scope) => value.includes(scope));

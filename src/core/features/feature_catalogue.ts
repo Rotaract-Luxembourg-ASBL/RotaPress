@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const featureKeySchema = z.enum(["forms", "events", "calendar"]);
+export const featureKeySchema = z.enum([
+  "forms",
+  "events",
+  "calendar",
+  "projects",
+]);
 export type FeatureKey = z.infer<typeof featureKeySchema>;
 export type FeatureFlags = Record<FeatureKey, boolean>;
 export type FeatureState = {
@@ -10,6 +15,16 @@ export type FeatureState = {
 };
 
 export const featureCatalogue = {
+  projects: {
+    name: "Projects",
+    description:
+      "Showcase volunteering, community initiatives and the difference your club makes.",
+    href: "/admin/projects",
+    disableImpact:
+      "Project editing, public project pages and project collections will pause. Saved drafts and publications remain stored.",
+    enableImpact:
+      "Previously published projects become public again. Drafts and archived projects remain private.",
+  },
   calendar: {
     name: "Calendar",
     description:

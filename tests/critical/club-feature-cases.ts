@@ -72,6 +72,7 @@ export function clubFeatureChecks(get: () => Context) {
       { key: "forms", enabled: true, version: 0 },
       { key: "events", enabled: true, version: 0 },
       { key: "calendar", enabled: true, version: 0 },
+      { key: "projects", enabled: true, version: 0 },
     ]);
     await expect(s.features.workspace(s.manager)).rejects.toMatchObject({
       code: "ACCESS_DENIED",

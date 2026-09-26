@@ -1,0 +1,114 @@
+.project-workspace-help {
+  margin-block: 0 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.project-workspace-help .text-link {
+  font-size: inherit;
+  gap: 0.25rem;
+}
+.project-workspace-help svg {
+  width: 1rem;
+  height: 1rem;
+}
+.project-editor {
+  display: grid;
+  gap: 1rem;
+}
+.project-back {
+  width: fit-content;
+  gap: 0.375rem;
+}
+.project-editor .page-heading {
+  margin: 0;
+}
+.project-editor .page-heading > div:first-child {
+  min-width: 0;
+}
+.project-editor .page-heading h1 {
+  overflow-wrap: anywhere;
+}
+.project-save-state,
+.project-publication-note,
+.project-preview-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem 1rem;
+}
+.project-save-state,
+.project-publication-note {
+  font-size: 0.875rem;
+}
+.project-publication-note {
+  padding: 0.875rem 1rem;
+  background: #edf1eb;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  justify-content: space-between;
+}
+.project-publication-note p {
+  flex: 1 1 20rem;
+}
+.project-publication-note .field-help {
+  flex-basis: 100%;
+}
+.project-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
+}
+.project-fields > *,
+.project-fields :is(input, textarea, select) {
+  min-width: 0;
+  width: 100%;
+}
+.project-fields .panel {
+  margin: 0;
+}
+.project-fields .media-picker-preview {
+  max-width: 100%;
+}
+.project-date-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.project-preview-toolbar {
+  justify-content: space-between;
+}
+.project-preview-toolbar p {
+  max-width: 38rem;
+}
+.project-draft-preview {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  overflow: clip;
+  margin-inline: auto;
+}
+.project-draft-preview[data-width="phone"] {
+  max-width: 390px;
+}
+.admin-layout .project-draft-preview :is(h1, h2, h3) {
+  font-family: var(--cms-font);
+}
+@media (max-width: 70rem) {
+  .project-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 35rem) {
+  .project-editor .page-heading > .cms-actions {
+    width: 100%;
+  }
+  .project-editor .page-heading > .cms-actions > .button {
+    flex: 1 1 auto;
+  }
+  .project-date-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

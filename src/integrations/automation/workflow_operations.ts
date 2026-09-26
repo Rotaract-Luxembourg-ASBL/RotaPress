@@ -6,6 +6,7 @@ import {
   visualReviewInput,
   nativeWebsitePrompt,
   prepareEventPrompt,
+  prepareProjectPrompt,
   visualReviewPrompt,
 } from "./workflow_prompts";
 
@@ -63,5 +64,24 @@ export const workflowOperations = [
       example: { pageId: exampleId, locale: "en" },
     },
     async (_context, input) => ({ prompt: visualReviewPrompt(input) }),
+  ),
+  operation(
+    {
+      name: "automation_project_prompt",
+      path: "/prompts/prepare_project",
+      method: "POST",
+      scope: null,
+      readOnly: true,
+      description:
+        "Get instructions for preparing a private volunteering or initiative story with verified facts and outcomes. Returns instructions only.",
+      input: workflowInput,
+      output,
+      example: {
+        brief:
+          "Prepare a project story for our community garden using only the facts I provide.",
+        locale: "en",
+      },
+    },
+    async (_context, input) => ({ prompt: prepareProjectPrompt(input) }),
   ),
 ];

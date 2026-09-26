@@ -70,6 +70,16 @@
     ],
     "manual": "Publishing saved forms needs forms:publish, an explicit request and current form/event publisher authority. Responses, export, deletion, recipients and webhooks remain outside automation."
   },
+  "features/projects": {
+    "operations": [
+      "projects_list",
+      "projects_get",
+      "projects_create",
+      "projects_save",
+      "projects_publish"
+    ],
+    "manual": "Project stories use separate read/write grants, current versions and saved public snapshots. Publishing requires projects:publish, confirmed=true and an explicit request; cover media must already be public. Archive, restore, unpublish, feature availability and media visibility remain staff workflows. Projects do not manage volunteer identities, attendance or registration."
+  },
   "features/guests": {
     "operations": [],
     "manual": "Guest identities, access grants and purchases are private participant workflows, not website content."
@@ -104,6 +114,7 @@
       "automation_prompt",
       "automation_website_prompt",
       "automation_event_prompt",
+      "automation_project_prompt",
       "automation_review_prompt"
     ],
     "manual": "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and approve actions; existing grants never widen automatically. Optional renewal and remembered consent avoid routine reapproval while current session and permission checks remain. New grants require recent sign-in. Publication needs an explicit grant, current authority, saved version and user request. Transport switches and applying operational proposals are never tools."

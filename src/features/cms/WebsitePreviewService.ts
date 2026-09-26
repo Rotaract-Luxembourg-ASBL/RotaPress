@@ -145,9 +145,14 @@ export class WebsitePreviewService {
         : [
             {
               label: item.label,
-              href: draft.eventsPageId
-                ? href(draft.eventsPageId)
-                : `/events?locale=${parsed.locale}`,
+              href:
+                item.systemPage === "projects"
+                  ? "/projects"
+                  : item.systemPage === "calendar"
+                    ? "/calendar"
+                    : draft.eventsPageId
+                      ? href(draft.eventsPageId)
+                      : `/events?locale=${parsed.locale}`,
             },
           ],
     );

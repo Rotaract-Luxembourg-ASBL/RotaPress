@@ -41,6 +41,12 @@ export const workflowPromptDefinitions = [
     arguments: briefArguments,
   },
   {
+    name: "prepare_project",
+    description:
+      "Prepare a private project story for a volunteering activity or ongoing initiative using verified facts and outcomes.",
+    arguments: briefArguments,
+  },
+  {
     name: "review_page_design",
     description:
       "Inspect actual saved desktop and phone screenshots, improve native blocks, and return the precise revision for human review.",
@@ -73,4 +79,9 @@ export function prepareEventPrompt(input: unknown) {
 export function visualReviewPrompt(input: unknown) {
   const i = visualReviewInput.parse(input);
   return `Review saved RotaPress page ${i.pageId} in ${i.locale}.\nOwner brief: ${i.brief}\n\n1. Call automation_capabilities, website_context, website_design and website_get. ${safety}\n2. ${design}\n3. ${review}\nDo not claim pixel-perfect reproduction of another website. Judge the actual saved content within the installed native design system.`;
+}
+
+export function prepareProjectPrompt(input: unknown) {
+  const i = workflowInput.parse(input);
+  return `Prepare a project story in RotaPress.\nOwner brief: ${i.brief}\nLanguage: ${i.locale}\n\n1. Call automation_capabilities and projects_list. Check Projects is enabled and the connection grants the required project operations. ${safety}\n2. Projects showcase one-off volunteering activities and ongoing initiatives. Use Events for attendance/registration and Calendar for dates or repeats. Do not create those as a side effect. Read an existing project with projects_get before editing; use its latest version.\n3. Write a concise title and summary, followed by a readable story describing the need, what the club does and how people can help. Select planned, ongoing or completed based only on verified facts. Dates, location, cover image, outcomes and one useful link are optional. Do not invent volunteers, impact figures, completion, image rights or success metrics. Leave unavailable facts blank and list questions for review.\n4. ${media}\n5. Use projects_create once for a new private story, or projects_save with its current expectedVersion and complete content, preserving unrelated fields. A lost create response requires projects_list before retrying. A stale version requires rereading. Saves never replace the public snapshot.\n6. Return the saved version and reviewUrl. If the user explicitly requested publication and projects:publish is granted, read the exact saved project and call projects_publish with expectedVersion and confirmed=true. Existing cover media must already be public; do not change visibility. Report the publication receipt and unresolved blockers. Otherwise leave the story private. Archive, restore and unpublish remain staff workflows.`;
 }

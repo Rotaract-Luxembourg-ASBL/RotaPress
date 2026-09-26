@@ -242,6 +242,16 @@ export class CmsScopePolicy {
   async validatePublication(content: Content, data: CmsData, tx: Transaction) {
     if (
       flattenBlocks(visibleEventContent(data).content).some(
+        (b) => b.type === "ProjectCollection",
+      )
+    )
+      await this.authorization.features.require(
+        content.organizationId,
+        "projects",
+        tx,
+      );
+    if (
+      flattenBlocks(visibleEventContent(data).content).some(
         (b) => b.type === "Calendar",
       )
     )

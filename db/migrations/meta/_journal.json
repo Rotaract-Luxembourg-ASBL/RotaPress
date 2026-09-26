@@ -316,6 +316,13 @@
       "when": 1790384048310,
       "tag": "0044_nasty_warbird",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1790443987457,
+      "tag": "0045_outstanding_logan",
+      "breakpoints": true
     }
   ]
 }

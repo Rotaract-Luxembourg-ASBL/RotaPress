@@ -164,6 +164,7 @@ describe("C14 automation source and contract boundaries", () => {
         "events:write",
         "forms:write",
         "directory:write",
+        "projects:write",
       ]).some((entry) => entry.name.endsWith("_publish")),
     ).toBe(false);
   });

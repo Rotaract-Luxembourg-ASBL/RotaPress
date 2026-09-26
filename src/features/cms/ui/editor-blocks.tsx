@@ -34,6 +34,7 @@ const blockDescriptions: Record<string, string> = {
   ParticipationOptions:
     "Package information and links to your registration pages",
   EventCollection: "Automatically display published public events from Events",
+  ProjectCollection: "Show volunteer stories and community initiatives from Projects",
   SiteRow: "Three columns with adjustable widths and stacking on phones",
   SiteBrand: "Club identity or a logo from your media library",
   SiteMenu: "Reference the shared primary menu",
@@ -141,6 +142,7 @@ export function BlockLibrary({
             (name !== "Form" || features.forms) &&
             !eventOnlyBlockTypes.some((type) => type === name) &&
             (name !== "EventCollection" || features.events) &&
+            (name !== "ProjectCollection" || features.projects) &&
             (name !== "Calendar" || features.calendar) &&
             (zone === rootZone || name !== "Columns") &&
             (isSitePart(kind)

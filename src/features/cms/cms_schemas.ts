@@ -35,6 +35,12 @@ export function isSitePart(kind: CmsKind): kind is "header" | "footer" {
   return kind === "header" || kind === "footer";
 }
 const leafBlockSchemas = [
+  block("ProjectCollection", {
+    title: shortText,
+    introduction: text,
+    status: z.enum(["all", "planned", "ongoing", "completed"]),
+    limit: z.number().int().min(1).max(24),
+  }),
   block("ClubDetails", {
     title: shortText,
     fields: z
@@ -342,7 +348,7 @@ export const siteSettingsSchema = z
             label: z.string().trim().min(1).max(60),
           }),
           z.strictObject({
-            systemPage: z.enum(["events", "calendar"]),
+            systemPage: z.enum(["events", "calendar", "projects"]),
             label: z.string().trim().min(1).max(60),
           }),
         ]),

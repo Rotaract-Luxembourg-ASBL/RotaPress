@@ -5,6 +5,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { adminCollectionsJourney } from "./admin-collections-journey";
 import { mediaPickerJourney } from "./media-picker-journey";
 import { formStudioJourney } from "./form-studio-journey";
+import { projectsJourney } from "./projects-journey";
 import { Pool } from "pg";
 import sharp from "sharp";
 import type { CmsDetail, CmsSummary } from "../../src/features/cms/cms_schemas";
@@ -677,5 +678,6 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await formStudioJourney(page, publicPage);
   await websitePublicationJourney(page, publicPage, origin);
   await clubContentJourney(page, publicPage);
+  await projectsJourney(page, publicPage);
   await anonymousContext.close();
 });

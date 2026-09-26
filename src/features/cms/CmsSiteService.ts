@@ -472,7 +472,9 @@ export class CmsSiteService {
                 href:
                   item.systemPage === "calendar"
                     ? "/calendar"
-                    : `/events?locale=${locale}`,
+                    : item.systemPage === "projects"
+                      ? "/projects"
+                      : `/events?locale=${locale}`,
               },
             ]
           : [];

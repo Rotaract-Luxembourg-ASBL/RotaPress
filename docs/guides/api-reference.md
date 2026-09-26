@@ -63,6 +63,7 @@ Paths in the tables below are relative to `/api/v1`.
 | `POST /prompts/adapt_reference_website` | Adaptation instructions for `sourceUrl`, optional `locale` and `brief` |
 | `POST /prompts/plan_native_website`     | Native page design workflow for a `brief` and optional `locale`        |
 | `POST /prompts/prepare_event`           | Event preparation workflow for a `brief` and optional `locale`         |
+| `POST /prompts/prepare_project`         | Project story workflow for a `brief` and optional `locale`              |
 | `POST /prompts/review_page_design`      | Saved-page visual review workflow for `pageId` and optional `locale`   |
 
 Capabilities and workflow prompts describe the available preparation workflows.
@@ -112,6 +113,8 @@ registry that handles requests. Use them for every field, enum and required valu
 | `/events/{id}/proposals`                                  | GET        | `events:read`                                  |
 | `/directory`                                              | GET, POST  | `directory:read`, `directory:write`            |
 | `/directory/{id}`                                         | PATCH      | `directory:write`                              |
+| `/projects`                                               | GET, POST  | `projects:read`, `projects:write`              |
+| `/projects/{id}`                                          | GET, PATCH | `projects:read`, `projects:write`              |
 | `/calendar`                                               | GET        | `calendar:read`                                |
 | `/calendar/calendars`                                     | POST       | `calendar:write`                               |
 | `/calendar/calendars/{id}`                                | PATCH      | `calendar:write`                               |
@@ -161,6 +164,7 @@ gain publication grants; issue a new token with the required actions selected.
 | `POST /events/{id}/publish`                                     | `events:publish`    | Event `expectedVersion`                                                              |
 | `POST /events/{eventId}/prizes/{id}/publish`                    | `events:publish`    | Editorial prize `expectedVersion` and owning event                                   |
 | `POST /directory/{id}/publish`                                  | `directory:publish` | Profile `expectedVersion`                                                            |
+| `POST /projects/{id}/publish`                                   | `projects:publish`  | Project story `expectedVersion`                                                      |
 
 Read the target immediately before publishing. A stale revision/version conflicts;
 do not silently substitute a newer unreviewed draft. The server also enforces
@@ -182,6 +186,10 @@ saved audience; an unpublished calendar still prevents public activity display.
 Normal subscriber notifications can follow publication. Published forms can accept
 responses under their existing rules. Unpublish, delete and media-visibility
 operations are not exposed.
+
+Project publication activates only the saved project story. Its cover image must
+already be public; the call does not publish another page, add a calendar schedule
+or change registration. Project draft edits retain their public snapshot.
 
 When an AI client calls these endpoints, it must honor an explicit user request
 and should require client-side approval. The server validates delegated authority
@@ -271,11 +279,20 @@ settings. Event results exclude staff identities and participant records. Direct
 results distinguish draft and published profiles. Output validation fails closed
 if a service returns unexpected fields.
 
+Project results include `id`, stable `slug`, `version`, complete `draft`,
+`published` content (or null), `changed`, `archived` and a staff `reviewUrl`.
+`projects_create` accepts the content fields directly; `projects_save` accepts
+`expectedVersion` and `content`. Title is required to save; a summary is also
+required to publish. Dates, location, cover image, outcomes and the link are optional.
+These are project stories, with no volunteer, attendance or registration records.
+The `prepare_project` prompt
+and `automation_project_prompt` tool describe this workflow.
+
 | Update                      | Concurrency field                              |
 | --------------------------- | ---------------------------------------------- |
 | Page / visual preview       | `expectedRevisionId` from `draft.id`           |
 | Form                        | `expectedRevision` from `draftRevision`        |
-| Event/profile/package/prize | `expectedVersion` from `version`               |
+| Event/profile/project/package/prize | `expectedVersion` from `version`               |
 | Private media metadata      | `expectedRevision` from `metadataRevision`     |
 | Event settings proposal     | Target event or registration `expectedVersion` |
 

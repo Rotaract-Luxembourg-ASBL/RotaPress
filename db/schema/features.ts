@@ -17,14 +17,19 @@ export const clubFeature = club.table(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id),
-    key: text("key", { enum: ["forms", "events", "calendar"] }).notNull(),
+    key: text("key", {
+      enum: ["forms", "events", "calendar", "projects"],
+    }).notNull(),
     enabled: boolean("enabled").notNull(),
     version: integer("version").notNull(),
     lastDisabledAt: timestamp("last_disabled_at", { withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.organizationId, t.key] }),
-    check("feature_key", sql`${t.key} in ('forms', 'events', 'calendar')`),
+    check(
+      "feature_key",
+      sql`${t.key} in ('forms', 'events', 'calendar', 'projects')`,
+    ),
     check("feature_version", sql`${t.version} > 0`),
     check(
       "feature_disabled_at",

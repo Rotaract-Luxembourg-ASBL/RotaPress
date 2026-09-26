@@ -2,6 +2,7 @@ import "server-only";
 import { ClubDetailsBlock } from "./club-details-block";
 import { CustomCodeBlock, CustomCodePreview } from "./custom-code-block";
 import { CalendarPublicBlock } from "./calendar-public-block";
+import { PublicProjectCollection } from "./project-collection-public";
 import { services } from "@/composition/services";
 import { PageIntroBlock, PageCollectionBlock } from "./page-collection";
 import type { PageCard } from "../page_collection";
@@ -125,6 +126,8 @@ export async function RenderContent({
                 );
               case "Calendar":
                 return <CalendarPublicBlock {...block.props} />;
+              case "ProjectCollection":
+                return <PublicProjectCollection {...block.props} />;
               case "EventHero":
                 return eventId ? (
                   <EventHeroBlock

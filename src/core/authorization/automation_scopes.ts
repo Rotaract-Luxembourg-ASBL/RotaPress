@@ -78,6 +78,18 @@ export const scopeDefinitions = {
     label: "Publish directory profiles on request",
     capability: "cms.publish",
   },
+  "projects:read": {
+    label: "Read project stories and drafts",
+    capability: "cms.edit",
+  },
+  "projects:write": {
+    label: "Create and edit project drafts",
+    capability: "cms.edit",
+  },
+  "projects:publish": {
+    label: "Publish project stories on request",
+    capability: "cms.publish",
+  },
   "calendar:read": {
     label: "Read calendars and activity schedules",
     capability: "calendar.manage",

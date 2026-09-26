@@ -11,6 +11,7 @@ import { websiteManagementOperations } from "./website_management_operations";
 import { websitePublicationOperations } from "./website_publication_operations";
 import { calendarPublicationOperations } from "./calendar_publication_operations";
 import { contentPublicationOperations } from "./content_publication_operations";
+import { projectOperations } from "./project_operations";
 import { publicationFor } from "./publication_policy";
 import { scopeDefinitions } from "./scopes";
 import { z } from "zod";
@@ -71,8 +72,9 @@ export const operations: readonly Operation[] = [
   ...websitePublicationOperations,
   ...calendarPublicationOperations,
   ...contentPublicationOperations,
+  ...projectOperations,
 ];
-export const contractVersion = "1.5.1";
+export const contractVersion = "1.6.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))

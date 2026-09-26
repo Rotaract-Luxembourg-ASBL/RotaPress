@@ -3,6 +3,7 @@
 import type { Config } from "@puckeditor/core";
 import { clubCodeConfig } from "./club-code-config";
 import { calendarBlockConfig } from "./calendar-block";
+import { projectCollectionConfig } from "./project-collection-editor";
 import { collectionConfig } from "./page-collection-config";
 import type { Block, CmsSummary } from "../cms_schemas";
 import { useResource } from "@/ui/api";
@@ -82,8 +83,8 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
   },
   categories: {
     connected: {
-      title: "Calendar & events",
-      components: ["Calendar", "EventCollection"],
+      title: "Projects, calendar & events",
+      components: ["ProjectCollection", "Calendar", "EventCollection"],
     },
     participation: {
       title: "Contact & participation",
@@ -159,6 +160,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
   components: {
     ...clubCodeConfig,
     Calendar: calendarBlockConfig,
+    ProjectCollection: projectCollectionConfig,
     ...eventReferenceConfig,
     ...eventContentConfig,
     ...collectionConfig,

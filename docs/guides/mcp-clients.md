@@ -4,8 +4,8 @@ RotaPress exposes one stateless Streamable HTTP MCP server at `/api/mcp`. Its
 tools use the same operations, scopes, input schemas and validated output schemas
 as REST. An assistant can read permitted content and prepare drafts automatically.
 It can also upload private images, inspect permitted pixels, preview saved pages,
-manage calendar drafts and prepare event content. Separate grants allow publication
-of specific saved content when you explicitly request it.
+manage calendar drafts and prepare project stories and event content. Separate
+grants allow publication of specific saved content when you explicitly request it.
 There is no AI model or model-provider key in RotaPress.
 
 ## Start in the application
@@ -42,8 +42,8 @@ endpoint; local clients can reach loopback. Connection methods and model access
 depend on the chosen client's account and settings.
 
 New actions require new grants. Existing connections do not gain `website:manage`,
-`website:settings`, `calendar:write`, `calendar:design` or publication grants after an upgrade. Create a
-new connection with the needed actions and complete fresh OAuth consent, or issue
+`website:settings`, `calendar:write`, `calendar:design`, project actions or publication
+grants after an upgrade. Create a new connection with the needed actions and complete fresh OAuth consent, or issue
 a new MCP access key. When an OAuth request omits `scope`, it uses the actions
 registered for that connection, subject to consent and current staff permissions.
 Explicit requested subsets stay narrow: a client requesting only `website:read`
@@ -151,12 +151,12 @@ Disabled MCP requests return 409 before authentication. JSON-RPC batches fail.
 | `tools/call`     | Validated `structuredContent: {data: ...}`; image tools also return WebP image content                      |
 | `resources/list` | `rotapress://capabilities`, `rotapress://openapi`                                                           |
 | `resources/read` | Current capabilities or the OpenAPI document                                                                |
-| `prompts/list`   | `adapt_reference_website`, `plan_native_website`, `prepare_event`, `review_page_design` and their arguments |
+| `prompts/list`   | `adapt_reference_website`, `plan_native_website`, `prepare_event`, `prepare_project`, `review_page_design` and their arguments |
 | `prompts/get`    | Instructions for the selected workflow                                                                      |
 
 `automation_capabilities` exposes current scoped operations. Tools-only clients
-can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`
-and `automation_review_prompt` for workflow instructions. Tool failures set
+can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`,
+`automation_project_prompt` and `automation_review_prompt` for workflow instructions. Tool failures set
 `isError: true` with a safe error text; check that even when HTTP is 200.
 HTTP authentication/origin/size failures occur before
 MCP dispatch and use ordinary 4xx responses. Annotations are hints, not permissions.
@@ -188,11 +188,16 @@ restore unpublished items; unpublishing and published archive/restore remain in
 Calendar. Activity dates and recurrence do not schedule future content publication.
 See [the action grants and workflows](ai-and-api.md#manage-website-and-calendar-drafts).
 
+For volunteering and initiative stories, start with `automation_project_prompt`,
+then `projects_list` and `projects_get`. Create or edit private project drafts
+using verified facts and current versions. The returned review link opens the
+staff editor. Use Events and Calendar separately for participation and schedules.
+
 For publication, first review the saved result, then explicitly name what should
 be published. Use `website_publish` for an exact content revision and
 `website_settings_publish` for settings or menu only; use `calendar_publish`,
 `calendar_schedule_publish`, `calendar_page_publish`, `forms_publish`,
-`events_publish`, `events_prize_publish` or `directory_publish` for their respective saved targets.
+`events_publish`, `events_prize_publish`, `projects_publish` or `directory_publish` for their respective saved targets.
 Each needs its separate publication grant, current revision/version and
 `confirmed: true`. A call never publishes dependencies automatically or makes
 private media public. Published calendars retain their audience; published

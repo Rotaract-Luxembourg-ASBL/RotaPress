@@ -2,6 +2,8 @@
 
 The main administration panels share a collection layout. Use it for Forms,
 Events, Calendar activities, Community directory, Members and website content.
+Projects follows the same pattern with active, published, draft and archived
+counts. Progress (planned, in progress or completed) is separate from publication.
 Media retains image thumbnails; Response center retains its message/detail view.
 Settings and Website use the same section navigation as the Calendar selector.
 On phones, Website uses a compact **Website section** selector beside language.

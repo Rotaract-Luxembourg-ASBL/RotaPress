@@ -37,6 +37,7 @@ import { websitePublicationChecks } from "./cms-website-publication-cases";
 import { eventDirectoryChecks } from "./event-directory-cases";
 import { automationImportChecks } from "./automation-import-cases";
 import { automationWebsiteChecks } from "./automation-website-cases";
+import { projectCmsChecks } from "./cms-project-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -69,6 +70,7 @@ eventDirectoryChecks(() => ({
   installedClub,
 }));
 sectionChecks(() => ({ cms, media, installedClub }));
+projectCmsChecks(() => ({ db, cms, authorization, installedClub }));
 partnerChecks(() => ({ db, cms, media, authorization, actor, installedClub }));
 publicationChecks(() => ({
   db,

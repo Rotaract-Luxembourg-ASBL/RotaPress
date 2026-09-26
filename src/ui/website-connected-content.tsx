@@ -11,6 +11,12 @@ export function WebsiteConnectedContent({
   const { features, capabilities } = useCurrentUser();
   const items = [
     {
+      title: "Projects",
+      text: "Share volunteer stories and community initiatives. Projects blocks update from published stories.",
+      href: "/admin/projects",
+      visible: features.projects && capabilities.includes("cms.edit"),
+    },
+    {
       title: "Calendar",
       text: "Publish activities and recurring schedules. Calendar blocks update from this workspace.",
       href: "/admin/calendar",

@@ -118,6 +118,12 @@ export function AdminShell({
       visible: me.capabilities.includes("events.access"),
     },
     {
+      href: "/admin/projects",
+      label: "Projects",
+      icon: "outline",
+      visible: me.capabilities.includes("cms.edit"),
+    },
+    {
       href: "/admin/forms",
       label: "Forms",
       icon: "forms",
@@ -188,7 +194,9 @@ export function AdminShell({
     );
   }
 
-  const unavailable = (["forms", "events", "calendar"] as FeatureKey[]).find(
+  const unavailable = (
+    ["forms", "events", "calendar", "projects"] as FeatureKey[]
+  ).find(
     (key) =>
       !me.features[key] &&
       (pathname === `/admin/${key}` || pathname.startsWith(`/admin/${key}/`)),

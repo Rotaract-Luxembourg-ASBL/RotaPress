@@ -21,6 +21,7 @@ export function SignOutButton() {
         throw new Error(
           result.error.message || "Sign out failed. Please try again.",
         );
+      window.dispatchEvent(new Event("rotapress-signed-out"));
       router.replace("/");
       router.refresh();
     } catch (cause: unknown) {

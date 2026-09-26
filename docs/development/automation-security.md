@@ -99,6 +99,11 @@ scope uses registered defaults, explicit subsets stay narrow, malformed scope is
 rejected and existing registrations never gain new grants. B01 exercises the new
 calendar operations through a selected OAuth grant and the actual MCP endpoint.
 
+`automation-project-cases.ts` checks project read/write/publication scope separation,
+exact saved versions and confirmation, unchanged public stories while drafts are
+edited, named-target isolation, revoked membership and disabled Projects. Domain
+project cases cover private cover media and publication readiness with PostgreSQL.
+
 Publication regressions must cover missing grants, absent/false confirmation,
 stale versions, revoked identity, private-media/readiness blockers, named-target
 isolation and unchanged dependencies. Check calendar audiences/notifications and

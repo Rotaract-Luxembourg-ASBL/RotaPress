@@ -14,6 +14,7 @@ Start with the [project overview](../README.md) and review the
 ## Website and content
 
 - [Pages and media](guides/cms-and-media.md): visual editing, shared content, club identity and uploads.
+- [Projects](guides/projects.md): showcase volunteer actions, community initiatives and outcomes.
 - [Website templates](guides/website-kits.md): install and customize an editable website.
 - [Website publication](guides/website-publication.md): publish reviewed drafts or update menus.
 - [Scheduled publication](guides/scheduled-publication.md): schedule a saved page revision.

@@ -42,6 +42,7 @@ export class FeatureAvailability {
       forms: states.some((s) => s.key === "forms" && s.enabled),
       events: states.some((s) => s.key === "events" && s.enabled),
       calendar: states.some((s) => s.key === "calendar" && s.enabled),
+      projects: states.some((s) => s.key === "projects" && s.enabled),
     };
   }
 
@@ -52,7 +53,7 @@ export class FeatureAvailability {
       .where(eq(installation.id, 1));
     return row?.id
       ? this.flags(row.id)
-      : { forms: false, events: false, calendar: false };
+      : { forms: false, events: false, calendar: false, projects: false };
   }
 
   async enabled(

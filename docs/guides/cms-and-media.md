@@ -37,6 +37,9 @@ published pages without publishing other saved page or branding edits.
 
 The library includes text, heroes, images, galleries, cards, buttons, FAQ, team,
 partners, programme sections, forms, published events and calendar content.
+The **Projects** block shows published volunteer stories and community initiatives
+automatically, with an optional progress filter. Manage those stories in
+[Projects](projects.md); the page and project publish separately.
 Use domain-backed blocks for real forms, events, calendars and directory profiles;
 manual presentation copy cannot create bookings, memberships or payment rights.
 

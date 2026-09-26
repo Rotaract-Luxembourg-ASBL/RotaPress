@@ -38,6 +38,7 @@ export function BlockDesignPanel() {
               "Gallery",
               "ParticipationOptions",
               "EventCollection",
+              "ProjectCollection",
             ].includes(selected.type),
         )
         .map(([key, setting]) => (

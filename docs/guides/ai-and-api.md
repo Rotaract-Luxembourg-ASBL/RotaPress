@@ -1,6 +1,6 @@
 # AI content, REST API and MCP
 
-Give an AI client scoped access to prepare website, calendar and event content.
+Give an AI client scoped access to prepare website, project, calendar and event content.
 A reference website supplies text and page structure; RotaPress supplies the installed theme
 and native blocks. Automation prepares **private drafts**, private images and
 settings proposals for review. With a separate publication grant, an assistant can
@@ -62,7 +62,7 @@ authorize or renew access. See
 [OAuth expiry and revocation](automation-oauth.md#permissions-expiry-and-revocation).
 
 Existing connections keep their original grants when new actions become available.
-To use broader website or calendar actions, create a new OAuth connection, MCP
+To use broader website, project or calendar actions, create a new OAuth connection, MCP
 access key or REST token with those actions selected. Reconnect and approve the
 new OAuth consent when applicable; simply upgrading RotaPress does not add access.
 If an OAuth client omits `scope`, the request uses that registered connection's
@@ -109,6 +109,27 @@ The assistant can edit packages and prizes, return readiness blockers, and submi
 typed registration or feature proposals. Staff review and apply those proposals
 in RotaPress; the assistant cannot activate registration. Publishing event details
 requires a separate grant and request; its page and forms publish separately.
+
+## Prepare project stories
+
+Use the `prepare_project` MCP prompt or `automation_project_prompt` tool for
+volunteering activities and ongoing initiatives. Select **Projects** actions in
+the connection: `projects:read` reads drafts and published stories,
+`projects:write` creates and edits private drafts, and `projects:publish` permits
+only explicitly requested publication. Existing connections need fresh grants.
+
+Start with `projects_list`, then `projects_get` before editing. Supply a title and
+summary; story, status, dates, location, cover image, outcomes and one useful link
+describe the project. Leave unknown facts blank instead of inventing impact
+figures. `projects_save` takes the complete content and current `expectedVersion`;
+editing a published project preserves the public snapshot. After an uncertain
+create response, inspect the list before retrying.
+
+Open the returned review link. When requested, `projects_publish` publishes that
+saved version with its separate grant and `confirmed: true`. A cover image must
+already be public. Archive, restore, unpublish and image visibility remain in
+administration. Projects showcase work; event registration and calendar schedules
+keep their existing separate workflows. See [Projects](projects.md).
 
 ## Manage website and calendar drafts
 
@@ -161,6 +182,7 @@ applicable. Existing credentials do not gain them after an upgrade.
 | `forms:publish`     | `forms_publish`                                                                                        |
 | `events:publish`    | `events_publish` for saved event details; `events_prize_publish` for a saved editorial prize           |
 | `directory:publish` | `directory_publish`                                                                                    |
+| `projects:publish`  | `projects_publish`                                                                                     |
 
 Review the saved draft, then make a specific request such as "Publish the reviewed
 About page; leave my other drafts unchanged." The assistant must read the current

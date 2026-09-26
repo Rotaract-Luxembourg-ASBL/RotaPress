@@ -24,6 +24,8 @@ import { CmsService } from "@/features/cms/CmsService";
 import { CmsPreviewService } from "@/features/cms/CmsPreviewService";
 import { CmsPartnerUsage } from "@/features/cms/CmsPartnerUsage";
 import { PartnerService } from "@/features/partners/PartnerService";
+import { ProjectService } from "@/features/projects/ProjectService";
+import { ProjectReader } from "@/features/projects/ProjectReader";
 import { CmsRepository } from "@/features/cms/CmsRepository";
 import { CmsScopePolicy } from "@/features/cms/CmsScopePolicy";
 import { CmsPublicationSchedule } from "@/features/cms/CmsPublicationSchedule";
@@ -210,6 +212,8 @@ const calendarReader = new CalendarReader(db, () =>
   eventWebsite.publicList("en"),
 );
 export const services = {
+  projects: new ProjectService(db, authorization, media),
+  projectReader: new ProjectReader(db),
   emailTemplates: new ScopedEmailTemplateService(db, authorization),
   email: new EmailSettingsService(
     db,

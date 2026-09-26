@@ -115,11 +115,12 @@ export function WebsiteMenuSettings({
                       navigation: value.navigation.map((entry, i) =>
                         i === index
                           ? event.target.value === "events" ||
-                            event.target.value === "calendar"
+                            event.target.value === "calendar" ||
+                            event.target.value === "projects"
                             ? {
                                 label: entry.label,
                                 systemPage: event.target.value as
-                                  "events" | "calendar",
+                                  "events" | "calendar" | "projects",
                               }
                             : { label: entry.label, pageId: event.target.value }
                           : entry,
@@ -129,8 +130,10 @@ export function WebsiteMenuSettings({
                 >
                   <option value="events">Events (/events)</option>
                   <option value="calendar">Calendar (/calendar)</option>
+                  <option value="projects">Projects (/projects)</option>
                   {selectedId !== "events" &&
                     selectedId !== "calendar" &&
+                    selectedId !== "projects" &&
                     !pages.some((page) => page.id === selectedId) && (
                       <option value={selectedId}>
                         Selected page unavailable
@@ -207,7 +210,8 @@ export function WebsiteMenuSettings({
       </div>
       <p className="field-help">
         Only published pages appear in the public menu. The Events directory
-        lists your published public events automatically.
+        lists your published public events automatically. Choose Projects
+        (/projects) to link to your published volunteer stories and initiatives.
       </p>
     </section>
   );

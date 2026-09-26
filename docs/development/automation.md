@@ -102,7 +102,8 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 ## Publication boundary
 
 - Publication grants are separate from draft writes: `website:publish`,
-  `calendar:publish`, `forms:publish`, `events:publish` and `directory:publish`.
+  `calendar:publish`, `forms:publish`, `events:publish`, `projects:publish` and
+  `directory:publish`.
   Existing credentials retain their grants; new OAuth registration and consent or
   a newly issued key are required to add them.
 - Each operation requires strict `confirmed: true` and the exact current saved
@@ -121,6 +122,13 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 
 ## Drafts, images and event suggestions
 
+- Contract 1.6 adds `projects:read`, `projects:write` and `projects:publish`.
+  Project stories reuse the current domain service, explicit Projects availability,
+  CMS edit/publish capabilities and version guards. Saved draft edits retain the
+  public snapshot. Requested publication requires its separate grant, exact saved
+  version, confirmation and already-public cover media. Archive, restore and
+  unpublish stay in administration. Existing connections never gain these grants
+  automatically; the project prompt requires verified facts and outcomes.
 - Contract 1.4 adds explicit `website:manage`, `website:settings`,
   `calendar:write` and `calendar:design` grants. Existing credentials do not inherit
   them. Copy and restore use the shared CMS writers with recursive CustomCode

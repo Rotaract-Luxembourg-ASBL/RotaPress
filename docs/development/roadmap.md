@@ -7,6 +7,13 @@ actual storage, proxy, sender and provider configuration.
 
 ## Current product scope
 
+Projects provides a simple showcase for volunteer actions and community
+initiatives, with private drafts, reviewed publication, reversible archival,
+public stories and a connected website block. It reuses website content
+permissions and published club branding. Separate story translations, volunteer
+sign-ups and automatic impact calculations are outside this version. See
+[Projects](../guides/projects.md).
+
 Fresh installation supports atomic template/theme setup, platform-wide Google-only
 or email-and-Google sign-in with optional managed-domain configuration, public
 club identity fields,

@@ -138,7 +138,10 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
     exact: true,
   });
   await expect(
-    library.getByRole("heading", { name: "Calendar & events", exact: true }),
+    library.getByRole("heading", {
+      name: "Projects, calendar & events",
+      exact: true,
+    }),
   ).toBeVisible();
   await library
     .getByRole("searchbox", { name: "Search blocks", exact: true })

@@ -21,6 +21,8 @@ automatic database setup and migrations. Review the
   private responses, CSV exports and queued notifications.
 - **Organize events:** event pages, teams, native free registration, packages,
   guest access and prize showcases. Draw tools are demonstrations only.
+- **Showcase projects:** volunteer stories, ongoing initiatives and outcomes,
+  with private drafts, public project pages and connected website cards.
 - **Maintain calendars:** recurring activities, public/member audiences, calendar
   imports, subscriptions and reminders.
 - **Connect services:** optional Google sign-in, Luma, SMTP and Resend integrations.

@@ -34,6 +34,13 @@ describe("C14 native design discovery", () => {
       for (const type of context.allowedBlockTypes)
         expect(knownBlocks).toContain(type);
     }
+    expect(
+      design.contexts.find((context) => context.id === "page")
+        ?.allowedBlockTypes,
+    ).toContain("ProjectCollection");
+    expect(
+      design.rules.some((rule) => rule.includes("ProjectCollection")),
+    ).toBe(true);
   });
 
   it("retains resolvable JSON Schema references after excluding executable branches", () => {

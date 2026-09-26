@@ -13,6 +13,7 @@ export * from "./integrations";
 export * from "./luma-sync";
 export * from "./publication-jobs";
 export * from "./partners";
+export * from "./projects";
 export * from "./luma-jobs";
 export * from "./guest-access";
 export * from "./luma-webhooks";

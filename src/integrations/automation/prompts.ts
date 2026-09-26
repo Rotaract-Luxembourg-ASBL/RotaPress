@@ -5,6 +5,7 @@ import {
   workflowPromptDefinitions,
   nativeWebsitePrompt,
   prepareEventPrompt,
+  prepareProjectPrompt,
   visualReviewPrompt,
 } from "./workflow_prompts";
 
@@ -53,6 +54,8 @@ export function renderAutomationPrompt(name: string, input: unknown) {
       return nativeWebsitePrompt(input);
     case "prepare_event":
       return prepareEventPrompt(input);
+    case "prepare_project":
+      return prepareProjectPrompt(input);
     case "review_page_design":
       return visualReviewPrompt(input);
     default:

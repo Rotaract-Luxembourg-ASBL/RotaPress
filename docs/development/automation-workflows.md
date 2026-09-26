@@ -18,6 +18,7 @@ model-provider keys or run a background agent service.
 | Event preparation       | Reviewed presets/copies, linked page and form drafts, stable retries                       | `event_operations.ts`, `EventTemplateService`         |
 | Website management      | Private copies, languages, revision restoration and draft site settings                    | `WebsiteManagementService.ts`                         |
 | Calendar management     | Versioned calendar/activity drafts, recurrence and page design                             | `calendar_operations.ts`, `CalendarService`           |
+| Project stories         | Versioned volunteering/initiative drafts and explicitly requested publication              | `project_operations.ts`, `ProjectService`             |
 | Requested publication   | Separate grants, exact saved targets and existing domain publication checks                | Shared operation catalogue and owning domain services |
 | Media operations        | Validated private uploads, bounded pixel inspection and private metadata edits             | `media_operations.ts`, `MediaService`                 |
 | Visual review           | Exact saved revisions rendered with native components in an isolated browser               | `WebsitePreviewService.ts`, `preview_*.ts`            |
