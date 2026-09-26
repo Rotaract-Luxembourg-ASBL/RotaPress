@@ -43,7 +43,9 @@ export function GoogleIntegrationCard() {
                   : "Not yet verified with Google"}
           </span>
           {data?.staffRequiresGoogle && (
-            <span>Required by the current staff sign-in policy.</span>
+            <span>
+              Required for staff, members and guests by the club sign-in policy.
+            </span>
           )}
         </>
       }

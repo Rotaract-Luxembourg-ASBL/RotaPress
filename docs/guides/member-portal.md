@@ -61,4 +61,6 @@ workspaces; revocation takes effect on the server. Phone navigation supports
 keyboard dismissal and focus return.
 
 Use the [guest portal](guest-portal.md) for private event invitation boundaries and
-[Google sign-in](google-authentication.md) for the separate staff sign-in policy.
+[Google sign-in](google-authentication.md) for the platform-wide login policy.
+Google only applies to member and guest accounts as well as staff. Email codes
+are available when the club allows both sign-in methods.

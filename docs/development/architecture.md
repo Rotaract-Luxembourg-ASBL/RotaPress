@@ -77,8 +77,12 @@ restricted to explicit development/test mode and loopback origins/databases.
 Identity, approved membership, staff capability, event assignment and guest
 entitlement are separate. Every private operation checks current trusted scope;
 client roles, organization IDs and feature flags cannot grant authority. A linked
-Google account cannot satisfy Google-only staff policy without a current Google
-session. Sensitive owner and integration changes require recent authentication.
+Google account cannot satisfy Google-only policy without a current Google
+session. The saved login choice applies to staff, members and guests; email-code
+endpoints and existing email sessions are rejected while Google only is selected.
+Initial protected owner setup precedes this policy. The existing `staffAuthPolicy`
+storage/API name is retained for compatibility; its choice is platform-wide.
+Sensitive owner and integration changes require recent authentication.
 
 The content automation layer exposes versioned REST and MCP through one operation
 catalogue. Each transport defaults to disabled. Better Auth owns session-bound

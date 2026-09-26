@@ -76,9 +76,9 @@ export const clubProfileLabels: Record<keyof ClubProfile, string> = {
 };
 
 export const staffLoginSchema = z.strictObject({
-  title: z.string().trim().min(1).max(120).default("Welcome to your workspace"),
+  title: z.string().trim().min(1).max(120).default("Welcome back"),
   description: z.string().trim().max(500).default(""),
-  subtitle: z.string().trim().max(120).default("Team workspace"),
+  subtitle: z.string().trim().max(120).default("Club account"),
   buttonTheme: z.enum(["light", "dark", "neutral"]).default("light"),
   buttonShape: z.enum(["rounded", "pill", "square"]).default("rounded"),
 });

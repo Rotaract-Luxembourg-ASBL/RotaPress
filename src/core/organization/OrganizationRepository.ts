@@ -33,7 +33,7 @@ export class OrganizationRepository {
       .innerJoin(installation, eq(installation.organizationId, organization.id))
       .where(eq(installation.id, 1));
     return {
-      staffOnlyGoogle: row?.policy === "google",
+      googleOnly: row?.policy === "google",
       appearance: staffLoginSchema.parse(row?.appearance ?? {}),
     };
   }

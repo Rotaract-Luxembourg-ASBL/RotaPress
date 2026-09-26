@@ -5,6 +5,7 @@ import { db } from "@/infrastructure/database/client";
 import { auth } from "./server";
 import type { ScheduledIdentity } from "../authorization/AuthorizationService";
 import { currentGoogleSessionVersion } from "./google_session";
+import { signInPolicy } from "./sign_in_policy";
 
 /** Reload a library-created session; never mint a session or impersonate a user. */
 export async function scheduledActor(
@@ -27,6 +28,11 @@ export async function scheduledActor(
   )
     return null;
   const method: unknown = current.session.authMethod;
+  if (
+    typeof method !== "string" ||
+    !(await signInPolicy.acceptsSession(method))
+  )
+    return null;
   const providerVersion =
     method === "google" ? await currentGoogleSessionVersion(sessionId) : null;
   if (method === "google" && !providerVersion) return null;

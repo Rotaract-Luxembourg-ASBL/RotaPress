@@ -247,10 +247,10 @@ function GoogleSettingsEditor({ initial }: { initial: GoogleAuthSettings }) {
         )}
         {saved.staffRequiresGoogle && (
           <Notice kind="info">
-            Staff are required to sign in with Google. Change the staff sign-in
+            Everyone is required to sign in with Google. Change the club sign-in
             policy in{" "}
             <Link
-              href="/admin/settings"
+              href="/admin/settings?tab=security"
               onClick={(event) => {
                 if (!canLeave()) event.preventDefault();
               }}

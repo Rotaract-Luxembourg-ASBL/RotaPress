@@ -76,9 +76,9 @@ function SettingsForm({
         )}
         {panel === "security" && (
           <>
-            <h2>Staff sign-in policy</h2>
+            <h2>Club sign-in policy</h2>
             <label>
-              Allowed staff sign-in
+              Allowed sign-in methods
               <select
                 name="staffAuthPolicy"
                 value={settings.staffAuthPolicy}
@@ -101,8 +101,8 @@ function SettingsForm({
             </label>
             <p className="field-help">
               {me.googleConfigured
-                ? "Google-only access requires a current Google sign-in. A linked account alone does not grant staff access."
-                : "Google is not configured. Email verification is available; Google-only staff access cannot be enabled yet."}{" "}
+                ? "Google only applies to everyone: staff, members and guests. Email codes and existing email sessions cannot be used while it is selected. Sign in with Google before saving this choice."
+                : "Google is not configured. Email verification is available; configure and verify Google before selecting Google only."}{" "}
               <Link href="/admin/integrations/google">
                 Configure Google sign-in
               </Link>

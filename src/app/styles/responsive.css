@@ -25,10 +25,6 @@
     gap: 26px;
     grid-template-columns: minmax(0, 1.5fr) minmax(190px, 0.8fr);
   }
-
-  .auth-layout {
-    gap: 70px;
-  }
 }
 
 @media (max-width: 850px) {
@@ -72,17 +68,8 @@
     gap: 12px;
   }
 
-  .auth-layout {
-    gap: 40px;
-    padding-inline: 32px;
-  }
-
   .auth-panel {
     padding: 26px;
-  }
-
-  .auth-introduction h1 {
-    font-size: 56px;
   }
 
   .settings-grid {
@@ -200,31 +187,6 @@
 
   .footer-links {
     gap: 20px;
-  }
-
-  .auth-layout {
-    grid-template-columns: 1fr;
-    gap: 27px;
-    padding: 0 20px 45px;
-    margin-top: 8px;
-  }
-
-  .auth-introduction {
-    padding-top: 8px;
-  }
-
-  .auth-introduction h1 {
-    font-size: 54px;
-    margin: 16px 0;
-  }
-
-  .auth-introduction p:not(.eyebrow) {
-    font-size: 15px;
-    max-width: 100%;
-  }
-
-  .auth-flower {
-    display: none;
   }
 
   .auth-panel {

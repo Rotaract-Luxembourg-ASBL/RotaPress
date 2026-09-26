@@ -305,12 +305,16 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
     await migrationPool.query(
       "UPDATE club.organization SET staff_auth_policy='google'",
     );
-    await expect(
-      access.authenticate(renewed.access_token),
-    ).rejects.toMatchObject({ code: "GOOGLE_SESSION_REQUIRED" });
-    await migrationPool.query(
-      "UPDATE club.organization SET staff_auth_policy='email-or-google'",
-    );
+    try {
+      // Platform policy now rejects the parent email session before staff authorization.
+      await expect(
+        access.authenticate(renewed.access_token),
+      ).rejects.toMatchObject({ code: "OAUTH_SESSION_EXPIRED", status: 401 });
+    } finally {
+      await migrationPool.query(
+        "UPDATE club.organization SET staff_auth_policy='email-or-google'",
+      );
+    }
     await migrationPool.query(
       "UPDATE club.membership SET status='suspended' WHERE user_id=$1",
       [actor.userId],

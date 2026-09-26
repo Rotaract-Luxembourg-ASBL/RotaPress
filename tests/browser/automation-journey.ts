@@ -397,13 +397,17 @@ export async function automationJourney(
       "UPDATE club.organization SET staff_auth_policy='google' WHERE id=$1",
       [metadata.organizationId],
     );
-    expect(
-      (await api.get("/api/v1/capabilities", { headers: bearer })).status(),
-    ).toBe(403);
-    await database.query(
-      "UPDATE club.organization SET staff_auth_policy='email-or-google' WHERE id=$1",
-      [metadata.organizationId],
-    );
+    try {
+      // Google-only rejects the parent email session before checking staff permissions.
+      expect(
+        (await api.get("/api/v1/capabilities", { headers: bearer })).status(),
+      ).toBe(401);
+    } finally {
+      await database.query(
+        "UPDATE club.organization SET staff_auth_policy='email-or-google' WHERE id=$1",
+        [metadata.organizationId],
+      );
+    }
     await owner.goto("/admin/integrations/automation");
     await owner
       .getByRole("button", {

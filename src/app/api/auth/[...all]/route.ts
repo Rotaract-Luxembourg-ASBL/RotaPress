@@ -1,6 +1,8 @@
 import { authenticationHandler } from "@/core/auth/server";
 import { googleSignInSchema } from "@/core/auth/google_sign_in";
 import { currentGoogleSessionVersion } from "@/core/auth/google_session";
+import { signInPolicy } from "@/core/auth/sign_in_policy";
+import { DomainError } from "@/core/DomainError";
 import { z } from "zod";
 import { handle, HttpError, json, readMutation } from "@/core/http";
 import { config } from "@/core/config";
@@ -30,7 +32,19 @@ async function authenticationResponse(request: Request): Promise<Response> {
           signal: request.signal,
         })
       : new Request(request, { headers });
-  const response = await authenticationHandler(forwarded);
+  const response = await authenticationHandler(forwarded).catch(
+    (error: unknown) => {
+      if (
+        error instanceof DomainError &&
+        error.code === "GOOGLE_SIGN_IN_REQUIRED"
+      )
+        return Response.json(
+          { code: error.code, message: error.message },
+          { status: error.status },
+        );
+      throw error;
+    },
+  );
   const responseHeaders = new Headers(response.headers);
   // Some library sign-in responses carry a session token in the JSON body.
   // Preserve library cookies while forbidding browser and intermediary caching.
@@ -45,8 +59,9 @@ async function authenticationResponse(request: Request): Promise<Response> {
       .safeParse(await response.clone().json());
     if (
       result.success &&
-      result.data.session.authMethod === "google" &&
-      !(await currentGoogleSessionVersion(result.data.session.id))
+      (!(await signInPolicy.acceptsSession(result.data.session.authMethod)) ||
+        (result.data.session.authMethod === "google" &&
+          !(await currentGoogleSessionVersion(result.data.session.id))))
     ) {
       return new Response("null", { status: 200, headers: responseHeaders });
     }

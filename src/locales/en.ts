@@ -23,10 +23,6 @@ export const en = {
     error: "Something went wrong. Please try again.",
   },
   auth: {
-    eyebrow: "Welcome to your community",
-    title: "Come on in.",
-    description:
-      "A short email code is all you need to sign in. Membership is reviewed separately by your club.",
     email: "Email address",
     send: "Send verification code",
     sending: "Sending code…",

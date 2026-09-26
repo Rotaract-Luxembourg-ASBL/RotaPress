@@ -12,6 +12,8 @@ import { auditEntry, membership } from "../../db/schema/club";
 import { googleAuthConfiguration } from "../../db/schema/google-auth";
 import { GoogleAuthSettingsService } from "../../src/core/auth/GoogleAuthSettingsService";
 import { GoogleAuthStore } from "../../src/core/auth/GoogleAuthStore";
+import { SignInPolicy } from "../../src/core/auth/SignInPolicy";
+import { OrganizationRepository } from "../../src/core/organization/OrganizationRepository";
 import {
   AuthorizationService,
   type TrustedActor,
@@ -137,6 +139,59 @@ afterAll(async () => {
 });
 
 describe("C02 Google configuration and session revision boundaries", () => {
+  it("applies the saved Google-only choice to all email sign-ins and sessions while preserving owner setup", async () => {
+    const policy = new SignInPolicy(db);
+    await expect(policy.requireEmailSignIn()).resolves.toBeUndefined();
+    expect(await policy.acceptsSession("email-otp")).toBe(true);
+    const { owner } = await club();
+    const { service, store } = services();
+    const saved = await service.save(owner, {
+      expectedVersion: 0,
+      ...credentials(),
+    });
+    await service.setEnabled(owner, {
+      ...action(saved.version),
+      enabled: true,
+    });
+    const runtime = await store.runtime();
+    const googleOwner: TrustedActor = {
+      ...owner,
+      authMethod: "google",
+      authProviderVersion: runtime!.version,
+    };
+    const organizationService = new OrganizationService(
+      db,
+      authorization,
+      store,
+    );
+    const settings = await organizationService.settings(owner);
+    await expect(
+      organizationService.update(owner, {
+        ...settings,
+        staffAuthPolicy: "google",
+      }),
+    ).rejects.toMatchObject({ code: "GOOGLE_SESSION_REQUIRED" });
+    await organizationService.update(googleOwner, {
+      ...settings,
+      staffAuthPolicy: "google",
+    });
+    expect(await new OrganizationRepository(db).signInPolicy()).toMatchObject({
+      googleOnly: true,
+    });
+    await expect(policy.requireEmailSignIn()).rejects.toMatchObject({
+      code: "GOOGLE_SIGN_IN_REQUIRED",
+      status: 403,
+    });
+    expect(await policy.acceptsSession("email-otp")).toBe(false);
+    expect(await policy.acceptsSession("unknown")).toBe(false);
+    expect(await policy.acceptsSession("google")).toBe(true);
+    await organizationService.update(googleOwner, {
+      ...settings,
+      staffAuthPolicy: "email-or-google",
+    });
+    await expect(policy.requireEmailSignIn()).resolves.toBeUndefined();
+    expect(await policy.acceptsSession("email-otp")).toBe(true);
+  });
   it("limits mutations to the recent owner and rejects stale, malformed or browser-supplied scope", async () => {
     const { owner, scope } = await club();
     const { service } = services();

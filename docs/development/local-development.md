@@ -131,8 +131,8 @@ setup. See the
 
 The generic club accepts email verification. Configure Google from
 **Integrations → Google sign-in**; see [setup and security](../guides/google-authentication.md).
-Google configuration and its staff policy are separate; a linked Google account
-does not turn an email-authenticated session into a Google session. Validate a
+Google configuration and the club's platform-wide sign-in policy are separate;
+a linked Google account does not turn an email-authenticated session into a Google session. Validate a
 configured Google or Luma connection with the actual provider before relying on
 it. Local policy tests and injected transports do not verify external credentials,
 callbacks or provider availability.
@@ -234,9 +234,11 @@ It revokes that owner's existing sessions, invalidates prior unused recovery
 claims, records an audit entry and writes a 15-minute claim to ignored
 `.local/recovery-claim.txt`. Sign in again as that nominated owner and open
 `http://127.0.0.1:3000/recovery`. Successful consumption restores the generic
-email-or-Google staff policy. It cannot add a new owner, approve an applicant,
+email-or-Google sign-in policy. It cannot add a new owner, approve an applicant,
 recover another identity or reopen installation setup. It is not a hosted owner
 recovery or email-lockout procedure.
+Recovery does not bypass the selected login method: Google-only installations
+still require a working Google sign-in before the claim can be consumed.
 
 For the separate hosted stack, the [hosting assistant](../guides/hosting.md)
 provides database-plus-upload backup and fresh-stack restore. Those commands do

@@ -1,0 +1,91 @@
+/* Public account forms retain the published theme in a focused, single card. */
+.account-sign-in {
+  width: min(100%, 528px);
+  margin: 0 auto;
+  padding: 56px 24px 72px;
+}
+
+.account-sign-in .auth-panel {
+  padding: 36px;
+  overflow-wrap: anywhere;
+  box-shadow: 0 12px 40px #172b4508;
+}
+
+.account-sign-in-heading {
+  margin-bottom: 28px;
+}
+
+.account-sign-in-heading .eyebrow {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.account-sign-in .auth-panel h1 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 5vw, 34px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.account-sign-in-heading > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.account-sign-in .google-sign-in,
+.account-sign-in input {
+  min-height: 48px;
+}
+
+.account-sign-in .google-sign-in {
+  width: 100%;
+}
+
+.account-sign-in .auth-provider-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0;
+  font-size: 12px;
+}
+
+.account-sign-in .auth-provider-divider::before,
+.account-sign-in .auth-provider-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.account-sign-in .auth-footnote {
+  border-top: 1px solid var(--line);
+  margin: 24px 0 0;
+  padding-top: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.account-sign-in-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+@media (max-width: 540px) {
+  .account-sign-in {
+    padding: 28px 16px 48px;
+  }
+
+  .account-sign-in .auth-panel {
+    padding: 28px 24px;
+  }
+}

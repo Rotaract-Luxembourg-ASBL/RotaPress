@@ -2,11 +2,13 @@ import "server-only";
 import { auth } from "./server";
 import type { TrustedActor } from "@/core/authorization/AuthorizationService";
 import { currentGoogleSessionVersion } from "./google_session";
+import { signInPolicy } from "./sign_in_policy";
 
 export async function getActor(headers: Headers): Promise<TrustedActor | null> {
   const result = await auth.api.getSession({ headers });
   if (!result) return null;
   const method = result.session.authMethod;
+  if (!(await signInPolicy.acceptsSession(method))) return null;
   const providerVersion =
     method === "google"
       ? await currentGoogleSessionVersion(result.session.id)

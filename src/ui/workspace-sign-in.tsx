@@ -12,6 +12,8 @@ export function WorkspaceSignIn({
   brand,
   domain,
   clubName,
+  staffDestination,
+  reauth,
   loading,
   available,
   busy,
@@ -25,6 +27,8 @@ export function WorkspaceSignIn({
   brand?: ReactNode;
   domain: string;
   clubName: string;
+  staffDestination: boolean;
+  reauth: boolean;
   loading: boolean;
   available: boolean;
   busy: boolean;
@@ -36,15 +40,19 @@ export function WorkspaceSignIn({
 }) {
   return (
     <main id="main-content" className="workspace-sign-in">
-      <div className="workspace-sign-in-card">
+      <section
+        className="workspace-sign-in-card"
+        aria-labelledby="google-sign-in-title"
+        aria-busy={busy || loading}
+      >
         <div className="workspace-sign-in-brand">
           {brand}
           <p>{appearance.subtitle}</p>
         </div>
-        <h1>{appearance.title}</h1>
+        <h1 id="google-sign-in-title">{appearance.title}</h1>
         <p>
           {appearance.description ||
-            `Sign in with your ${domain ? "managed " : ""}Google account to work with ${clubName}.`}
+            `Use your ${domain ? "managed " : ""}Google account to sign in to ${clubName}.`}
         </p>
         {error && <Notice>{error}</Notice>}
         {loading ? (
@@ -53,7 +61,7 @@ export function WorkspaceSignIn({
           <>
             <p>Signed in as {email}.</p>
             <Link className="button button-accent" href={canContinue}>
-              Open workspace
+              {staffDestination ? "Open workspace" : "Continue to your account"}
             </Link>
             <SignOutButton />
           </>
@@ -61,8 +69,9 @@ export function WorkspaceSignIn({
           <>
             {email && (
               <Notice kind="info">
-                This workspace requires a current Google sign-in. Continue with
-                the same approved account.
+                {staffDestination && !reauth
+                  ? "Workspace access needs staff approval. You can try another Google account or contact your club owner."
+                  : "Confirm your identity by signing in with the same Google account."}
               </Notice>
             )}
             {available ? (
@@ -81,6 +90,8 @@ export function WorkspaceSignIn({
                 </button>
               </Notice>
             )}
+            {busy && <p role="status">Opening Google sign-in…</p>}
+            {email && <SignOutButton />}
           </>
         )}
         <p className="workspace-sign-in-policy">
@@ -88,15 +99,15 @@ export function WorkspaceSignIn({
             <>
               For managed <strong>@{domain}</strong> accounts.{" "}
             </>
-          ) : (
-            "For approved club staff. "
-          )}
-          New team members need owner approval before accessing the workspace.
+          ) : null}
+          {staffDestination
+            ? "Workspace access is for approved club staff. New team members need owner approval."
+            : "Signing in verifies your identity. Membership and club access are reviewed separately."}
         </p>
         <Link className="text-link" href="/">
           Back to website <span aria-hidden="true">→</span>
         </Link>
-      </div>
+      </section>
     </main>
   );
 }

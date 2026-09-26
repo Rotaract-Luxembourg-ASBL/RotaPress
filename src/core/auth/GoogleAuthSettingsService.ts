@@ -103,7 +103,7 @@ export class GoogleAuthSettingsService {
       if (club.policy === "google")
         throw new DomainError(
           "GOOGLE_REQUIRED_FOR_STAFF",
-          "Change staff access to email or Google in Settings before changing this integration.",
+          "Allow email verification or Google in Settings before changing this integration.",
           409,
         );
       const next = update(current);

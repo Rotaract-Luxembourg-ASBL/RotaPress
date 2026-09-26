@@ -7,8 +7,9 @@ actual storage, proxy, sender and provider configuration.
 
 ## Current product scope
 
-Fresh installation supports atomic template/theme setup, a Google-only staff
-screen with optional managed-domain configuration, public club identity fields,
+Fresh installation supports atomic template/theme setup, platform-wide Google-only
+or email-and-Google sign-in with optional managed-domain configuration, public
+club identity fields,
 connected Club details blocks, club-name SEO titles and sandboxed custom HTML/JS.
 See [website/media](../guides/cms-and-media.md) and
 [Google sign-in](../guides/google-authentication.md).

@@ -99,7 +99,7 @@
                                 "operations":  [
 
                                                ],
-                                "manual":  "Provider credentials, domain policy and Google session verification require staff configuration."
+                                "manual":  "Provider credentials, domain policy and Google session verification require staff configuration. Platform-wide login policy and appearance are human-managed Settings; REST and MCP never change authentication policy."
                             },
     "integrations/luma":  {
                               "operations":  [

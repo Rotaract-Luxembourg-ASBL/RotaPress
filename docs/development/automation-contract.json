@@ -3,10 +3,10 @@
   "contract": "9907f22fbc829174a12834155ae7c00937a82f17fdf07008cc8526166cd86802",
   "domains": {
     "../db/schema": "540ad6d4f87380b78742b28dfa1c28f95fd6de254be855b900c6cbf2bd75b944",
-    "app/api": "190484132c67c24a93de117e685adc24e433e337232e6144ab5953778891af33",
+    "app/api": "22cd1ee3973a361be8d8f32852dab6a61e0d7579eafa331f07e55eb24e5cb5c4",
     "app/automation-preview": "383b3d04c0eb1063d40ac13f41e124825f774217adf8f4e851453644c65e6876",
     "composition": "a2bb1e7e363d82a0a0277afc13721aa5ed29676f9190cee5ba7c4390c14690d3",
-    "core": "ccba27157d66a514b6005f926db893c0547c27f57bb38203fb06e86848b9bdaf",
+    "core": "750cc5be01f73b1028ce096d31633ebf333c3c2ee938f551a4ef3d4fdffd82cc",
     "features/calendar": "31721f368c8183f9a74dcaa9dee8e9d52c05f04f525ef5bc614d5332e5952d89",
     "features/cms": "f976337172ac774e1ec12f72a757d5dfa9932720f21dcae5dfd07e9098321e43",
     "features/events": "65ef8a49d0130bc6985f6155bedda2027259b643f15035ab49d141d8f75c07d6",
@@ -18,7 +18,7 @@
     "infrastructure": "9b1cff1da29fe958768765c39939428198b51897463dd3ba5b7ef0af30914fdb",
     "integrations/automation": "a6a49976c2e47fcd31cdba244f8882ab990a60fadc8e0368456b6032bdd50ff8",
     "integrations/email": "f9f0c2b34252b37462a3c16c5ce12ab9368851cca23b14023f6e330c09fee209",
-    "integrations/google": "d7fe9ddf18250e2c33f9d8d34975610cca738ecae3d369af8b0e40473238f00e",
+    "integrations/google": "83884a2f24ac605854937a659cee7f6bc789db93ef46f7b19d9c9fbc2a66e8f8",
     "integrations/luma": "f9aa514a1c3e0df8544921a9e5d559c28fbd9a5d1cfc9e9726d40882d8aa008f",
     "integrations/ui": "61e76f8036e15ea3e448890b8ff6a236edda0799bae50d208c54ae7af94cbd29"
   }

@@ -3,12 +3,7 @@
   font-family: var(--cms-font);
 }
 
-.public-utility-page .auth-layout {
-  margin-top: 0;
-  padding-top: 48px;
-}
-
-.public-utility-page :is(.auth-flower, .membership-intro .large-asterisk) {
+.public-utility-page .membership-intro .large-asterisk {
   color: var(--club-accent);
 }
 

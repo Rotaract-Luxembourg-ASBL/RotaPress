@@ -22,16 +22,13 @@ export default async function SignInPage({
     return <SignInForm setup googleError={Boolean(error)} />;
   }
   const policy = await services.organization.signInPolicy();
-  const returnTo = signInDestination(
-    next ?? (policy.staffOnlyGoogle ? "/admin" : null),
-  );
-  const staffOnly = policy.staffOnlyGoogle && returnTo.startsWith("/admin");
-  if (staffOnly) {
+  const returnTo = signInDestination(next ?? null);
+  if (policy.googleOnly) {
     const club = await services.organization.publicIdentity();
     const google = await googleAuthStore.current();
     return (
       <SignInForm
-        staffOnly
+        googleOnly
         googleError={Boolean(error)}
         appearance={policy.appearance}
         hostedDomain={google.hostedDomain}
@@ -43,7 +40,11 @@ export default async function SignInPage({
   }
   return (
     <PublishedSiteShell>
-      <SignInForm googleError={Boolean(error)} appearance={policy.appearance} />
+      <SignInForm
+        googleError={Boolean(error)}
+        appearance={policy.appearance}
+        returnTo={returnTo}
+      />
     </PublishedSiteShell>
   );
 }

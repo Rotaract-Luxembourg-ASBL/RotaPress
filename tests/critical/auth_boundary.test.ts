@@ -6,6 +6,7 @@ import {
 } from "../../src/core/auth/session_policy";
 import { signInDestination } from "../../src/core/auth/sign_in_destination";
 import { googleSignInSchema } from "../../src/core/auth/google_sign_in";
+import { DomainError } from "../../src/core/DomainError";
 
 const handler = vi.hoisted(() =>
   vi.fn<(request: Request) => Promise<Response>>(),
@@ -17,6 +18,12 @@ const googleSessionVersion = vi.hoisted(() =>
 vi.mock("@/core/auth/google_session", () => ({
   currentGoogleSessionVersion: googleSessionVersion,
 }));
+const acceptsSession = vi.hoisted(() =>
+  vi.fn<(method: string) => Promise<boolean>>(),
+);
+vi.mock("@/core/auth/sign_in_policy", () => ({
+  signInPolicy: { acceptsSession },
+}));
 vi.mock("@/core/config", () => ({
   config: { APP_URL: "http://127.0.0.1:3000" },
 }));
@@ -25,6 +32,7 @@ import { GET, POST } from "../../src/app/api/auth/[...all]/route";
 beforeEach(() => {
   handler.mockReset();
   googleSessionVersion.mockReset();
+  acceptsSession.mockReset().mockResolvedValue(true);
   handler.mockImplementation(
     async () =>
       new Response(JSON.stringify({ success: true }), {
@@ -34,6 +42,56 @@ beforeEach(() => {
 });
 
 describe("Authentication transport and provider policy", () => {
+  it("preserves the policy rejection for the auth client to recover a stale email form", async () => {
+    handler.mockRejectedValue(
+      new DomainError(
+        "GOOGLE_SIGN_IN_REQUIRED",
+        "This club uses Google sign-in.",
+        403,
+      ),
+    );
+    for (const path of [
+      "/email-otp/send-verification-otp",
+      "/sign-in/email-otp",
+    ]) {
+      const response = await POST(
+        new Request(`http://127.0.0.1:3000/api/auth${path}`, {
+          method: "POST",
+          headers: {
+            origin: "http://127.0.0.1:3000",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            email: "policy@example.test",
+            type: "sign-in",
+            otp: "123456",
+          }),
+        }),
+      );
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        code: "GOOGLE_SIGN_IN_REQUIRED",
+        message: "This club uses Google sign-in.",
+      });
+      expect(response.headers.get("cache-control")).toBe("no-store, private");
+    }
+  });
+  it("hides existing email sessions when the platform requires Google", async () => {
+    handler.mockResolvedValue(
+      Response.json({
+        session: { id: "library-session", authMethod: "email-otp" },
+        user: { id: "library-user" },
+      }),
+    );
+    acceptsSession.mockResolvedValue(false);
+    const response = await GET(
+      new Request("http://127.0.0.1:3000/api/auth/get-session"),
+    );
+    expect(await response.json()).toBeNull();
+    expect(acceptsSession).toHaveBeenCalledWith("email-otp");
+    expect(googleSessionVersion).not.toHaveBeenCalled();
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
   it("rejects unfinished Google flows after configuration replacement or disable/re-enable", async () => {
     let activeVersion: string | null = "revision-a";
     const accepts = async (version: string) => version === activeVersion;

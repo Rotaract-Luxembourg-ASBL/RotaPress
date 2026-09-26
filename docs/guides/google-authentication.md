@@ -21,28 +21,43 @@ does not approve membership, assign a role or grant access to an event or guest 
    real Google consent/sign-in and return to the integration. Only a successful
    callback and session creation can record a verification time.
 
-If Google-only staff access is desired, the owner first signs in successfully using
-the current Google configuration, then changes the staff policy in Settings. The
-server rechecks the current provider revision inside the settings transaction.
-Email sign-in remains available for guests; an email session cannot satisfy the
-Google-only staff policy. The protected local owner recovery procedure remains in
+For Google-only access, the owner first signs in successfully using
+the current Google configuration, then changes **Settings → Sign-in & security →
+Allowed sign-in methods**. This is the platform-wide login choice for staff,
+members and guests. The server rechecks the current provider revision inside the
+settings transaction.
+Choose **Google only** to disable email-code requests, email-code sign-in and use
+of existing email sessions. Choose **Email verification or Google** to allow both
+methods (Google also needs an enabled integration). Linked Google accounts do not
+turn email sessions into Google sessions. The protected local owner recovery
+procedure is documented in
 [local development](../development/local-development.md).
 
-Google-only policy removes the email form from `/sign-in` and staff destinations
-such as `/sign-in?next=/admin`. Member and guest entry points retain email codes.
-The staff screen shows the published club identity and explains owner approval.
+Google-only policy removes the email form from every `/sign-in` destination,
+including the website's member login, guest access and administration. It uses a
+compact card with the published club identity and explains the relevant approval
+requirements. A failed or unavailable Google connection does not offer email as a
+fallback. Return destinations never choose the authentication policy. Ordinary
+sign-in continues to the member account; staff links retain their workspace
+destination.
 In **Settings → Sign-in & security**, customize its heading, welcome message,
-workspace label and Google button (light, dark or neutral; rounded, pill or square).
+sign-in label and Google button (light, dark or neutral; rounded, pill or square).
 The Google mark and sign-in wording are retained. These settings save immediately;
 public logo changes still follow Website publication.
+
+Initial installation still requires the nominated owner's protected email
+verification and expiring claim. It precedes the installed club's sign-in policy.
+Existing installations keep their saved choice and appearance; a saved Google-only
+choice now applies to all login routes. Membership and event permissions remain
+separate.
 
 ### Managed accounts or personal Gmail
 
 In **Integrations → Google sign-in**, leave **Managed Google domain** empty to
 accept any Google account, including Gmail. Enter a domain such as `your-club.example`
 to require managed accounts for that domain. Do not include `@` or a URL.
-This applies to all Google sign-ins, including member entry points; member/guest
-email codes remain a separate access method.
+This applies to all Google sign-ins. When Google only is selected, members and
+guests also need an account from that domain. To allow personal Gmail, leave it blank.
 
 The domain guides Google's account chooser and the pinned Better Auth provider
 checks Google's verified `hd` claim. An email suffix alone is insufficient.
@@ -50,7 +65,7 @@ Google controls the chooser and may still offer an option to use another account
 that does not bypass the server check. See [Google's hosted-domain documentation](https://developers.google.com/identity/openid-connect/openid-connect#hd-param).
 
 Changing a domain follows the credential review flow and invalidates previous
-Google sessions. If staff access is Google-only, first restore email-or-Google
+Google sessions. If access is Google-only, first restore email-or-Google
 policy using your current Google session, save the domain, enable Google again,
 complete a real sign-in with an allowed account, and then restore Google-only.
 This preserves a recovery path when domain or credential settings are wrong.
@@ -68,11 +83,12 @@ Membership and staff approval are always separate.
 - Saves use an expected version. Concurrent changes fail without overwriting the
   other owner's configuration. Audit entries record actions and IDs, never credentials.
 - Saving, enabling, disabling or removing advances the configuration revision and
-  invalidates previous Google sessions and unfinished flows. Email sessions remain
-  usable. Existing linked accounts and membership records are retained.
+  invalidates previous Google sessions and unfinished flows. Email sessions are
+  usable only under the email-or-Google policy. Existing linked accounts and
+  membership records are retained.
 - Every request and scheduled actor check rejects obsolete Google session revisions.
   The library session endpoint also returns no active session for an obsolete Google
-  configuration. Credentials cannot be changed while staff policy requires Google;
+  configuration. Credentials cannot be changed while club policy requires Google;
   the owner must deliberately restore email-or-Google policy first.
 - Google credentials are managed only in this integration. Environment credentials
   cannot enable Google or reactivate a disconnected connection. When upgrading an
@@ -109,7 +125,7 @@ If verification fails, compare the exact callback URL, confirm that the Google
 client is a Web application, and check its consent-screen audience or test-user
 list. For managed accounts, check the configured domain and use an account from
 that domain. After changing credentials or domain settings, enable the integration
-and complete a new Google sign-in before selecting Google-only staff access.
+and complete a new Google sign-in before selecting Google-only access.
 
 Verification requires a completed Google callback with your configured client and
 account. Saved settings or automated local checks cannot establish that access.

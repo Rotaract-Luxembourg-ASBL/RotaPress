@@ -25,7 +25,7 @@ function destination() {
 export function SignInForm({
   googleError = false,
   setup = false,
-  staffOnly = false,
+  googleOnly = false,
   appearance = defaultStaffLogin,
   brand,
   hostedDomain = "",
@@ -34,7 +34,7 @@ export function SignInForm({
 }: {
   googleError?: boolean;
   setup?: boolean;
-  staffOnly?: boolean;
+  googleOnly?: boolean;
   appearance?: StaffLogin;
   brand?: ReactNode;
   hostedDomain?: string;
@@ -67,17 +67,19 @@ export function SignInForm({
           email: email.trim(),
           otp,
         });
+        if (result.error?.code === "GOOGLE_SIGN_IN_REQUIRED") router.refresh();
         if (result.error)
           throw new Error(
             result.error.message || "The code could not be verified.",
           );
-        router.replace(setup ? "/setup" : destination());
+        router.replace(setup ? "/setup" : (returnTo ?? destination()));
         router.refresh();
       } else {
         const result = await authClient.emailOtp.sendVerificationOtp({
           email: email.trim(),
           type: "sign-in",
         });
+        if (result.error?.code === "GOOGLE_SIGN_IN_REQUIRED") router.refresh();
         if (result.error)
           throw new Error(
             result.error.message || "The code could not be sent.",
@@ -112,20 +114,25 @@ export function SignInForm({
   const reauth =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("reauth") === "1";
-  if (staffOnly)
+  if (googleOnly)
     return (
       <WorkspaceSignIn
         appearance={appearance}
         brand={brand}
         domain={hostedDomain}
         clubName={clubName}
+        staffDestination={(returnTo ?? "/admin").startsWith("/admin")}
+        reauth={reauth}
         loading={!me && !loadError}
         available={Boolean(me?.googleConfigured)}
         busy={busy}
         error={error || loadError}
         email={me?.actor?.email}
         canContinue={
-          !reauth && Boolean(me?.capabilities.includes("admin.access"))
+          !reauth &&
+          Boolean(me?.actor) &&
+          (!(returnTo ?? "/admin").startsWith("/admin") ||
+            Boolean(me?.capabilities.includes("admin.access")))
             ? (returnTo ?? "/admin")
             : false
         }
@@ -180,22 +187,14 @@ export function SignInForm({
     );
   if (me?.actor && !reauth)
     return (
-      <main id="main-content" className="auth-layout">
-        <div className="auth-introduction">
-          <p className="eyebrow">Welcome back</p>
-          <h1>Your community awaits.</h1>
-          <p>
-            Your membership, profile and activities are ready in your member
-            space.
-          </p>
-        </div>
+      <main id="main-content" className="account-sign-in">
         <section className="panel auth-panel signed-in-actions">
           <p className="eyebrow">Signed in</p>
-          <h2>You’re all set.</h2>
+          <h1>Welcome back</h1>
           <p>{me.actor.email}</p>
           <Link
             className="button button-accent"
-            href={me.installed ? destination() : "/setup"}
+            href={me.installed ? (returnTo ?? destination()) : "/setup"}
           >
             Continue to your account <Arrow />
           </Link>
@@ -205,14 +204,25 @@ export function SignInForm({
     );
   const panel = (
     <section className="panel auth-panel" aria-labelledby="sign-in-title">
-      <p className="eyebrow">Your account</p>
-      <h2 id="sign-in-title">
-        {sent
-          ? "Check your inbox."
-          : setup
-            ? "Verify your owner email."
-            : "Sign in."}
-      </h2>
+      {setup ? (
+        <h2 id="sign-in-title">
+          {sent ? "Check your inbox." : "Verify your owner email."}
+        </h2>
+      ) : (
+        <header className="account-sign-in-heading">
+          <p className="eyebrow">Your club account</p>
+          <h1 id="sign-in-title">
+            {sent ? "Check your inbox" : "Welcome back"}
+          </h1>
+          <p>
+            {sent
+              ? "Enter the six-digit code we sent to your email."
+              : me?.googleConfigured
+                ? "Sign in to access your membership and club activities."
+                : "We’ll email you a code to sign in. No password needed."}
+          </p>
+        </header>
+      )}
       {reauth && me?.actor && (
         <Notice kind="info">
           Confirm your identity to continue with a security change. Use the same
@@ -220,6 +230,14 @@ export function SignInForm({
         </Notice>
       )}
       {error && <Notice>{error}</Notice>}
+      {loadError && (
+        <Notice>
+          Sign-in options could not be loaded.{" "}
+          <button type="button" className="inline-button" onClick={refresh}>
+            Try again
+          </button>
+        </Notice>
+      )}
       {!sent && me?.googleConfigured && (
         <>
           <GoogleSignInButton
@@ -231,7 +249,7 @@ export function SignInForm({
           <p className="auth-provider-divider">or continue with email</p>
         </>
       )}
-      <form onSubmit={submit} className="form-stack">
+      <form onSubmit={submit} className="form-stack" aria-busy={busy}>
         {!sent ? (
           <>
             <label>
@@ -302,8 +320,13 @@ export function SignInForm({
       <p className="small muted auth-footnote">
         {setup
           ? "Use the owner email nominated during setup. After verification, you’ll enter your club details and installation claim."
-          : "Your email verifies your identity. Club access is granted after a membership review."}
+          : "Signing in verifies your identity. Membership and club access are reviewed separately."}
       </p>
+      {!setup && (
+        <Link className="text-link account-sign-in-back" href="/">
+          Back to website <Arrow />
+        </Link>
+      )}
     </section>
   );
   if (setup)
@@ -326,19 +349,7 @@ export function SignInForm({
       </SetupFrame>
     );
   return (
-    <main id="main-content" className="auth-layout">
-      <div className="auth-introduction">
-        <p className="eyebrow">{en.auth.eyebrow}</p>
-        <h1>{en.auth.title}</h1>
-        <p>
-          {me?.googleConfigured
-            ? "Continue with your Google account or use an email verification code."
-            : en.auth.description}
-        </p>
-        <div className="auth-flower" aria-hidden="true">
-          ✳
-        </div>
-      </div>
+    <main id="main-content" className="account-sign-in">
       {panel}
     </main>
   );

@@ -1,41 +1,4 @@
 /* Authentication and first ownership. */
-.auth-layout {
-  max-width: 1160px;
-  margin: 45px auto 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 110px;
-  padding: 0 48px 70px;
-  align-items: start;
-}
-
-.auth-introduction {
-  padding-top: 45px;
-}
-
-.auth-introduction .eyebrow {
-  color: var(--club-accent);
-}
-
-.auth-introduction h1 {
-  font-size: clamp(52px, 6vw, 82px);
-  margin: 22px 0 24px;
-}
-
-.auth-introduction p:not(.eyebrow) {
-  color: var(--muted);
-  font-size: 17px;
-  max-width: 380px;
-  line-height: 1.85;
-}
-
-.auth-flower {
-  font-size: 130px;
-  line-height: 1;
-  margin-top: 40px;
-  color: #a7b494;
-}
-
 .auth-panel {
   box-shadow: 0 12px 35px #354a2b05;
   padding: 34px;

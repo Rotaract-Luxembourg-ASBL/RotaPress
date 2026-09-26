@@ -12,13 +12,14 @@ export function StaffLoginFields({
 }) {
   return (
     <div className="form-stack">
-      <h2>Workspace sign-in appearance</h2>
+      <h2>Google sign-in appearance</h2>
       <p className="field-help">
-        The Google-only staff screen uses your published club logo. Account
-        restrictions are managed in Integrations → Google sign-in.
+        Every Google-only sign-in page uses these settings and your published
+        club logo. Account restrictions are managed in Integrations → Google
+        sign-in.
       </p>
       <label>
-        Workspace label
+        Sign-in label
         <input
           value={value.subtitle}
           maxLength={120}

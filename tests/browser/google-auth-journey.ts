@@ -86,6 +86,18 @@ export async function googleAuthJourney(
         exact: true,
       }),
     ).toHaveCount(enabled ? 1 : 0);
+    for (const width of [1440, 390]) {
+      await visitor.setViewportSize({ width, height: 900 });
+      expect(
+        await visitor.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await visitor.screenshot({
+        path: `.local/feedback-captures/sign-in-${enabled ? "both" : "email"}-${width}.png`,
+        fullPage: true,
+      });
+    }
   }
   const social = {
     provider: "google",
@@ -254,44 +266,195 @@ export async function googleAuthJourney(
         mask: [owner.locator(".admin-account")],
       });
     }
+    await owner.goto("/admin/settings?tab=security");
+    await expect(owner.getByLabel("Allowed sign-in methods")).toHaveValue(
+      "email-or-google",
+    );
+    await owner
+      .getByLabel("Welcome heading", { exact: true })
+      .fill("Welcome back");
+    await owner
+      .getByLabel("Sign-in label", { exact: true })
+      .fill("Your club account");
+    await owner
+      .getByLabel("Welcome message", { exact: true })
+      .fill("Sign in to see your membership, events and club activities.");
+    await owner.getByLabel("Google button color").selectOption("dark");
+    await owner.getByLabel("Google button shape").selectOption("pill");
+    await owner
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(
+      owner.getByText("All changes saved", { exact: true }),
+    ).toBeVisible();
+    await owner.reload();
+    await expect(
+      owner.getByLabel("Welcome heading", { exact: true }),
+    ).toHaveValue("Welcome back");
+    await expect(owner.getByLabel("Google button color")).toHaveValue("dark");
+    await expect(owner.getByLabel("Google button shape")).toHaveValue("pill");
+    await owner.goto("/admin/integrations/google");
+
     // Policy fixture only: no Google identity/session or live callback is fabricated.
+    // Actual owner-only policy saving and its current-Google-session gate are covered in C02.
     await database.query(
       "UPDATE club.organization SET staff_auth_policy = 'google'",
     );
     try {
+      // This tab was opened while both methods were allowed. Rejection refreshes it.
+      await visitor.getByLabel("Email address").fill("stale-form@example.test");
+      await visitor
+        .getByRole("button", { name: "Send verification code", exact: true })
+        .click();
+      await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+      await expect(
+        visitor.getByRole("button", {
+          name: "Sign in with Google",
+          exact: true,
+        }),
+      ).toBeVisible();
       for (const width of [1440, 390]) {
         await visitor.setViewportSize({ width, height: 900 });
-        await visitor.goto("/sign-in?next=/admin");
-        await expect(
-          visitor.getByRole("heading", { name: "Welcome to your workspace" }),
-        ).toBeVisible();
-        await expect(
-          visitor.getByRole("button", {
-            name: "Sign in with Google",
-            exact: true,
-          }),
-        ).toBeVisible();
-        await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+        for (const next of [
+          "",
+          "/membership",
+          "/admin",
+          "/guest",
+          "/registrations",
+          "/calendar",
+          "/setup",
+          "https://untrusted.example/",
+        ]) {
+          await visitor.goto(
+            `/sign-in${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+          );
+          await expect(
+            visitor.getByRole("heading", { name: "Welcome back", exact: true }),
+          ).toBeVisible();
+          await expect(
+            visitor.getByRole("button", {
+              name: "Sign in with Google",
+              exact: true,
+            }),
+          ).toBeVisible();
+          await expect(
+            visitor.getByText("Your club account", { exact: true }),
+          ).toBeVisible();
+          await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+          await expect(
+            visitor.getByRole("button", { name: "Send verification code" }),
+          ).toHaveCount(0);
+        }
+        await visitor.goto("/sign-in?next=/membership");
+        const googleButton = visitor.getByRole("button", {
+          name: "Sign in with Google",
+          exact: true,
+        });
+        await expect(googleButton).toHaveClass(
+          /google-theme-dark google-shape-pill/,
+        );
+        await googleButton.focus();
+        await expect(googleButton).toBeFocused();
         expect(
           await visitor.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth,
           ),
         ).toBe(true);
         await visitor.screenshot({
-          path: `.local/feedback-captures/workspace-${width}.png`,
+          path: `.local/feedback-captures/sign-in-google-${width}.png`,
           fullPage: true,
         });
       }
-      await visitor.goto("/sign-in?next=/membership");
-      await expect(visitor.getByLabel("Email address")).toBeVisible();
+      for (const [path, data] of [
+        [
+          "/email-otp/send-verification-otp",
+          { email: "blocked-login@example.test", type: "sign-in" },
+        ],
+        [
+          "/sign-in/email-otp",
+          { email: "blocked-login@example.test", otp: "123456" },
+        ],
+      ] as const) {
+        const rejected = await visitor.request.post(`/api/auth${path}`, {
+          headers: { origin: smokeOrigin },
+          data,
+        });
+        expect(rejected.status()).toBe(403);
+        expect((await rejected.json()).code).toBe("GOOGLE_SIGN_IN_REQUIRED");
+      }
+      expect(
+        (await (await owner.request.get("/api/me")).json()).actor,
+      ).toBeNull();
+      expect(
+        await (await owner.request.get("/api/auth/get-session")).json(),
+      ).toBeNull();
       expect((await owner.request.get("/api/admin/settings")).status()).toBe(
-        403,
+        401,
       );
+      await visitor.route("**/api/auth/sign-in/social", (route) =>
+        route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({
+            code: "GOOGLE_UNAVAILABLE",
+            message: "Google sign-in could not start. Please try again.",
+          }),
+        }),
+      );
+      await visitor
+        .getByRole("button", { name: "Sign in with Google", exact: true })
+        .press("Enter");
+      await expect(visitor.getByRole("main").getByRole("alert")).toContainText(
+        "Google sign-in could not start",
+      );
+      await expect(
+        visitor.getByRole("button", {
+          name: "Sign in with Google",
+          exact: true,
+        }),
+      ).toBeEnabled();
+      await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+      await visitor.unroute("**/api/auth/sign-in/social");
+      await visitor.goto("/sign-in?next=/membership&error=access_denied");
+      await expect(visitor.getByRole("main").getByRole("alert")).toContainText(
+        "Google sign-in did not finish",
+      );
+      await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+      await visitor.goto("/sign-in?next=/membership");
+      await database.query(
+        "UPDATE club.google_auth_configuration SET enabled = false",
+      );
+      try {
+        await visitor.reload();
+        await expect(visitor.getByRole("main").getByRole("alert")).toContainText(
+          "Google sign-in is currently unavailable",
+        );
+        await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+        await database.query(
+          "UPDATE club.google_auth_configuration SET enabled = true",
+        );
+        await visitor
+          .getByRole("button", { name: "Try again", exact: true })
+          .click();
+        await expect(
+          visitor.getByRole("button", {
+            name: "Sign in with Google",
+            exact: true,
+          }),
+        ).toBeEnabled();
+      } finally {
+        await database.query(
+          "UPDATE club.google_auth_configuration SET enabled = true",
+        );
+      }
     } finally {
       await database.query(
         "UPDATE club.organization SET staff_auth_policy = 'email-or-google'",
       );
     }
+    await publicAvailability(true);
+    // The existing email owner page lost access while Google-only was active.
+    await owner.goto("/admin/integrations/google");
     await owner
       .getByRole("button", { name: "Review disabling Google", exact: true })
       .click();

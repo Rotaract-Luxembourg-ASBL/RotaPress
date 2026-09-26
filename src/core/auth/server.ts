@@ -24,6 +24,7 @@ import {
 import { googleAuthStore } from "./google_configuration";
 import type { GoogleProviderConfiguration } from "./GoogleAuthStore";
 import { DomainError } from "../DomainError";
+import { signInPolicy } from "./sign_in_policy";
 import {
   sendVerificationEmail,
   withVerificationDelivery,
@@ -102,6 +103,7 @@ function createAuth(google: GoogleProviderConfiguration | null) {
         create: {
           before: async (value, context) => {
             const method = sessionAuthenticationMethod(context);
+            if (method === "email-otp") await signInPolicy.requireEmailSignIn();
             if (method === "google" && !(await currentGoogleFlow()))
               throw new APIError("FORBIDDEN", {
                 message: "Google settings changed. Start sign-in again.",
@@ -183,6 +185,11 @@ export async function authenticationHandler(
   request: Request,
 ): Promise<Response> {
   const path = new URL(request.url).pathname;
+  if (
+    path === "/api/auth/email-otp/send-verification-otp" ||
+    path === "/api/auth/sign-in/email-otp"
+  )
+    await signInPolicy.requireEmailSignIn();
   // Only the scoped, session-bound integration service may manage API keys.
   if (path.startsWith("/api/auth/api-key/"))
     throw new DomainError(
@@ -200,7 +207,7 @@ export async function authenticationHandler(
     if (!google)
       throw new DomainError(
         "GOOGLE_UNCONFIGURED",
-        "Google sign-in is unavailable. Use email verification.",
+        "Google sign-in is unavailable. Contact your club owner.",
         409,
       );
     // Better Auth resolves provider options only once per instance. A fresh

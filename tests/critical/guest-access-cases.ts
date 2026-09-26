@@ -209,12 +209,21 @@ export function guestAccessChecks(get: () => Context) {
     await expect(
       s.authorization.require(s.first, "admin.access"),
     ).rejects.toThrow();
-    // Guest email OTP remains valid under Google's separate staff policy.
+    // A trusted Google guest still needs no staff capability. HTTP session policy
+    // rejects email actors before guest operations; this is a domain-scope fixture.
     await s.db
       .update(organization)
       .set({ staffAuthPolicy: "google" })
       .where(eq(organization.id, s.scope.organizationId));
-    expect((await s.guests.portal(s.first, s.event.id, a.id)).id).toBe(a.id);
+    expect(
+      (
+        await s.guests.portal(
+          { ...s.first, authMethod: "google" },
+          s.event.id,
+          a.id,
+        )
+      ).id,
+    ).toBe(a.id);
   });
 
   it("C10 blocks stale grants, module shutdown, cancellation and unpublished events while retaining history", async () => {
