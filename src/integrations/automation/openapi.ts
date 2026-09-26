@@ -214,7 +214,7 @@ export function openApiDocument() {
       title: "RotaPress content automation",
       version: contractVersion,
       description:
-        "Session-bound staff connections using scoped API keys or OAuth. Content writes stay private drafts; event settings are proposals for staff review. Discover scopes, schemas and workflow prompts before writing. JSON bodies are limited to 256 KiB; the dedicated binary image upload accepts up to 5 MiB.",
+        "Session-bound staff connections using scoped REST API tokens. Content writes stay private drafts; event settings are proposals for staff review. Discover scopes, schemas and workflow prompts before writing. JSON bodies are limited to 256 KiB; the dedicated binary image upload accepts up to 5 MiB.",
     },
     components: {
       schemas,
@@ -222,7 +222,7 @@ export function openApiDocument() {
         staffConnection: {
           type: "http",
           scheme: "bearer",
-          bearerFormat: "RotaPress scoped API key or OAuth access token",
+          bearerFormat: "RotaPress REST API token",
         },
       },
     },

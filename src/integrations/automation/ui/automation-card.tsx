@@ -56,9 +56,7 @@ function TransportCard({
           </p>
         }
         settingsHref={feature.href}
-        settingsLabel={
-          state.kind === "mcp" ? "Manage" : "Documentation & tester"
-        }
+        settingsLabel={feature.settingsLabel}
       >
         <button
           className={`button ${state.enabled ? "button-outline" : "button-accent"}`}

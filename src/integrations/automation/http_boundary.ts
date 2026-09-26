@@ -1,6 +1,15 @@
 import { config } from "@/core/config";
 import { HttpError } from "@/core/http";
 
+export function withRestChallenge(response: Response): Response {
+  if (response.status === 401)
+    response.headers.set(
+      "WWW-Authenticate",
+      'Bearer realm="RotaPress REST API"',
+    );
+  return response;
+}
+
 /** Host and Origin are checked even when handlers are used outside Next's proxy. */
 export function requireAutomationOrigin(request: Request) {
   const allowed = new URL(config.APP_URL);

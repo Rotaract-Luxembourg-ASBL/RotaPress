@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import type { operationCatalogue } from "../catalogue";
+import type { AutomationTransport } from "../availability_schemas";
+import { scopeDefinitions } from "../scopes";
 import {
   runTester,
   testMcpConnection,
@@ -9,36 +10,51 @@ import {
   restRequest,
   type TesterResult,
 } from "./tester_request";
-import { ClientInstructions } from "./client-instructions";
 
 type Entry = ReturnType<typeof operationCatalogue>[number];
 export function AutomationDocs({
   operations,
   version,
   origin,
+  transport,
+  credential,
+  onCredentialChange,
+  enabled,
+  onConnect,
 }: {
   operations: Entry[];
   version: string;
   origin: string;
+  transport: AutomationTransport;
+  credential: string;
+  onCredentialChange: (key: string) => void;
+  enabled: boolean;
+  onConnect: () => void;
 }) {
+  const rest = transport === "rest";
   const [selected, setSelected] = useState("automation_capabilities");
-  const [protocol, setProtocol] = useState<"rest" | "mcp">("rest");
   const [input, setInput] = useState("{}");
-  const [key, setKey] = useState("");
+  const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<TesterResult | null>(null);
   const current = operations.find((entry) => entry.name === selected)!;
+  const filtered = operations.filter((entry) =>
+    `${entry.name} ${entry.description} ${rest ? entry.path : ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   function choose(name: string) {
     const operation = operations.find((entry) => entry.name === name)!;
     const example = { ...operation.example };
-    if (name === "content_import") example.requestId = crypto.randomUUID();
+    if ("requestId" in example) example.requestId = crypto.randomUUID();
     setSelected(name);
     setInput(JSON.stringify(example, null, 2));
     setResult(null);
     setError("");
   }
   async function execute(action: () => Promise<TesterResult>) {
+    if (busy) return;
     setBusy(true);
     setError("");
     setResult(null);
@@ -57,7 +73,11 @@ export function AutomationDocs({
   }
   async function downloadSpec() {
     await execute(async () => {
-      const response = await testerFetch(key, "/api/v1/openapi.json", "GET");
+      const response = await testerFetch(
+        credential,
+        "/api/v1/openapi.json",
+        "GET",
+      );
       if (!response.ok) return response;
       const url = URL.createObjectURL(
         new Blob([JSON.stringify(response.body, null, 2)], {
@@ -79,73 +99,136 @@ export function AutomationDocs({
     });
   }
   let preview = "Enter valid JSON to preview the request.";
+  let example = "Complete the request input to see an example.";
   try {
-    const request = restRequest(current, input);
-    preview =
-      protocol === "rest"
-        ? `${request.method} ${request.path}`
-        : `POST /api/mcp • tools/call • ${current.name}`;
+    if (rest) {
+      const request = restRequest(current, input);
+      preview = `${request.method} ${request.path}`;
+      const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+      example = `curl --request ${request.method} ${quote(origin + request.path)} \\\n  --header "Authorization: Bearer $ROTAPRESS_REST_TOKEN"${request.body ? ` \\\n  --header 'Content-Type: application/json' \\\n  --data ${quote(request.body)}` : ""}`;
+    } else {
+      preview = `tools/call · ${current.name}`;
+      example = JSON.stringify(
+        {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: current.name,
+            arguments: JSON.parse(input) as unknown,
+          },
+        },
+        null,
+        2,
+      );
+    }
   } catch {
-    /* Field errors are shown on deliberate send; keep entered work. */
+    /* Show input errors only on deliberate send; retain entered work. */
   }
+  const groups = [
+    ...new Set(
+      operations.map((entry) => entry.scope?.split(":")[0] ?? "discovery"),
+    ),
+  ];
   return (
     <div className="automation-docs">
-      <header className="page-heading">
-        <div>
-          <p>
-            <Link href="/admin/integrations/automation">
-              AI & API connections
-            </Link>
-          </p>
-          <h1>API documentation & tester</h1>
-          <p>
-            Explore the REST and MCP contract, connect an assistant and test
-            your granted actions. Version {version}.
-          </p>
-        </div>
-      </header>
+      <section className="panel">
+        <h2>
+          {rest
+            ? "REST API documentation & live tester"
+            : "MCP tools & connection test"}
+        </h2>
+        <p>
+          {rest
+            ? "Generate an API token, choose an endpoint, then send a request. Start with capabilities to see your granted actions."
+            : "Inspect the available tools and their schemas. Test an MCP access key or an OAuth access token after connecting your client."}{" "}
+          Contract {version}.
+        </p>
+        <p className="small muted">
+          {rest
+            ? "Send Authorization: Bearer <API token>. Responses wrap results in data and failures in error. Cookies do not authorize requests."
+            : "This server uses stateless Streamable HTTP. The connection test initializes MCP and lists tools, resources and prompts without saving content."}
+        </p>
+      </section>
       <div className="automation-docs-layout">
         <section
           className="panel automation-reference"
           aria-labelledby="automation-operation-title"
         >
-          <h2 id="automation-operation-title">Operation reference</h2>
+          <h2 id="automation-operation-title">
+            {rest ? "Endpoint reference" : "Tool reference"}
+          </h2>
           <label>
-            Operation
+            Search {rest ? "endpoints" : "tools"}
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="e.g. website, media, events"
+              disabled={busy}
+            />
+          </label>
+          <label>
+            {rest ? "Endpoint" : "MCP tool"}
             <select
-              aria-label="Operation"
               value={selected}
               onChange={(event) => choose(event.target.value)}
               disabled={busy}
             >
-              {operations.map((entry) => (
-                <option key={entry.name} value={entry.name}>
-                  {entry.name} · {entry.readOnly ? "Read" : "Save draft"}
+              {!filtered.some((entry) => entry.name === selected) && (
+                <option value={current.name}>
+                  {current.name} · current selection
                 </option>
-              ))}
+              )}
+              {groups.map((group) => {
+                const entries = filtered.filter(
+                  (entry) =>
+                    (entry.scope?.split(":")[0] ?? "discovery") === group,
+                );
+                return (
+                  entries.length > 0 && (
+                    <optgroup key={group} label={group}>
+                      {entries.map((entry) => (
+                        <option key={entry.name} value={entry.name}>
+                          {rest ? `${entry.method} ${entry.path}` : entry.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                );
+              })}
             </select>
           </label>
+          {!filtered.length && (
+            <p>
+              No matches. Clear the search to browse all{" "}
+              {rest ? "endpoints" : "tools"}.
+            </p>
+          )}
           <p>{current.description}</p>
           <dl>
-            <dt>REST</dt>
+            <dt>{rest ? "Endpoint" : "Tool name"}</dt>
             <dd>
               <code>
-                {current.method} {current.path}
+                {rest ? `${current.method} ${current.path}` : current.name}
               </code>
-            </dd>
-            <dt>MCP tool</dt>
-            <dd>
-              <code>{current.name}</code>
             </dd>
             <dt>Required permission</dt>
             <dd>
-              <code>{current.scope ?? "Any current staff connection"}</code>
+              {current.scope ? (
+                <>
+                  {scopeDefinitions[current.scope].label}{" "}
+                  <code>({current.scope})</code>
+                </>
+              ) : (
+                "Any current credential for this integration"
+              )}
             </dd>
             <dt>Effect</dt>
             <dd>
               {current.readOnly
                 ? "Reads content or returns instructions."
-                : "Creates or updates private drafts in this club. Publication stays manual."}
+                : "Saves private content or a settings proposal in this club. Publication and approval stay manual."}
             </dd>
           </dl>
           <details>
@@ -157,54 +240,82 @@ export function AutomationDocs({
             <pre>{JSON.stringify(current.outputSchema, null, 2)}</pre>
           </details>
           <details>
+            <summary>
+              {rest ? "cURL example (bash)" : "MCP request example"}
+            </summary>
+            {rest && (
+              <p>
+                Set ROTAPRESS_REST_TOKEN in your protected shell environment.
+                This example never includes your pasted token.
+              </p>
+            )}
+            <pre>{example}</pre>
+          </details>
+          <details>
             <summary>Errors, limits and retries</summary>
             <ul>
               <li>
-                401: renew an expired or revoked connection. Sign-out also ends
-                access.
+                401: use a credential for this integration. Reconnect after
+                expiry, sign-out or revocation.
               </li>
               <li>
-                403: check granted actions, membership and approved source
-                origins.
+                403: check allowed actions, current membership and approved
+                source origins.
               </li>
               <li>
-                409: reread changed revisions. Keep an import retry's request ID
-                and body identical.
+                409: enable this integration or reread a changed revision. Keep
+                an import retry's request ID and body identical.
               </li>
               <li>
-                400/415/422: correct JSON, content type or rejected content.
-                413: reduce the body below 256 KiB.
+                400/415/422: correct the input, content type or rejected
+                content. 413: keep JSON below 256 KiB.
               </li>
               <li>
                 429: wait at least 60 seconds. Limits are 120 requests per
-                key/minute and 20 source reads per key/minute.
+                connection/minute and 20 source reads per connection/minute.
               </li>
               <li>
-                List reads accept offset and limit (maximum 50). Follow
-                nextOffset until null.
+                Lists accept offset and limit (maximum 50). Follow nextOffset
+                until null.
               </li>
               <li>
-                Only content_import is a retry-safe creation operation. Other
-                create requests can create duplicates.
+                Imports, image uploads, event preparation and settings proposals
+                support stable request IDs. Reuse the exact payload for retries;
+                other create requests can create duplicates.
               </li>
             </ul>
           </details>
+          {rest && (
+            <details>
+              <summary>Binary image upload</summary>
+              <p>
+                POST /api/v1/media/upload accepts up to 5 MiB of PNG, JPEG or
+                WebP bytes, with a media:write token. Set Content-Type to the
+                image type and X-RotaPress-Upload to base64url JSON containing
+                requestId and filename, with optional title, alt, caption, tags
+                and collection. Images remain private. The downloadable OpenAPI
+                includes this endpoint and its metadata schema.
+              </p>
+            </details>
+          )}
         </section>
         <section
           className="panel automation-tester"
           aria-labelledby="automation-tester-title"
         >
-          <h2 id="automation-tester-title">Try a request</h2>
+          <h2 id="automation-tester-title">
+            {rest ? "Try a request" : "Test an MCP tool"}
+          </h2>
           <p>
-            Requests run against this club. Draft writes are real saves. The key
-            stays in this page's memory and is cleared when you leave or reload.
+            Requests run against this club. Writes are real saves. Credentials
+            stay in page memory until cleared or reloaded.
           </p>
           <label>
-            Tester connection key
+            {rest ? "REST API token" : "MCP access key or OAuth access token"}
             <input
               type="password"
-              value={key}
-              onChange={(event) => setKey(event.target.value)}
+              value={credential}
+              onChange={(event) => onCredentialChange(event.target.value)}
               autoComplete="off"
               spellCheck={false}
               disabled={busy}
@@ -215,41 +326,32 @@ export function AutomationDocs({
               className="button button-outline"
               disabled={busy}
               onClick={() => {
-                setKey("");
+                onCredentialChange("");
                 setResult(null);
                 setError("");
               }}
             >
-              Clear key and response
+              Clear credential and response
             </button>
-            <Link href="/admin/integrations/automation">
-              Create a scoped connection
-            </Link>
+            <button
+              className="inline-button"
+              disabled={busy}
+              onClick={onConnect}
+            >
+              {rest ? "Create an API token" : "Manage MCP connections"}
+            </button>
           </div>
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void execute(() => runTester(key, protocol, current, input));
+              void execute(() =>
+                runTester(credential, transport, current, input),
+              );
             }}
           >
             <label>
-              Protocol
-              <select
-                aria-label="Protocol"
-                value={protocol}
-                onChange={(event) =>
-                  setProtocol(event.target.value as "rest" | "mcp")
-                }
-                disabled={busy}
-              >
-                <option value="rest">REST API</option>
-                <option value="mcp">MCP tools/call</option>
-              </select>
-            </label>
-            <label>
               Request input (JSON)
               <textarea
-                aria-label="Request input (JSON)"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={12}
@@ -257,37 +359,70 @@ export function AutomationDocs({
                 disabled={busy}
               />
             </label>
-            <p className="muted">
-              Inputs include path IDs; the REST tester moves them into the URL.
-              Replace example IDs and content before writing. Changing operation
-              loads its example.
+            <p className="small muted">
+              {rest
+                ? "Include path IDs in the input; the tester moves them into the URL. "
+                : ""}
+              Replace example IDs and facts before writing. Selecting another{" "}
+              {rest ? "endpoint" : "tool"} loads its example.
             </p>
             <p>
               <code>{preview}</code>
             </p>
-            <button className="button button-accent" disabled={busy || !key}>
-              {busy
-                ? "Sending…"
-                : current.readOnly
-                  ? "Send read request"
-                  : "Save private draft"}
-            </button>
+            <div className="actions">
+              <button
+                className="button button-accent"
+                disabled={busy || !credential || !enabled}
+              >
+                {busy
+                  ? "Sending…"
+                  : current.readOnly
+                    ? "Send read request"
+                    : "Send write request"}
+              </button>
+              <button
+                type="button"
+                className="button button-outline"
+                disabled={busy}
+                onClick={() => choose(selected)}
+              >
+                Reset example
+              </button>
+            </div>
           </form>
+          {!credential && (
+            <p className="small muted">
+              {rest
+                ? "Paste an API token or generate one in API tokens to send your first request."
+                : "Paste an MCP credential to run a connection check or tool."}
+            </p>
+          )}
+          {!enabled && (
+            <p className="small muted">
+              Enable {rest ? "REST API" : "MCP"} in Integrations before sending
+              requests.
+            </p>
+          )}
           <div className="automation-docs-actions">
-            <button
-              className="button button-outline"
-              disabled={busy || !key}
-              onClick={() => void execute(() => testMcpConnection(key))}
-            >
-              Test MCP connection
-            </button>
-            <button
-              className="button button-outline"
-              disabled={busy || !key}
-              onClick={() => void downloadSpec()}
-            >
-              Download OpenAPI
-            </button>
+            {rest ? (
+              <button
+                className="button button-outline"
+                disabled={busy || !credential || !enabled}
+                onClick={() => void downloadSpec()}
+              >
+                Download OpenAPI
+              </button>
+            ) : (
+              <button
+                className="button button-outline"
+                disabled={busy || !credential || !enabled}
+                onClick={() =>
+                  void execute(() => testMcpConnection(credential))
+                }
+              >
+                Test MCP connection
+              </button>
+            )}
           </div>
           {error && <p role="alert">{error}</p>}
           {result && (
@@ -304,7 +439,6 @@ export function AutomationDocs({
           )}
         </section>
       </div>
-      <ClientInstructions origin={origin} />
     </div>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { useCurrentUser } from "@/ui/admin-shell";
+import Link from "next/link";
 import { errorMessage, request, useResource } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
+import { ScopePicker } from "../ui/scope-picker";
+import { ReferenceOrigins } from "../ui/reference-origins";
 
 const endpoint = "/api/admin/integrations/automation/oauth";
 type OAuthClient = {
@@ -18,7 +20,6 @@ type OAuthClient = {
 type Issued = { clientId: string; clientSecret?: string; resource: string };
 
 export function OAuthSettings() {
-  const { capabilities, features } = useCurrentUser();
   const { data, error, refresh } = useResource<{ clients: OAuthClient[] }>(
     endpoint,
   );
@@ -26,10 +27,7 @@ export function OAuthSettings() {
   const [redirects, setRedirects] = useState("");
   const [origins, setOrigins] = useState("");
   const [authentication, setAuthentication] = useState("client_secret_post");
-  const [scopes, setScopes] = useState<AutomationScope[]>([
-    "website:read",
-    "website:write",
-  ]);
+  const [scopes, setScopes] = useState<AutomationScope[]>(["website:read"]);
   const [issued, setIssued] = useState<Issued>();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
@@ -49,10 +47,12 @@ export function OAuthSettings() {
             redirectUris: redirects.split(/\s+/).filter(Boolean),
             authentication,
             scopes,
-            sourceOrigins: origins
-              .split(/\s+/)
-              .filter(Boolean)
-              .map((origin) => origin.replace(/\/$/, "")),
+            sourceOrigins: scopes.includes("sources:read")
+              ? origins
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .map((origin) => origin.replace(/\/$/, ""))
+              : [],
           }),
         }),
       );
@@ -94,29 +94,26 @@ export function OAuthSettings() {
       );
     }
   }
-  const available = Object.entries(scopeDefinitions).filter(
-    ([scope, definition]) =>
-      capabilities.includes(definition.capability) &&
-      (!scope.startsWith("forms:") || features.forms) &&
-      (!scope.startsWith("events:") || features.events) &&
-      (!scope.startsWith("calendar:") || features.calendar),
-  );
   return (
     <section className="panel" aria-labelledby="oauth-settings-title">
-      <h2 id="oauth-settings-title">Connect ChatGPT or Claude with OAuth</h2>
+      <h2 id="oauth-settings-title">Connect with OAuth</h2>
       <p>
-        Create a client here, then select OAuth and enter its client ID in your
-        assistant's connection settings. Copy the assistant's exact callback URL
-        below. The assistant opens RotaPress for you to approve its actions.
+        In your assistant's MCP settings, add this server and choose OAuth. Copy
+        its callback URL below, register the connection, then return to the
+        assistant with your client ID and secret. It opens RotaPress for sign-in
+        and consent.
       </p>
       <p className="muted">
         Creating a client requires a sign-in within the last 15 minutes. The
-        connection uses the same private drafts and current staff permissions as
-        API keys.
+        connection can use only your current staff permissions. Registration
+        prepares the client; access begins after you approve its consent screen.
       </p>
+      <Link href="/sign-in?reauth=1&next=/admin/integrations/mcp">
+        Sign in again
+      </Link>
       {(problem || error) && <Notice>{problem || error}</Notice>}
       {receipt && <Notice kind="success">{receipt}</Notice>}
-      <form className="automation-form" onSubmit={create}>
+      <form className="automation-form" onSubmit={create} hidden={!!issued}>
         <label>
           OAuth connection name
           <input
@@ -156,37 +153,19 @@ export function OAuthSettings() {
             <option value="none">Public client with PKCE</option>
           </select>
         </label>
-        <fieldset disabled={busy}>
-          <legend>OAuth allowed actions</legend>
-          <div className="automation-scopes">
-            {available.map(([scope, definition]) => (
-              <label className="automation-scope" key={scope}>
-                <input
-                  type="checkbox"
-                  checked={scopes.includes(scope as AutomationScope)}
-                  onChange={(event) =>
-                    setScopes((current) =>
-                      event.target.checked
-                        ? [...current, scope as AutomationScope]
-                        : current.filter((item) => item !== scope),
-                    )
-                  }
-                />
-                OAuth: {definition.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <label>
-          OAuth reference websites
-          <textarea
-            rows={2}
+        <ScopePicker
+          legend="OAuth allowed actions"
+          value={scopes}
+          onChange={setScopes}
+          disabled={busy}
+        />
+        {scopes.includes("sources:read") && (
+          <ReferenceOrigins
             value={origins}
-            onChange={(event) => setOrigins(event.target.value)}
+            onChange={setOrigins}
             disabled={busy}
-            placeholder="https://www.example.org"
           />
-        </label>
+        )}
         <button
           className="button button-accent"
           disabled={busy || !!issued || !scopes.length}
@@ -234,7 +213,11 @@ export function OAuthSettings() {
         </div>
       )}
       <h3>Your OAuth connections</h3>
-      {!data ? (
+      {error ? (
+        <button className="button button-outline" onClick={refresh}>
+          Reload OAuth connections
+        </button>
+      ) : !data ? (
         <Loading />
       ) : !data.clients.length ? (
         <p>No OAuth connections yet.</p>
@@ -246,6 +229,21 @@ export function OAuthSettings() {
                 <h4>{client.name ?? "OAuth connection"}</h4>
                 <p>{client.disabled ? "Revoked" : "Available for consent"}</p>
                 <p className="small muted">{client.redirectUris.join(" · ")}</p>
+                <details>
+                  <summary>{client.scopes.length} allowed actions</summary>
+                  <p>
+                    {client.scopes
+                      .map(
+                        (scope) =>
+                          scopeDefinitions[scope as AutomationScope]?.label ??
+                          scope,
+                      )
+                      .join(" · ")}
+                  </p>
+                  {client.sourceOrigins.length > 0 && (
+                    <p>{client.sourceOrigins.join(", ")}</p>
+                  )}
+                </details>
               </div>
               {!client.disabled && (
                 <button

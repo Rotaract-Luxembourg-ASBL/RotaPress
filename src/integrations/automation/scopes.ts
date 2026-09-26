@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { automationTransport } from "./availability_schemas";
 import {
   scopeDefinitions,
   type AutomationScope,
@@ -12,6 +13,7 @@ export const automationScopeSchema = z.enum(
   Object.keys(scopeDefinitions) as [AutomationScope, ...AutomationScope[]],
 );
 export const connectionInput = z.strictObject({
+  transport: automationTransport.default("rest"),
   name: z.string().trim().min(2).max(80),
   scopes: z
     .array(automationScopeSchema)
@@ -43,6 +45,8 @@ export const connectionInput = z.strictObject({
 });
 export const connectionMetadata = z.strictObject({
   purpose: z.literal("rotapress-automation-v1"),
+  // Previously shared keys retain REST access only. MCP requires its own grant.
+  transport: automationTransport.default("rest"),
   sessionId: z.string().min(1),
   organizationId: z.uuid(),
   sourceOrigins: connectionInput.shape.sourceOrigins,

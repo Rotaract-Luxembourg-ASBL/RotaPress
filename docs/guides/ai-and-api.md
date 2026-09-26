@@ -15,9 +15,9 @@ for connection choices and the MCP protocol reference, or follow the
 [OAuth guide](automation-oauth.md) to connect through an assistant's MCP/apps/plugins UI.
 
 1. Sign in as an approved owner or administrator. Open **Integrations**, enable
-   **MCP**, then select **Manage** on its card to open **AI & API**.
+   **MCP**, then select **Connections & setup guide** on its card.
 2. Register the assistant's exact OAuth callback and choose its permitted actions,
-   or create a scoped bearer key for a client using protected credentials.
+   or create a dedicated MCP access key for a client using protected credentials.
    For reference-site work, select website reading/writing and reference reading.
    Add each exact HTTPS origin, such as `https://www.example.org`; bare hosts and
    `www` are different grants.
@@ -34,6 +34,9 @@ for connection choices and the MCP protocol reference, or follow the
 
 **REST API** and **MCP** are separate integrations, both **disabled by default**.
 Enable REST API separately for direct HTTP calls, binary uploads or its tester.
+REST tokens use `rp_rest_`; MCP keys use `rp_mcp_`. Each credential is enforced
+only on its integration. Existing shared keys retain REST access only; replace
+them with an MCP key or OAuth connection when reconnecting an assistant.
 Disabling one rejects its new requests with 409, including existing credentials,
 while retaining content and connection settings. Re-enabling resumes unexpired
 connections; revoke any no longer wanted. A request already completing may finish.
@@ -54,7 +57,7 @@ active. MCP must remain enabled to authorize or renew OAuth access. See
 ## MCP clients
 
 The endpoint is `/api/mcp` on the canonical `APP_URL`. Choose OAuth in a compatible
-client or store a connection key in its protected bearer settings. Hosted clients
+client or store an MCP access key in its protected bearer settings. Hosted clients
 need a reachable HTTPS installation; local clients can use loopback. See
 [client setup and protocol reference](mcp-clients.md) for configuration examples,
 discovery and compatibility requirements.
@@ -93,9 +96,10 @@ in RotaPress; the assistant cannot activate registration or publish the event.
 
 ## REST API
 
-REST uses `/api/v1` and the same scoped key or OAuth access token. OAuth targets
-the canonical `APP_URL/api/mcp` resource for both transports. Cookies alone cannot
-authorize REST. Enable **REST API** in Integrations before making direct requests.
+REST uses `/api/v1` and its own API tokens. Open **Integrations → REST API →
+API tokens, docs & tester** to generate one, read the endpoint documentation and
+use the live tester. MCP keys and OAuth tokens cannot authorize REST. Cookies
+alone cannot authorize it either. Enable **REST API** before making requests.
 
 Use the [API reference and tester](api-reference.md) for endpoint schemas, pagination,
 revision fields and error handling. Content responses use `{ "data": ... }`;

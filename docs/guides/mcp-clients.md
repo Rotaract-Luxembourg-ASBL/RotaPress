@@ -10,16 +10,17 @@ model-provider key in RotaPress.
 ## Start in the application
 
 1. Sign in as an approved owner/administrator. Open **Integrations**, enable
-   **MCP**, then select **Manage** on its card to open **AI & API**.
+   **MCP**, then select **Connections & setup guide** on its card. This workspace
+   lives at `/admin/integrations/mcp`.
 2. For ChatGPT or Claude web clients, follow the [OAuth connection guide](automation-oauth.md).
    Add the server through the client's MCP/apps/plugins settings, register its
    exact callback in RotaPress, then sign in and choose the permitted actions.
-3. For clients using bearer credentials, create a scoped connection key. For
-   reference content, choose website read/write and reference-read permissions
+3. For clients using bearer credentials, select **Connections → MCP access key**
+   and generate a scoped key. For reference content, choose website read/write and reference-read permissions
    and grant each exact HTTPS reference origin.
-4. Open **API documentation & tester** for this instance's canonical URL, schemas,
-   configuration examples and a real MCP request. Keep credentials in protected
-   client settings; if testing a key in the browser, clear it afterward.
+4. Open **Setup guide** for client examples and **Tools & connection test** for
+   schemas and real tool requests. **Use in connection test** transfers a newly
+   generated key directly to the tester. Keep credentials in protected settings.
 5. Give the assistant your source URL, required pages and verified club facts,
    then review the returned private drafts and previews.
 
@@ -27,6 +28,11 @@ model-provider key in RotaPress.
 Enable REST API separately for direct HTTP requests or its tester. Disabling one
 blocks its new requests even with valid credentials and leaves the other unchanged.
 Existing unexpired connections can resume when re-enabled; revoke unwanted ones.
+
+MCP access keys and OAuth tokens work only with MCP. Existing shared keys from
+the old AI & API screen retain REST access only; create an MCP access key or
+register an OAuth connection to reconnect. The stdio bridge still accepts the
+legacy environment-variable name, but its credential must be an MCP key.
 
 The bearer examples below target Claude Code, Claude Desktop via stdio, Codex,
 OpenAI Responses and Anthropic Messages. Hosted clients need a reachable HTTPS
@@ -43,7 +49,7 @@ Claude Code's `.mcp.json` can reference a protected environment variable:
     "rotapress": {
       "type": "http",
       "url": "https://your-club.example/api/mcp",
-      "headers": { "Authorization": "Bearer ${ROTAPRESS_API_KEY}" }
+      "headers": { "Authorization": "Bearer ${ROTAPRESS_MCP_KEY}" }
     }
   }
 }
@@ -57,7 +63,7 @@ For Codex, add to `config.toml`:
 ```toml
 [mcp_servers.rotapress]
 url = "https://your-club.example/api/mcp"
-bearer_token_env_var = "ROTAPRESS_API_KEY"
+bearer_token_env_var = "ROTAPRESS_MCP_KEY"
 enabled_tools = ["automation_capabilities", "automation_prompt", "website_context", "website_list", "website_get", "source_read", "content_import", "import_get", "website_save"]
 ```
 
@@ -89,7 +95,7 @@ Use Node 24 and absolute paths in the client's configuration:
 ```
 
 The explicitly chosen private environment file contains `ROTAPRESS_MCP_URL` and
-`ROTAPRESS_API_KEY`. Keep it outside repositories/backups shared with others and
+`ROTAPRESS_MCP_KEY`. Keep it outside repositories/backups shared with others and
 restrict its permissions to your operating-system account. On Windows, use an
 appropriate private user directory and account ACLs. When the client can pass
 protected process variables directly, omit `--env-file`. The bridge never reads a
@@ -98,7 +104,7 @@ repository `.env` automatically, refuses redirects and keeps stdout for MCP.
 ## OpenAI Responses and Anthropic Messages APIs
 
 The in-app guide supplies Python examples using each provider's SDK. Set your
-provider key/model separately from `ROTAPRESS_API_KEY`. The examples allow only
+provider key/model separately from `ROTAPRESS_MCP_KEY`. The examples allow only
 the selected content tools; they never put credentials in the model's prompt.
 
 OpenAI uses an MCP tool entry with `server_url`, `authorization` and `allowed_tools`.

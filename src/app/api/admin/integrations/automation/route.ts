@@ -2,11 +2,12 @@ import { z } from "zod";
 import { automationAccess } from "@/composition/automation";
 import { getActor } from "@/core/auth/actor";
 import { handle, HttpError, json, readMutation } from "@/core/http";
+import { automationTransport } from "@/integrations/automation/availability_schemas";
 
 async function actor(request: Request) {
   const current = await getActor(request.headers);
   if (!current)
-    throw new HttpError(401, "Sign in to manage AI & API connections.");
+    throw new HttpError(401, "Sign in to manage integration credentials.");
   return current;
 }
 export function GET(request: Request) {
@@ -15,6 +16,11 @@ export function GET(request: Request) {
       connections: await automationAccess.list(
         await actor(request),
         request.headers,
+        automationTransport
+          .optional()
+          .parse(
+            new URL(request.url).searchParams.get("transport") ?? undefined,
+          ),
       ),
     }),
   );

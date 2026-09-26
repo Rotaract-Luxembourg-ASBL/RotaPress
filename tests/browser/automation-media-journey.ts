@@ -1,3 +1,4 @@
+import { issueTransportPair } from "./automation-credentials";
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
@@ -10,25 +11,17 @@ export async function automationMediaJourney(
   api: APIRequestContext,
   restrictedKey: string,
 ) {
-  const issued = await owner.request.post(
-    "/api/admin/integrations/automation",
-    {
-      headers: { origin: smokeOrigin },
-      data: {
-        name: "Synthetic media assistant",
-        scopes: [
-          "media:read",
-          "media:write",
-          "media:inspect",
-          "website:read",
-          "website:write",
-          "website:preview",
-        ],
-      },
-    },
-  );
-  expect(issued.status()).toBe(200);
-  const connection = (await issued.json()) as { id: string; key: string };
+  const { rest: connection, mcp } = await issueTransportPair(owner, {
+    name: "Synthetic media assistant",
+    scopes: [
+      "media:read",
+      "media:write",
+      "media:inspect",
+      "website:read",
+      "website:write",
+      "website:preview",
+    ],
+  });
   const bearer = { authorization: `Bearer ${connection.key}` };
   const image = await sharp({
     create: { width: 64, height: 48, channels: 3, background: "#35675b" },
@@ -69,7 +62,10 @@ export async function automationMediaJourney(
 
     const rpc = (name: string, args: Record<string, unknown>) =>
       api.post("/api/mcp", {
-        headers: { ...bearer, accept: "application/json, text/event-stream" },
+        headers: {
+          authorization: `Bearer ${mcp.key}`,
+          accept: "application/json, text/event-stream",
+        },
         data: {
           jsonrpc: "2.0",
           id: 27,
@@ -177,7 +173,7 @@ export async function automationMediaJourney(
     expect(save.status()).toBe(200);
     const saved = (await save.json()).data;
     expect(saved.publishedRevisionId).toBeNull();
-    await automationPreviewJourney(api, connection.key, {
+    await automationPreviewJourney(api, connection.key, mcp.key, {
       id: created.id,
       revisionId: saved.draft.id,
     });
@@ -203,6 +199,10 @@ export async function automationMediaJourney(
     ).toBe(true);
     return { pageId: created.id as string, assetId };
   } finally {
+    await owner.request.delete("/api/admin/integrations/automation", {
+      headers: { origin: smokeOrigin },
+      data: { id: mcp.id },
+    });
     expect(
       (
         await owner.request.delete("/api/admin/integrations/automation", {

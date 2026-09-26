@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { expect, type Browser, type Page } from "@playwright/test";
 import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
+import { capture } from "./integration-credentials-journey";
 
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
@@ -28,9 +29,9 @@ export async function oauthJourney(
       issuer: `${smokeOrigin}/api/auth`,
       code_challenge_methods_supported: ["S256"],
     });
-    await owner.goto("/admin/integrations/automation");
+    await owner.goto("/admin/integrations/mcp");
     const panel = owner.getByRole("region", {
-      name: "Connect ChatGPT or Claude with OAuth",
+      name: "Connect with OAuth",
     });
     await panel
       .getByLabel("OAuth connection name", { exact: true })
@@ -38,12 +39,29 @@ export async function oauthJourney(
     await panel
       .getByLabel("OAuth callback URLs", { exact: true })
       .fill(callback);
+    const picker = panel.getByRole("group", {
+      name: "OAuth allowed actions",
+      exact: true,
+    });
+    await picker
+      .getByRole("button", { name: "Select all", exact: true })
+      .click();
+    expect(await picker.getByRole("checkbox", { checked: true }).count()).toBe(
+      15,
+    );
+    await picker
+      .getByRole("button", { name: "Clear all", exact: true })
+      .click();
+    await picker
+      .getByRole("checkbox", { name: "Read website content", exact: true })
+      .check();
     await panel
       .getByRole("checkbox", {
-        name: "OAuth: Create and edit website drafts",
+        name: "Create and edit website drafts",
         exact: true,
       })
       .uncheck();
+    await capture(owner, "mcp-oauth");
     const created = owner.waitForResponse(
       (response) =>
         response.url().endsWith(endpoint) &&
@@ -154,10 +172,13 @@ export async function oauthJourney(
     };
     const bearer = { authorization: `Bearer ${tokens.access_token}` };
     expect(
+      (await remote.request.get("/api/mcp", { headers: bearer })).status(),
+    ).toBe(405);
+    expect(
       (
         await remote.request.get("/api/v1/capabilities", { headers: bearer })
       ).status(),
-    ).toBe(200);
+    ).toBe(401);
     const stored = await database.query(
       "SELECT token FROM club.oauth_access_token WHERE client_id=$1",
       [issued.clientId],
@@ -181,11 +202,11 @@ export async function oauthJourney(
     const rotated = (await refreshed.json()) as { access_token: string };
     expect(
       (
-        await remote.request.get("/api/v1/capabilities", {
+        await remote.request.get("/api/mcp", {
           headers: { authorization: `Bearer ${rotated.access_token}` },
         })
       ).status(),
-    ).toBe(200);
+    ).toBe(405);
     expect(
       (
         await owner.request.post("/api/auth/oauth2/register", {
@@ -194,7 +215,17 @@ export async function oauthJourney(
         })
       ).status(),
     ).toBe(404);
-    await owner.goto("/admin/integrations/automation");
+    await owner.goto("/admin/integrations/mcp?tab=docs");
+    await owner
+      .getByLabel("MCP access key or OAuth access token", { exact: true })
+      .fill(rotated.access_token);
+    await owner
+      .getByRole("button", { name: "Send read request", exact: true })
+      .click();
+    await expect(
+      owner.getByRole("region", { name: "Test response" }).getByRole("status"),
+    ).toHaveText("Request succeeded · HTTP 200");
+    await owner.goto("/admin/integrations/mcp");
     await owner
       .getByRole("button", {
         name: "Revoke OAuth Synthetic OAuth assistant",
@@ -206,7 +237,7 @@ export async function oauthJourney(
     ).toBeVisible();
     expect(
       (
-        await remote.request.get("/api/v1/capabilities", {
+        await remote.request.get("/api/mcp", {
           headers: { authorization: `Bearer ${rotated.access_token}` },
         })
       ).status(),

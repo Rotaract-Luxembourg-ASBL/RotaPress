@@ -35,7 +35,11 @@ See [hosting](../guides/hosting.md) for operating instructions and
 
 Content automation supplies versioned REST, MCP tools/resources/prompts and scoped,
 expiring staff connections. REST API and MCP are separately enabled in Integrations
-and both default to disabled. Native page schemas and templates let assistants
+and both default to disabled. REST has its own token management, endpoint
+documentation and live tester. MCP has separate OAuth/access-key connections, a
+setup guide and tool tests; credentials cannot cross integrations. Grouped action
+pickers support select all, clear all and focused presets. Native page schemas
+and templates let assistants
 prepare website and event drafts; bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them; publication stays manual. Every feature change requires an

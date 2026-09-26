@@ -340,6 +340,86 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       ).ok,
     ).toBe(false);
   });
+  it("binds REST tokens and MCP keys to their integration, including legacy key compatibility", async () => {
+    const { automationAccess } =
+      await import("../../src/composition/automation");
+    const rest = await automationAccess.create(actor, {
+      name: "REST boundary fixture",
+      transport: "rest",
+      scopes: ["website:read"],
+    });
+    const mcp = await automationAccess.create(actor, {
+      name: "MCP boundary fixture",
+      transport: "mcp",
+      scopes: ["website:read"],
+    });
+    const request = (key: string) =>
+      new Request(`${origin}/api/v1/capabilities`, {
+        headers: { authorization: `Bearer ${key}` },
+      });
+    try {
+      expect(
+        rest.key.startsWith("rp_rest_") && mcp.key.startsWith("rp_mcp_"),
+      ).toBe(true);
+      const principal = await automationAccess.authenticate(request(rest.key), {
+        transport: "rest",
+      });
+      expect(principal.keyId).toBe(rest.id);
+      expect(
+        (
+          await automationAccess.authenticate(request(mcp.key), {
+            transport: "mcp",
+          })
+        ).keyId,
+      ).toBe(mcp.id);
+      await expect(
+        automationAccess.authenticate(request(rest.key), { transport: "mcp" }),
+      ).rejects.toMatchObject({
+        code: "AUTOMATION_CREDENTIAL_TRANSPORT",
+        status: 401,
+      });
+      await expect(
+        automationAccess.authenticate(request(mcp.key), { transport: "rest" }),
+      ).rejects.toMatchObject({
+        code: "AUTOMATION_CREDENTIAL_TRANSPORT",
+        status: 401,
+      });
+      const restList = await automationAccess.list(actor, headers, "rest");
+      const mcpList = await automationAccess.list(actor, headers, "mcp");
+      expect(restList.some((key) => key.id === mcp.id)).toBe(false);
+      expect(mcpList.some((key) => key.id === rest.id)).toBe(false);
+      expect(JSON.stringify([restList, mcpList]).includes(rest.key)).toBe(
+        false,
+      );
+      // The previous version's metadata lacked transport: preserve REST without granting MCP.
+      await migrationPool.query(
+        "UPDATE club.apikey SET metadata=$2 WHERE id=$1",
+        [
+          rest.id,
+          JSON.stringify({
+            purpose: "rotapress-automation-v1",
+            sessionId: actor.sessionId,
+            organizationId: principal.organizationId,
+            sourceOrigins: [],
+          }),
+        ],
+      );
+      expect(
+        (
+          await automationAccess.authenticate(request(rest.key), {
+            transport: "rest",
+          })
+        ).keyId,
+      ).toBe(rest.id);
+      await expect(
+        automationAccess.authenticate(request(rest.key), { transport: "mcp" }),
+      ).rejects.toMatchObject({ status: 401 });
+    } finally {
+      await automationAccess.revoke(actor, headers, rest.id);
+      await automationAccess.revoke(actor, headers, mcp.id);
+    }
+  });
+
   it("supports public PKCE clients without cookies on token exchange and revokes delegated access on sign-out", async () => {
     const callback = `${origin}/synthetic-public-callback`;
     const client = await connections.create(actor, headers, {
@@ -366,6 +446,21 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
     };
     expect(token.refresh_token).toBeUndefined();
     expect(Boolean(await access.authenticate(token.access_token))).toBe(true);
+    const { automationAccess } =
+      await import("../../src/composition/automation");
+    const request = new Request(resource, {
+      headers: { authorization: `Bearer ${token.access_token}` },
+    });
+    expect(
+      (await automationAccess.authenticate(request, { transport: "mcp" })).actor
+        .userId,
+    ).toBe(actor.userId);
+    await expect(
+      automationAccess.authenticate(request, { transport: "rest" }),
+    ).rejects.toMatchObject({
+      code: "AUTOMATION_CREDENTIAL_TRANSPORT",
+      status: 401,
+    });
     await auth.api.signOut({ headers });
     await expect(access.authenticate(token.access_token)).rejects.toMatchObject(
       { status: 401 },

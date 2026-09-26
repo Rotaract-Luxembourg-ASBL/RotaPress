@@ -3,8 +3,8 @@
 RotaPress can be added through an AI client's MCP, connectors or plugins screen.
 You do not need to write a program to connect a web client that supports a
 predefined OAuth client. Start in **Integrations**, enable **MCP**, then select
-**Manage** on the MCP card to open **AI & API**. REST API availability is controlled
-separately. Both integrations are disabled by default.
+**Connections & setup guide** on the MCP card. In **Connections**, choose
+**OAuth · recommended**. MCP is disabled by default.
 
 OAuth lets the assistant open RotaPress for sign-in and consent. It receives a
 short-lived access token after you choose its actions. It never receives your
@@ -18,12 +18,13 @@ use the same permissions, private drafts and manual publication rules as the
    `https://your-club.example/api/mcp` and choose **OAuth**. Open the advanced
    settings for a predefined OAuth client and find the exact callback URL that
    the assistant displays. UI labels and availability vary by client and account.
-2. In RotaPress, open **Integrations**, select **Manage** on the **MCP** card, then
-   find **Connect ChatGPT or Claude with OAuth**. Enter a recognizable name and
+2. In RotaPress, open **Integrations**, select **Connections & setup guide** on
+   the **MCP** card, then find **Connect with OAuth**. Enter a recognizable name and
    copy that callback URL exactly. Do not invent a callback, use a wildcard or
    copy one from a different account.
 3. Choose **Client ID and secret** unless the assistant explicitly supports a
-   public client using PKCE. Select only the needed actions. If the assistant
+   public client using PKCE. Select actions by group, or use **Select all**,
+   **Clear all**, **Read only** or **Website drafts**. Start with only the needed actions. If the assistant
    will read a reference website, also enable that action and list its exact
    HTTPS origins. These origins are displayed again during consent.
 4. Select **Create OAuth connection**. Copy the client ID and one-time client
@@ -69,12 +70,10 @@ then verify the connection with the actual client and account you intend to use.
   token records. The assistant must connect with a new registration afterward.
 - Disabling **MCP** blocks authorization, consent, token exchange and renewal, as
   well as MCP operations. Administrators can still configure and revoke clients.
-  REST availability remains a separate setting; existing credentials do not
-  override either transport's disabled state.
-- A single canonical resource, `https://your-club.example/api/mcp`, identifies
-  the shared AI operation surface. OAuth tokens must target this exact resource
-  when accessing MCP or the paired `/api/v1` operations. Endpoint selection does
-  not widen the granted scope.
+  Existing credentials do not override the disabled state.
+- The canonical resource is `https://your-club.example/api/mcp`. OAuth tokens
+  target this exact resource and authorize MCP only. They are rejected by REST;
+  create a separate REST API token if your application also needs HTTP endpoints.
 
 OAuth grants no publication, member approval, payment, draw execution or provider
 credential access. AI can only use operations listed for its connection. Private

@@ -1,3 +1,4 @@
+import { issueTransportPair } from "./automation-credentials";
 import { randomUUID } from "node:crypto";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
@@ -8,30 +9,25 @@ export async function automationEventJourney(
   owner: Page,
   api: APIRequestContext,
 ) {
-  const issued = await owner.request.post(
-    "/api/admin/integrations/automation",
-    {
-      headers: { origin: smokeOrigin },
-      data: {
-        name: "Synthetic event assistant",
-        scopes: [
-          "events:read",
-          "events:write",
-          "events:prepare",
-          "website:read",
-          "website:write",
-          "forms:read",
-          "forms:write",
-        ],
-      },
-    },
-  );
-  expect(issued.status()).toBe(200);
-  const connection = (await issued.json()) as { id: string; key: string };
+  const { rest: connection, mcp } = await issueTransportPair(owner, {
+    name: "Synthetic event assistant",
+    scopes: [
+      "events:read",
+      "events:write",
+      "events:prepare",
+      "website:read",
+      "website:write",
+      "forms:read",
+      "forms:write",
+    ],
+  });
   const headers = { authorization: `Bearer ${connection.key}` };
   const rpc = async (name: string, args: Record<string, unknown>) => {
     const response = await api.post("/api/mcp", {
-      headers: { ...headers, accept: "application/json, text/event-stream" },
+      headers: {
+        authorization: `Bearer ${mcp.key}`,
+        accept: "application/json, text/event-stream",
+      },
       data: {
         jsonrpc: "2.0",
         id: 47,
@@ -196,6 +192,10 @@ export async function automationEventJourney(
     expect(applied.registration).toMatchObject({ capacity: 80, open: false });
     expect(applied.event.event.published).toBe(false);
   } finally {
+    await owner.request.delete("/api/admin/integrations/automation", {
+      headers: { origin: smokeOrigin },
+      data: { id: mcp.id },
+    });
     expect(
       (
         await owner.request.delete("/api/admin/integrations/automation", {

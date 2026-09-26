@@ -6,6 +6,7 @@ import sharp from "sharp";
 export async function automationPreviewJourney(
   api: APIRequestContext,
   key: string,
+  mcpKey: string,
   content: { id: string; revisionId: string },
 ) {
   const headers = { authorization: `Bearer ${key}` };
@@ -66,7 +67,10 @@ export async function automationPreviewJourney(
     desktopBytes,
   );
   const phone = await api.post("/api/mcp", {
-    headers: { ...headers, accept: "application/json, text/event-stream" },
+    headers: {
+      authorization: `Bearer ${mcpKey}`,
+      accept: "application/json, text/event-stream",
+    },
     data: {
       jsonrpc: "2.0",
       id: 71,

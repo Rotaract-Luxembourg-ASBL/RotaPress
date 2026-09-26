@@ -51,8 +51,10 @@ export async function testerFetch(
   method: string,
   body?: string,
 ): Promise<TesterResult> {
-  if (!/^rp_[A-Za-z0-9_-]{20,200}$/.test(key))
-    throw new Error("Paste a current RotaPress connection key.");
+  if (!/^(?:rp_|rpo_)[A-Za-z0-9_-]{20,200}$/.test(key))
+    throw new Error(
+      "Paste a current RotaPress credential for this integration.",
+    );
   if (!(path.startsWith("/api/v1/") || path === "/api/mcp"))
     throw new Error("Choose a RotaPress API endpoint.");
   const response = await fetch(path, {
@@ -133,15 +135,17 @@ export async function runTester(
   operation: TesterOperation,
   raw: string,
 ) {
-  const request = restRequest(operation, raw);
-  if (protocol === "rest")
+  if (protocol === "rest") {
+    const request = restRequest(operation, raw);
     return testerFetch(key, request.path, request.method, request.body);
+  }
+  const args = objectInput(raw);
   const initialized = await initializeTesterMcp(key);
   if (!initialized.ok) return initialized;
   return mcpRequest(
     key,
     "tools/call",
-    { name: operation.name, arguments: objectInput(raw) },
+    { name: operation.name, arguments: args },
     2,
   );
 }

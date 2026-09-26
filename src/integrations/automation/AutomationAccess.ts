@@ -22,6 +22,7 @@ import {
   type AutomationScope,
 } from "./scopes";
 import type { OAuthAccess } from "./oauth/OAuthAccess";
+import type { AutomationTransport } from "./availability_schemas";
 
 export type AutomationPrincipal = {
   actor: TrustedActor;
@@ -91,10 +92,12 @@ export class AutomationAccess {
       body: {
         userId: actor.userId,
         name: parsed.name,
+        prefix: parsed.transport === "rest" ? "rp_rest_" : "rp_mcp_",
         expiresIn,
         permissions: { automation: [...new Set(parsed.scopes)] },
         metadata: {
           purpose: "rotapress-automation-v1",
+          transport: parsed.transport,
           sessionId: actor.sessionId,
           organizationId: access.organizationId,
           sourceOrigins: parsed.sourceOrigins,
@@ -109,13 +112,18 @@ export class AutomationAccess {
     });
     return {
       id: result.id,
+      transport: parsed.transport,
       name: result.name,
       key: result.key,
       expiresAt: result.expiresAt,
     };
   }
 
-  async list(actor: TrustedActor, headers: Headers) {
+  async list(
+    actor: TrustedActor,
+    headers: Headers,
+    transport?: AutomationTransport,
+  ) {
     await this.authorization.require(actor, "integrations.manage");
     const result = await auth.api.listApiKeys({
       headers,
@@ -124,9 +132,11 @@ export class AutomationAccess {
     return result.apiKeys.flatMap((key) => {
       const metadata = connectionMetadata.safeParse(key.metadata);
       if (!metadata.success) return [];
+      if (transport && metadata.data.transport !== transport) return [];
       return [
         {
           id: key.id,
+          transport: metadata.data.transport,
           name: key.name,
           expiresAt: key.expiresAt,
           expired:
@@ -162,7 +172,7 @@ export class AutomationAccess {
 
   async authenticate(
     request: Request,
-    options: { consumeQuota?: boolean } = {},
+    options: { transport: AutomationTransport; consumeQuota?: boolean },
   ): Promise<AutomationPrincipal> {
     if (options.consumeQuota !== false)
       await this.limiter.consume(
@@ -173,11 +183,13 @@ export class AutomationAccess {
     const oauthBearer = /^Bearer (rpo_[A-Za-z0-9_-]{20,200})$/.exec(
       request.headers.get("authorization") ?? "",
     );
-    if (oauthBearer && this.oauth)
+    if (oauthBearer && this.oauth) {
+      if (options.transport !== "mcp") this.wrongTransport("rest");
       return this.oauth.authenticate(
         oauthBearer[1],
         options.consumeQuota !== false,
       );
+    }
     const bearer = /^Bearer (rp_[A-Za-z0-9_-]{20,200})$/.exec(
       request.headers.get("authorization") ?? "",
     );
@@ -195,6 +207,8 @@ export class AutomationAccess {
       .object({ automation: z.array(automationScopeSchema) })
       .safeParse(result.key.permissions);
     if (!metadata.success || !permissions.success) this.unauthorized();
+    if (metadata.data.transport !== options.transport)
+      this.wrongTransport(options.transport);
     const current = await scheduledActor(
       metadata.data.sessionId,
       result.key.referenceId,
@@ -220,7 +234,17 @@ export class AutomationAccess {
   private unauthorized(): never {
     throw new DomainError(
       "AUTOMATION_AUTH_REQUIRED",
-      "Use an unexpired AI & API key from a current staff session.",
+      "Use an unexpired credential for this integration from a current staff session.",
+      401,
+    );
+  }
+
+  private wrongTransport(transport: AutomationTransport): never {
+    throw new DomainError(
+      "AUTOMATION_CREDENTIAL_TRANSPORT",
+      transport === "rest"
+        ? "Create a REST API token in Integrations → REST API. MCP credentials cannot access REST."
+        : "Connect with MCP OAuth or create an MCP access key in Integrations → MCP. REST API tokens cannot access MCP.",
       401,
     );
   }

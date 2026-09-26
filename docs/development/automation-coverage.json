@@ -87,7 +87,7 @@
                                                        "automation_event_prompt",
                                                        "automation_review_prompt"
                                                    ],
-                                    "manual":  "REST API and MCP have separate disabled-by-default switches. Staff register clients and review OAuth consent; publication, transport switches and applying operational proposals are never tools."
+                                    "manual":  "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and review OAuth consent; publication, transport switches and applying operational proposals are never tools."
                                 },
     "integrations/email":  {
                                "operations":  [

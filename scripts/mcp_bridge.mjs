@@ -16,7 +16,7 @@ async function main() {
   const url = new URL(
     process.env.ROTAPRESS_MCP_URL ?? "http://127.0.0.1:3000/api/mcp",
   );
-  const key = process.env.ROTAPRESS_API_KEY;
+  const key = process.env.ROTAPRESS_MCP_KEY ?? process.env.ROTAPRESS_API_KEY;
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (
     (url.protocol !== "https:" && !(loopback && url.protocol === "http:")) ||
@@ -28,7 +28,7 @@ async function main() {
     !key?.startsWith("rp_")
   )
     throw new Error(
-      "Configure ROTAPRESS_MCP_URL and ROTAPRESS_API_KEY using a protected client environment.",
+      "Configure ROTAPRESS_MCP_URL and ROTAPRESS_MCP_KEY using a protected client environment.",
     );
   const client = new Client({
     name: "rotapress-stdio-bridge",

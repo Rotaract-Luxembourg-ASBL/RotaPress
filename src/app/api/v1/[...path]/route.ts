@@ -6,8 +6,10 @@ import {
 } from "@/integrations/automation/catalogue";
 import { openApiDocument } from "@/integrations/automation/openapi";
 import { automationPrompts } from "@/integrations/automation/prompts";
-import { requireAutomationOrigin } from "@/integrations/automation/http_boundary";
-import { withOAuthChallenge } from "@/integrations/automation/oauth/challenge";
+import {
+  requireAutomationOrigin,
+  withRestChallenge,
+} from "@/integrations/automation/http_boundary";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +17,7 @@ async function dispatch(
   request: Request,
   context: { params: Promise<{ path: string[] }> },
 ) {
-  return withOAuthChallenge(
+  return withRestChallenge(
     await handle(async () => {
       requireAutomationOrigin(request);
       const current = await automationContext(request, "rest");

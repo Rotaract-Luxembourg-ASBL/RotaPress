@@ -1,37 +1,36 @@
-# REST API reference and interactive tester
+# REST API reference and live tester
 
-As an approved owner or administrator, open **Integrations** and select
-**Documentation & tester** on the **REST API** card. The same screen is linked
-from **MCP → Manage → API documentation & tester**. It describes every registered
-operation, its input/output schemas and an example, and sends requests to the
-REST or MCP endpoint. Its path is `/admin/integrations/automation/docs`.
+Open **Integrations → REST API → API tokens, docs & tester**. This integration
+has two sections: **API tokens** and **Documentation & tester**. The direct path
+is `/admin/integrations/rest`; append `?tab=docs` to open the reference.
 
-In **Integrations**, enable **REST API**, **MCP**, or both for the transports you
-intend to use. They are independent and disabled by default. Creating a connection
-does not enable either transport. Disabling one blocks its operations while
-preserving credentials, content and settings; current authorization still applies
-if it is enabled again. Changing availability requires a recent staff sign-in.
+1. Enable **REST API** in Integrations. It defaults to disabled. A current owner
+   or administrator can generate a token even while access is disabled.
+2. In **API tokens**, enter a recognizable name and expiry. Choose actions by
+   group, or use **Select all**, **Clear all**, **Read only** or **Website drafts**.
+   Reference reading requires exact approved HTTPS origins.
+3. Select **Generate API token**. Copy the one-time token into protected client
+   settings, or select **Use in live tester** to test it here without repasting.
+4. Start with the capabilities endpoint. Search or select another endpoint to
+   see its required permission, schemas, example input and cURL request.
+5. Inspect the HTTP status and response. **Send write request** performs a real
+   save. Review example IDs and facts first. Download OpenAPI for another client.
 
-Create a scoped connection through **MCP → Manage**. Paste its key into the tester's
-password field. The tester retains it only in page memory, sends no session cookies,
-allows only this instance's API paths and refuses redirects. Clear the key when
-finished. Request/response text is rendered as text, never HTML. There are no
-external documentation scripts, analytics or third-party request proxies.
+Token generation requires a sign-in within the last 15 minutes. The screen provides
+**Sign in again** when renewal is needed. Tokens expire after 5 minutes to 8 hours
+and stop when their parent session ends. Revoke unwanted tokens from this workspace.
 
-**Draft requests are real saves.** Begin with `automation_capabilities` or a list
-operation. Select an operation, review the example, replace placeholder IDs and
-facts, then send. Changing operation loads its example. For operations with a
-`requestId`, generate one UUID for that intended write and preserve it and the
-exact body when retrying. Event preparation needs the snapshot token returned by
-`events_prepare_preview`; replace the placeholder token before sending.
-
-The MCP connection check initializes the protocol and lists tools, resources and
-prompts without creating content. Download OpenAPI for another API client.
+The tester keeps credentials only in page memory. Tabs preserve entered work;
+reload or **Clear credential and response** clears the tester credential. It sends
+no session cookies, uses only this instance's API paths and refuses redirects.
+Request and response content is rendered as text. For operations with a request ID,
+keep that ID and the exact payload when retrying. Event preparation also needs the
+snapshot token returned by its preview operation.
 
 ## Authentication and transport
 
 - Base: the canonical `APP_URL` followed by `/api/v1`.
-- Header: `Authorization: Bearer <RotaPress connection key or OAuth access token>`.
+- Header: `Authorization: Bearer <RotaPress REST API token>`.
 - JSON mutation bodies: `Content-Type: application/json`, at most 262,144 bytes.
 - Binary images use the separate bounded upload endpoint described below.
 - HTTPS on a hosted server. Local clients may use a loopback development origin.
@@ -46,9 +45,8 @@ prompts without creating content. Download OpenAPI for another API client.
 Grant only the scopes needed for the task. Reads can include private drafts and
 private media metadata. `media:inspect` explicitly permits private image pixels;
 `website:preview` permits screenshots of authorized page drafts. Send those only
-to a client you have chosen to trust. OAuth uses the same operation scopes and
-current session policy; see [OAuth connection setup](automation-oauth.md) for
-resource, consent, refresh and revocation requirements.
+to a client you have chosen to trust. Tokens belong to REST only. MCP access keys
+and OAuth tokens are rejected by REST.
 
 ## Discovery
 
@@ -64,8 +62,7 @@ Paths in the tables below are relative to `/api/v1`.
 | `POST /prompts/prepare_event`           | Event preparation workflow for a `brief` and optional `locale`         |
 | `POST /prompts/review_page_design`      | Saved-page visual review workflow for `pageId` and optional `locale`   |
 
-Capabilities and workflow prompts are also MCP tools, so clients that expose only
-tools can discover the workflow. The MCP prompt names omit the `/prompts/` prefix.
+Capabilities and workflow prompts describe the available preparation workflows.
 Prompts return instructions; RotaPress does not run a model or generate images.
 Feature availability and permissions still apply when a tool is executed. A listed
 tool does not override a disabled feature or supply a required additional grant.
@@ -75,39 +72,39 @@ tool does not override a disabled feature or supply a required additional grant.
 The interactive reference and downloadable OpenAPI are generated from the same
 registry that handles requests. Use them for every field, enum and required value.
 
-| REST path                       | Methods    | MCP names                            | Scopes                                         |
-| ------------------------------- | ---------- | ------------------------------------ | ---------------------------------------------- |
-| `/website/context`              | GET        | `website_context`                    | `website:read`                                 |
-| `/website/design`               | GET        | `website_design`                     | `website:read`                                 |
-| `/website/content`              | GET, POST  | `website_list`, `website_create`     | `website:read`, `website:write`                |
-| `/website/content/{id}`         | GET, PATCH | `website_get`, `website_save`        | `website:read`, `website:write`                |
-| `/website/content/{id}/preview` | POST       | `website_preview`                    | `website:preview` and `website:read`           |
-| `/sources/read`                 | POST       | `source_read`                        | `sources:read`                                 |
-| `/imports`                      | POST       | `content_import`                     | `website:write`                                |
-| `/imports/{requestId}`          | GET        | `import_get`                         | `website:read`                                 |
-| `/media`                        | GET        | `media_list`                         | `media:read`                                   |
-| `/media/{id}`                   | GET        | `media_get`                          | `media:read`                                   |
-| `/media/uploads`                | POST       | `media_upload`                       | `media:write`                                  |
-| `/media/{id}/image`             | GET        | `media_inspect`                      | `media:inspect`                                |
-| `/media/{id}/metadata`          | PATCH      | `media_metadata_save`                | `media:write`                                  |
-| `/forms`                        | GET, POST  | `forms_list`, `forms_create`         | `forms:read`, `forms:write`                    |
-| `/forms/{id}`                   | GET, PATCH | `forms_get`, `forms_save`            | `forms:read`, `forms:write`                    |
-| `/events`                       | GET, POST  | `events_list`, `events_create`       | `events:read`, `events:write`                  |
-| `/events/{id}`                  | GET, PATCH | `events_get`, `events_save`          | `events:read`, `events:write`                  |
-| `/events/blueprints`            | GET        | `events_blueprints`                  | `events:read`                                  |
-| `/events/preparation/preview`   | POST       | `events_prepare_preview`             | `events:prepare` plus preparation grants below |
-| `/events/preparation`           | POST       | `events_prepare`                     | `events:prepare` plus preparation grants below |
-| `/events/{id}/preparation`      | GET        | `events_workspace`                   | `events:read`                                  |
-| `/events/{id}/forms`            | POST       | `events_form_create`                 | `forms:write`                                  |
-| `/events/{id}/packages`         | GET        | `events_packages`                    | `events:read`                                  |
-| `/events/{eventId}/packages`    | PATCH      | `events_package_save`                | `events:prepare`                               |
-| `/events/{id}/prizes`           | GET        | `events_prizes`                      | `events:read`                                  |
-| `/events/{eventId}/prizes`      | PATCH      | `events_prize_save`                  | `events:prepare`                               |
-| `/events/proposals`             | POST       | `events_propose_settings`            | `events:prepare`                               |
-| `/events/{id}/proposals`        | GET        | `events_proposals`                   | `events:read`                                  |
-| `/directory`                    | GET, POST  | `directory_list`, `directory_create` | `directory:read`, `directory:write`            |
-| `/directory/{id}`               | PATCH      | `directory_save`                     | `directory:write`                              |
-| `/calendar`                     | GET        | `calendar_read`                      | `calendar:read`                                |
+| REST path                       | Methods    | Scopes                                         |
+| ------------------------------- | ---------- | ---------------------------------------------- |
+| `/website/context`              | GET        | `website:read`                                 |
+| `/website/design`               | GET        | `website:read`                                 |
+| `/website/content`              | GET, POST  | `website:read`, `website:write`                |
+| `/website/content/{id}`         | GET, PATCH | `website:read`, `website:write`                |
+| `/website/content/{id}/preview` | POST       | `website:preview` and `website:read`           |
+| `/sources/read`                 | POST       | `sources:read`                                 |
+| `/imports`                      | POST       | `website:write`                                |
+| `/imports/{requestId}`          | GET        | `website:read`                                 |
+| `/media`                        | GET        | `media:read`                                   |
+| `/media/{id}`                   | GET        | `media:read`                                   |
+| `/media/uploads`                | POST       | `media:write`                                  |
+| `/media/{id}/image`             | GET        | `media:inspect`                                |
+| `/media/{id}/metadata`          | PATCH      | `media:write`                                  |
+| `/forms`                        | GET, POST  | `forms:read`, `forms:write`                    |
+| `/forms/{id}`                   | GET, PATCH | `forms:read`, `forms:write`                    |
+| `/events`                       | GET, POST  | `events:read`, `events:write`                  |
+| `/events/{id}`                  | GET, PATCH | `events:read`, `events:write`                  |
+| `/events/blueprints`            | GET        | `events:read`                                  |
+| `/events/preparation/preview`   | POST       | `events:prepare` plus preparation grants below |
+| `/events/preparation`           | POST       | `events:prepare` plus preparation grants below |
+| `/events/{id}/preparation`      | GET        | `events:read`                                  |
+| `/events/{id}/forms`            | POST       | `forms:write`                                  |
+| `/events/{id}/packages`         | GET        | `events:read`                                  |
+| `/events/{eventId}/packages`    | PATCH      | `events:prepare`                               |
+| `/events/{id}/prizes`           | GET        | `events:read`                                  |
+| `/events/{eventId}/prizes`      | PATCH      | `events:prepare`                               |
+| `/events/proposals`             | POST       | `events:prepare`                               |
+| `/events/{id}/proposals`        | GET        | `events:read`                                  |
+| `/directory`                    | GET, POST  | `directory:read`, `directory:write`            |
+| `/directory/{id}`               | PATCH      | `directory:write`                              |
+| `/calendar`                     | GET        | `calendar:read`                                |
 
 Use query parameters for GET, and JSON for POST/PATCH. Do not repeat a path ID in
 the body or query. The tester's combined input moves IDs to the REST path for you;

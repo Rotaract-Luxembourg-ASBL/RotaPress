@@ -61,7 +61,7 @@ export const operations: readonly Operation[] = [
   ...workflowOperations,
   ...designOperations,
 ];
-export const contractVersion = "1.2.0";
+export const contractVersion = "1.3.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))

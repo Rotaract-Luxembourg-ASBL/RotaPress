@@ -7,6 +7,8 @@ export function signInDestination(next: string | null): string {
     "/admin/calendar",
     "/admin/integrations/google",
     "/admin/integrations/automation",
+    "/admin/integrations/rest",
+    "/admin/integrations/mcp",
     "/admin/integrations/automation/docs",
     "/admin/integrations/automation/authorize",
     "/membership",

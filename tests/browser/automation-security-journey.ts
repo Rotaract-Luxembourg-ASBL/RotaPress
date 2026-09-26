@@ -1,3 +1,4 @@
+import { issueTransportPair } from "./automation-credentials";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
@@ -8,6 +9,7 @@ export async function automationSecurityJourney(
   api: APIRequestContext,
   database: Pool,
   key: string,
+  mcpKey: string,
 ) {
   const bearer = { authorization: `Bearer ${key}` };
   const rpc = (name: string, args = {}) => ({
@@ -17,7 +19,7 @@ export async function automationSecurityJourney(
     params: { name, arguments: args },
   });
   const mcpHeaders = {
-    ...bearer,
+    authorization: `Bearer ${mcpKey}`,
     accept: "application/json, text/event-stream",
   };
   for (const name of [
@@ -112,27 +114,19 @@ export async function automationSecurityJourney(
     ).status(),
   ).toBe(400);
 
-  const issued = await owner.request.post(
-    "/api/admin/integrations/automation",
-    {
-      headers: { origin: smokeOrigin },
-      data: {
-        name: "Synthetic contract coverage",
-        scopes: [
-          "forms:read",
-          "forms:write",
-          "events:read",
-          "events:write",
-          "directory:read",
-          "directory:write",
-          "calendar:read",
-          "media:read",
-        ],
-      },
-    },
-  );
-  expect(issued.status()).toBe(200);
-  const connection = (await issued.json()) as { id: string; key: string };
+  const { rest: connection, mcp } = await issueTransportPair(owner, {
+    name: "Synthetic contract coverage",
+    scopes: [
+      "forms:read",
+      "forms:write",
+      "events:read",
+      "events:write",
+      "directory:read",
+      "directory:write",
+      "calendar:read",
+      "media:read",
+    ],
+  });
   const headers = { authorization: `Bearer ${connection.key}` };
   try {
     for (const path of ["forms", "events", "directory", "media", "calendar"])
@@ -232,7 +226,10 @@ export async function automationSecurityJourney(
       );
       expect((await api.get("/api/v1/events", { headers })).status()).toBe(403);
       const denied = await api.post("/api/mcp", {
-        headers: { ...headers, accept: "application/json, text/event-stream" },
+        headers: {
+          authorization: `Bearer ${mcp.key}`,
+          accept: "application/json, text/event-stream",
+        },
         data: rpc("events_list"),
       });
       expect((await denied.json()).result.isError).toBe(true);
@@ -251,6 +248,10 @@ export async function automationSecurityJourney(
       ]);
     }
   } finally {
+    await owner.request.delete("/api/admin/integrations/automation", {
+      headers: { origin: smokeOrigin },
+      data: { id: mcp.id },
+    });
     expect(
       (
         await owner.request.delete("/api/admin/integrations/automation", {

@@ -45,6 +45,7 @@ export async function automationContext(
   await automationAvailability.requireEnabled(transport);
   const authenticate = async (consumeQuota: boolean) => {
     const principal = await automationAccess.authenticate(request, {
+      transport,
       consumeQuota,
     });
     await automationAvailability.requireEnabled(

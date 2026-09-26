@@ -57,6 +57,13 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   creation is not transport enablement; disabling retains content and credentials.
   Availability changes require recent staff authentication, an expected version
   and a deliberate administration action.
+- Credential separation in contract 1.3: new keys record a trusted `transport`
+  in provider metadata and use `rp_rest_` or `rp_mcp_` prefixes. Authentication
+  enforces that metadata, including reauthorization. OAuth is MCP-only. For
+  compatibility, old keys without transport retain REST access only; MCP users
+  must reconnect with OAuth or a new MCP key. No database rewrite is needed.
+  Operation payloads remain v1; the deliberate credential narrowing is a security
+  compatibility change and must be included in release notes.
 - Better Auth owns keys, sessions and OAuth credentials. `enableSessionForAPIKeys`
   stays false. Raw plugin management routes remain inaccessible over HTTP.
 - Creating keys requires current integration-management access and recent sign-in.

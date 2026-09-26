@@ -1,0 +1,210 @@
+.automation-workspace {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 86rem;
+  min-width: 0;
+}
+.automation-workspace [hidden] {
+  display: none !important;
+}
+.automation-workspace .page-heading {
+  margin: 0;
+}
+.automation-workspace .panel,
+.automation-workspace [role="tabpanel"] {
+  min-width: 0;
+}
+.automation-workspace code {
+  overflow-wrap: anywhere;
+}
+.integration-endpoint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.integration-endpoint > div {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+.integration-endpoint code {
+  font-size: 0.9rem;
+}
+.integration-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.5rem;
+}
+.integration-tabs button {
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
+.integration-tabs button[aria-selected="true"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 650;
+  box-shadow: inset 0 -2px var(--club-accent);
+}
+.automation-workspace .automation-settings {
+  max-width: none;
+}
+.automation-workspace .automation-form label:not(.automation-scope),
+.credential-fields {
+  display: grid;
+  gap: 0.5rem;
+}
+.automation-workspace .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+.automation-reference > label,
+.automation-tester > label {
+  margin-top: 1rem;
+}
+.automation-reference > p {
+  margin-block: 1rem;
+}
+.automation-workspace input:not([type="checkbox"]):not([type="radio"]),
+.automation-workspace textarea,
+.automation-workspace select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.credential-fields {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.credential-issued {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+.scope-picker-toolbar,
+.scope-picker-group-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.scope-picker-toolbar {
+  margin: 1rem 0;
+}
+.scope-picker-toolbar .button {
+  padding: 0.5rem 0.75rem;
+  min-height: 2.75rem;
+}
+.scope-picker-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.scope-picker-group {
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 1rem;
+}
+.scope-picker-group > p {
+  margin: 0.3rem 0 0.65rem;
+}
+.automation-workspace .automation-scope {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.35rem 0;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+.scope-picker-group .inline-button {
+  min-height: 2rem;
+}
+.mcp-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+.mcp-methods legend {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.mcp-methods label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+.mcp-methods label:has(input:checked) {
+  background: var(--paper);
+  border-color: var(--club-accent);
+}
+.mcp-methods input {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 0;
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+}
+.mcp-methods span span {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+.automation-workspace .automation-connections > li > div {
+  min-width: 0;
+}
+.automation-workspace .automation-connections details li {
+  display: list-item;
+  border: 0;
+  padding: 0.2rem 0;
+  margin: 0;
+}
+.automation-workspace details summary {
+  cursor: pointer;
+}
+.automation-workspace .automation-guide {
+  display: grid;
+  gap: 1rem;
+}
+.automation-workspace .automation-guide ol {
+  padding-left: 1.5rem;
+}
+.automation-workspace .automation-guide li {
+  margin: 0.5rem 0;
+}
+@media (max-width: 720px) {
+  .credential-fields,
+  .scope-picker-groups,
+  .mcp-methods {
+    grid-template-columns: 1fr;
+  }
+  .integration-tabs button {
+    flex: 1 1 auto;
+    padding-inline: 0.65rem;
+  }
+  .scope-picker-toolbar .actions {
+    width: 100%;
+  }
+  .scope-picker-toolbar .button {
+    flex: 1 1 auto;
+  }
+}

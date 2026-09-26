@@ -1,5 +1,4 @@
-import { AutomationSettings } from "@/integrations/automation/ui/automation-settings";
-export const metadata = { title: "AI & API connections" };
+import { redirect } from "next/navigation";
 export default function Page() {
-  return <AutomationSettings />;
+  redirect("/admin/integrations/mcp");
 }

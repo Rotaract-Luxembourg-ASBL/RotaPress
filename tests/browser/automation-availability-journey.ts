@@ -22,7 +22,7 @@ export async function automationAvailabilityJourney(
   expect((await anonymous.get("/api/v1/capabilities")).status()).toBe(409);
   expect((await anonymous.get("/api/mcp")).status()).toBe(409);
   await owner.goto("/admin/integrations");
-  for (const name of ["REST API", "MCP"]) {
+  for (const name of ["REST API"]) {
     await owner
       .getByRole("button", { name: `Enable ${name}`, exact: true })
       .click();
@@ -38,7 +38,7 @@ export async function automationAvailabilityJourney(
     owner.getByRole("button", { name: "Disable REST API", exact: true }),
   ).toBeVisible();
   await expect(
-    owner.getByRole("button", { name: "Disable MCP", exact: true }),
+    owner.getByRole("button", { name: "Enable MCP", exact: true }),
   ).toBeVisible();
   await owner.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -57,6 +57,7 @@ export async function automationAvailabilityIsolation(
   owner: Page,
   api: APIRequestContext,
   key: string,
+  mcpKey: string,
 ) {
   const headers = { authorization: `Bearer ${key}` };
   const states = (await (await owner.request.get(endpoint)).json()).items as {
@@ -102,9 +103,13 @@ export async function automationAvailabilityIsolation(
     expect((await api.get("/api/v1/capabilities", { headers })).status()).toBe(
       state.kind === "rest" ? 409 : 200,
     );
-    expect((await api.get("/api/mcp", { headers })).status()).toBe(
-      state.kind === "mcp" ? 409 : 405,
-    );
+    expect(
+      (
+        await api.get("/api/mcp", {
+          headers: { authorization: `Bearer ${mcpKey}` },
+        })
+      ).status(),
+    ).toBe(state.kind === "mcp" ? 409 : 405);
     if (state.kind === "rest")
       expect(
         (

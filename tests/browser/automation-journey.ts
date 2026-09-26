@@ -13,6 +13,7 @@ import {
   automationAvailabilityJourney,
   automationAvailabilityIsolation,
 } from "./automation-availability-journey";
+import { integrationCredentialsJourney } from "./integration-credentials-journey";
 import { oauthJourney } from "./oauth-journey";
 
 /** Real Better Auth OTP session and scoped key; all source/page text is synthetic. */
@@ -23,74 +24,12 @@ export async function automationJourney(
 ) {
   const endpoint = "/api/admin/integrations/automation";
   const anonymous = await browser.newContext();
-  const viewport = owner.viewportSize();
   await automationAvailabilityJourney(owner, anonymous.request);
-  await owner.goto("/admin/integrations");
-  await owner.getByRole("link", { name: "Manage MCP", exact: true }).click();
-  await expect(
-    owner.getByRole("heading", { name: "AI & API", exact: true }),
-  ).toBeVisible();
-  await owner
-    .getByLabel("Connection name", { exact: true })
-    .fill("Synthetic content assistant");
-  await owner
-    .getByLabel("Reference websites", { exact: true })
-    .fill("https://www.rotary.org");
-  await owner
-    .getByRole("checkbox", {
-      name: "Read approved reference websites",
-      exact: true,
-    })
-    .check();
-  const issuedResponse = owner.waitForResponse(
-    (r) => r.url().endsWith(endpoint) && r.request().method() === "POST",
-  );
-  await owner
-    .getByRole("button", { name: "Create connection", exact: true })
-    .click();
-  const issued = await issuedResponse;
-  expect(issued.status()).toBe(200);
-  const { id, key } = (await issued.json()) as { id: string; key: string };
-  expect(typeof key === "string" && key.startsWith("rp_")).toBe(true);
-  await expect(
-    owner.getByRole("heading", { name: "Save your key", exact: true }),
-  ).toBeVisible();
-  expect(
-    await owner
-      .getByLabel("Connection key", { exact: true })
-      .getAttribute("type"),
-  ).toBe("password");
-  await owner
-    .getByRole("button", { name: "I saved the key", exact: true })
-    .click();
-  await owner.setViewportSize({ width: 390, height: 844 });
-  await owner.evaluate(() => {
-    if (document.activeElement instanceof HTMLElement)
-      document.activeElement.blur();
-    window.scrollTo(0, 0);
-  });
-  await expect(
-    owner.getByRole("button", {
-      name: "Revoke Synthetic content assistant",
-      exact: true,
-    }),
-  ).toBeVisible();
-  expect(
-    await owner.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
-  await owner.screenshot({
-    path: ".local/automation-phone.png",
-    fullPage: true,
-  });
-  if (viewport) await owner.setViewportSize(viewport);
-  await owner.evaluate(() => window.scrollTo(0, 0));
-  await owner.screenshot({
-    path: ".local/automation-desktop.png",
-    fullPage: true,
-  });
-
+  const {
+    rest: { id, key },
+    mcp,
+  } = await integrationCredentialsJourney(owner);
+  const mcpBearer = { authorization: `Bearer ${mcp.key}` };
   const bearer = { authorization: `Bearer ${key}` };
   const api = anonymous.request;
   const client = new Client({
@@ -152,7 +91,10 @@ export async function automationJourney(
     expect(
       (
         await api.post("/api/mcp", {
-          headers: { ...bearer, accept: "application/json, text/event-stream" },
+          headers: {
+            ...mcpBearer,
+            accept: "application/json, text/event-stream",
+          },
           data: [
             { jsonrpc: "2.0", id: 1, method: "tools/list" },
             { jsonrpc: "2.0", id: 2, method: "tools/list" },
@@ -285,7 +227,7 @@ export async function automationJourney(
 
     await client.connect(
       new StreamableHTTPClientTransport(new URL(`${smokeOrigin}/api/mcp`), {
-        requestInit: { headers: bearer },
+        requestInit: { headers: mcpBearer },
       }),
     );
     const tools = await client.listTools();
@@ -338,7 +280,7 @@ export async function automationJourney(
           env: {
             ...environment,
             ROTAPRESS_MCP_URL: `${smokeOrigin}/api/mcp`,
-            ROTAPRESS_API_KEY: key,
+            ROTAPRESS_MCP_KEY: mcp.key,
           },
           stderr: "pipe",
         }),
@@ -348,12 +290,12 @@ export async function automationJourney(
       await bridge.close();
     }
 
-    await automationAvailabilityIsolation(owner, api, key);
+    await automationAvailabilityIsolation(owner, api, key, mcp.key);
     await automationMediaJourney(owner, api, key);
     await automationEventJourney(owner, api);
     await oauthJourney(owner, browser, database);
-    await automationDocsJourney(owner, key);
-    await automationSecurityJourney(owner, api, database, key);
+    await automationDocsJourney(owner, key, mcp.key);
+    await automationSecurityJourney(owner, api, database, key, mcp.key);
     await database.query(
       "UPDATE club.apikey SET request_count=120, last_request=now() WHERE id=$1",
       [id],
@@ -408,20 +350,24 @@ export async function automationJourney(
         [metadata.organizationId],
       );
     }
-    await owner.goto("/admin/integrations/automation");
+    await owner.goto("/admin/integrations/rest");
     await owner
       .getByRole("button", {
-        name: "Revoke Synthetic content assistant",
+        name: "Revoke Synthetic REST script",
         exact: true,
       })
       .click();
     await expect(
-      owner.getByText("Revoked Synthetic content assistant.", { exact: true }),
+      owner.getByText("Revoked Synthetic REST script.", { exact: true }),
     ).toBeVisible();
     expect(
       (await api.get("/api/v1/capabilities", { headers: bearer })).status(),
     ).toBe(401);
   } finally {
+    await owner.request.delete(endpoint, {
+      headers: { origin: smokeOrigin },
+      data: { id: mcp.id },
+    });
     await client.close();
     await anonymous.close();
   }
