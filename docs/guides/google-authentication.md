@@ -21,11 +21,6 @@ does not approve membership, assign a role or grant access to an event or guest 
    real Google consent/sign-in and return to the integration. Only a successful
    callback and session creation can record a verification time.
 
-The application deliberately has no fake verification button, token-paste login or
-test callback that creates a Google identity. Credentials and a real Google account
-are required for external verification. Local automated checks never follow the
-Google authorization URL or exchange a code with Google.
-
 If Google-only staff access is desired, the owner first signs in successfully using
 the current Google configuration, then changes the staff policy in Settings. The
 server rechecks the current provider revision inside the settings transaction.
@@ -44,7 +39,7 @@ public logo changes still follow Website publication.
 ### Managed accounts or personal Gmail
 
 In **Integrations → Google sign-in**, leave **Managed Google domain** empty to
-accept any Google account, including Gmail. Enter a domain such as `rotaract.lu`
+accept any Google account, including Gmail. Enter a domain such as `your-club.example`
 to require managed accounts for that domain. Do not include `@` or a URL.
 This applies to all Google sign-ins, including member entry points; member/guest
 email codes remain a separate access method.
@@ -80,19 +75,19 @@ Membership and staff approval are always separate.
   configuration. Credentials cannot be changed while staff policy requires Google;
   the owner must deliberately restore email-or-Google policy first.
 - Google credentials are managed only in this integration. Environment credentials
-  no longer enable Google or reactivate a disconnected connection. For an older
-  development installation using that fallback, save its credentials in Integrations
-  before updating; keep a verified email owner session until setup is complete.
-  Legacy Google sessions lacking a provider revision must sign in again.
+  cannot enable Google or reactivate a disconnected connection. When upgrading an
+  older installation that used environment credentials, save them in Integrations
+  and keep a verified email owner session until setup is complete. Sessions without
+  a recorded provider revision must sign in again.
 
 ## OAuth boundaries
 
 The pinned Better Auth implementation owns OAuth state, signed state cookies,
 PKCE, code exchange, provider identity verification, account linking and sessions.
-Only Google redirect sign-in and the Google GET callback are exposed. Browser-supplied
-ID tokens, scope overrides, provider metadata and alternate linking endpoints are
-rejected. Return URLs are restricted to known local routes. Minimum Google scopes
-remain `openid`, `email` and `profile`, with online access.
+For Google authentication, only redirect sign-in and the GET callback are exposed.
+Browser-supplied ID tokens, scope overrides, provider metadata and alternate linking
+endpoints are rejected. Return URLs are restricted to known local routes. Minimum
+Google scopes are `openid`, `email` and `profile`, with online access.
 
 Server-only OAuth state binds each flow to its configuration revision. The callback
 must match both its request snapshot and the currently enabled configuration before
@@ -108,10 +103,18 @@ email-authenticated session into a Google session. Password endpoints remain dis
 Existing OTP hashing, expiry, attempt limits, origin checks, bounded request bodies,
 database rate limits and private/no-store responses continue to apply.
 
+## Troubleshooting
+
+If verification fails, compare the exact callback URL, confirm that the Google
+client is a Web application, and check its consent-screen audience or test-user
+list. For managed accounts, check the configured domain and use an account from
+that domain. After changing credentials or domain settings, enable the integration
+and complete a new Google sign-in before selecting Google-only staff access.
+
+Verification requires a completed Google callback with your configured client and
+account. Saved settings or automated local checks cannot establish that access.
+Never paste provider tokens into RotaPress or use them as session credentials.
+
 Official references: [Better Auth Google](https://www.better-auth.com/docs/authentication/google),
 [OAuth state](https://www.better-auth.com/docs/concepts/oauth) and
 [security options](https://www.better-auth.com/docs/reference/options).
-Implementation was also reviewed against the installed Better Auth 1.7.5 source.
-
-Live Google verification requires credentials and a completed real flow. Local
-configuration and policy checks do not establish provider acceptance.

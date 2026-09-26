@@ -24,7 +24,8 @@ for connection choices and the MCP protocol reference, or follow the
 3. Copy the one-time client secret or key into the client's protected settings.
    Never put credentials in prompts, repositories, shared screenshots or URLs.
 4. Connect through the assistant's OAuth UI, bearer-authenticated remote MCP or the
-   local stdio bridge below. OAuth opens RotaPress for real sign-in and consent.
+   [local stdio bridge](mcp-clients.md#local-stdio-clients-including-claude-desktop).
+   OAuth opens RotaPress for sign-in and consent.
 5. Use `adapt_reference_website` with `sourceUrl`, optional `locale` (`en`, `fr`, `lb`)
    and `brief`. Explain the pages you need and supply verified club facts.
 6. Ask for desktop/phone previews of saved drafts when the connection has the
@@ -52,47 +53,22 @@ active. MCP must remain enabled to authorize or renew OAuth access. See
 
 ## MCP clients
 
-Use `/api/mcp` on the canonical `APP_URL`, with the OAuth access token or connection
-key in the client's protected bearer settings. This stateless Streamable HTTP endpoint authenticates
-every POST and returns JSON. It has no persistent SSE stream or MCP session ID.
-Each POST accepts one MCP message; legacy JSON-RPC batches are rejected so they
-cannot bypass request quotas.
+The endpoint is `/api/mcp` on the canonical `APP_URL`. Choose OAuth in a compatible
+client or store a connection key in its protected bearer settings. Hosted clients
+need a reachable HTTPS installation; local clients can use loopback. See
+[client setup and protocol reference](mcp-clients.md) for configuration examples,
+discovery and compatibility requirements.
 
-OAuth discovery, registered-client authorization, S256 PKCE, human consent and
-refresh are implemented. Register each client through administration; anonymous
-dynamic registration and remote client-metadata fetching are unavailable. Local
-checks do not establish acceptance by a particular ChatGPT or Claude account.
+Start with `automation_capabilities` to discover granted operations, source origins
+and enabled features. Workflow prompt tools provide instructions even for clients
+without MCP prompt support. Every operation publishes input/output schemas and
+validates its response. `media_inspect` and `website_preview` also attach images
+for clients with vision support.
 
-For stdio clients:
-
-```json
-{
-  "command": "node",
-  "args": ["/absolute/path/to/RotaPress/scripts/mcp_bridge.mjs"]
-}
-```
-
-Provide `ROTAPRESS_MCP_URL=https://your-club.example/api/mcp` and `ROTAPRESS_API_KEY`
-through the client's protected process environment. Local testing may use
-`http://127.0.0.1:3000/api/mcp`. The bridge uses the official MCP SDK, refuses
-redirects, writes protocol messages to stdout and generic failures to stderr.
-It does not load a repository `.env` file.
-
-MCP resources:
-
-- `rotapress://capabilities`: granted operations, source origins and feature states.
-- `rotapress://openapi`: the REST contract and shared operation input schemas.
-
-Tools-only clients can call `automation_capabilities` and the workflow prompt
-tools for the same discovery and instructions. Available operations depend on the
-connection's scopes. Every operation publishes input and output schemas; successful
-responses are validated before being returned. `media_inspect` and `website_preview`
-also attach image content for clients with vision support.
-
-The prompt inventories existing content, reads up to ten reference pages, preserves
-the theme and returns native drafts, source mappings and unresolved facts. All
-source and saved content is untrusted data; it cannot authorize tools, grant
-permissions, request secrets or execute code.
+The reference-adaptation workflow inventories existing content, reads up to ten
+reference pages, preserves the theme and returns drafts, source mappings and
+unresolved facts. Source and saved content cannot authorize tools, grant permissions,
+request secrets or execute code.
 
 ## Pages, images and complete event drafts
 
@@ -117,50 +93,18 @@ in RotaPress; the assistant cannot activate registration or publish the event.
 
 ## REST API
 
-Use the same scoped bearer key or OAuth access token. OAuth uses the canonical
-`APP_URL/api/mcp` resource for both transports. Cookies alone cannot authorize
-`/api/v1`. Responses are `no-store`; JSON mutations have a 256 KiB body limit,
-with a separate bounded binary image-upload endpoint. Success is
-`{ "data": ... }`; errors are `{ "error": "..." }`. Status codes distinguish
-invalid input (400), invalid/expired keys (401), denied scope/access (403), absent
-resources (404), disabled integrations or edit/replay conflicts (409), oversized bodies (413), content
-policy failures (422) and rate limits (429). Back off on 429; reconcile a 409.
+REST uses `/api/v1` and the same scoped key or OAuth access token. OAuth targets
+the canonical `APP_URL/api/mcp` resource for both transports. Cookies alone cannot
+authorize REST. Enable **REST API** in Integrations before making direct requests.
 
-Discovery:
+Use the [API reference and tester](api-reference.md) for endpoint schemas, pagination,
+revision fields and error handling. Content responses use `{ "data": ... }`;
+errors use `{ "error": "..." }`. JSON mutations have a 256 KiB body limit, with a
+separate endpoint for larger binary images. Responses are private and uncached.
 
-- `GET /api/v1/capabilities`
-- `GET /api/v1/openapi.json` (OpenAPI 3.1, generated from the active schemas)
-- `GET /api/v1/prompts`
-- `POST /api/v1/prompts/adapt_reference_website` with the prompt arguments above
-- `POST /api/v1/prompts/plan_native_website`, `/prompts/prepare_event` and
-  `/prompts/review_page_design` with their discovered workflow arguments
-
-Paths below are relative to `/api/v1`:
-
-| Content           | Read                                                                                                               | Private draft writes                                                                                                            |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Website           | `GET /website/context?locale=en`, `/website/design`, `/website/content`, `/website/content/{id}?locale=en`         | `POST /website/content`, `PATCH /website/content/{id}`                                                                          |
-| Visual review     | `POST /website/content/{id}/preview` renders the saved revision                                                    | None                                                                                                                            |
-| Reference         | `POST /sources/read` with `url`                                                                                    | None                                                                                                                            |
-| Imports           | `GET /imports/{requestId}`                                                                                         | `POST /imports`                                                                                                                 |
-| Forms             | `GET /forms`, `/forms/{id}`                                                                                        | `POST /forms`, `PATCH /forms/{id}`                                                                                              |
-| Events            | `GET /events`, `/events/{id}`                                                                                      | `POST /events`, `PATCH /events/{id}`                                                                                            |
-| Event preparation | `GET /events/blueprints`, `/events/{id}/preparation`, `/events/{id}/proposals`; `POST /events/preparation/preview` | `POST /events/preparation`, `/events/{id}/forms`, `/events/proposals`; `PATCH /events/{eventId}/packages`, `/events/{eventId}/prizes` |
-| Directory         | `GET /directory`                                                                                                   | `POST /directory`, `PATCH /directory/{id}`                                                                                      |
-| Media             | `GET /media`, `/media/{id}`, `/media/{id}/image` (separate pixel scope)                                            | `POST /media/uploads` (small JSON), `/media/upload` (binary), `PATCH /media/{id}/metadata`                                      |
-| Calendar          | `GET /calendar` (content definitions)                                                                              | Use Calendar in administration                                                                                                  |
-
-Collection reads accept `offset` and `limit` (default 20, maximum 50), returning
-`items` and `nextOffset`. Calendar is a workspace projection. These adapters reuse
-existing club-sized service lists; this release does not claim large-dataset
-database cursor pagination. Path IDs must not be repeated in the body.
-
-CMS saves need `expectedRevisionId`; forms need `expectedRevision`; event and
-directory saves need `expectedVersion`. Reread and reconcile on conflict. Individual
-POST creation is not idempotent; use imports for retry-safe multi-page creation.
-Media uploads, event preparation and settings proposals have their own stable
-request IDs and conflict rules. Follow their schemas and reuse the exact input on
-retries. See the [API reference](api-reference.md) for all endpoints and examples.
+For a batch of new pages, `POST /api/v1/imports` accepts a stable request ID and
+plain-text sections. Generate a new UUID for each intended batch and retain the
+exact payload for retries. Existing slugs are never overwritten.
 
 Example import body:
 
@@ -193,8 +137,8 @@ not source HTML or a certification of accuracy/reuse rights.
 
 ## Security and current limits
 
-Better Auth owns hashed keys and OAuth tokens. Neither creates a synthetic staff session. Every
-request reloads the genuine parent session and membership; each operation checks
+Better Auth manages hashed keys and OAuth tokens linked to a staff sign-in. Every
+request reloads that session and current membership; each operation checks
 scope, capability, organization and enabled features before invoking shared domain
 services. Existing transaction, version, sanitization and audit rules apply.
 Host/Origin checks also protect browser boundaries.
@@ -219,8 +163,7 @@ email are unavailable. Form reads omit answers/counts; event reads omit staff an
 participants. Website/media scopes still grant private content, so choose your
 AI client and its grants accordingly.
 
-Apply the normal pending migrations for connection, OAuth, private-media retry,
-proposal and availability tables. RotaPress needs no AI-model key or provider
-credentials for this integration. Local fixture checks do not establish
-live website fetching or acceptance by a particular external AI client.
-See the [API/MCP contribution contract](../development/automation.md) for feature changes.
+RotaPress needs no AI-model key for this integration; the chosen client manages
+its model connection. Follow [hosting](hosting.md) for installation and updates,
+and the [API/MCP contribution contract](../development/automation.md) when adding
+features.

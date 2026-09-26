@@ -27,20 +27,26 @@ The supervisor needs permission to change volume ownership and launch those
 children. Platforms forcing an arbitrary non-root container UID need another
 validated bootstrap arrangement before using this image.
 
+The image includes pinned Chromium for native page screenshots. It runs as the
+unprivileged application user with its sandbox enabled. The host must support
+that sandbox; an unsupported runtime returns `503` for visual preview while
+ordinary draft editing remains available. Do not disable the sandbox to make
+preview work. See [visual-preview isolation](../guides/automation-preview.md#runtime-and-isolation).
+
 ## Protected settings
 
-| Variable | Purpose |
-| --- | --- |
-| `ROTAPRESS_DEPLOYMENT=hosted` | Explicit hosted mode; local/test target guards remain strict |
-| `ROTAPRESS_ENVIRONMENT=production` | Rejects development providers and fixtures |
-| `APP_URL` | Public HTTPS origin without path/query/credentials |
-| `BOOTSTRAP_DATABASE_URL` | Administrator URL ending in `/rotapress`; account must create roles and grant database/schema permissions |
-| `ROTAPRESS_HOSTING_KEY` | Stable random 32-byte key as 64 lowercase hex characters; derives independent database/auth/encryption keys |
-| `ROTAPRESS_OWNER_EMAIL` | Inbox nominated for initial owner verification |
-| `ROTAPRESS_SETUP_CLAIM` | Random 32-byte base64url token; startup stores its hash with one-hour expiry |
-| `EMAIL_PROVIDER` | `resend` or `smtp` |
-| `EMAIL_REMOTE_DELIVERY_ENABLED=true` | Enables the configured sender |
-| `EMAIL_FROM_ADDRESS` and provider credentials | As documented in [email setup](../guides/email-setup.md) |
+| Variable                                      | Purpose                                                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ROTAPRESS_DEPLOYMENT=hosted`                 | Explicit hosted mode; local/test target guards remain strict                                                |
+| `ROTAPRESS_ENVIRONMENT=production`            | Rejects development providers and fixtures                                                                  |
+| `APP_URL`                                     | Public HTTPS origin without path/query/credentials                                                          |
+| `BOOTSTRAP_DATABASE_URL`                      | Administrator URL ending in `/rotapress`; account must create roles and grant database/schema permissions   |
+| `ROTAPRESS_HOSTING_KEY`                       | Stable random 32-byte key as 64 lowercase hex characters; derives independent database/auth/encryption keys |
+| `ROTAPRESS_OWNER_EMAIL`                       | Inbox nominated for initial owner verification                                                              |
+| `ROTAPRESS_SETUP_CLAIM`                       | Random 32-byte base64url token; startup stores its hash with one-hour expiry                                |
+| `EMAIL_PROVIDER`                              | `resend` or `smtp`                                                                                          |
+| `EMAIL_REMOTE_DELIVERY_ENABLED=true`          | Enables the configured sender                                                                               |
+| `EMAIL_FROM_ADDRESS` and provider credentials | As documented in [email setup](../guides/email-setup.md)                                                    |
 
 The assistant generates settings for Compose. For another container platform,
 run `node scripts/host.mjs configure` to generate private settings without
@@ -95,8 +101,8 @@ trusted-mode app port directly. Validate any additional proxy/CDN trust boundary
   a persistent disk and HTTPS routing. Check managed database permissions before
   choosing that product. Ephemeral/serverless-only plans cannot preserve uploads.
 
-These are contracts, not provider-specific provisioning tools or live acceptance
-claims. See official [Caddy HTTPS documentation](https://caddyserver.com/docs/automatic-https),
+Validate the chosen platform's database, proxy and storage behavior before relying
+on this contract. See official [Caddy HTTPS documentation](https://caddyserver.com/docs/automatic-https),
 [Railway volumes](https://docs.railway.com/volumes) and
 [Railway outbound networking](https://docs.railway.com/networking/outbound-networking).
 

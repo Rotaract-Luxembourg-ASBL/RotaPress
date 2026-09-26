@@ -1,11 +1,12 @@
 # REST and MCP security boundaries
 
-This is an implementation review and regression map, not an independent penetration
-test or a guarantee against every attack. REST and MCP share the operation catalogue,
-server-side authorization and domain services. New operations require review here
-and in `automation-coverage.json` before updating the contract receipt.
+REST and MCP share the operation catalogue, server-side authorization and domain
+services. This document maps their trust boundaries to required controls and
+regressions. Review new operations against these boundaries and
+`automation-coverage.json` before updating the contract receipt. The map does not
+replace an independent security assessment.
 
-## Reviewed trust boundaries
+## Trust boundaries
 
 | Boundary            | Enforcement and regression                                                                                                                                                                                                                              |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -25,24 +26,21 @@ and in `automation-coverage.json` before updating the contract receipt.
 | Tester              | Same-instance endpoints, bearer credentials in page memory, no cookie authority, redirects refused, text-only rendering, no external documentation scripts                                                                                              |
 | Evolution           | Shared schemas/examples, input and output parity, resolved OpenAPI references, coverage and source fingerprints in `api:check`                                                                                                                          |
 
-## Findings addressed
+## Response and discovery invariants
 
-- MCP resource reads previously allowed unexpected dependency exceptions to reach
-  the SDK, whose error response could contain internal exception text. The handler
-  now translates those failures to a generic protocol error. The focused regression
-  injects a synthetic sensitive exception and verifies neither response nor logs
-  contains it.
-- Output DTOs previously relied on each adapter to avoid future service-field
-  additions. Every registered operation now validates a closed response schema
-  before serialization. Unexpected fields fail closed with a generic server error.
-  This also makes REST documentation and MCP structured output enforceable.
-- Feature discovery now projects only feature key, enabled state and version,
-  without returning internal database row metadata. Capability catalogues are
-  compact; full schemas remain available through OpenAPI and tool discovery.
-- MCP draft updates now carry a destructive hint because they replace draft
-  content. Annotations never bypass the service's revision checks or permissions.
+- Translate unexpected dependency exceptions into generic protocol errors before
+  they reach the MCP SDK. The regression injects a synthetic sensitive exception
+  and verifies that neither the response nor logs contain it.
+- Validate every operation's closed output schema before serialization. A newly
+  added domain-service field must not silently become public API output. Unexpected
+  fields fail closed; REST documentation and MCP structured output use that schema.
+- Feature discovery returns only feature key, enabled state and version. It omits
+  internal database row metadata. Capability summaries stay compact, with full
+  schemas available through OpenAPI and tool discovery.
+- Mark draft replacements with the MCP destructive hint. Annotations describe
+  behavior to clients; service permissions and revision checks enforce authority.
 
-## Evidence to maintain
+## Regression coverage
 
 `tests/critical/automation-boundary.test.ts` covers source/origin/robots restrictions.
 `automation-contract.test.ts` covers output privacy, generic MCP failures, valid
@@ -63,19 +61,18 @@ retry boundaries and renderer isolation. Event cases cover scoped proposals and
 event-owned private media. These are focused regressions, not exhaustive proof.
 
 B01 uses a real Better Auth OTP session, issued keys and a loopback OAuth client.
-Its automation helpers
-exercise REST/MCP/stdio, current-session and capability revocation, scope denial,
+Its automation helpers exercise REST/MCP/stdio, current-session and capability revocation, scope denial,
 Google-only policy, malformed/oversized requests, custom-code rejection, private
 draft writes, output projections, separate enable/disable controls, private images,
 page previews, event preparation/proposal review, and the desktop/phone tester and
-OAuth consent screen.
-Fixture changes stay in the dedicated browser database. No fabricated live identity
-or external AI-provider response is accepted as evidence.
+OAuth consent screen. Fixture changes stay in the dedicated browser database;
+external Google and AI-provider callbacks require separate integration checks.
 
 Before release, run `node scripts/pnpm.mjs audit --audit-level low`, the
 affected regressions and full `verify` once for the completed slice. A dependency
 audit reports known advisories at that time; it is not a source audit or proof of
-absence of vulnerabilities. Machine-specific results belong in `.local/STATUS.md`.
+absence of vulnerabilities. Keep environment-specific results in private local
+reports or the relevant pull request, without credentials or participant data.
 The [application security testing guide](security-testing.md) covers the wider
 authentication, content, media, provider and hosting boundaries.
 

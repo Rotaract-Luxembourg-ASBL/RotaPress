@@ -69,7 +69,7 @@ Open a calendar, then **Imports & sync → Import or connect**.
   because subscription links may contain access keys; lists show only the host.
 - Updates normally remain drafts for review. At connection creation, an explicit
   option can publish future updates automatically after the first manual publication.
-- **Refresh now** reads the source immediately. The existing local job loop also
+- **Refresh now** reads the source immediately. The background worker also
   checks due connections hourly. It needs a current authorized staff session.
   **Resume sync** renews that authority after expiry or Calendar being disabled.
 - **Pause and hide import** stops refreshes and removes its activities from views.
@@ -105,7 +105,7 @@ Approved membership is required for member calendars; signing in does not approv
 
 Choose updates, an optional reminder (one hour or one day before), and whether to
 receive email as well as notifications on the website. Preferences survive reload;
-unsubscribe stops new notifications. Delivery depends on the local job loop.
+unsubscribe stops new notifications. Delivery depends on the background worker.
 Each calendar email also has a confirmation link to stop just that calendar's
 emails without signing in, while retaining website notices. Resubscribing rotates
 the link. In **Calendar → Emails**, choose a calendar to customize its update and
@@ -132,14 +132,16 @@ links in this version; member schedules remain on the signed-in website.
 
 ## Operator configuration and boundaries
 
-The existing development launcher runs `jobs:run`. A standalone local runner is:
+The Docker hosting recipe runs background jobs automatically. The development
+launcher also runs them while the application is open. To process one bounded
+batch in a configured development checkout, run:
 
-```text
+```sh
 node scripts/pnpm.mjs jobs:run
 ```
 
 Remote network access is off by default: `CALENDAR_FEED_REQUESTS_ENABLED=false`.
-After deliberate authorization to contact a feed, set it to `true` in the private
+To synchronize approved feeds, set it to `true` in the private
 installation environment and restart the app and worker. Keep the installation's
 credential-encryption key backed up securely; its loss makes saved feed links
 unreadable. File imports and public calendar export do not require remote requests.
@@ -158,8 +160,7 @@ displayed occurrences and 50 recent account notifications. Dense views suggest
 fewer calendars or the week view. Oversized public exports ask for a narrower
 calendar selection rather than silently returning an incomplete feed.
 
-The implementation uses the existing application, restricted PostgreSQL runtime
-role, Better Auth sessions, SMTP and job loop. External integration limitations are recorded in [the roadmap](../development/roadmap.md). Local import and
-injected feed-transport checks do not prove a real remote provider connection.
-
-For new providers, see [Calendar contribution contracts](../contributing/calendar-providers.md).
+See [hosting](hosting.md) for background jobs and recovery, and
+[Calendar contribution contracts](../contributing/calendar-providers.md) for adding
+a provider. Connecting a subscription feed does not grant access to its provider's
+account or enable two-way synchronization.

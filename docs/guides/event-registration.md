@@ -1,8 +1,8 @@
 # Event forms and native registration
 
-Event registration uses the shared form editor, immutable form versions, private
-submissions and notification outbox. No alternate form engine or authentication
-system is introduced. Event presets remain separate from website appearance.
+Use event forms for enquiries and native free registration. Enquiries collect
+responses; registration also reserves a place against the event's capacity.
+Both use the [form editor](forms.md) and keep submitted answers private.
 
 ## Workflow
 
@@ -16,7 +16,7 @@ system is introduced. Event presets remain separate from website appearance.
 5. Publish the event's Website page and event details. Published enquiry forms and
    the configured registration form appear in event navigation.
 
-Public routes use `/events/<event-id>/<locale>/forms` and `/registration`, with a
+Public routes use `/events/<event-slug>/<locale>/forms` and `/registration`, with a
 published landing page in that language. Forms currently have one editable language;
 multilingual form definitions are deferred. A published enquiry form also works at
 `/forms/<form-id>` subject to the same event access policy. Registration forms cannot
@@ -60,29 +60,18 @@ archived. Self/staff cancellation remains available for those retained records.
 Cancelling the entire event deliberately closes participation and cancels confirmed
 bookings while retaining history. See [event cancellation](event-presets.md).
 
-## Integrity and implementation
+## Capacity and retained bookings
 
-Migration `0010_uneven_puma.sql` adds nullable event ownership to the existing form
-table, event/registration form kinds, the specialist assignment, two feature keys,
-registration settings and retained booking records. Composite foreign keys bind
-forms, settings, responses and registrations to their event and organization.
-Existing club form rows and immutable versions are preserved. The migration orders
-the new unique scope constraint before the foreign keys that reference it.
+The server validates the submitted form version and reserves capacity while saving
+the response, booking and staff notifications in one transaction. A rejected booking
+leaves no partial response or reserved place. Each authenticated person can have
+only one confirmed place per event. Rebooking after cancellation starts a new
+request; retrying an old request returns its original, possibly cancelled, booking.
 
-Native registration and ordinary submissions share `SubmissionIntake`. The caller
-holds the existing organization transaction lock while validating the exact form
-version, checking request replay, reserving capacity and creating the response,
-booking and staff outbox records. A rejected booking rolls all of these back.
-The same lock serializes cancellation, settings, feature and publication changes.
-This deliberately small local implementation does not introduce a separate lock
-service or queue. PostgreSQL additionally permits only one confirmed place per
-event and authenticated user. Rebooking after cancellation uses a new request key;
-replaying an old key returns its original, possibly cancelled, record.
-
-Each event has one authority: none, native or [Luma link mode](luma.md#links).
+Each event has one authority: none, native or [Luma link mode](luma.md#registration-links).
 Publishing a Luma link selects external authority without importing participants.
-Once any bookings exist, changing the authority or configured form requires a later
-explicit migration decision. Closing registration remains available. Capacity cannot
+Once any bookings exist, changing the authority or configured form is blocked.
+Closing registration remains available. Capacity cannot
 be reduced below the number of confirmed places. Registration response deletion and
-retention deletion are blocked to preserve booking integrity; a future privacy-aware
-erasure workflow must account for bookings as well as their responses.
+retention deletion are blocked to preserve booking integrity. Booking-aware response
+erasure is not supported.

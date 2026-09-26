@@ -4,9 +4,10 @@ Open **Events → open an event → Prizes → Draws & winners**. The workflow u
 existing entry register, published prize gallery, server permissions and event
 page designer.
 
-This feature is explicitly a demonstration. Real paid entries, real prize awards
-and live purchase allocation remain disabled. Use invented participants or local
-fixture bookings. No payments, refunds or external provider writes occur.
+This feature is a demonstration. Real paid entries, real prize awards and live
+purchase allocation are unsupported. Use invented participants; development
+installations can also use synthetic test bookings. Running a demonstration does
+not create payments, refunds or changes at an external provider.
 
 ## Prepare, run and share
 
@@ -59,33 +60,24 @@ publishers can withdraw names. Event copies never include draws or results.
 Public names also disappear when their prize revision is no longer published.
 Restoring feature availability does not execute a draw or create new decisions.
 
-## Security and implementation
+## Access and result integrity
 
 Only `events.entries.manage` can prepare, execute or review draws. Public-name
 approval and withdrawal also require `events.publish`. Each operation rechecks
 current membership, session policy, event scope and relevant feature availability.
 Entry editors, registration managers, ordinary members and guests gain no draw
-administration rights. Custom API mutations retain same-origin checks and limits.
+administration rights.
 
-The event/organization lock serializes freezing, entry decisions, provider
-observations and draw operations. Preparation keys reject stale review screens.
-Frozen snapshots include schema version, rules, exact entry review versions and
-evidence fingerprints, plus published prize revisions and item numbers. Each
-snapshot and result has a SHA-256 fingerprint, verified when staff read it.
+The server checks that rules, entry decisions, purchase observations and published
+prizes still match the reviewed draw. A stale review cannot overwrite later work.
+The frozen eligibility pool, result and subsequent staff decisions are retained
+and cannot be rewritten. Prize reservations prevent the same prize item being
+allocated to two active draws.
 
-`draw_selection.ts` uses Node's [crypto.randomInt](https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptorandomintmin-max-callback),
-whose integer sampling avoids modulo bias. Selection traverses integer ticket
-weights without expanding millions of entries in memory. It removes a selected
-ticket, or its entire participant group when repeat winners are disallowed.
-The algorithm records original ticket numbers; no browser-provided random value,
-winner identity or seed is accepted by the server.
-
-Migration `0035_event_demo_draws` adds frozen draws, one result per draw,
-append-only reviews and current prize reservations. Scoped foreign keys and a
-unique prize/item reservation prevent cross-event or duplicate active awards.
-Runtime UPDATE/DELETE/TRUNCATE on evidence/results/reviews is denied; history
-triggers also prevent rewriting. Reservations can be deleted only after a saved
-void decision. Mutation, reservation and audit writes commit together.
+Selection runs on the server using the frozen entry counts. Each eligible entry
+has equal chance; the browser cannot supply a winner, random value or seed.
+Results, prize reservations and audit history are saved together. A failed save
+does not leave a partial result or allow a retry to overwrite a recorded winner.
 
 Public reads select the separately approved projection, never private snapshots,
 entry labels, payment references, reasons, operator identities or fingerprints.
@@ -93,15 +85,7 @@ The normal event visibility and Prizes checks apply. Private events still requir
 scope; unpublished, archived, cancelled or unavailable events produce no public
 winners. Page placement and winner approval are distinct deliberate publications.
 
-The result is an auditable local demonstration, not independent certification of
-a real draw. Real rules, contribution mapping and release approval remain owner
-decisions. There is no automatic winner email or notification in this stage.
-
-## Verification ownership
-
-C11 checks integer selection boundaries, grouping, replay/concurrency, reservations,
-immutable history, stale review, changed eligibility, lifecycle, authorization,
-refunded fixture purchases and the public projection. C06 rejects the winners
-block in club/shared/other-module content. B01 exercises the real OTP manager,
-guided preparation, saved result, reviewed names, event page placement, withdrawal
-and desktop/phone layouts. See [testing](../development/testing.md) for commands and the scenario catalogue.
+The retained history supports review of the demonstration. It is not independent
+certification of a real draw. There is no automatic winner email or notification.
+See the [entry register](event-entries.md) and [prize gallery](event-prizes.md) for
+the records used by this workflow.

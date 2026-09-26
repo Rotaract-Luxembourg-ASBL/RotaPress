@@ -20,8 +20,8 @@ use the same permissions, private drafts and manual publication rules as the
    the assistant displays. UI labels and availability vary by client and account.
 2. In RotaPress, open **Integrations**, select **Manage** on the **MCP** card, then
    find **Connect ChatGPT or Claude with OAuth**. Enter a recognizable name and
-   copy that callback URL exactly. Do not
-   invent a callback, use a wildcard or copy one from a different account.
+   copy that callback URL exactly. Do not invent a callback, use a wildcard or
+   copy one from a different account.
 3. Choose **Client ID and secret** unless the assistant explicitly supports a
    public client using PKCE. Select only the needed actions. If the assistant
    will read a reference website, also enable that action and list its exact
@@ -53,9 +53,9 @@ options in the [client guide](mcp-clients.md).
 describes the discovery and client configuration requirements.
 
 Hosted web assistants need a reachable HTTPS RotaPress installation. A loopback
-URL on your computer is suitable for local protocol tests, but it is not reachable
-from ChatGPT's or Claude's hosted service. Installing the code or passing local
-tests does not establish external-client, Google, proxy or public TLS acceptance.
+URL on your computer is not reachable from ChatGPT's or Claude's hosted service.
+Configure public HTTPS and any proxy according to the [hosting guide](hosting.md),
+then verify the connection with the actual client and account you intend to use.
 
 ## Permissions, expiry and revocation
 
@@ -123,22 +123,22 @@ are stored as hashes. There is no Google-token passthrough or second login syste
 See [Better Auth's provider documentation](https://better-auth.com/docs/plugins/oauth-provider)
 and the [MCP authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization).
 
-## Verify a connection
+## Verify and troubleshoot a connection
 
-The local PostgreSQL regression checks real library OTP/session creation, signed
-consent, PKCE, resource binding, token rotation, current membership/Google policy
-and revocation. Its email transport is synthetic. The principal B01 browser
-journey uses real local Mailpit OTP and a loopback callback to check the visible
-registration/consent flow and phone layout. Neither test contacts an external AI
-provider.
+1. Complete the client connection and inspect the requested actions, callback and
+   approved reference origins on the consent screen.
+2. Ask the assistant to read `automation_capabilities`, then prepare one private
+   draft using the granted operations. Confirm the draft in administration.
+3. Revoke the connection and confirm that subsequent tool calls fail. Register a
+   new connection if you want to continue using the assistant.
 
-```sh
-node scripts/pnpm.mjs test:critical tests/critical/oauth-policy.test.ts tests/critical/oauth-provider.test.ts
-node scripts/pnpm.mjs test:smoke tests/browser/identity.spec.ts
-```
+For a failed connection, check that MCP is enabled, the client supports predefined
+OAuth registration, and its callback and resource match exactly. Sign in again if
+the consent page requests recent authentication. A disabled integration returns 409;
+an expired or revoked credential requires reconnecting. Check current membership
+and staff Google policy before changing credentials.
 
-Run these commands only after local setup and test migrations, using the isolated
-test database. Browser checks require the current production build. For a hosted
-acceptance check, complete one real client connection, inspect the consent scopes,
-create one private draft, revoke the connection and confirm subsequent tool calls
-fail. Keep tokens and the client secret out of screenshots and logs.
+Keep tokens and client secrets out of screenshots and logs. Automated protocol
+tests use isolated local infrastructure; they cannot verify a provider account's
+configuration. Contributor checks are described in the
+[security guide](../development/automation-security.md) and [testing guide](../development/testing.md).

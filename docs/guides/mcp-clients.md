@@ -30,8 +30,8 @@ Existing unexpired connections can resume when re-enabled; revoke unwanted ones.
 
 The bearer examples below target Claude Code, Claude Desktop via stdio, Codex,
 OpenAI Responses and Anthropic Messages. Hosted clients need a reachable HTTPS
-endpoint; local clients can reach loopback. These configuration examples and local
-tests do not prove that a particular provider account has connected successfully.
+endpoint; local clients can reach loopback. Connection methods and model access
+depend on the chosen client's account and settings.
 
 ## Claude Code and Codex
 
@@ -66,8 +66,13 @@ The environment variable contains the RotaPress key. See the
 
 ## Local stdio clients, including Claude Desktop
 
-Install this repository's pinned dependencies with `node scripts/pnpm.mjs install
---frozen-lockfile`. Use Node 24 and absolute paths:
+Install this repository's pinned dependencies:
+
+```sh
+node scripts/pnpm.mjs install --frozen-lockfile
+```
+
+Use Node 24 and absolute paths in the client's configuration:
 
 ```json
 {
@@ -132,8 +137,8 @@ Disabled MCP requests return 409 before authentication. JSON-RPC batches fail.
 `automation_capabilities` exposes current scoped operations. Tools-only clients
 can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`
 and `automation_review_prompt` for workflow instructions. Tool failures set
-`isError: true` with a safe error text; check
-that even when HTTP is 200. HTTP authentication/origin/size failures occur before
+`isError: true` with a safe error text; check that even when HTTP is 200.
+HTTP authentication/origin/size failures occur before
 MCP dispatch and use ordinary 4xx responses. Annotations are hints, not permissions.
 
 Suggested task for your assistant:
@@ -162,8 +167,9 @@ remote client-metadata fetching are unavailable. See the [OAuth guide](automatio
 for registration, consent, expiry and revocation.
 
 The assistant cannot publish content, make media public, apply operational proposals,
-approve members, send notifications or run payments/draws. External ChatGPT/Claude
-acceptance still requires a real connection on your reachable installation.
+approve members, send notifications or run payments/draws. Verify the selected
+client on your installation by reading its capabilities, creating a private draft
+and confirming that revoking the connection blocks subsequent calls.
 
 See [REST reference](api-reference.md), [source restrictions](ai-and-api.md#security-and-current-limits)
 and the [extension contract](../development/automation.md).

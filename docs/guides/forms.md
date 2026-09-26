@@ -1,8 +1,9 @@
 # Forms and submissions
 
-RotaPress uses one forms feature for contact messages and membership
-applications. Form content belongs to the configured club. Published definitions
-are immutable, and answers remain tied to the version the visitor submitted.
+Use Forms for contact messages and membership applications. Event enquiries and
+free registration use the same editor from their [event workspace](event-registration.md).
+Published definitions are immutable, and answers remain tied to the version the
+visitor submitted.
 
 ## Author a form
 
@@ -122,22 +123,23 @@ After five unsuccessful attempts, the notification remains visibly failed.
 This provides durable attempts, not a promise of exactly-once SMTP delivery
 after an interrupted acknowledgement.
 
-The development launcher runs the notification job periodically. A single
-batch can also be requested with:
+The Docker hosting recipe and development launcher run notification jobs
+automatically. To process one bounded batch in a configured development checkout:
 
-```powershell
+```sh
 node scripts/pnpm.mjs jobs:run
 ```
 
 This command uses the project's restricted runtime database configuration and
-does not run migrations. Restart the development launcher after changes to its
-worker startup code. Production scheduling is outside this local milestone.
+does not run migrations. Running the web server alone does not process queued
+notifications; use the [hosting recipe](hosting.md) for the managed web and jobs
+processes, or follow the [container contract](../development/hosting.md).
 
 Notifications use the same configured sender as sign-in. Configure the initial
 sender through [first-run email setup](email-setup.md), then manage connections
-and templates in [Email settings](email.md). Development capture is optional and
-does not establish real inbox delivery. Provider credentials are unnecessary for
-authoring forms and saving submissions; queued email needs a working sender.
+and templates in [Email settings](email.md). Authoring forms and saving submissions
+do not need an email provider; queued email needs a working sender. A development
+capture inbox never sends messages to real recipients.
 
 ## Retention
 
@@ -153,17 +155,15 @@ preview. Additional batches require their own preview and confirmation.
 
 Deleting retained responses also removes their notification records. Club
 owners must choose collection wording and retention settings suitable for
-their actual use before public release; the software supplies the controls.
+their actual use before collecting responses.
 
-## Boundaries and verification
+## Related workflows and limits
 
-The same renderer supports website forms, event enquiries and native registration.
-Event scope, audience and membership approval remain independent of question types.
-Webhooks and email templates are implemented with separate live-provider activation.
-Uploads, signatures, payments, multilingual definitions and booking-aware erasure
-remain separate work.
+Use [event registration](event-registration.md) for event forms, booking capacity
+and event staff roles. Website Form blocks can reference published club forms;
+event-owned forms stay within their event. Question types do not change the
+audience, event permissions or membership approval rules.
 
-The focused C05 catalogue covers version interpretation, duplicate behavior,
-transactional persistence through SMTP failure, protected reads and exports,
-and spreadsheet-safe CSV. See [testing](../development/testing.md) for commands. Record actual results in the
-pull request and distinguish local checks from live-provider verification.
+Attachments, signatures, payments, multilingual form definitions and booking-aware
+response erasure are unsupported. Configuring an outbound integration does not
+grant it access to other forms or change publication and review permissions.

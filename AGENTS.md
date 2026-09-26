@@ -11,10 +11,9 @@ and the [roadmap](docs/development/roadmap.md), then the relevant feature guide.
 Inspect Git state and preserve owner changes. Explicit task scope takes priority
 above the roadmap.
 
-The original blueprints and implementation receipts have been retired from the
-public tree. If present, `.local/STATUS.md` contains local handover information;
-it is not a prerequisite for a fresh clone. Keep public documentation about the
-product, not a transcript of agent sessions.
+Keep public documentation about the product and contribution workflows. Optional
+local handover notes belong in ignored `.local/STATUS.md`; they are not required
+to use or contribute to a fresh clone.
 
 ## Fixed decisions
 

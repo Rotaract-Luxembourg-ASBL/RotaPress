@@ -21,19 +21,19 @@ and suspended members, limited staff, event guests, revoked sessions and scoped
 automation connections. A legitimate owner's successful request is only the
 positive control; repeat it with an unrelated identity and forged authority fields.
 
-| Surface | Required checks and existing regression locations |
-| --- | --- |
-| Setup and recovery | Verified nominated identity, expiring one-use claim, replay/races, recent sign-in, and per-identity attempt isolation: `membership.test.ts`, `hosting.test.ts`, `owner-endpoint-boundary.test.ts` |
-| Authentication | Better Auth route allowlist, real session lookup, current Google session policy, callback claims, origin checks and revocation: `auth_boundary.test.ts`, `google-auth.test.ts`, B01 |
-| Private API | Server authorization on every path, organization/event/record scope, strict input, bounded bodies, no-store responses and generic internal errors: B01 `api-security-journey.ts`, owning domain tests |
-| REST and MCP | Identical scopes/services, unknown-tool denial, closed outputs, session/key revocation, manual publication and no participant/credential operations: C14 and B01 automation helpers |
-| CMS and files | Private revisions/previews/media, nested sanitization, validated media references, safe upload types, bounded decoding and storage paths: `cms.test.ts`, `media.test.ts`, `media_boundary.test.ts`, B02 |
-| Custom HTML/JS | Opaque frame origin, parent/cookie/storage isolation, top-navigation denial and blocked network probes in authenticated draft preview and public desktop/phone pages: B02 `custom-code-security.ts` |
-| Untrusted content | Obfuscated XSS, forged authority/prototype keys, private/mixed DNS targets and spreadsheet formula prefixes: `adversarial-content.test.ts` |
-| Forms and events | Current form version, private answers/exports, scoped guest records, idempotency, capacity and transaction races: C05-C11 tests |
-| Outbound requests | Approved origins, public DNS pinning, redirect refusal, no forwarded cookies/credentials, byte/time limits: `automation-boundary.test.ts`, calendar and webhook tests |
-| Provider input | Signature, event/source/guest scope, deduplication and replay; notifications never confer entitlement: Luma, inbox and event tests |
-| Hosting and secrets | Restricted runtime database role, forward-only migrations, storage separation, protected environment variables and excluded build artifacts: C12 and the hosting rehearsal |
+| Surface             | Required checks and existing regression locations                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setup and recovery  | Verified nominated identity, expiring one-use claim, replay/races, recent sign-in, and per-identity attempt isolation: `membership.test.ts`, `hosting.test.ts`, `owner-endpoint-boundary.test.ts`       |
+| Authentication      | Better Auth route allowlist, real session lookup, current Google session policy, callback claims, origin checks and revocation: `auth_boundary.test.ts`, `google-auth.test.ts`, B01                     |
+| Private API         | Server authorization on every path, organization/event/record scope, strict input, bounded bodies, no-store responses and generic internal errors: B01 `api-security-journey.ts`, owning domain tests   |
+| REST and MCP        | Identical scopes/services, unknown-tool denial, closed outputs, session/key revocation, manual publication and no participant/credential operations: C14 and B01 automation helpers                     |
+| CMS and files       | Private revisions/previews/media, nested sanitization, validated media references, safe upload types, bounded decoding and storage paths: `cms.test.ts`, `media.test.ts`, `media_boundary.test.ts`, B02 |
+| Custom HTML/JS      | Opaque frame origin, parent/cookie/storage isolation, top-navigation denial and blocked network probes in authenticated draft preview and public desktop/phone pages: B02 `custom-code-security.ts`     |
+| Untrusted content   | Obfuscated XSS, forged authority/prototype keys, private/mixed DNS targets and spreadsheet formula prefixes: `adversarial-content.test.ts`                                                              |
+| Forms and events    | Current form version, private answers/exports, scoped guest records, idempotency, capacity and transaction races: C05-C11 tests                                                                         |
+| Outbound requests   | Approved origins, public DNS pinning, redirect refusal, no forwarded cookies/credentials, byte/time limits: `automation-boundary.test.ts`, calendar and webhook tests                                   |
+| Provider input      | Signature, event/source/guest scope, deduplication and replay; notifications never confer entitlement: Luma, inbox and event tests                                                                      |
+| Hosting and secrets | Restricted runtime database role, forward-only migrations, storage separation, protected environment variables and excluded build artifacts: C12 and the hosting rehearsal                              |
 
 Critical test filenames above are under `tests/critical`; B01/B02 helpers are
 under `tests/browser`. Read [REST/MCP boundaries](automation-security.md) for its
@@ -70,9 +70,9 @@ node scripts/pnpm.mjs doctor
 ```
 
 `verify` includes strict types, lint, the API/MCP contract, critical tests, a
-production build and both principal browser journeys. If a browser fixture fails,
-record the failed combined command and rerun the affected journey after fixing
-the fixture. Report each outcome honestly; do not relabel the original run a pass.
+production build and both principal browser journeys. Preserve failure details
+and rerun affected checks after a fix. Distinguish the initial failure from the
+subsequent result in the assessment record.
 
 Network attack fixtures inject DNS or transport responses. Browser exfiltration
 probes use an intercepted `.invalid` hostname and synthetic markers, so a regression
@@ -82,8 +82,11 @@ successful external Google or AI-provider callback.
 
 ## Inspect secrets and build artifacts
 
-Check tracked paths for environment files, private keys, database dumps and local
-reports. Scan credential signatures without printing matched values, then triage
+Check tracked and untracked candidate paths for environment files, private keys,
+database dumps and local reports. Use `git ls-files --cached --others --exclude-standard`
+to identify release candidates without traversing ignored private files. Include
+historical Git objects when assessing information already committed. Scan
+credential signatures without printing matched values, then triage
 each candidate: synthetic negative fixtures can resemble credentials. Examine
 logging/error sinks and provider adapters; pattern matching alone cannot establish
 whether a value reaches a public response.
@@ -113,6 +116,7 @@ source origins, keep publication manual, and remember that a client can receive
 the private data its connection is explicitly allowed to read.
 
 Record commit, changed files, severity/impact, reproduction, fix, exact commands,
-outcomes and untested surfaces in `.local/STATUS.md` or a linked local report.
+outcomes and untested surfaces in a private local report or the relevant security
+advisory. Follow the disclosure process in [SECURITY.md](../../SECURITY.md).
 Public documentation should retain the method and regression map, not machine
 credentials or a transcript of an assessment.

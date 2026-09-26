@@ -17,8 +17,8 @@ node scripts/pnpm.mjs build
 node scripts/pnpm.mjs test:smoke
 ```
 
-`check` runs source size, the shared API/MCP contract, strict types and lint. `browser:install` downloads
-Chromium into the project's ignored local directory and is needed only once per
+`check` runs source size, the shared API/MCP contract, strict types and lint.
+`browser:install` downloads Chromium into the project's ignored local directory and is needed only once per
 browser version. `test:smoke` expects an existing production build and launches
 its own server on loopback port 3001.
 
@@ -54,22 +54,22 @@ node scripts/pnpm.mjs verify
 These identifiers group risks, not quotas or one test per class. Test at the
 layer owning the behavior, with real PostgreSQL for constraints and scoped data.
 
-| Group | Boundary |
-| --- | --- |
-| C01 | Protected owner setup: identity, expiry, replay and races |
-| C02 | Current membership, roles, staff authentication method and settings scope |
-| C03 | Draft privacy, stale edits, publication and revision restoration |
-| C04 | CMS sanitization, uploads and private media |
-| C05 | Form versions, submission replay, delivery persistence and protected exports |
-| C06 | Event scope, publication, features and preserved lifecycle history |
-| C07 | Registration capacity, uniqueness and concurrent request replay |
-| C08 | Provider scope, credentials, pagination, replay and partial failures |
-| C09 | Durable job replay, cancellation and stale publication work |
-| C10 | Explicit guest ownership, grants and immutable purchase evidence |
-| C11 | Demonstration entry decisions, frozen draws, replay and public winner privacy |
-| C12 | Portable container startup, migration replay, restricted roles, claim expiry, HTTPS, database-plus-files restore and overwrite refusal; public deployment acceptance is separate |
-| C13 | Calendar audiences, time zones, recurrence, import safety and owned subscriptions |
-| C14 | Scoped API/MCP keys, session/permission revocation, source boundaries, atomic private imports, response privacy, schema/example parity and the interactive tester |
+| Group | Boundary                                                                                                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C01   | Protected owner setup: identity, expiry, replay and races                                                                                                                                             |
+| C02   | Current membership, roles, staff authentication method and settings scope                                                                                                                             |
+| C03   | Draft privacy, stale edits, publication and revision restoration                                                                                                                                      |
+| C04   | CMS sanitization, uploads and private media                                                                                                                                                           |
+| C05   | Form versions, submission replay, delivery persistence and protected exports                                                                                                                          |
+| C06   | Event scope, publication, features and preserved lifecycle history                                                                                                                                    |
+| C07   | Registration capacity, uniqueness and concurrent request replay                                                                                                                                       |
+| C08   | Provider scope, credentials, pagination, replay and partial failures                                                                                                                                  |
+| C09   | Durable job replay, cancellation and stale publication work                                                                                                                                           |
+| C10   | Explicit guest ownership, grants and immutable purchase evidence                                                                                                                                      |
+| C11   | Demonstration entry decisions, frozen draws, replay and public winner privacy                                                                                                                         |
+| C12   | Portable container startup, migration replay, restricted roles, claim expiry, HTTPS, database-plus-files restore and overwrite refusal; public deployment acceptance is separate                      |
+| C13   | Calendar audiences, time zones, recurrence, import safety and owned subscriptions                                                                                                                     |
+| C14   | API/MCP availability, scoped keys and OAuth, current-session revocation, safe source reads, private imports/media/previews, event preparation and staff proposals, closed outputs and contract parity |
 
 Fix a confirmed authorization bypass, exposure or corruption with a focused
 regression. Do not disable a security assertion to complete a slice.

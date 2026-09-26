@@ -19,8 +19,8 @@ promise a response deadline, bounty or third-party assessment.
 
 RotaPress is pre-release. Security fixes target the current development version;
 there are no maintained release branches or backport commitments yet. Production
-hosting, full database-plus-files recovery and real-provider verification remain
-open work in the [roadmap](docs/development/roadmap.md).
+use requires verifying the chosen host, recovery procedure and external providers.
+See the [roadmap](docs/development/roadmap.md) for current limitations.
 
 ## Test responsibly
 

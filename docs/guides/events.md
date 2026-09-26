@@ -82,6 +82,7 @@ Cancellation closes participation and retains the history; archiving also remove
 public access. These operations do not send attendee email or issue refunds.
 See [cancellation](event-presets.md#cancel-an-event).
 
-Live provider validation, online check-in, real paid draws and production hosting
-remain separate work in the [roadmap](../development/roadmap.md). Domain setup
-cannot activate hosting or change authentication origins.
+Online check-in, native paid checkout, real paid entry allocation and real prize
+draws are unsupported. Use the [hosting guide](hosting.md) to deploy the application
+and the [roadmap](../development/roadmap.md) for other product limits. Domain records
+in administration do not provision hosting or change authentication origins.

@@ -3,9 +3,10 @@
 Luma is optional. RotaPress owns event content, local teams, forms and feature
 settings. When Luma is the registration authority, Luma owns registrations and
 payment state; imported records are timestamped observations, not a local payment
-ledger. Local adapter checks use synthetic fixtures. Live verification is pending.
+ledger. An API connection requires a Luma account with access to the relevant
+calendar and events.
 
-## Links
+## Registration links
 
 Enable Luma in **Integrations** and configure it inside the relevant event.
 A validated HTTPS event link can support external registration without API
@@ -24,14 +25,14 @@ links and credentials, leaves copied packages unpublished and disables checkout.
 
 ## Connections
 
-Manage the API connection in **Integrations > Luma**. Authorized staff can save
+Manage the API connection in **Integrations → Luma**. Authorized staff can save
 credentials, review a calendar check, replace or disconnect a connection, and see
 masked status. Credentials are encrypted with `INTEGRATION_ENCRYPTION_KEY` and
-are never returned through administration DTOs.
+are never returned through administration responses.
 
-Ordinary local setup blocks external Luma requests. `LUMA_API_REQUESTS_ENABLED`
-is an operator restriction, separate from connection and event settings. Enable
-it only for an authorized provider run, then restart both the app and job runner.
+`LUMA_API_REQUESTS_ENABLED` defaults to false and is an operator restriction,
+separate from connection and event settings. Enable it only for an authorized
+Luma account and intended event work, then restart the app and job runner.
 Losing the encryption key requires restoring the original key with retained data;
 setup must not generate a replacement over encrypted credentials.
 
@@ -59,7 +60,7 @@ node scripts/pnpm.mjs jobs:run
 `dev` invokes the runner periodically. Jobs have bounded retries, leases, cancellation
 and failure state. Staff review the result or retry; reconnecting or re-enabling
 features does not automatically replay old imports. Recurring unattended provider
-reconciliation and provider writes are not supported release features.
+reconciliation and provider writes are not supported.
 
 ## Notifications
 
@@ -71,8 +72,8 @@ bounds requests and records duplicate deliveries safely in a private inbox.
 A notification is a review signal. It cannot publish an event, import participants,
 grant guest access or establish a purchase or prize entitlement. Use the linked
 source's explicit authorized reconciliation or purchase refresh to update evidence.
-A loopback callback cannot receive a real provider delivery; live subscription
-registration and delivery need separate verification.
+A loopback callback cannot receive a provider delivery. Use the configured public
+HTTPS callback and verify notification delivery with your Luma account.
 
 ## Purchases
 
@@ -98,14 +99,16 @@ matching, ticket counts and signed notifications do not establish financial or
 prize eligibility. Native checkout, issuing refunds and automatic prize allocation
 remain outside this integration.
 
-## Development references
+## Verify the connection
 
-The existing C08/C09/C10 checks own provider scope, credentials, replay, partial
-failure, durable work and guest purchase privacy. Use injected transports and the
-dedicated test database; do not contact a live club's calendar during routine tests.
-See [testing](../development/testing.md) and the [guest portal](guest-portal.md).
+After enabling requests, run the calendar check with your configured credentials.
+Confirm access to the intended calendar, then link and review the intended event
+source before importing. Check the resulting status and timestamp; a failed
+response must not be treated as proof that an event has no guests.
 
-Provider contracts should be checked against the current
-[Luma API documentation](https://docs.luma.com/reference/getting-started-with-your-api)
-when changing an adapter. Implementation and local fixture results do not prove
-that an external account has the required access or configuration.
+Use the current [Luma API documentation](https://docs.luma.com/reference/getting-started-with-your-api)
+to check account access and callback requirements. Local automated tests do not
+verify a Luma account's configuration. Contributors should use injected transports
+and the dedicated test database during routine [testing](../development/testing.md),
+without contacting a live club's calendar. See the [guest portal](guest-portal.md)
+for claimed guest access and purchase summaries.

@@ -1,9 +1,10 @@
 # REST API reference and interactive tester
 
-Open **Integrations > AI & API > API documentation & tester** as an approved owner
-or administrator. The screen describes every registered operation, shows its
-input/output schemas and validated example, and tests the actual REST or MCP
-endpoint. It is available at `/admin/integrations/automation/docs`.
+As an approved owner or administrator, open **Integrations** and select
+**Documentation & tester** on the **REST API** card. The same screen is linked
+from **MCP → Manage → API documentation & tester**. It describes every registered
+operation, its input/output schemas and an example, and sends requests to the
+REST or MCP endpoint. Its path is `/admin/integrations/automation/docs`.
 
 In **Integrations**, enable **REST API**, **MCP**, or both for the transports you
 intend to use. They are independent and disabled by default. Creating a connection
@@ -11,7 +12,7 @@ does not enable either transport. Disabling one blocks its operations while
 preserving credentials, content and settings; current authorization still applies
 if it is enabled again. Changing availability requires a recent staff sign-in.
 
-Create a scoped connection in AI & API. Paste its key into the tester's
+Create a scoped connection through **MCP → Manage**. Paste its key into the tester's
 password field. The tester retains it only in page memory, sends no session cookies,
 allows only this instance's API paths and refuses redirects. Clear the key when
 finished. Request/response text is rendered as text, never HTML. There are no
@@ -21,8 +22,9 @@ external documentation scripts, analytics or third-party request proxies.
 operation. Select an operation, review the example, replace placeholder IDs and
 facts, then send. Changing operation loads its example. For operations with a
 `requestId`, generate one UUID for that intended write and preserve it and the
-exact body when retrying. An event preparation also needs its real preview token;
-the example token is a placeholder, not an approval.
+exact body when retrying. Event preparation needs the snapshot token returned by
+`events_prepare_preview`; replace the placeholder token before sending.
+
 The MCP connection check initializes the protocol and lists tools, resources and
 prompts without creating content. Download OpenAPI for another API client.
 
@@ -49,6 +51,8 @@ current session policy; see [OAuth connection setup](automation-oauth.md) for
 resource, consent, refresh and revocation requirements.
 
 ## Discovery
+
+Paths in the tables below are relative to `/api/v1`.
 
 | Method and path                         | Purpose                                                                |
 | --------------------------------------- | ---------------------------------------------------------------------- |
@@ -183,7 +187,8 @@ on an external provider. See the [workflow contract](../development/automation-w
 Content requests return `{ "data": ... }`. Paginated list data contains `items` and
 `nextOffset`; pass `offset=nextOffset` until it becomes null. `limit` defaults to
 20 and is capped at 50. Calendar returns a workspace rather than a paged list.
-Collection adapters currently use existing club-sized service queries.
+Pagination uses offsets rather than database cursors and is intended for club-sized
+collections.
 `/openapi.json` returns the OpenAPI document itself without the data envelope.
 
 Page results include the draft, published revision ID and revision history. Form
@@ -249,7 +254,7 @@ Errors return `{ "error": "An actionable message" }`:
 | 500       | Retry a read; for a write first inspect saved state or its retry receipt                            |
 | 503       | Check the preview runtime or unavailable dependency before retrying                                 |
 
-Limits are 120 requests/key/minute, 20 source reads/key/minute and 240 authentication
+Limits are 120 requests/connection/minute, 20 source reads/connection/minute and 240 authentication
 attempts/address/minute. Image and preview operations have additional limits in
 their guides. Internal SQL, credentials and exception text are not returned.
 See [MCP/client setup](mcp-clients.md) and the

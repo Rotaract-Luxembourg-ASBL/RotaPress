@@ -1,7 +1,6 @@
 # Scheduled CMS publication
 
-Schedule deliberate, one-time publication of a saved CMS revision.
-It reuses the existing editor, permissions, validation and publication transaction.
+Schedule one-time publication of a saved revision from the page or shared-part editor.
 Club pages, event pages, shared sections, headers and footers use the same workflow.
 It does not schedule event-detail snapshots, menu/settings publication or theme
 activation, and it does not enable an event module.
@@ -26,9 +25,8 @@ activation, and it does not enable an event module.
    unsaved metadata or blocks.
 
 Scheduling requires current publication authority for the specific resource.
-Current readers of that content can inspect its job history. Private APIs use
-`no-store`; anonymous users cannot inspect jobs or queued revisions. No token,
-requesting user identity, lease token or private provider data is returned in the UI.
+Current readers of that content can inspect its job history. Anonymous users cannot
+inspect jobs or queued revisions, and private responses are not publicly cached.
 
 The original sign-in session must remain valid until execution. The requested time
 must precede its current expiry and be within 30 days. Signing out/revoking that
@@ -50,35 +48,28 @@ roles remain authoritative. Scheduling an event page does not publish event deta
 or bypass private/unlisted visibility. Theme presentation and administration styles
 are unchanged; scheduled shared parts still reference the shared published menus.
 
-## Durable local execution
+## Background execution and recovery
 
-The additive migration `0015_sturdy_anthem.sql` creates a purpose-specific publication
-job table with scoped content/variant/revision foreign keys and one active job per
-language variant. No arbitrary payload, executable code or general task framework
-is accepted. A request ID makes repeated scheduling return its existing receipt.
+The [Docker hosting recipe](hosting.md) runs scheduled jobs automatically. The
+development launcher also processes jobs periodically. To run one bounded batch
+in a configured development checkout:
 
-`node scripts/pnpm.mjs dev` invokes the existing bounded job command every 30 seconds.
-It now processes form notifications and up to five due publications. For an explicit
-invocation, use `node scripts/pnpm.mjs jobs:run`. A production `start` command does not
-create a scheduler; a separately authorized deployment must arrange bounded calls.
-The browser can close after scheduling. If the runner is stopped, jobs persist and
-remain pending until it resumes; expired sessions still prevent old work from running.
+```sh
+node scripts/pnpm.mjs jobs:run
+```
 
-Workers atomically claim due jobs with `FOR UPDATE SKIP LOCKED`, a unique lease token
-and a one-minute lease. They recover expired claims and allow three attempts total.
-Known stale/access failures cancel the job; invalid publication dependencies fail it.
-Unexpected infrastructure errors receive bounded retries one minute apart. Error
-history and process output contain only safe codes and counts, never raw exceptions.
+Running only the web server with `start` does not start a job runner. Use the
+managed hosting recipe or follow the [container contract](../development/hosting.md).
+The browser can close after scheduling. If the runner stops, jobs remain saved
+until it resumes; expired sessions still prevent old work from publishing.
 
-The final publication, media-usage changes, audit entry and successful job receipt
-commit in one transaction, serialized with CMS and permission mutations. This avoids
-the external acknowledgement gap that still applies to SMTP notification delivery.
-Separate worker invocations can safely see the already completed result after restart.
-Cancellation that commits first prevents a claimed worker from publishing. If a
-publication has already committed, cancellation reports that the job finished.
+Only one active schedule is allowed per language variant. Retrying the same
+scheduling request returns the saved schedule. Interrupted workers can recover
+unfinished jobs, with at most three attempts. Lost access or a changed revision
+cancels the job; invalid publication dependencies mark it failed. Review the
+reported reason, correct the content or permissions, then schedule again.
 
-## Verification and limits
-
-C09 covers replay, cancellation, stale revisions and worker recovery. B02 covers
-publication through the actual editor. See [testing](../development/testing.md).
-A production scheduler and deployment configuration still need verification.
+Publication, media references, audit history and the completed job are saved
+together. A retry cannot publish the same completed job again. Cancellation that
+saves first prevents publication; if publication has already finished, cancellation
+reports that outcome and leaves the published content unchanged.

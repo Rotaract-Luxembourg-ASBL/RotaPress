@@ -28,6 +28,3 @@ For a club's final identity, upload its actual club signature made with the
 Follow the [official usage guidance](https://brandcenter.rotary.org/en-us/our-brand/brand-elements/logos-and-graphics/dos-and-donts),
 including club identification and clear space. Do not crop the wheel out as an
 icon, recolor the marks, or substitute the retired Rotaract seal.
-
-The reference site's Luxembourg-specific signature and retired favicon were
-inspected but are not bundled as generic template identities.

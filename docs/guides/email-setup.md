@@ -13,19 +13,19 @@ flowchart LR
   D --> E[Owner manages the club and email settings]
 ```
 
-The repository currently supports local operation. Hosted deployment, HTTPS,
-backups and live-provider acceptance remain pending; see the
-[roadmap](../development/roadmap.md). Configuring email does not deploy a server.
+For a hosted installation, start with [Host your club](hosting.md). Its installer
+collects sender settings, nominates the owner and creates a private setup link.
+For another container platform, use the [container contract](../development/hosting.md).
+The examples below explain the sender requirements for either hosting path.
 
 ## 1. Configure the sender
 
-Run `node scripts/pnpm.mjs setup` to prepare local infrastructure and generated
-secrets. It does not send email. Keep the generated database, authentication and
-encryption settings in `.env.local`, then add **one** of the configurations below.
-Replace the example sender and credential with your own provider settings.
+Choose **one** provider below and replace its example sender and credentials with
+your own. The hosting installer collects these settings; a container platform
+stores them in protected server environment fields.
 
-For a hosted environment, credentials belong in the host's protected server
-environment or secret manager. Never put them in `NEXT_PUBLIC_*`, source control,
+Credentials belong in the host's protected environment or secret manager.
+Never put them in `NEXT_PUBLIC_*`, source control,
 browser storage, URLs or a public setup form. Do not paste credentials into issues.
 Use a sending credential limited to the intended domain when the provider supports it.
 
@@ -69,17 +69,31 @@ sender and intended recipients.
 
 ## 2. Nominate the owner
 
-On the server, run:
+For the guided Docker installation, the installer asks for the owner's email and
+saves a private setup link. On another container platform, configure
+`ROTAPRESS_OWNER_EMAIL` and `ROTAPRESS_SETUP_CLAIM` as described in the
+[container contract](../development/hosting.md#protected-settings).
+
+For a local source installation, first generate local infrastructure and secrets:
+
+```sh
+node scripts/pnpm.mjs setup
+```
+
+Add the chosen provider settings to `.env.local`, then nominate the owner and
+start the local application:
 
 ```sh
 node scripts/pnpm.mjs setup --owner-email your-real-address@example.org
 node scripts/pnpm.mjs dev
 ```
 
-Use an inbox the owner controls. The command saves a one-hour installation claim
-in private `.local/setup-claim.txt` and nomination details in
-`.local/setup-info.json`. Give the claim to the nominated owner through a private
-channel. The web process cannot issue a claim or change its nominated identity.
+Local setup itself does not send email. The nomination command saves a one-hour installation
+claim in `.local/setup-claim.txt` and nomination details in `.local/setup-info.json`.
+
+Use an inbox the owner controls and share the setup link or local claim through a
+private channel. Keep these files out of Git and shared screenshots. The web
+process cannot issue a claim or change its nominated identity.
 
 Before the installation is claimed, delivery is limited to the nominated email
 and requires an unexpired claim. No arbitrary recipient or mail credentials can
@@ -87,22 +101,27 @@ be supplied through the setup screen.
 
 ## 3. Verify and claim the club
 
-Open `/setup`. If the sender is absent or disabled, setup explains what the
+Open the private hosted setup link, or `/setup` for a local source installation.
+If the sender is absent or disabled, setup explains what the
 server administrator must configure and does not offer a broken sign-in action.
 Configured means the settings are present, not that a provider has accepted a message.
 
 Request a code for the nominated owner, read it in that owner's real inbox, then
 verify it. Better Auth checks the expiring code and creates the session. Complete
-the club details and supply the separate installation claim to become owner.
-Neither the claim nor sender configuration bypasses email verification.
+the club details to become owner. Hosted links carry the installation claim;
+local source setup asks you to supply the separate claim. Neither the claim nor
+sender configuration bypasses email verification.
 
 If delivery fails, check the sender/domain status, provider credential, delivery
 flag and provider logs. RotaPress returns a safe error without provider details.
 There is no automatic fallback to another provider or development mailbox.
 
-If the claim expires, rerun setup. The same unexpired claim and nomination are
-preserved; explicitly nominating a different email issues a replacement claim.
-Completed installations cannot be claimed again.
+For an expired hosted link, run `node scripts/host.mjs link` or replace the pending
+claim using your container platform's protected settings. Restarting with the same
+hosted claim does not renew its expiry. For local source setup, rerun the setup
+command; an unexpired local claim and nomination are preserved, while explicitly
+nominating a different email issues a replacement. Completed installations cannot
+be claimed again.
 
 ## 4. Manage email after installation
 
@@ -123,17 +142,19 @@ Changing delivery requires recent owner authentication.
 
 Keep a working owner session while changing the sender. If the active admin
 provider fails, changing the server environment alone does not override it.
-Repair that provider or switch through the existing authorized session. Recovery
-from total email lockout needs an operator runbook before hosted release; setup
-must never reopen ownership as a recovery shortcut.
+Repair that provider or switch through the existing authorized session. If all
+sessions have expired, repair the selected sender before requesting another code.
+The local `recover:owner` command is restricted to development identities and does
+not recover a hosted email outage. Never reopen ownership setup as a recovery
+shortcut.
 
-## Development is separate
+## Development email
 
 `EMAIL_PROVIDER=disabled` is the default. Production mode is the default when
 `ROTAPRESS_ENVIRONMENT` is absent. Production rejects the development provider;
 it never connects to a local capture mailbox as an email fallback.
 
 Mailpit is an opt-in development service under Compose's `development` profile.
-It is for synthetic tests only and is not evidence of inbox ownership or external
-delivery. It must not run in a production deployment. Contributor setup is
+It captures synthetic test messages locally and cannot verify delivery to a real
+inbox. It must not run in a production deployment. Contributor setup is
 documented separately in [local development](../development/local-development.md).

@@ -1,34 +1,34 @@
 # Roadmap and current limits
 
-RotaPress is pre-release. Website editing, membership, forms, events, calendars
-and optional integration configuration are implemented with local automated
-checks. This is not a claim of production acceptance or live-provider verification.
+RotaPress is pre-release. It provides website editing, membership, forms, events,
+calendars and optional integrations in one application. The boundaries below
+describe the supported design and planned work; validate each deployment with its
+actual storage, proxy, sender and provider configuration.
 
-## Next: local release candidate
+## Current product scope
 
-Fresh-installation improvements include atomic template/theme setup, a Google-only
-staff screen with optional managed-domain configuration, richer public club identity,
+Fresh installation supports atomic template/theme setup, a Google-only staff
+screen with optional managed-domain configuration, public club identity fields,
 connected Club details blocks, club-name SEO titles and sandboxed custom HTML/JS.
 See [website/media](../guides/cms-and-media.md) and
-[Google sign-in](../guides/google-authentication.md). A successful local check or
-deployment still does not establish a completed live Google sign-in.
-
-Before a production-ready release:
-
-- Demonstrate clean installation and first-owner setup on a public host without demo data.
-- Exercise the portable hosting recipe on a chosen public host, including real
-  certificates, inbox delivery and off-site recovery of a representative club.
-- Complete update and recovery instructions and review release dependencies.
-- Confirm the rights and intended use of bundled branding for the distribution.
-- Verify the production build, main user journeys and permissions on the chosen
-  deployment configuration before supporting that configuration.
+[Google sign-in](../guides/google-authentication.md).
 
 The repository supplies local setup and a portable Docker hosting assistant with
 automatic migrations, persistent uploads, jobs, backup and fresh-stack restore.
-The container rehearsal checks database-plus-upload recovery with protected keys;
-live-host recovery remains a release gate. It does not supply general `seed:demo`,
-`backup:local` or `restore:local` commands for the separate development environment.
-See [hosting](../guides/hosting.md).
+See [hosting](../guides/hosting.md) for operating instructions and
+[testing](testing.md) for local verification.
+
+## Release priorities
+
+- Validate clean installation and first-owner setup without demo data on each
+  supported hosting configuration.
+- Exercise real certificates, inbox delivery, provider callbacks and off-site
+  recovery of representative club data on that configuration.
+- Verify updates and restoration with matching database, uploads and protected
+  keys; the isolated container rehearsal cannot establish live-host recovery.
+- Review dependency advisories and the licenses/provenance of distributed artwork.
+- Verify the production build, principal user journeys and permissions before
+  documenting support for a deployment configuration.
 
 ## Integration and hosting limits
 
@@ -39,28 +39,29 @@ prepare website and event drafts; bounded private image uploads and saved-revisi
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them; publication stays manual. Every feature change requires an
 API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
-[workflow phases and acceptance boundaries](automation-workflows.md).
+[workflow architecture](automation-workflows.md).
 
-| Area           | Current boundary                                                                                                                                                                       |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Google sign-in | Protected configuration and local policy checks; actual provider sign-in still needs credentials and a real run                                                                        |
-| AI & API       | Native content/media/event drafts, isolated visual previews, staff-reviewed settings, bearer/stdio and predefined OAuth clients; actual external-client acceptance remains separate    |
-| Visual preview | Pinned Chromium and a supported sandboxed runtime are required; saved pixels do not verify interactive controls, delivery or payments                                                  |
-| Luma           | Links, protected connections, scoped import/notification/purchase workflows with synthetic fixtures; live verification pending                                                         |
-| Calendar feeds | Local file imports and injected feed checks; real remote feeds require separate verification                                                                                           |
-| Email          | Server SMTP/Resend bootstrap precedes owner sign-in; development capture is opt-in and prohibited in production mode. Live delivery and total email-lockout recovery remain unverified |
-| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                                                           |
-| File storage   | Persistent disk images with bounded backup/restore; object storage is not implemented                                                                                                  |
-| Production     | Portable Docker recipe with automatic bootstrap/migrations, HTTPS proxy, jobs and recovery; chosen public host and live-provider acceptance remain pending                             |
+| Area           | Current boundary                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                      |
+| AI & API       | Native content/media/event drafts, staff-reviewed settings, bearer/stdio and registered OAuth clients; no participant operations or unattended publication |
+| Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments          |
+| Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control          |
+| Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                               |
+| Email          | Server SMTP/Resend configuration precedes owner sign-in; development capture is opt-in and prohibited in production mode                                   |
+| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                               |
+| File storage   | Persistent disk images with bounded hosted backup/restore; object storage is not implemented                                                               |
+| Owner recovery | The local `.test` recovery command is not a hosted email-lockout procedure                                                                                 |
+| Hosting        | One application replica, PostgreSQL 17, persistent uploads, trusted HTTPS proxy and the hosted job supervisor                                              |
 
 External provider access defaults to disabled where operator flags apply. Saved
 configuration does not establish a working connection or authorize real mail.
 The exact setup and restrictions are in the relevant [guides](../README.md).
 
 OAuth implements Better Auth authorization-code consent with S256 PKCE and exact
-client registration. A real hosted client connection still needs a reachable HTTPS
-installation, the client's supported configuration and a completed consent/revoke
-check. Local fixtures or browser journeys do not prove ChatGPT/Claude acceptance.
+client registration. A hosted client connection needs a reachable HTTPS
+installation and a supported client configuration. Verify consent, tool use and
+revocation in that client; local fixtures cannot establish ChatGPT/Claude support.
 See [OAuth setup](../guides/automation-oauth.md) and
 [visual-preview requirements](../guides/automation-preview.md).
 

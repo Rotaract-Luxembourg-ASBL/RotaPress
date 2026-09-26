@@ -84,11 +84,6 @@ Event unpublication or archive removes public access. A hidden section retains i
 content and references; a visible Prize section cannot be newly published while
 Prizes is unavailable. A saved disabled section remains available for later editing.
 
-Migration `0026_event_prize_gallery` binds prize identities and publication pointers
-to the same event and organization. The runtime role cannot update or delete prize
-publication revisions. Mutations serialize with membership, assignment, partner
-publication and media changes through the existing organization lock.
-
 Copying an event includes prize drafts in the exact reviewed copy token. New prize
 identities retain title, description, image, donor, quantity and order, with new
 draft media references. Publication pointers and history are excluded. A changed
@@ -99,5 +94,5 @@ atomically. See [event starting copies](event-presets.md).
 
 The gallery publishes prize descriptions and quantities; it does not grant entries
 or establish payment rights. Use the separate [demonstration entry register](event-entries.md)
-and [draw workflow](event-draws.md) for their audited local operations. Real paid
-activation and real draws remain outside the supported release scope.
+and [draw workflow](event-draws.md) to practice with invented participants and
+retained decision history. Real paid entry allocation and real draws are unsupported.

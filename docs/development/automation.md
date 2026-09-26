@@ -2,13 +2,13 @@
 
 Automation prepares native private content, images and event configuration
 suggestions for human review. The [workflow contract](automation-workflows.md)
-describes discovery, OAuth, media, visual review, event preparation and acceptance.
+describes discovery, OAuth, media, visual review and event preparation.
 Publication and application of consequential settings remain staff actions.
 
 `src/integrations/automation/catalogue.ts` is the single registry. Each operation
 declares a stable name, method/path, scope, description, validated request example
-and Zod input/output. REST dispatch,
-MCP tools and OpenAPI read it. Domain services remain responsible for validation,
+and Zod input/output. REST dispatch, MCP tools and OpenAPI read it. Domain services
+remain responsible for validation,
 scope, version checks, transactions, audits and publication. Never implement a
 second CMS or bypass a service to mutate content in an adapter.
 
@@ -19,8 +19,8 @@ second CMS or bypass a service to mutate content in an adapter.
 2. Update the shared operation/schema for safe automation. Review scopes, narrow
    response projections, descriptions, examples and prompts. Review both required
    grants and current domain capabilities, including dependencies used by copies
-   and composite workflows. Responses validate
-   against closed schemas before serialization; unexpected fields fail closed.
+   and composite workflows. Responses validate against closed schemas before
+   serialization; unexpected fields fail closed.
    Native CMS block fields appear in page-save schemas automatically; update the
    design catalogue's contexts, templates and instructions when their rules change.
    Executable CustomCode remains unavailable, including nested block branches.
@@ -42,8 +42,8 @@ API routes and database schemas. Changes without a reviewed receipt fail `check`
 `verify` and GitHub's API/MCP workflow. Duplicate tools/routes, uncovered directories
 and unknown operation references also fail. REST/MCP inputs share definitions and
 cannot independently drift. Invalid request examples also fail the check. Response
-schemas power both the tester and MCP structured output. The receipt stores hashes instead of duplicating a
-large generated specification.
+schemas power both the tester and MCP structured output. The receipt stores hashes
+instead of duplicating a large generated specification.
 
 Recording a hash acknowledges review; it does not prove semantic safety. Reviewers
 must inspect operations, prompts, tests and manual boundaries. A feature may stay

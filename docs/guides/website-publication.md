@@ -1,6 +1,6 @@
 # Website and menu publication
 
-Website > Menus owns the homepage choice, Events landing-page choice and navigation
+**Website → Menus** owns the homepage choice, Events landing-page choice and navigation
 links. Save those settings, then use **Publish website**. Once the website has been
 published, the review opened from Menus defaults to **Menu only**.
 
@@ -33,4 +33,4 @@ Changing scope or refreshing clears the publication confirmation.
 An unavailable image does not expose another club's metadata. Review routes and
 image details require current staff capabilities; ordinary members cannot access
 them. Publication rechecks ownership and visibility in its transaction. The review
-never changes visibility automatically, and image DTOs omit storage paths.
+never changes visibility automatically, and image details do not expose storage paths.

@@ -32,8 +32,9 @@ The installer handles:
 Open the link saved in the displayed `setup-link.txt` file, verify the code sent
 to your owner inbox, and introduce your club. The link carries the installation
 claim; there is no separate claim to paste. It grants no access without verified
-owner identity. In administration, choose **Website → Templates** to start your
-Rotary or Rotaract website as a draft.
+owner identity. During setup, select a Rotary or Rotaract template to create its
+private pages and matching theme, or choose a blank website. After setup,
+**Website → Templates** lets you select an editable website template.
 
 Email must work before the first owner signs in. The sender appears afterward
 in **Integrations → Email** as server configuration, with credentials hidden.
@@ -43,21 +44,22 @@ The hosting recipe contains no development email service.
 
 ## Choose where it runs
 
-| Hosting style | Installation path |
-| --- | --- |
-| A Docker VPS from your preferred provider | Run the assistant above; database and HTTPS are included |
-| Your own Linux server or virtual machine | Use the same assistant and point your domain to the server |
-| A Docker platform with its own reverse proxy | Use the same application and PostgreSQL containers with the [container contract](../development/hosting.md); let the platform handle HTTPS |
-| Railway, Render or another container host | Deploy the Dockerfile with PostgreSQL 17, a persistent upload disk and protected settings using the [container contract](../development/hosting.md) |
+| Hosting style                                | Installation path                                                                                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A Docker VPS from your preferred provider    | Run the assistant above; database and HTTPS are included                                                                                            |
+| Your own Linux server or virtual machine     | Use the same assistant and point your domain to the server                                                                                          |
+| A Docker platform with its own reverse proxy | Use the same application and PostgreSQL containers with the [container contract](../development/hosting.md); let the platform handle HTTPS          |
+| Railway, Render or another container host    | Deploy the Dockerfile with PostgreSQL 17, a persistent upload disk and protected settings using the [container contract](../development/hosting.md) |
 
 The last two paths require the platform's initial service/domain configuration.
-RotaPress handles database roles, migrations and jobs after startup. These are
-portable deployment options, not claims of live acceptance on every provider.
-A static website host or ephemeral filesystem cannot run this installation.
+RotaPress handles database roles, migrations and jobs after startup. Check that
+your platform supports the required database privileges, persistent storage and
+container startup process. A static website host or ephemeral filesystem cannot
+run this installation.
 
 The installer uses the Docker server you run it on. It does not rent a server,
-create cloud accounts, change DNS or push your repository. Start with a separate
-test domain and synthetic club content while evaluating this pre-release.
+create cloud accounts, change DNS or push your repository. Use a separate test
+domain to check setup and recovery before moving an existing club website.
 
 ## Everyday operation
 
@@ -130,6 +132,7 @@ the Docker build. Protect this directory. For a second isolated installation,
 use a distinct `ROTAPRESS_STACK` beginning with `rotapress-` and separate ports
 or a separate server.
 
-The [roadmap](../development/roadmap.md) lists remaining release verification.
-Local container checks cannot establish real inbox delivery or public certificate
-issuance for your domain.
+Check the public HTTPS address and delivery to the nominated owner's inbox on
+your installation. AI [visual previews](automation-preview.md#runtime-and-isolation)
+also require the bundled Chromium runtime to run with its Linux sandbox enabled.
+See the [container contract](../development/hosting.md) for host requirements.

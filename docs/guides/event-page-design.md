@@ -4,25 +4,28 @@ Open **Events → Open event → Event page**. The page designer is part of the
 event workspace. Details, packages, participation, guests and prizes stay in
 the same workspace; changing panels preserves entered page content.
 
-Choose your own public artwork through the existing image picker.
+Choose artwork through the image picker. Staff with club media access may use
+private images in drafts; event-only editors select public images. Before
+publication, every selected image needs a deliberate public visibility decision.
+See [Media](cms-and-media.md#media).
 
 ## Start with a layout
 
 When creating a page, use **Browse 10 layouts**. For an existing page, use
 **Choose a layout**. Each choice is an editable composition:
 
-| Layout | Starting design |
-| --- | --- |
-| Rotaract signature | Gold and cream, centred full-height introduction, programme and impact |
-| Gala evening | Classic typography, generous spacing, story and sponsor section |
-| Conference & talks | Blue, split introduction, agenda and speaker/team profiles |
-| Community mixer | Berry, compact left introduction, practical details and people |
-| Community action | Green, split introduction, project impact and volunteer information |
-| Hands-on workshop | Amber, compact learning story, programme and facilitators |
-| Community festival | Orange, full-height invitation, gallery and programme |
-| Purpose & impact | Wine, classic split introduction, project story and sponsors |
-| Move together | Teal, bold left introduction, schedule and participant information |
-| Anniversary & celebration | Violet, classic centred introduction, story, gallery and team |
+| Layout                    | Starting design                                                        |
+| ------------------------- | ---------------------------------------------------------------------- |
+| Rotaract signature        | Gold and cream, centred full-height introduction, programme and impact |
+| Gala evening              | Classic typography, generous spacing, story and sponsor section        |
+| Conference & talks        | Blue, split introduction, agenda and speaker/team profiles             |
+| Community mixer           | Berry, compact left introduction, practical details and people         |
+| Community action          | Green, split introduction, project impact and volunteer information    |
+| Hands-on workshop         | Amber, compact learning story, programme and facilitators              |
+| Community festival        | Orange, full-height invitation, gallery and programme                  |
+| Purpose & impact          | Wine, classic split introduction, project story and sponsors           |
+| Move together             | Teal, bold left introduction, schedule and participant information     |
+| Anniversary & celebration | Violet, classic centred introduction, story, gallery and team          |
 
 Example text is editable guidance, not an assertion about an actual event. Images,
 people, bookings and donation totals are never invented. New directory sections
@@ -92,22 +95,11 @@ by link but absent from the directory. Private events still require scoped acces
 For an optional event subdomain, the owner uses **Settings → Domains** and
 selects **An individual event**. Setup retains the event destination and provides
 a DNS ownership challenge. An event manager cannot change domain ownership.
-Actual hosting is pending: configure HTTPS and an external redirect from that
-subdomain to the displayed event URL when a domain is chosen. Verification does
-not enable host routing, broaden CORS, share cookies or change Google callbacks.
+The domain record does not provision hosting or HTTPS. Configure an external
+redirect from the subdomain to the displayed event URL if you want to use it.
+Ownership verification does not enable host routing, broaden CORS, share cookies
+or change Google callbacks.
 Keeping the subdomain in the browser address bar is not implemented by this setup.
 
-## Implementation and checks
-
-`event_layouts.ts` owns ten stable catalogue entries; `event_layout_recipes.ts`
-composes/merges existing CMS blocks. `event-reference-config.tsx` registers the
-four new event sections. `event-reference-blocks.tsx`, `event_sections.ts` and
-`event-reference.css` render them through the shared public renderer. CMS
-publication and media reference validation include introduction artwork.
-
-The canonical editor route is `/admin/events/<id>?tab=website&page=<page>&locale=en`.
-Older `/admin/events/<id>/page/<page>` links redirect there. C06 checks layout
-round trips, preserved content, event-only scope, private preview/publication and
-artwork protection. C02 checks event-domain ownership and destination constraints.
-B01 covers the real OTP editor/publication flow and the layout gallery; B02
-continues to cover the shared CMS. See [testing](../development/testing.md) for the check commands.
+See [event setup](event-presets.md), [registration](event-registration.md) and
+[website publication](website-publication.md) for the connected workflows.

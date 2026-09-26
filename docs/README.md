@@ -1,59 +1,66 @@
 # RotaPress documentation
 
-Start with the [project README](../README.md) and
-[hosting guide](guides/hosting.md) or [local setup](development/local-development.md).
-RotaPress is pre-release; the
-[roadmap](development/roadmap.md) distinguishes current functionality from
-unfinished release work.
+RotaPress is a pre-release website and administration application for clubs.
+Start with the [project overview](../README.md) and review the
+[current limitations](development/roadmap.md).
 
-## Use RotaPress
+## Install and operate
 
-| Task                                            | Guide                                                       |
-| ----------------------------------------------- | ----------------------------------------------------------- |
-| Install on a server, update or restore          | [Portable hosting](guides/hosting.md)                       |
-| Edit pages, shared content and media            | [Website and media](guides/cms-and-media.md)                |
-| Set up a complete editable website              | [Website templates](guides/website-kits.md)                 |
-| Use the RotaPress logo and repository artwork   | [Product brand assets](guides/rotapress-brand.md)           |
-| Publish a website or only its menu              | [Website publication](guides/website-publication.md)        |
-| Build forms and review responses                | [Forms](guides/forms.md)                                    |
-| Manage a personal account and bookings          | [Member portal](guides/member-portal.md)                    |
-| Create and publish events                       | [Events](guides/events.md)                                  |
-| Design an event page                            | [Event page design](guides/event-page-design.md)            |
-| Take free registrations                         | [Event registration](guides/event-registration.md)          |
-| Copy or cancel an event                         | [Starting copies and cancellation](guides/event-presets.md) |
-| Grant private event access                      | [Guest portal](guides/guest-portal.md)                      |
-| Publish prizes                                  | [Prize gallery](guides/event-prizes.md)                     |
-| Review demonstration entries                    | [Entry register](guides/event-entries.md)                   |
-| Run a demonstration draw                        | [Draws and winners](guides/event-draws.md)                  |
-| Schedule a saved page revision                  | [Scheduled publication](guides/scheduled-publication.md)    |
-| Manage calendars, imports and reminders         | [Calendar](guides/calendar.md)                              |
-| Configure email delivery and templates          | [Email](guides/email.md)                                    |
-| Configure email before the first owner signs in | [First-run email setup](guides/email-setup.md)              |
-| Configure Google authentication                 | [Google sign-in](guides/google-authentication.md)           |
-| Connect Luma links, imports and purchases       | [Luma](guides/luma.md)                                      |
-| Prepare content using AI, REST and MCP          | [AI & API connections](guides/ai-and-api.md)                |
-| Explore and test API operations                 | [REST reference and tester](guides/api-reference.md)        |
-| Connect Claude, Codex or model-provider APIs    | [MCP clients](guides/mcp-clients.md)                        |
-| Connect an assistant using sign-in and consent  | [OAuth connections](guides/automation-oauth.md)             |
-| Upload and inspect private images with AI       | [Automation media](guides/automation-media.md)              |
-| Review saved page designs on desktop and phone  | [AI visual review](guides/automation-preview.md)            |
+- [Host your club](guides/hosting.md): server requirements, installation, updates and recovery.
+- [Run locally](development/local-development.md): development setup, services and owner recovery.
+- [Set up the first email sender](guides/email-setup.md): deliver owner verification before administration is available.
+- [Report a vulnerability](../SECURITY.md): private reporting and supported versions.
 
-## Develop RotaPress
+## Website and content
 
-- [Local development](development/local-development.md)
-- [Architecture and directory layout](development/architecture.md)
-- [Container hosting contract](development/hosting.md)
-- [Testing and critical scenarios](development/testing.md)
-- [Security testing and assessment scope](development/security-testing.md)
-- [REST/MCP feature contract](development/automation.md)
-- [AI website/event workflows and acceptance phases](development/automation-workflows.md)
-- [REST/MCP security boundaries](development/automation-security.md)
-- [Product UX rules](development/product-ux.md)
-- [Shared administration workspaces](development/admin-workspaces.md)
-- [Calendar provider contributions](contributing/calendar-providers.md)
-- [Website template authoring](../skills/rotapress-website-template/SKILL.md)
-- [Roadmap and release limitations](development/roadmap.md)
+- [Pages and media](guides/cms-and-media.md): visual editing, shared content, club identity and uploads.
+- [Website templates](guides/website-kits.md): install and customize an editable website.
+- [Website publication](guides/website-publication.md): publish reviewed drafts or update menus.
+- [Scheduled publication](guides/scheduled-publication.md): schedule a saved page revision.
+- [RotaPress brand assets](guides/rotapress-brand.md): use the product logo and repository artwork.
 
-For contribution practices, community expectations and private reporting, see
-[Contributing](../CONTRIBUTING.md), [Code of Conduct](../CODE_OF_CONDUCT.md)
-and [Security](../SECURITY.md).
+## Members, forms and calendars
+
+- [Member portal](guides/member-portal.md): personal accounts and bookings.
+- [Forms](guides/forms.md): build forms, share them and review private responses.
+- [Calendar](guides/calendar.md): activities, recurrence, imports, subscriptions and reminders.
+
+## Events
+
+- [Events](guides/events.md): create, manage and publish an event.
+- [Event page design](guides/event-page-design.md): edit the event's public page.
+- [Event registration](guides/event-registration.md): configure free registration.
+- [Event copies and cancellation](guides/event-presets.md): reuse configuration and manage cancellation.
+- [Guest portal](guides/guest-portal.md): grant private event access.
+- [Prize gallery](guides/event-prizes.md): manage prizes and their public showcase.
+- [Entry register](guides/event-entries.md): review demonstration entries.
+- [Draws and winners](guides/event-draws.md): run a demonstration draw.
+
+## Integrations and AI
+
+- [Email](guides/email.md): senders, templates and delivery.
+- [Google sign-in](guides/google-authentication.md): staff authentication and managed domains.
+- [Luma](guides/luma.md): event links, imports and purchase records.
+- [AI & API connections](guides/ai-and-api.md): choose access and prepare private content with an assistant.
+- [REST reference and tester](guides/api-reference.md): endpoints, schemas and request examples.
+- [MCP clients](guides/mcp-clients.md): connect Claude, Codex and model-provider APIs.
+- [OAuth connections](guides/automation-oauth.md): connect an assistant through sign-in and consent.
+- [Automation media](guides/automation-media.md): upload and inspect private images.
+- [AI visual review](guides/automation-preview.md): inspect saved page designs on desktop and phone.
+
+## Contribute and develop
+
+Read [Contributing](../CONTRIBUTING.md) and the [Code of Conduct](../CODE_OF_CONDUCT.md)
+before opening an issue or pull request.
+
+- [Architecture](development/architecture.md): code layout, data model and security boundaries.
+- [Container hosting contract](development/hosting.md): runtime, persistent storage and recovery.
+- [Testing](development/testing.md): commands, critical scenarios and browser journeys.
+- [Security testing](development/security-testing.md): attack surfaces and assessment methods.
+- [REST/MCP extension contract](development/automation.md): operations, schemas, prompts and compatibility checks.
+- [AI workflows](development/automation-workflows.md): website and event preparation.
+- [REST/MCP security](development/automation-security.md): authorization and data boundaries.
+- [Product UX rules](development/product-ux.md) and [shared administration workspaces](development/admin-workspaces.md).
+- [Calendar provider contributions](contributing/calendar-providers.md).
+- [Website template authoring](../skills/rotapress-website-template/SKILL.md).
+- [Roadmap](development/roadmap.md): current limitations and planned work.

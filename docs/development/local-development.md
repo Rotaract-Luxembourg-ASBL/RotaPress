@@ -2,13 +2,14 @@
 
 The local environment is one Node application and this repository's PostgreSQL
 container, with private uploaded images in `.data/uploads`. Synthetic development
-mail capture is optional and requires no cloud credentials. The [website and media guide](../guides/cms-and-media.md)
-describes page editing, publication, languages and image visibility.
+mail capture is optional and requires no cloud credentials. The
+[website and media guide](../guides/cms-and-media.md) describes page editing,
+publication, languages and image visibility.
 
 ## Requirements and first start
 
 Use Node.js 24 to bootstrap installation and a running Docker installation with
-Compose. Project scripts use the pinned Node.js 24.21.0 runtime downloaded by pnpm;
+Compose. Project scripts use the Node.js runtime pinned in `package.json` and downloaded by pnpm;
 setup and doctor reject older runtimes. Windows requires Docker Desktop's Linux
 container engine. The scripts report missing prerequisites; they do not install
 operating-system software or modify unrelated containers.
@@ -60,12 +61,6 @@ An existing unexpired claim is preserved for the same nominee. Rerun setup after
 expiry; changing `--owner-email` before installation replaces the claim.
 Completed installations stay locked and rerunning setup cannot create another owner.
 
-Setup also creates a separate `INTEGRATION_ENCRYPTION_KEY` for optional API
-credentials, preserving an existing key and refusing to replace a missing key when
-saved credentials exist. Keep it with protected recovery secrets. Live Luma API
-requests default to blocked; [connection operation](../guides/luma.md#connections) explains
-the local fixture, authorization boundary and remaining integration work.
-
 ## Server configuration
 
 Setup generates the database connection, authentication and encryption secrets,
@@ -79,40 +74,42 @@ select a replacement sender after installation. Google is configured in
 **Administration → Integrations**. Neither provider credentials nor server mail
 credentials are exposed in the public setup form.
 
-Existing checkouts no longer get an implicit development mailbox. Choose real
-server email, or explicitly opt into `setup --development-mail` for synthetic
-local work. This preserves existing integration records and installed content.
+Choose real server email, or explicitly opt into `setup --development-mail` for
+synthetic local work. Setup preserves existing integration records and installed
+content; it never silently enables a development mailbox.
 
 Advanced operator controls are optional and default to `false` when absent:
 
-| Control | Permits after separate authorization |
-| --- | --- |
-| `LUMA_API_REQUESTS_ENABLED` | Live Luma API requests |
-| `FORM_WEBHOOK_REQUESTS_ENABLED` | Outgoing form notifications to configured webhooks |
-| `CALENDAR_FEED_REQUESTS_ENABLED` | Reads from configured external calendar feeds |
-| `EMAIL_REMOTE_DELIVERY_ENABLED` | Delivery through configured SMTP/Resend connections |
+| Control                          | Permits after separate authorization                |
+| -------------------------------- | --------------------------------------------------- |
+| `LUMA_API_REQUESTS_ENABLED`      | Live Luma API requests                              |
+| `FORM_WEBHOOK_REQUESTS_ENABLED`  | Outgoing form notifications to configured webhooks  |
+| `CALENDAR_FEED_REQUESTS_ENABLED` | Reads from configured external calendar feeds       |
+| `EMAIL_REMOTE_DELIVERY_ENABLED`  | Delivery through configured SMTP/Resend connections |
 
 These controls restrict outgoing requests independently of provider settings. Saving a
 connection in the panel does not override them. An operator can supply an explicit
 override and restart the app and jobs after the real integration has been authorized.
 Nothing in local setup turns them on or sends real participant email.
 
-Setup preserves an existing encryption key and refuses to generate a replacement
-while any encrypted Google, Luma, form webhook, Calendar import or email connection
-data exists. Restore the original key with the database backup in that situation.
+Setup creates a separate `INTEGRATION_ENCRYPTION_KEY` for stored provider credentials.
+It preserves an existing key and refuses to generate a replacement while encrypted
+Google, Luma, form webhook, Calendar import or email connection data exists.
+Restore the original key with the database backup in that situation. See
+[Luma connections](../guides/luma.md#connections) for its request controls.
 
 ## Local URLs and protected ownership
 
-| Resource | Address |
-| --- | --- |
-| Public website | http://127.0.0.1:3000 |
-| Administration | http://127.0.0.1:3000/admin |
-| Initial setup | http://127.0.0.1:3000/setup |
-| Sign in | http://127.0.0.1:3000/sign-in |
-| Captured email | http://127.0.0.1:18025 |
-| Public health | http://127.0.0.1:3000/api/health |
-| PostgreSQL | 127.0.0.1:55432 |
-| Mailpit SMTP | 127.0.0.1:11025 |
+| Resource       | Address                          |
+| -------------- | -------------------------------- |
+| Public website | http://127.0.0.1:3000            |
+| Administration | http://127.0.0.1:3000/admin      |
+| Initial setup  | http://127.0.0.1:3000/setup      |
+| Sign in        | http://127.0.0.1:3000/sign-in    |
+| Captured email | http://127.0.0.1:18025           |
+| Public health  | http://127.0.0.1:3000/api/health |
+| PostgreSQL     | 127.0.0.1:55432                  |
+| Mailpit SMTP   | 127.0.0.1:11025                  |
 
 All published service ports bind to loopback. Do not expose Mailpit or create a
 public tunnel. Mailpit captures mail locally and has no external relay configured.
@@ -124,20 +121,21 @@ the private installation claim to finish. The claim alone cannot grant ownership
 the verified identity must match the nomination. Keep these local files out of Git,
 issue descriptions, screenshots and status notes.
 
-The first-run screens show email configuration, owner verification, club details
-and the workspace. **About owner access** explains the nominated inbox and private
-claim. Club details include Rotary blue and Rotaract cranberry
-color presets, plus a custom color. After setup, choose a complete website from
-**Website → Templates**; nothing is automatically published. See the
+The first-run screens show email configuration, owner verification and club
+details. **About owner access** explains the nominated inbox and private claim.
+Setup offers Rotary and Rotaract website templates, or a blank website. A selected
+template and its theme are initialized in the same transaction as owner setup;
+content remains private for review. Continue in **Website → Templates** after
+setup. See the
 [product identity and reusable brand assets](../guides/rotapress-brand.md).
 
 The generic club accepts email verification. Configure Google from
 **Integrations → Google sign-in**; see [setup and security](../guides/google-authentication.md).
-Google configuration and its staff
-policy are separate; a linked Google account does not turn an email-authenticated
-session into a Google session. Live Google OAuth remains unverified until an
-authorized actual provider flow is completed. Luma link mode and API connection
-storage work locally; live Luma API validation remains unverified.
+Google configuration and its staff policy are separate; a linked Google account
+does not turn an email-authenticated session into a Google session. Validate a
+configured Google or Luma connection with the actual provider before relying on
+it. Local policy tests and injected transports do not verify external credentials,
+callbacks or provider availability.
 
 ## Stop, restart and production build
 
@@ -151,7 +149,7 @@ node scripts/pnpm.mjs services:status
 node scripts/pnpm.mjs dev
 ```
 
-The development launcher also processes pending form notifications and scheduled CMS publication every
+The development launcher processes bounded notification and scheduling jobs every
 30 seconds, starting after five seconds. Ctrl+C stops both the web app and its
 active job invocation. A bounded batch can also be run explicitly:
 
@@ -202,18 +200,13 @@ CMS revisions are also append-only for the runtime role. CMS and media tables
 remain in the private application schema; browsers use authorized application
 routes rather than database credentials.
 
-Migration commands use a PostgreSQL advisory lock. They only accept known local
-database identities at the project's fixed loopback port:
+Migration commands use a PostgreSQL advisory lock. The development commands accept
+only known local database identities at the project's fixed loopback port:
 
 ```text
 node scripts/pnpm.mjs db:generate
 node scripts/pnpm.mjs db:migrate
 node scripts/pnpm.mjs db:migrate:test
-node scripts/pnpm.mjs check
-node scripts/pnpm.mjs test:critical
-node scripts/pnpm.mjs browser:install
-node scripts/pnpm.mjs test:smoke
-node scripts/pnpm.mjs verify
 ```
 
 Critical checks use `.local/test.env` and `rotapress_test`, never the developer
@@ -230,7 +223,8 @@ generated types, and generated/build/vendor/private-data directories. Generated 
 
 ## Local owner recovery
 
-The privileged recovery command requires an existing verified, approved owner:
+The privileged local recovery command requires an existing verified, approved
+owner with a `.test` email address and the dedicated loopback development database:
 
 ```text
 node scripts/pnpm.mjs recover:owner --email local-owner@example.test
@@ -241,10 +235,13 @@ claims, records an audit entry and writes a 15-minute claim to ignored
 `.local/recovery-claim.txt`. Sign in again as that nominated owner and open
 `http://127.0.0.1:3000/recovery`. Successful consumption restores the generic
 email-or-Google staff policy. It cannot add a new owner, approve an applicant,
-recover another identity or reopen installation setup.
+recover another identity or reopen installation setup. It is not a hosted owner
+recovery or email-lockout procedure.
 
-Database/file backup and restore commands are not yet supplied.
-Do not treat preserved Docker volumes as a tested backup or recovery procedure.
+For the separate hosted stack, the [hosting assistant](../guides/hosting.md)
+provides database-plus-upload backup and fresh-stack restore. Those commands do
+not back up this development environment. Preserve its database, uploads and
+matching private keys together; Docker volumes alone are not a recovery archive.
 
 ## Dependency versions
 

@@ -7,10 +7,10 @@ surrounding workflow and current limitations.
 
 ## Add and review entries
 
-1. Choose **Add demonstration entries**. Start with an invented test participant,
-   or select a saved test booking and its payment reference. Test bookings require
-   purchase details previously refreshed through the local provider fixture.
-   A normal installation can practice with test participants without Luma setup.
+1. Choose **Add demonstration entries** and use an invented test participant.
+   No Luma setup is needed. If a development installation has synthetic test
+   bookings with saved purchase details, you can select one of those bookings and
+   its payment reference instead. Real purchases cannot be used.
 2. Enter the number of entries and a reason. The manager chooses the number;
    ticket counts, amounts, discounts and guest approval never assign it automatically.
    Use a unique reference for a manual participant. Each saved purchase reference
@@ -31,14 +31,13 @@ fails, warn before discarding changes, and return focus to their trigger.
 
 ## Purchase evidence and holds
 
-Only local fixture purchases can be allocated in this slice. Live provider
-purchases are rejected by the server, and no payment processor, purchase, refund,
-admission right or real prize award is created. Manual entries are explicitly
-marked demonstration records. The API and database permit only demonstration mode.
+Only synthetic development purchases can be allocated. The server rejects live
+provider purchases. Entries do not create payments, refunds, admission rights or
+real prize awards. Manual entries are also marked as demonstration records;
+there is no production allocation mode.
 
-The purchase service supplies a narrow private projection; the entry service
-does not parse webhook bodies or make provider requests. It reuses the retained
-guest/provider identity and order ownership from [purchase observations](luma.md#purchases).
+The register reads saved [purchase observations](luma.md#purchases); it does not
+refresh provider records itself. It checks the retained guest identity and order ownership.
 Every approval records the exact saved observation and a digest of its current
 state and selected order. Amounts are displayed using the currency's minor units.
 
@@ -71,18 +70,11 @@ sign-in policy, organization/event scope and feature lifecycle on the server.
 Private responses use `Cache-Control: no-store`. No entry, payment reference,
 quantity, explanation or decision history is exposed by public gallery routes.
 
-Migration `0033_event_entry_register` introduces immutable entry identities and
-append-only reviews, with scoped event, guest and observation foreign keys.
-Database constraints enforce demonstration mode, reference uniqueness and bounded
-positive quantities. The runtime role cannot update, delete or truncate these
-tables, and history triggers also reject updates/deletes. Successful decisions
-add a minimal identifier-only audit event in the same transaction.
-
-Organization locks serialize decisions with membership, event, connection and
-provider observation changes. A client request ID replays only the identical
-actor/event/operation/payload; a changed payload conflicts. Concurrent decisions
-must match both the latest decision version and purchase-evidence digest.
-Voided records remain unavailable even if subsequent payment observations change.
+Entry identities and earlier reviews cannot be rewritten or deleted. Each new
+decision retains its author, reason, quantity and purchase evidence. Saving checks
+the latest decision and evidence together; another staff member's changes require
+a fresh review. Retrying the same request does not create another decision.
+Voided records remain unavailable even if later purchase observations change.
 
 The demonstration is limited to 200 participant/payment-reference records per
 event and 1–10,000 entries per record. It is not an unbounded production ledger.
@@ -96,4 +88,4 @@ do not copy entry identities, payment references or operational history.
 entry set, selects once with replay protection and keeps the result in history.
 Only deliberately approved public names can appear in the event page's winners
 section. Follow [draw operation](event-draws.md) for the complete workflow.
-Real paid activation and real draws still need owner rules and release approval.
+Real paid entry allocation and real prize draws are unsupported.

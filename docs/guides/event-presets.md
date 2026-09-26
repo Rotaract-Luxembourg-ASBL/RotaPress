@@ -1,8 +1,8 @@
 # Event starting copies and cancellation
 
-Starting copies use the existing event, CMS, form and registration services. The
-event builder shares their data and permissions, with independent event
-appearance. Club website design and shared headers/footers remain separate.
+Start an event with a preset or a reviewed copy of an event you can edit. Copies
+create private pages, forms and configuration for the new event. Its appearance
+is independent of the club website's design and shared header/footer.
 
 ## Create from a reviewed starting copy
 
@@ -12,13 +12,13 @@ presets or an existing event the creator can edit. For a preset, select only the
 features needed; deselect them all for a details-only draft. Required dependencies
 are selected together and checked by the server.
 
-| Starting copy | Features after explicit confirmation | Initial content |
-| --- | --- | --- |
-| Details only (deselect all features) | None | No pages or forms |
-| Simple event | Website | Website draft |
-| Networking | Website, Forms, Registration | Website draft and free registration form |
-| Fundraiser | Website, Gallery, Sponsors, Forms | Three page drafts and an enquiry form |
-| Existing event | Its reviewed enabled, disabled and suspended feature states | Saved page variants, form definitions, package drafts and prize drafts |
+| Starting copy                        | Features after explicit confirmation                        | Initial content                                                        |
+| ------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Details only (deselect all features) | None                                                        | No pages or forms                                                      |
+| Simple event                         | Website                                                     | Website draft                                                          |
+| Networking                           | Website, Forms, Registration                                | Website draft and free registration form                               |
+| Fundraiser                           | Website, Gallery, Sponsors, Forms                           | Three page drafts and an enquiry form                                  |
+| Existing event                       | Its reviewed enabled, disabled and suspended feature states | Saved page variants, form definitions, package drafts and prize drafts |
 
 Fundraiser's default selection does not activate payments, prizes or draws. These presets are event
 configuration choices, separate from visual themes. They are editable starting
@@ -70,8 +70,8 @@ keep their saved layout until deliberately changed and published in the builder.
 Luma linkage and external authority are excluded; copied registration starts with
 authority `none` when the source uses Luma. Public images are referenced through
 the existing CMS media-usage records, not duplicated. Private assets cannot become
-public through copying. Unknown/unsupported
-blocks and invalid source definitions reject the whole operation with an error.
+public through copying. Unknown or unsupported blocks and invalid source
+definitions reject the whole operation with an error.
 Copies are bounded to 200 page variants and 200 forms; exceeding the limit rejects
 the copy rather than truncating content.
 

@@ -7,7 +7,7 @@ description: Design, implement or review RotaPress administration and member wor
 
 Read [the product UX rules](../../docs/development/product-ux.md) before changing a workflow.
 Use AGENTS.md for project rules and docs/development/roadmap.md for current limits.
-The owner wants a coherent product that a first-time club volunteer can understand.
+Design a coherent product that a first-time club volunteer can understand.
 Adding a setting or changing a button's CSS alone does not resolve a confusing task.
 
 ## Work from the task

@@ -56,7 +56,7 @@ branding must remain separate from administration styling.
 
 Website templates follow the [template authoring skill](skills/rotapress-website-template/SKILL.md).
 Calendar providers have a [contribution contract](docs/contributing/calendar-providers.md);
-email providers use the [mail contract](docs/guides/email.md#contributor-contract).
+email providers use the [mail contract](docs/guides/email.md#extending-email-delivery).
 These are reviewed code extensions, not uploaded executable plugins.
 
 ## Verify your work

@@ -81,10 +81,12 @@ Google account cannot satisfy Google-only staff policy without a current Google
 session. Sensitive owner and integration changes require recent authentication.
 
 The content automation layer exposes versioned REST and MCP through one operation
-catalogue. Better Auth owns hashed connection keys bound to real staff sessions;
-every operation rechecks current scope and calls the existing domain services.
-Reference imports create private drafts in one transaction and retain immutable
-retry receipts. See the [API/MCP extension contract](automation.md).
+catalogue. Each transport defaults to disabled. Better Auth owns session-bound
+connection keys and OAuth tokens; operations recheck current scope and call the
+existing domain services. Content and media writes remain private. Settings that
+lack a draft model use typed proposals for staff review. See the
+[workflow architecture](automation-workflows.md) and
+[API/MCP extension contract](automation.md).
 
 ## PostgreSQL and migrations
 
@@ -129,10 +131,12 @@ automatically publish the result.
 
 ## Jobs and provider boundaries
 
-PostgreSQL holds bounded durable notification and scheduling work. The same
-application repository supplies `jobs:run`; `dev` invokes it periodically.
-Production `start` does not run the job loop, so a future host needs a scheduler.
-There is no Redis or separate task platform.
+PostgreSQL holds bounded durable notification and scheduling work. The development
+launcher and hosted supervisor periodically invoke the application's `jobs:run`
+command. The standalone `start` command runs only the web server; an operator
+using it outside the hosted supervisor must invoke jobs separately. There is no
+Redis or separate task platform. See [local development](local-development.md) and
+the [hosting contract](hosting.md) for the two launch modes.
 
 Workers recheck current scope and lifecycle, lease work, bound retries and preserve
 failure state. External requests have time/size limits and constrained destinations.
@@ -150,4 +154,4 @@ its exceptions must not hide authored logic.
 
 Use [testing](testing.md), [product UX rules](product-ux.md) and
 [Contributing](../../CONTRIBUTING.md) for change practices. See the
-[roadmap](roadmap.md) for unfinished production and recovery work.
+[roadmap](roadmap.md) for current limits and planned work.

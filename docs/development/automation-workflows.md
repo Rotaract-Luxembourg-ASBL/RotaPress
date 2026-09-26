@@ -1,25 +1,33 @@
-# AI-assisted website and event workflows
+# AI workflow architecture
 
-The intended workflow is: connect a chosen assistant, describe the website or
-event, let it prepare native drafts and private media, inspect real previews, and
-review the result in RotaPress. The assistant runs in its client; RotaPress does
-not run a model, store model-provider keys or add a separate agent service.
+An assistant can discover the native content structure, prepare website or event
+drafts, upload private images and inspect rendered previews. Staff review the
+result in RotaPress before publishing or applying operational settings. The model
+runs in the chosen client; RotaPress supplies scoped tools and does not store
+model-provider keys or run a background agent service.
 
-## Delivery phases and acceptance
+## Components and responsibilities
 
-| Phase | Result | Required acceptance |
-| --- | --- | --- |
-| 1. Shared contract | Discover native blocks, layouts, templates, feature availability and task prompts through REST and MCP | One registry, valid examples and closed outputs; feature changes fail the contract check until reviewed |
-| 2. OAuth connection | Register an exact client, sign in, review scopes/source websites, connect and revoke | Better Auth token ownership; authorization-code + PKCE S256; exact redirects/resource; expiry, replay and revocation; real local OTP journey |
-| 3. Media | Upload an image, inspect allowed pixels, add private metadata and reuse its ID in a page | Decode/size/type/pixel limits, private by default, explicit pixel scope, safe retries, no URL-fetch bypass or visibility mutation |
-| 4. Visual review | Capture a saved page at desktop/phone sizes, review overflow and inspect subsequent image slices | Same CMS renderer, exact revision, private authorized assets, no scripts or external network, bounded rendering, reauthorization before returning pixels |
-| 5. Event preparation | Create a complete private starting event, edit its pages/forms/packages/prizes, identify readiness blockers and propose operational configuration for staff review | Existing services and event scope; no participant copies, activation or publication hidden in content writes; optimistic versions and private review links |
-| 6. Integration assurance | Documentation, tester, client prompts and application checks agree | Focused regressions, real PostgreSQL, both principal browser journeys, build/types/lint, dependency audit and final contract receipt |
+| Component               | Responsibility                                                                             | Primary implementation                          |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Operation catalogue     | Shared REST/MCP routes, scopes, validated inputs, closed outputs and examples              | `src/integrations/automation/catalogue.ts`      |
+| Native design discovery | CMS block schemas, supported contexts, templates and event layouts                         | `design_operations.ts`, `event_operations.ts`   |
+| Connection access       | Better Auth credentials, current session and membership, scopes and transport availability | `AutomationAccess.ts`, `oauth/`                 |
+| Event preparation       | Reviewed presets/copies, linked page and form drafts, stable retries                       | `event_operations.ts`, `EventTemplateService`   |
+| Media operations        | Validated private uploads, bounded pixel inspection and private metadata edits             | `media_operations.ts`, `MediaService`           |
+| Visual review           | Exact saved revisions rendered with native components in an isolated browser               | `WebsitePreviewService.ts`, `preview_*.ts`      |
+| Settings proposals      | Typed immutable suggestions applied only through staff administration                      | `AutomationProposalService.ts`                  |
+| Client prompts          | Instructions that compose existing tools into page, event and review workflows             | `workflow_prompts.ts`, `workflow_operations.ts` |
 
-Implementation must complete each affected vertical workflow rather than expose
-unconnected endpoints. Local acceptance and actual ChatGPT/provider acceptance
-are separate: the latter requires a reachable configured host and the owner's
-chosen account. Local work does not authorize deployment or a public tunnel.
+Unqualified file names are under `src/integrations/automation`; the event and media
+services remain in their owning feature modules. Adapters delegate to those
+services rather than reproducing their authorization or persistence logic. See
+[the extension contract](automation.md) when adding or changing an operation.
+
+Clients compose these operations into a workflow. Responses supply saved versions,
+readiness blockers and authenticated review links so the client can continue from
+the resulting state. A completed tool call does not establish that an external
+provider, notification, payment or public event is operational.
 
 ## Authority and publication
 
@@ -29,8 +37,8 @@ and manually issued connection keys delegate a real staff session; they cannot
 create membership, change staff permissions or authorize actions after revocation.
 
 Separate metadata from image pixels, read from draft write, and draft preparation
-from operational activation. Selecting an extra scope requires an explicit owner
-choice; discovery describes only the connection's granted operations. No image
+from operational activation. Extra scopes require explicit consent from authorized
+staff; discovery describes only the connection's granted operations. No image
 becomes public merely because AI selected it. No page, form or event becomes
 public merely because a tool finished successfully.
 
@@ -56,7 +64,7 @@ flowchart LR
   Services --> Drafts[Private content and media]
   Drafts --> Preview[Isolated native preview]
   Preview --> Client
-  Drafts --> Review[Owner review in RotaPress]
+  Drafts --> Review[Staff review in RotaPress]
   Registry --> Proposals[Typed configuration proposals]
   Proposals --> Review
   Review --> Public[Existing deliberate publication]
@@ -66,9 +74,8 @@ flowchart LR
 
 Use the maintained Better Auth OAuth provider with authorization-code/refresh
 flows and exact client registration. Do not hand-roll a token issuer or accept
-tokens minted for another service. Register clients through administration;
-anonymous dynamic registration and arbitrary remote client-metadata fetching are
-unnecessary for a predefined ChatGPT connection and expand the attack surface.
+tokens minted for another service. Register clients through administration.
+Anonymous dynamic registration and remote client-metadata fetching are disabled.
 
 Publish resource and authorization-server metadata. Validate canonical resource,
 redirect URI, PKCE, grant type and requested scopes. Display the client identity,
@@ -86,12 +93,13 @@ Library listing does not imply permission to disclose private image bytes.
 Preview tools accept a page ID, locale and expected revision, never an arbitrary
 URL. Render only already-authorized native content using an isolated browser with
 JavaScript disabled and all external requests blocked. Private assets require an
-explicit pixel grant; otherwise use placeholders. Preview tickets are short-lived,
+explicit pixel grant and current asset access; otherwise use placeholders. Preview tickets are short-lived,
 single-use, instance-local and never appear in review URLs or model responses.
 
 Bound browser concurrency, capture duration, viewport/slice height, file size and
-request frequency. Recheck authorization after expensive rendering. Browser
-absence produces a clear unavailable result, never a fabricated screenshot.
+request frequency. Recheck authorization after expensive rendering. A missing
+browser or unsupported sandbox returns an unavailable result. See the
+[preview runtime contract](../guides/automation-preview.md#runtime-and-isolation).
 Publication review must still check facts, links, image rights and accessibility.
 
 ## Event preparation and retries
@@ -119,7 +127,8 @@ large base64 payloads in explanatory text.
 Test expired/replayed OAuth codes, wrong audience/redirect/PKCE, changed membership,
 revoked credentials, cross-event IDs, private bytes without scope, hostile image
 payloads, preview SSRF/network isolation, stale revisions and conflicting retries.
-Exercise one real local assistant-style flow from connection through private event
-preparation and preview. Use synthetic records and Mailpit only. See
+Exercise the local flow from connection through private event preparation and
+preview with synthetic records and Mailpit. External ChatGPT, Claude or provider
+integration needs a separate check against the configured HTTPS installation. See
 [security testing](security-testing.md), [testing](testing.md) and the
 [API/MCP contribution contract](automation.md).

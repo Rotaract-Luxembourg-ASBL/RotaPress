@@ -1,13 +1,13 @@
 # RotaPress product UX rules
 
 These rules apply to administration, member tools and the workflows connecting
-them to the public website. A person without CRM, WordPress or technical experience should be able to
-understand what to do, what happened and what to do next.
+them to the public website. A person without CRM, WordPress or technical experience
+should be able to understand what to do, what happened and what to do next.
 
 Use [architecture](architecture.md) for system boundaries and
 [the roadmap](roadmap.md) for unfinished release work.
 The associated [product UX skill](../../skills/rotapress-product-ux/SKILL.md) explains
-how to apply and verify these rules. Requirements here are not completion claims.
+how to apply and verify these rules.
 
 ## 1. Organize around the person's task
 
@@ -15,19 +15,19 @@ Name workspaces after recognizable things: Events, Forms, Members, Website,
 Response center and Settings. Keep the related work together. A volunteer should
 not need to learn where a feature's database record happens to be stored.
 
-| Task | Expected home | Avoid |
-| --- | --- | --- |
-| Design the built-in `/events` directory | Events → Directory design | Selecting another CMS page through Website menus as the only path |
-| Design an individual event | Event → Event page → Sections, live preview and layouts | Opening a second competing event workspace |
-| Connect event sponsors or people | Event page → Partners, Sponsors or Team → Published directory profiles | Copying directory records into unrelated event-only lists |
-| Create a form | Forms → New form → Choose a template → Edit | A permanent creation form squeezed beside the list |
-| Change a question | Form → Build → Select a question | Expanding every question's settings at once |
-| Review a form's responses | Form → Responses → Results for that form | Opening all responses and asking the user to filter again |
-| Remove an old form | Archive → Archived → Review permanent deletion | An ambiguous Remove button or no way to finish deletion |
-| Try conditional questions | Form → Preview | Guessing how rules will behave from configuration alone |
-| Put a form on the website | Form → Share → Add to a website page | Copying internal IDs or requiring manual block wiring |
-| Read received answers | Response center, with the form filter already selected | Separate disconnected inboxes for each entry point |
-| Change club branding | One canonical appearance workspace | Competing branding controls in multiple panels |
+| Task                                    | Expected home                                                          | Avoid                                                             |
+| --------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Design the built-in `/events` directory | Events → Directory design                                              | Selecting another CMS page through Website menus as the only path |
+| Design an individual event              | Event → Event page → Sections, live preview and layouts                | Opening a second competing event workspace                        |
+| Connect event sponsors or people        | Event page → Partners, Sponsors or Team → Published directory profiles | Copying directory records into unrelated event-only lists         |
+| Create a form                           | Forms → New form → Choose a template → Edit                            | A permanent creation form squeezed beside the list                |
+| Change a question                       | Form → Build → Select a question                                       | Expanding every question's settings at once                       |
+| Review a form's responses               | Form → Responses → Results for that form                               | Opening all responses and asking the user to filter again         |
+| Remove an old form                      | Archive → Archived → Review permanent deletion                         | An ambiguous Remove button or no way to finish deletion           |
+| Try conditional questions               | Form → Preview                                                         | Guessing how rules will behave from configuration alone           |
+| Put a form on the website               | Form → Share → Add to a website page                                   | Copying internal IDs or requiring manual block wiring             |
+| Read received answers                   | Response center, with the form filter already selected                 | Separate disconnected inboxes for each entry point                |
+| Change club branding                    | One canonical appearance workspace                                     | Competing branding controls in multiple panels                    |
 
 Provide a direct contextual link when a related task belongs elsewhere. Keep the
 current form or event selected when opening its responses. Back navigation must
@@ -156,6 +156,6 @@ authorization, publication or data risks at their owning layer. Do not add a tes
 for every cosmetic change. Inspect screenshots, but also verify actions and saved
 results. Record commands, outcomes and limitations in the pull request or local handover.
 
-An agent walkthrough is useful evidence, but does not prove that inexperienced
-people find the product understandable. Record actual participant feedback when
-available, and use it to simplify the next iteration.
+Developer and automated walkthroughs cannot establish that inexperienced people
+find the product understandable. Use participant feedback to assess comprehension
+and simplify the workflow.

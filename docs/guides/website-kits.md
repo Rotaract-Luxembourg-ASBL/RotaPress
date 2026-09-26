@@ -1,15 +1,13 @@
 # Rotary Template and Rotaract Template
 
-A template is a complete, editable website setup. Both templates use the same CMS,
-Puck blocks, immutable revisions, media, forms and authorization as ordinary pages.
-Stable stored IDs remain `rotary-service` and `rotaract-action` for compatibility.
+A template is a complete, editable website setup. Both templates use the same
+pages, blocks, media, forms and publication controls as the rest of your website.
 
 ## Use a template
 
 Fresh owner setup asks about your club, its public identity and its first website.
 Choosing Rotary Service or Rotaract Action creates the complete private website
-and selects its matching theme in the same transaction as club creation. Choosing
-a community color alone is no longer presented as template installation. Review
+and selects its matching theme together with club creation. Review
 your selections before creating the club; Back preserves entered details. Blank
 website is available when you want to author everything yourself.
 
@@ -44,10 +42,6 @@ Archived copies remain readable and can be duplicated into an editable draft.
 New template setups allocate readable page slugs such as `about` and `contact`,
 with numeric suffixes when a draft or published path is already reserved. Existing installed pages keep their URLs and edits.
 
-The legacy `/admin/website/kits`, `/site`, and `/site-editor` entries redirect into
-this workspace. Low-level recipe copying remains shared by setup and existing
-tools; there is no second installer, renderer or template upload mechanism.
-
 ## Included website and layouts
 
 Each fresh installation includes eleven pages plus its header and footer: Home,
@@ -56,19 +50,19 @@ and Partners. Home, About, Projects, Events, Calendar, Join and Contact form the
 initial menu. Our team, Partners and Gallery also have footer links. The homepage and menu can
 be changed, and menu links can be renamed, added, removed and reordered.
 
-| Layout | Rotary Template | Rotaract Template |
-| --- | --- | --- |
-| Header/footer | Compact family mark and club name, service invitation, light footer with blue accent | Compact family mark and club name, activity invitation, light footer with cranberry accent |
-| Home | Photograph overlay, introduction, projects, events, agenda and partners | Split hero, next activity, benefits, projects, agenda, partners and gallery |
-| Projects/detail | Centered introduction, selected story cards, reading column | Left-aligned stories, strong card accents and invitation |
-| About | People/story section and club values | Reversed image/story composition and values |
-| Events | Real published upcoming and past event feeds | Activity-led introduction with the same event service |
-| Calendar | Month calendar, event link and subscriptions | Same connected calendar with an activity-led introduction |
-| Our team | Published Team directory profiles and membership invitation | Same directory connection with community-focused copy |
-| Join | Service introduction, steps and FAQ | People-led invitation, steps and FAQ |
-| Contact | Narrow information beside a form area | Balanced contact/form columns |
-| Gallery | Captioned image grid and manual slider | Captioned grid/slider with action styling |
-| Partners | Automatic published Partner and Sponsor categories and invitation | Same directory connections and collaboration invitation |
+| Layout          | Rotary Template                                                                      | Rotaract Template                                                                          |
+| --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Header/footer   | Compact family mark and club name, service invitation, light footer with blue accent | Compact family mark and club name, activity invitation, light footer with cranberry accent |
+| Home            | Photograph overlay, introduction, projects, events, agenda and partners              | Split hero, next activity, benefits, projects, agenda, partners and gallery                |
+| Projects/detail | Centered introduction, selected story cards, reading column                          | Left-aligned stories, strong card accents and invitation                                   |
+| About           | People/story section and club values                                                 | Reversed image/story composition and values                                                |
+| Events          | Real published upcoming and past event feeds                                         | Activity-led introduction with the same event service                                      |
+| Calendar        | Month calendar, event link and subscriptions                                         | Same connected calendar with an activity-led introduction                                  |
+| Our team        | Published Team directory profiles and membership invitation                          | Same directory connection with community-focused copy                                      |
+| Join            | Service introduction, steps and FAQ                                                  | People-led invitation, steps and FAQ                                                       |
+| Contact         | Narrow information beside a form area                                                | Balanced contact/form columns                                                              |
+| Gallery         | Captioned image grid and manual slider                                               | Captioned grid/slider with action styling                                                  |
+| Partners        | Automatic published Partner and Sponsor categories and invitation                    | Same directory connections and collaboration invitation                                    |
 
 Optional News, Story, Legal and event-detail starting layouts remain available to
 their existing editors. Legal content requires the club's actual reviewed text.
@@ -83,9 +77,8 @@ menu and the account actions move onto a second row.
 The footer has a lightly tinted background, an accent top border and restrained
 headings. Identity, site navigation and the invitation occupy separate columns;
 menu links use two columns, and the layout stacks on smaller screens. These shared
-styles live in `src/app/styles/website-chrome.css` and apply to the template website
-shell. Header/footer content and navigation remain editable through their existing
-CMS and menu controls.
+styles apply to the template website. Header/footer content and navigation remain
+editable through their CMS and menu controls.
 
 The template contains editable starting copy and illustrative garden photographs,
 not claimed club achievements. Replace these with the club's own content. Empty
@@ -102,7 +95,6 @@ activities, registrations or people. Setup omits Calendar blocks when that featu
 is disabled. A fresh website uses the latest recipes. Selecting an already used
 template preserves its saved copies, including older sets without Calendar or Our
 team. Add those layouts through **Pages → New page** when updating an existing site.
-This refresh does not add a destructive reset or replace saved page content.
 
 The website overview links to Calendar, Events, Contact form and Directory. The
 block library groups Calendar & events, Contact & participation and People & shared
@@ -112,23 +104,12 @@ current form preview, including design, conditional questions and page navigatio
 the final Send button is disabled. Authorized editors can preview saved form drafts.
 Catalogue Contact previews use an in-memory example and create no form records.
 
-## Template structure
+## Add a template to the project
 
-`src/features/cms/kits/templates/rotary-template/` and `rotaract-template/` each own
-`metadata.ts` and `definition.ts`. Metadata defines display name, family, description,
-installed recipes and menu order. Definitions map recipes to actual CMS document
-composition. Shared block factories remain in the existing recipe helpers.
-
-`kits/catalogue.ts` exposes metadata and validation; `kits/template_registry.ts`
-registers composition; `kits/recipes.ts` creates editable copies.
-`WebsiteSetupService` coordinates selection and reviewed publication using existing
-transaction-capable services. `WebsitePreviewService` builds private projections.
-The versioned `templateSetup` field stores installed recipe IDs and current selection;
-no additional database table or migration is needed for this refinement.
-
-Use the repository [template authoring skill](../../skills/rotapress-website-template/SKILL.md)
-when adding a template. It identifies registration points, asset boundaries,
-lifecycle invariants and the existing acceptance journeys.
+Templates are reviewed source contributions, not uploaded executable packages.
+Use the [template authoring guide](../../skills/rotapress-website-template/SKILL.md)
+for the required registration, content, asset and verification steps. Preserve
+existing installed content when updating template recipes.
 
 ## Images and identity
 
@@ -158,11 +139,11 @@ unknown template references are rejected. Uploaded UUID assets continue to use
 normal organization scope and visibility checks. Existing image controls replace
 a packaged photo with a selected Media image.
 
-| Photograph | Creator and source | Packaged file |
-| --- | --- | --- |
-| Greenhouses and raised garden beds | [Matt Baker](https://unsplash.com/photos/greenhouses-and-garden-with-yellow-fence-in-sunlight-mgEKkITagkQ) | `garden.jpg` |
-| Young plants in soil | [Markus Spiske](https://unsplash.com/photos/green-plant-on-brown-soil-vCCeCZGcfSY) | `seedlings.jpg` |
-| Herbs in bamboo containers | [David Clode](https://unsplash.com/photos/a-bunch-of-plants-that-are-in-a-garden-Y0y5kwKdZVA) | `herbs.jpg` |
+| Photograph                         | Creator and source                                                                                         | Packaged file   |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------- |
+| Greenhouses and raised garden beds | [Matt Baker](https://unsplash.com/photos/greenhouses-and-garden-with-yellow-fence-in-sunlight-mgEKkITagkQ) | `garden.jpg`    |
+| Young plants in soil               | [Markus Spiske](https://unsplash.com/photos/green-plant-on-brown-soil-vCCeCZGcfSY)                         | `seedlings.jpg` |
+| Herbs in bamboo containers         | [David Clode](https://unsplash.com/photos/a-bunch-of-plants-that-are-in-a-garden-Y0y5kwKdZVA)              | `herbs.jpg`     |
 
 Photographs were downloaded under the [Unsplash license](https://unsplash.com/license),
 with [terms](https://unsplash.com/terms) reviewed separately. They show no recognizable
@@ -173,15 +154,11 @@ the implementation uses the available Arial system fallback rather than bundling
 licensed font files. Carousel interaction follows the
 [WAI guidance](https://www.w3.org/WAI/tutorials/carousels/).
 
-## Verification and boundaries
+## Template boundaries
 
-C03/C04 cover private content, exact revisions, template replay, atomic publication,
-archived page handling and asset validation. B02 covers setup, editing, settings,
-preview and publication in the browser. See [testing](../development/testing.md)
-for commands; distinguish synthetic fixtures from real installation changes.
-
-Templates never change identity, memberships, module state, registration authority,
-credentials or uploaded media visibility. No marketplace, executable template
-uploads, public deployment, event content engine or general demo seeder is added.
+Templates do not change membership, feature availability, registration authority,
+provider credentials or uploaded media visibility. Selecting a template does not
+deploy or publish a website.
 Locale selection creates a variant in that locale; starting copy still needs actual
-translation. Real Google and Luma verification remains a separate task.
+translation. Google sign-in and Luma connections are configured separately in
+Integrations.

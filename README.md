@@ -7,9 +7,8 @@ Build your website, welcome members, collect responses and organize events
 from one application. One installation, your club, your identity.
 
 **Status: pre-release, under active development.** Portable Docker hosting includes
-automatic database setup and migrations. Live deployment/provider acceptance is
-still separate from the local application and container checks.
-See the [roadmap and limitations](docs/development/roadmap.md).
+automatic database setup and migrations. Review the
+[roadmap and limitations](docs/development/roadmap.md) before production use.
 
 ## What you can do
 
@@ -30,8 +29,8 @@ See the [roadmap and limitations](docs/development/roadmap.md).
   connections can prepare private pages, events and images, inspect native page
   previews, and leave event settings for staff approval. Publication stays manual.
 
-Google, Luma, remote calendar feeds and external email still need real-provider
-verification. Native paid checkout, check-in and production draw activation are
+External integrations require provider configuration and verification on your
+installation. Native paid checkout, check-in and production draw activation are
 not supported. Domain records in administration do not provision hosting or DNS;
 the standalone hosting installer supplies HTTPS for a domain pointing at its server.
 

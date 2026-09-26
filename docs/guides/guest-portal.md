@@ -1,8 +1,8 @@
 # Event guest access
 
-The optional guest portal uses the existing event, registration, Luma projection
-and Better Auth services. It introduces no separate
-authentication system, copied attendee directory or public invitation token.
+The guest portal gives an invited person access to their own published event
+details and booking status. Invitations are tied to a confirmed native registration
+or an eligible imported Luma booking. Knowing a portal URL is not enough to enter.
 
 ## Staff workflow
 
@@ -38,7 +38,7 @@ prize eligibility. Guest sign-in never creates a club membership or staff grant.
 An explicit invitation can allow these published details for a private event. It
 does not change the general public event gate or open private CMS routes. Draft
 fields, other guests, submitted answers, provider identifiers and credentials are
-excluded from the portal DTO.
+excluded from guest pages.
 
 ## Purchase details and summaries
 
@@ -56,7 +56,7 @@ mismatch. Closing new bookings does not prevent authorized staff from observing
 historical refunds. See [purchase operation and preservation](luma.md#purchases)
 for the exact workflow, identity holds and separately retained immutable evidence.
 
-## Current-state security and preservation
+## Access changes and retained history
 
 Every request verifies current grant ownership, organization and event scope,
 source identity and availability, published event state and module dependencies.
@@ -71,21 +71,16 @@ existing grants usable again. Copying an event copies reviewed configuration onl
 never its guest grants, claims or bookings. Themes and site parts do not modify
 guest access.
 
-Reads and writes serialize with the existing organization lifecycle lock. Database
-constraints bind each grant to exactly one existing source in the same event and
-organization, enforce native claimant identity, and allow only one active grant per
-source. Audit entries contain actor, action and grant ID, without participant data.
-Guest API responses use `no-store`; mutations require the existing same-origin JSON
-boundary and bounded body. Guest reads/claims are rate limited. The client accepts
-no role, organization, recipient email or source status as authority.
+Each grant belongs to one booking in the same club and event. Only one active grant
+can exist for that booking, and a native guest must be its original account holder.
+Access is rechecked when viewing details or claiming an invitation. Private responses
+are not publicly cached; claims are rate limited and recorded in audit history.
 
 ## Limits
 
 Staff lists are bounded to 200 recent records per source and 200 grants; guest
 discovery considers the latest 100 invitations. Search/pagination, invitation
 emails, guest documents/forms, ticket transfers and self-service email rebinding
-remain deferred. Native registrations and Luma imports stay separate.
-
-C10 and B01 cover ownership, scope, claim replay, provider changes and lifecycle
-denial. See [testing](../development/testing.md) and [the roadmap](../development/roadmap.md)
-for verification commands and live-provider limitations.
+are unsupported. Native registrations and Luma imports stay separate. See
+[registration](event-registration.md) for native bookings and [Luma](luma.md)
+for source and purchase configuration.

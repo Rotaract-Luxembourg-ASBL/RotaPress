@@ -7,18 +7,18 @@ compiled into the application. Website users cannot upload executable plugins.
 
 ## Ownership
 
-| Responsibility | Owner |
-| --- | --- |
-| Provider document parsing and bounded recurrence | `CalendarImportAdapter` implementations |
-| Explicit supported-provider registry | `providers/adapters.ts` |
-| Authorization, encryption, drafts, publication and refresh | `CalendarSourceService` |
-| HTTPS, DNS pinning and network limits | `CalendarFeedClient` |
-| Public/member projection and event merging | `CalendarReader` |
-| Manual calendar and schedule changes | `CalendarService` |
-| Own-account preferences and notices | `CalendarSubscriptionService` |
-| Notification queue, current-access checks and SMTP retry | `CalendarNotificationRunner` |
-| Time-zone-aware native recurrence | `calendar_dates.ts` |
-| Public iCalendar serialization | `calendar_ical.ts` |
+| Responsibility                                             | Owner                                   |
+| ---------------------------------------------------------- | --------------------------------------- |
+| Provider document parsing and bounded recurrence           | `CalendarImportAdapter` implementations |
+| Explicit supported-provider registry                       | `providers/adapters.ts`                 |
+| Authorization, encryption, drafts, publication and refresh | `CalendarSourceService`                 |
+| HTTPS, DNS pinning and network limits                      | `CalendarFeedClient`                    |
+| Public/member projection and event merging                 | `CalendarReader`                        |
+| Manual calendar and schedule changes                       | `CalendarService`                       |
+| Own-account preferences and notices                        | `CalendarSubscriptionService`           |
+| Notification queue, current-access checks and SMTP retry   | `CalendarNotificationRunner`            |
+| Time-zone-aware native recurrence                          | `calendar_dates.ts`                     |
+| Public iCalendar serialization                             | `calendar_ical.ts`                      |
 
 Services receive their dependencies in `src/composition/services.ts`. The adapter
 does not receive a database, credentials, session, mailer or network client.
@@ -27,7 +27,7 @@ Provider parsing cannot grant access, publish content or send a message.
 ## Add a document adapter
 
 Implement `src/features/calendar/providers/CalendarImportAdapter.ts` in a focused
-class. The existing `IcalendarAdapter` is a working example, not a placeholder.
+class. Use `IcalendarAdapter` as an example of the parser and projection contract.
 
 ```ts
 interface CalendarImportAdapter {
@@ -67,7 +67,7 @@ using existing server credential storage and centralized Better Auth where OAuth
 is involved. Do not add a second login implementation or route provider secrets
 through public DTOs. Network calls belong in a provider transport, never a CMS
 block or a React component. A new provider requires its own authorized live run
-before it can be labeled live verified.
+before documenting support for that provider's live integration.
 
 ## Required behavior and verification
 
@@ -94,16 +94,19 @@ checks use the dedicated PostgreSQL test database.
 The Calendar walkthrough extends **B02** in `tests/browser/calendar-journey.ts`.
 It uses real local OTP sessions, publication, import review, own subscriptions and
 the actual CMS renderer. Extend that journey only when the user workflow changes.
-Run the affected C13 checks while editing, then the normal `verify` command once
-at the completed slice. Record actual results and remaining external-provider limitations in the pull request. Follow the 800-line limit and existing UX skill.
+Run the affected C13 checks while editing, then `node scripts/pnpm.mjs verify`
+for the completed change. Record results and external-provider limitations in
+the pull request. Follow the 800-line limit and
+[product UX rules](../development/product-ux.md).
 
 ## Libraries and standards
 
-- [`ical.js`](https://github.com/kewisch/ical.js) 2.2.1 (MPL-2.0) parses
+- [`ical.js`](https://github.com/kewisch/ical.js) (MPL-2.0) parses
   [iCalendar, RFC 5545](https://www.rfc-editor.org/info/rfc5545/).
 - [`@js-temporal/polyfill`](https://github.com/js-temporal/temporal-polyfill)
-  0.5.1 (ISC) provides time-zone-aware arithmetic; see
+  (ISC) provides time-zone-aware arithmetic; see
   [ZonedDateTime](https://tc39.es/proposal-temporal/docs/zoneddatetime.html).
 
-Both are pinned in the manifest and lockfile. Preserve their license notices when
-redistributing dependencies; these libraries do not change RotaPress's code license.
+The manifest and lockfile pin the supported versions. Preserve their license
+notices when redistributing dependencies; these libraries do not change
+RotaPress's code license.

@@ -26,7 +26,8 @@ connection is in use, separately from the server's delivery permission.
 4. With external delivery deliberately enabled by the operator, choose **Send
    test**. The test goes only to the signed-in owner's verified account.
 5. Check the receiving mailbox, then choose **Use as sender**. A successful test
-   records provider acceptance; it is not an inbox-delivery or domain-DNS receipt.
+   means the provider accepted the message; check the inbox and sending domain
+   separately.
 
 You can save up to ten connections, including multiple SMTP accounts. One sender
 is selected for the application. A failed send does not silently move to another
@@ -46,12 +47,12 @@ test state. Choose another sender before editing or deleting the selected one.
 
 The **Templates** tab includes:
 
-| Email | Recipient | Protected content |
-| --- | --- | --- |
-| Sign-in code | Person requesting Better Auth sign-in | Code, five-minute expiry and ignore-if-unrequested notice |
-| Form response alert | Staff recipients configured in the form | Link to authorized review; no submitted answers |
-| Calendar update | Subscribers choosing updates | Current calendar link, privacy notice and unsubscribe link |
-| Calendar reminder | Subscribers choosing a reminder time | Current calendar link, privacy notice and unsubscribe link |
+| Email               | Recipient                               | Protected content                                          |
+| ------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| Sign-in code        | Person requesting Better Auth sign-in   | Code, five-minute expiry and ignore-if-unrequested notice  |
+| Form response alert | Staff recipients configured in the form | Link to authorized review; no submitted answers            |
+| Calendar update     | Subscribers choosing updates            | Current calendar link, privacy notice and unsubscribe link |
+| Calendar reminder   | Subscribers choosing a reminder time    | Current calendar link, privacy notice and unsubscribe link |
 
 Edit the subject, heading, message, button text and accent color. The available
 placeholder is `{{club_name}}`. The preview uses sample content and the same
@@ -63,7 +64,7 @@ available as template variables.
 **Save draft** keeps sending the current published/default template. **Publish
 template** changes future delivery. **Restore default in draft** allows reviewing
 the supplied copy before saving and publishing it. Concurrent edits are rejected
-with a reload instruction. There is no bulk campaign composer in this slice.
+with a reload instruction. Bulk email campaigns are not supported.
 
 ## Customize a calendar or form
 
@@ -106,18 +107,18 @@ the request body; it is removed from browser history and never placed in HTTP
 access-log query strings. Resubscribing invalidates the old email link. A link
 can still stop email after a calendar is unpublished or disabled.
 
-This is a confirmation link, not a claim of RFC 8058 mailbox one-click support.
-The link requires JavaScript. Reloading after the token has been removed requires
+The confirmation link requires JavaScript and does not implement RFC 8058 mailbox
+one-click unsubscribe. Reloading after the token has been removed requires
 opening the email link again. A message already handed to a provider cannot be
 recalled. Rotating the application secret invalidates older unsubscribe links;
 signed-in preference management remains available.
 
-## Operator controls and local boundaries
+## Operator controls
 
 `EMAIL_REMOTE_DELIVERY_ENABLED=false` is the default. Saving a connection needs
 the existing `INTEGRATION_ENCRYPTION_KEY`, but does not contact the provider.
-Only enable remote sending after authorization for the actual provider, sender
-and recipient. Restart both the application and worker after changing the flag.
+Enable remote sending only for an authorized provider, sender and recipient.
+Restart the application and job runner after changing the flag.
 Missing sender settings stop delivery. Development capture requires an explicit
 local development/test environment and is rejected in production. It is never a
 fallback for a missing or failed sender.
@@ -132,16 +133,17 @@ rejects redirects and bounds request time. Raw provider errors are discarded.
 Keep the encryption key in the installation backup. A selected provider failure
 also affects email sign-in. Retain an authorized owner session while changing
 delivery. **Test and use server sender** checks delivery before switching back
-to the server configuration; failure preserves the current sender. Operator recovery and
-external sender/domain verification must be exercised before an online release;
-See [release limitations](../development/roadmap.md).
+to the server configuration; failure preserves the current sender. If every owner
+session has expired and the selected sender fails, repair that sender to restore
+sign-in delivery. Changing server environment settings does not override a selected
+admin connection. Keep [protected backups](hosting.md#updates-and-backups) and
+verify the sending domain and owner inbox before relying on email for access.
 
 Reference contracts: [Resend sending API](https://resend.com/docs/api-reference/emails/send-email),
 [Resend idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys) and
-[Nodemailer SMTP/TLS](https://nodemailer.com/smtp). Synthetic local checks do not
-prove live provider delivery or receipt in the nominated owner's inbox.
+[Nodemailer SMTP/TLS](https://nodemailer.com/smtp).
 
-## Contributor contract
+## Extending email delivery
 
 `ApplicationMailer` owns notification purposes and template rendering.
 `EmailTemplateReader` resolves published resource overrides and shared defaults.
@@ -152,8 +154,8 @@ sender when none is selected. It decrypts only database credentials.
 `EmailTransport` implements the explicit SMTP/Resend providers. Features pass
 only the recipient and the permitted action context; they do not instantiate
 their own SMTP clients. New providers implement the narrow `MailTransport`
-contract and join the reviewed registry/configuration UI. Add them for a concrete
-delivery need, with fixed egress, secret-safe errors and focused acceptance.
+contract and join the provider registry and configuration UI. New providers need
+restricted network destinations, errors that omit secrets, and focused tests.
 
 Do not add uploaded executable plugins, a service locator, a second auth system,
 silent failover, or provider-side contact-list synchronization as part of this

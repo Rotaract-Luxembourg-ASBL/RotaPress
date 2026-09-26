@@ -134,12 +134,13 @@ republish before changing visibility. Only an unreferenced image can be deleted.
 
 ## Storage and recovery
 
-Developer image bytes live in ignored `.data/uploads`; PostgreSQL holds metadata
-and references. Storage keys are opaque and traversal/symlink escapes are rejected.
-Test uploads use a separate local location. The normalized image is retained,
-not a second copy of the original upload.
+Image bytes live outside the public web root in `.data/uploads`; PostgreSQL holds
+metadata and references. The Docker hosting recipe keeps that directory on a
+persistent volume. Storage keys are opaque, and path or symlink escapes are
+rejected. The normalized image is retained, not a second copy of the original upload.
 
 A recoverable installation needs the database, actual files and separately protected
-secrets. Preserved local files and Docker volumes do not prove disaster recovery.
-Full backup/restore and object storage remain open [roadmap](../development/roadmap.md)
-work. See [local development](../development/local-development.md).
+secrets. The [hosting guide](hosting.md#updates-and-backups) explains how to back up
+and restore the Docker installation. Keep complete backups in a protected location
+away from the application server and test recovery before relying on them. Object
+storage is not supported; do not deploy uploads on an ephemeral filesystem.
