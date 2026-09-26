@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { capture } from "./integration-credentials-journey";
 import { oauthPresetsJourney } from "./oauth-presets-journey";
+import { openOAuthFromAssistant } from "./oauth-navigation-journey";
 
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
@@ -100,11 +101,17 @@ export async function oauthJourney(
       code_challenge_method: "S256",
     });
     const bad = new URLSearchParams(params);
+    const navigationHeaders = {
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-dest": "document",
+    };
     bad.set("resource", "https://other.example.invalid/api/mcp");
     expect(
       (
         await owner.request.get(`/api/auth/oauth2/authorize?${bad}`, {
           maxRedirects: 0,
+          headers: navigationHeaders,
         })
       ).status(),
     ).toBe(400);
@@ -114,6 +121,7 @@ export async function oauthJourney(
       (
         await owner.request.get(`/api/auth/oauth2/authorize?${bad}`, {
           maxRedirects: 0,
+          headers: navigationHeaders,
         })
       ).status(),
     ).toBe(400);
@@ -123,7 +131,15 @@ export async function oauthJourney(
         body: "<h1>Synthetic OAuth callback</h1>",
       }),
     );
-    await owner.goto(`/api/auth/oauth2/authorize?${params}`);
+    const authorizeUrl = `${smokeOrigin}/api/auth/oauth2/authorize?${params}`;
+    const signedOut = await remote.newPage();
+    await openOAuthFromAssistant(signedOut, authorizeUrl);
+    await expect(signedOut).toHaveURL(
+      `${smokeOrigin}/sign-in?reauth=1&next=/admin/integrations/automation/authorize`,
+    );
+    await expect(signedOut.getByLabel("Email address")).toBeVisible();
+    await signedOut.close();
+    await openOAuthFromAssistant(owner, authorizeUrl);
     await expect(
       owner.getByRole("heading", {
         name: "Allow Synthetic OAuth assistant to help your club?",

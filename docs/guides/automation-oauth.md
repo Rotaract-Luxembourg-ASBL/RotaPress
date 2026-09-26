@@ -161,6 +161,13 @@ the consent page requests recent authentication. A disabled integration returns 
 an expired or revoked credential requires reconnecting. Check current membership
 and staff Google policy before changing credentials.
 
+If opening the connection displays `Cross-origin access is not allowed.` before
+sign-in or consent, the installation is blocking the incoming browser navigation.
+Update the application and check any additional proxy rules: top-level GET
+navigation must reach `/api/auth/oauth2/authorize` and its signed handoff at
+`/api/automation/oauth/sign-in`. Keep cross-site API requests and account mutations
+protected; changing the callback or adding reference websites does not fix this error.
+
 Keep tokens and client secrets out of screenshots and logs. Automated protocol
 tests use isolated local infrastructure; they cannot verify a provider account's
 configuration. Contributor checks are described in the

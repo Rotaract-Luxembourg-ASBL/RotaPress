@@ -8,8 +8,19 @@ export function proxy(request: NextRequest) {
   const provider =
     request.nextUrl.pathname === "/api/auth/callback/google" ||
     request.nextUrl.pathname.startsWith("/api/webhooks/");
+  // OAuth starts with an external top-level navigation. Its routes validate the
+  // client, exact callback, PKCE and signed sign-in state before human consent.
+  // This exception does not admit fetches, frames, token calls or admin mutations.
+  const oauthNavigation =
+    request.method === "GET" &&
+    ["/api/auth/oauth2/authorize", "/api/automation/oauth/sign-in"].includes(
+      request.nextUrl.pathname,
+    ) &&
+    request.headers.get("sec-fetch-mode") === "navigate" &&
+    request.headers.get("sec-fetch-dest") === "document";
   if (
     !provider &&
+    !oauthNavigation &&
     ((origin && !permittedBrowserOrigin(origin, process.env.APP_URL ?? "")) ||
       request.headers.get("sec-fetch-site") === "cross-site")
   ) {

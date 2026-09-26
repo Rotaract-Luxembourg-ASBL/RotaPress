@@ -15,7 +15,7 @@ replace an independent security assessment.
 | OAuth               | Official Better Auth provider; exact registered callback/resource, mandatory S256 PKCE, signed consent, short-lived hashed tokens, rotating refresh, current consent checks and revocation; no remote client-metadata fetch or Google-token passthrough |
 | Credential audience | Provider metadata binds each key to REST or MCP; OAuth is MCP-only. Wrong-integration credentials fail before domain operations; legacy keys retain REST only. C14 and B01 cover issuance, filtering and cross-use rejection. |
 | Identity            | Library-managed API key or OAuth token bound to a genuine session; reload identity, membership, Google policy and current capabilities on requests                                                                                                      |
-| Browser/host        | Canonical Host/Origin checks, cross-site denial, same-origin admin mutations; cookies alone do not authenticate automation                                                                                                                              |
+| Browser/host        | Canonical Host/Origin checks, cross-site API denial and same-origin admin mutations. Only top-level GET navigation to OAuth authorization and its signed sign-in handoff may enter cross-site; route validation and human consent still apply. Cookies alone do not authenticate automation. |
 | Resource authority  | Shared domain services validate organization, event access, feature state and record ownership; input IDs never grant access                                                                                                                            |
 | Writes              | Native private drafts, private images and typed review proposals; no publishing, visibility changes, operational settings application, notifications or participant operations; optimistic revisions and atomic retry receipts                          |
 | Source fetching     | Explicit origin grants, HTTPS, all DNS answers checked, public IPv4 pinning, no redirects/proxies/cookies, robots policy, byte/time limits, no script execution                                                                                         |
@@ -68,6 +68,12 @@ draft writes, output projections, separate enable/disable controls, private imag
 page previews, event preparation/proposal review, and the desktop/phone tester and
 OAuth consent screen. Fixture changes stay in the dedicated browser database;
 external Google and AI-provider callbacks require separate integration checks.
+
+`browser-origin.test.ts` confines the OAuth navigation exception to the two exact
+GET routes and rejects cross-site fetches, frames, preflight, token calls and other
+API routes. B01 enters authorization by clicking a link on an intercepted synthetic
+external-origin page and verifies both signed-out sign-in handoff and signed-in
+consent before the token flow.
 
 Before release, run `node scripts/pnpm.mjs audit --audit-level low`, the
 affected regressions and full `verify` once for the completed slice. A dependency
