@@ -14,18 +14,19 @@ export function ClientInstructions({ origin }: { origin: string }) {
         <h3>Connect with OAuth</h3>
         <ol>
           <li>
-            Open the assistant's MCP, apps or connectors settings. Add the
-            server URL above and select OAuth.
+            In <strong>Connections → OAuth</strong>, choose your AI app. ChatGPT
+            and Claude's web/desktop connector have settings filled in
+            automatically. Choose allowed actions and select{" "}
+            <strong>Create OAuth connection</strong>.
           </li>
           <li>
-            Find the client's exact callback URL. In{" "}
-            <strong>Connections → OAuth</strong>, enter that URL, choose allowed
-            actions and select <strong>Create OAuth connection</strong>.
+            Follow the instructions shown with your new connection details. Add
+            the server URL to your app and select OAuth.
           </li>
           <li>
             Copy the client ID and one-time secret into the assistant's
-            protected settings. Select a public client only if your assistant
-            supports PKCE without a secret.
+            protected settings. In ChatGPT, these fields are under Advanced
+            OAuth settings.
           </li>
           <li>
             Finish connecting in the assistant. Sign in to RotaPress with the
@@ -37,6 +38,13 @@ export function ClientInstructions({ origin }: { origin: string }) {
             prepare one private draft and review it in RotaPress.
           </li>
         </ol>
+        <p>
+          For another app, choose <strong>Other app · manual setup</strong>.
+          <strong> Advanced connection settings</strong> lets you enter its
+          exact callback and authentication method, or override a preset for an
+          account-specific callback. RotaPress cannot discover a private
+          callback for every AI platform.
+        </p>
         <p className="small muted">
           Use a client that accepts a pre-registered client ID. Anonymous
           dynamic registration is unavailable. Hosted clients need to reach your

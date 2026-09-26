@@ -191,8 +191,64 @@
 .automation-workspace .automation-guide li {
   margin: 0.5rem 0;
 }
+.oauth-settings > p {
+  margin-block: 0.65rem;
+}
+.oauth-setup-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.oauth-settings .oauth-setup-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.oauth-advanced {
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 0.8rem 1rem;
+}
+.oauth-advanced summary {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.oauth-advanced-fields,
+.oauth-issued {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.oauth-advanced-fields {
+  margin-top: 1rem;
+}
+.oauth-advanced-fields p,
+.oauth-issued p,
+.oauth-issued h3 {
+  margin: 0;
+}
+.oauth-advanced-fields .inline-button,
+.oauth-issued > .button {
+  justify-self: start;
+}
+.oauth-copy-field {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.oauth-copy-field label {
+  display: grid;
+  gap: 0.5rem;
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+.oauth-copy-field .button {
+  min-width: 11rem;
+}
 @media (max-width: 720px) {
   .credential-fields,
+  .oauth-setup-fields,
   .scope-picker-groups,
   .mcp-methods {
     grid-template-columns: 1fr;

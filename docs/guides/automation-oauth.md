@@ -14,22 +14,24 @@ use the same permissions, private drafts and manual publication rules as the
 
 ## Connect ChatGPT, Claude or another MCP client
 
-1. In the assistant's MCP/connector/plugin settings, start adding a server. Use
-   `https://your-club.example/api/mcp` and choose **OAuth**. Open the advanced
-   settings for a predefined OAuth client and find the exact callback URL that
-   the assistant displays. UI labels and availability vary by client and account.
-2. In RotaPress, open **Integrations**, select **Connections & setup guide** on
-   the **MCP** card, then find **Connect with OAuth**. Enter a recognizable name and
-   copy that callback URL exactly. Do not invent a callback, use a wildcard or
-   copy one from a different account.
-3. Choose **Client ID and secret** unless the assistant explicitly supports a
-   public client using PKCE. Select actions by group, or use **Select all**,
+1. In RotaPress, open **Integrations → MCP → Connections → OAuth**.
+   Choose your **AI app**: **ChatGPT** or **Claude (web or desktop connector)**.
+   RotaPress fills in a connection name, the documented callback and client
+   authentication. You can rename the connection without changing those settings.
+2. For another client, choose **Other app · manual setup**. **Advanced connection
+   settings** opens for its exact callback URL and authentication method. The same
+   section lets you override a preset if your account displays a different callback.
+   Use **Client ID and secret** unless the app explicitly supports a public PKCE
+   client. Wildcards are not supported.
+3. Select actions by group, or use **Select all**,
    **Clear all**, **Read only** or **Website drafts**. Start with only the needed actions. If the assistant
    will read a reference website, also enable that action and list its exact
    HTTPS origins. These origins are displayed again during consent.
-4. Select **Create OAuth connection**. Copy the client ID and one-time client
-   secret into the assistant's protected connection settings. Keep the secret
-   out of chat messages, source files and shared documents. A public client has
+4. Select **Create OAuth connection**. Follow **Finish connecting** to copy the
+   server URL, client ID and one-time secret into the assistant. In ChatGPT,
+   create an MCP app, choose OAuth and enter the credentials under **Advanced OAuth
+   settings**. In Claude, add a custom connector and use **Advanced settings**.
+   Keep the secret out of chat messages, source files and shared documents. A public client has
    a client ID and no secret.
 5. Finish connecting in the assistant. It opens your RotaPress site. Sign in
    with the account that created this connection, then review the requested
@@ -43,6 +45,28 @@ Each administrator registers their own connection. Registration does not approve
 another member or give the assistant capabilities that the administrator lacks.
 Creating a connection and approving access require authentication within the last
 15 minutes. Use the visible sign-in link to confirm your identity again.
+
+### Automatic settings and manual overrides
+
+| AI app | Callback filled by RotaPress |
+| --- | --- |
+| ChatGPT | `https://chatgpt.com/connector_platform_oauth_redirect` |
+| Claude web/desktop connector | `https://claude.ai/api/mcp/auth_callback` |
+
+The ChatGPT default relies on RotaPress's matching issuer metadata and issuer
+identification support, as described in the
+[OpenAI OAuth guide](https://developers.openai.com/plugins/build/auth#redirect-url).
+The Claude callback is documented in the
+[Google Cloud MCP client setup guide](https://docs.cloud.google.com/mcp/configure-mcp-ai-application#claude.ai).
+
+These are maintained presets, not discovery of every AI platform. Some clients use
+account-specific callbacks or a local port chosen by the client. Use the exact value
+that client supplies under **Advanced connection settings**. Claude Code, Codex CLI
+and other native clients must use their own callback or the [MCP access-key setup](mcp-clients.md).
+Switching AI apps retains each app's unsaved settings while this screen stays open.
+**Restore app defaults** resets the selected app's callback and authentication only.
+An existing registered connection keeps its callbacks until revoked and replaced;
+updating a preset does not silently change existing credentials.
 
 ChatGPT's documented connection methods include predefined clients and the
 authorization-code flow with S256 PKCE. RotaPress implements that method. Its

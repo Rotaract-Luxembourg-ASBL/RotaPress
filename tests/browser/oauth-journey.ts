@@ -3,6 +3,7 @@ import { expect, type Browser, type Page } from "@playwright/test";
 import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { capture } from "./integration-credentials-journey";
+import { oauthPresetsJourney } from "./oauth-presets-journey";
 
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
@@ -27,9 +28,11 @@ export async function oauthJourney(
     expect(metadata.status()).toBe(200);
     expect(await metadata.json()).toMatchObject({
       issuer: `${smokeOrigin}/api/auth`,
+      authorization_response_iss_parameter_supported: true,
       code_challenge_methods_supported: ["S256"],
     });
     await owner.goto("/admin/integrations/mcp");
+    await oauthPresetsJourney(owner);
     const panel = owner.getByRole("region", {
       name: "Connect with OAuth",
     });
@@ -37,7 +40,7 @@ export async function oauthJourney(
       .getByLabel("OAuth connection name", { exact: true })
       .fill("Synthetic OAuth assistant");
     await panel
-      .getByLabel("OAuth callback URLs", { exact: true })
+      .getByRole("textbox", { name: "OAuth callback URLs", exact: true })
       .fill(callback);
     const picker = panel.getByRole("group", {
       name: "OAuth allowed actions",

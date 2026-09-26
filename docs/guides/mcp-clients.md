@@ -13,8 +13,9 @@ model-provider key in RotaPress.
    **MCP**, then select **Connections & setup guide** on its card. This workspace
    lives at `/admin/integrations/mcp`.
 2. For ChatGPT or Claude web clients, follow the [OAuth connection guide](automation-oauth.md).
-   Add the server through the client's MCP/apps/plugins settings, register its
-   exact callback in RotaPress, then sign in and choose the permitted actions.
+   Choose the AI app in RotaPress to fill its callback automatically, create the
+   connection, then copy its details into the client and approve access.
+   Other apps and account-specific callbacks use **Advanced connection settings**.
 3. For clients using bearer credentials, select **Connections → MCP access key**
    and generate a scoped key. For reference content, choose website read/write and reference-read permissions
    and grant each exact HTTPS reference origin.

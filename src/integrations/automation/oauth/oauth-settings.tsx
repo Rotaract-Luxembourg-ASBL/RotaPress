@@ -6,6 +6,16 @@ import { Loading, Notice } from "@/ui/primitives";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
 import { ScopePicker } from "../ui/scope-picker";
 import { ReferenceOrigins } from "../ui/reference-origins";
+import {
+  defaultOAuthSetup,
+  type OAuthPlatform,
+  type OAuthSetup,
+} from "./client-presets";
+import { OAuthSetupFields } from "./oauth-setup-fields";
+import {
+  OAuthIssuedDetails,
+  type IssuedOAuthClient,
+} from "./oauth-issued-details";
 
 const endpoint = "/api/admin/integrations/automation/oauth";
 type OAuthClient = {
@@ -17,18 +27,23 @@ type OAuthClient = {
   sourceOrigins: string[];
   authentication: string;
 };
-type Issued = { clientId: string; clientSecret?: string; resource: string };
 
 export function OAuthSettings() {
   const { data, error, refresh } = useResource<{ clients: OAuthClient[] }>(
     endpoint,
   );
-  const [name, setName] = useState("");
-  const [redirects, setRedirects] = useState("");
+  const [platform, setPlatform] = useState<OAuthPlatform>("chatgpt");
+  const [setups, setSetups] = useState<Record<OAuthPlatform, OAuthSetup>>(
+    () => ({
+      chatgpt: defaultOAuthSetup("chatgpt"),
+      claude: defaultOAuthSetup("claude"),
+      custom: defaultOAuthSetup("custom"),
+    }),
+  );
+  const setup = setups[platform];
   const [origins, setOrigins] = useState("");
-  const [authentication, setAuthentication] = useState("client_secret_post");
   const [scopes, setScopes] = useState<AutomationScope[]>(["website:read"]);
-  const [issued, setIssued] = useState<Issued>();
+  const [issued, setIssued] = useState<IssuedOAuthClient>();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
   const [receipt, setReceipt] = useState<string>();
@@ -40,12 +55,12 @@ export function OAuthSettings() {
     setReceipt(undefined);
     try {
       setIssued(
-        await request<Issued>(endpoint, {
+        await request<IssuedOAuthClient>(endpoint, {
           method: "POST",
           body: JSON.stringify({
-            name,
-            redirectUris: redirects.split(/\s+/).filter(Boolean),
-            authentication,
+            name: setup.name,
+            redirectUris: setup.redirects.split(/\s+/).filter(Boolean),
+            authentication: setup.authentication,
             scopes,
             sourceOrigins: scopes.includes("sources:read")
               ? origins
@@ -81,78 +96,34 @@ export function OAuthSettings() {
       setBusy(false);
     }
   }
-  async function copySecret() {
-    try {
-      if (issued?.clientSecret)
-        await navigator.clipboard.writeText(issued.clientSecret);
-      setReceipt(
-        "Client secret copied. Store it only in your AI client's protected connection settings.",
-      );
-    } catch {
-      setProblem(
-        "Copying is unavailable. Select the client secret and copy it manually.",
-      );
-    }
-  }
   return (
-    <section className="panel" aria-labelledby="oauth-settings-title">
+    <section
+      className="panel oauth-settings"
+      aria-labelledby="oauth-settings-title"
+    >
       <h2 id="oauth-settings-title">Connect with OAuth</h2>
       <p>
-        In your assistant's MCP settings, add this server and choose OAuth. Copy
-        its callback URL below, register the connection, then return to the
-        assistant with your client ID and secret. It opens RotaPress for sign-in
-        and consent.
+        Choose your AI app and its allowed actions. We'll prepare the connection
+        details to copy into the app, then you'll sign in and approve access.
       </p>
       <p className="muted">
-        Creating a client requires a sign-in within the last 15 minutes. The
-        connection can use only your current staff permissions. Registration
-        prepares the client; access begins after you approve its consent screen.
+        A sign-in within the last 15 minutes is required to create a connection.{" "}
+        <Link href="/sign-in?reauth=1&next=/admin/integrations/mcp">
+          Sign in again
+        </Link>
       </p>
-      <Link href="/sign-in?reauth=1&next=/admin/integrations/mcp">
-        Sign in again
-      </Link>
       {(problem || error) && <Notice>{problem || error}</Notice>}
       {receipt && <Notice kind="success">{receipt}</Notice>}
       <form className="automation-form" onSubmit={create} hidden={!!issued}>
-        <label>
-          OAuth connection name
-          <input
-            required
-            minLength={2}
-            maxLength={80}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            disabled={busy}
-            placeholder="ChatGPT club assistant"
-          />
-        </label>
-        <label>
-          OAuth callback URLs
-          <textarea
-            required
-            rows={3}
-            value={redirects}
-            onChange={(event) => setRedirects(event.target.value)}
-            disabled={busy}
-            placeholder="Copy the exact callback URL from your AI client's settings"
-          />
-        </label>
-        <p className="small muted">
-          One exact HTTPS callback per line, up to three. Wildcards are
-          unsupported. Local installations also accept loopback HTTP callbacks
-          for testing.
-        </p>
-        <label>
-          OAuth client authentication
-          <select
-            value={authentication}
-            onChange={(event) => setAuthentication(event.target.value)}
-            disabled={busy}
-          >
-            <option value="client_secret_post">Client ID and secret</option>
-            <option value="none">Public client with PKCE</option>
-          </select>
-        </label>
+        <OAuthSetupFields
+          platform={platform}
+          onPlatformChange={setPlatform}
+          value={setup}
+          onChange={(value) =>
+            setSetups((previous) => ({ ...previous, [platform]: value }))
+          }
+          disabled={busy}
+        />
         <ScopePicker
           legend="OAuth allowed actions"
           value={scopes}
@@ -174,43 +145,11 @@ export function OAuthSettings() {
         </button>
       </form>
       {issued && (
-        <div className="panel" aria-labelledby="oauth-issued-title">
-          <h3 id="oauth-issued-title">Save your OAuth client details</h3>
-          <label>
-            OAuth client ID
-            <input readOnly value={issued.clientId} />
-          </label>
-          <label>
-            MCP server URL
-            <input readOnly value={issued.resource} />
-          </label>
-          {issued.clientSecret && (
-            <>
-              <p>
-                This client secret is shown once. Keep it out of prompts and
-                shared documents.
-              </p>
-              <label>
-                OAuth client secret
-                <input
-                  type="password"
-                  autoComplete="off"
-                  readOnly
-                  value={issued.clientSecret}
-                />
-              </label>
-              <button className="button button-outline" onClick={copySecret}>
-                Copy client secret
-              </button>
-            </>
-          )}
-          <button
-            className="button button-outline"
-            onClick={() => setIssued(undefined)}
-          >
-            I saved the OAuth details
-          </button>
-        </div>
+        <OAuthIssuedDetails
+          issued={issued}
+          platform={platform}
+          onDone={() => setIssued(undefined)}
+        />
       )}
       <h3>Your OAuth connections</h3>
       {error ? (

@@ -16,8 +16,9 @@ for connection choices and the MCP protocol reference, or follow the
 
 1. Sign in as an approved owner or administrator. Open **Integrations**, enable
    **MCP**, then select **Connections & setup guide** on its card.
-2. Register the assistant's exact OAuth callback and choose its permitted actions,
-   or create a dedicated MCP access key for a client using protected credentials.
+2. Choose ChatGPT or Claude to fill OAuth connection settings automatically, then
+   choose permitted actions. Other apps use Advanced for their exact callback.
+   Alternatively, create a dedicated MCP access key for protected bearer clients.
    For reference-site work, select website reading/writing and reference reading.
    Add each exact HTTPS origin, such as `https://www.example.org`; bare hosts and
    `www` are different grants.

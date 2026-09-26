@@ -45,9 +45,11 @@ expiring staff connections. REST API and MCP are separately enabled in Integrati
 and both default to disabled. REST has its own token management, endpoint
 documentation and live tester. MCP has separate OAuth/access-key connections, a
 setup guide and tool tests; credentials cannot cross integrations. Grouped action
-pickers support select all, clear all and focused presets. Native page schemas
-and templates let assistants
-prepare website and event drafts; bounded private image uploads and saved-revision
+pickers support select all, clear all and focused presets. MCP OAuth setup fills
+documented ChatGPT and Claude connector settings from an AI-app picker, with manual
+overrides in Advanced; it does not discover arbitrary platforms or account callbacks.
+Native page schemas and templates let assistants prepare website and event drafts;
+bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them; publication stays manual. Every feature change requires an
 API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
