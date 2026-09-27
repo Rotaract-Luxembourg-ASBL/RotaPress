@@ -73,7 +73,7 @@ export function OAuthSettings({ onManage }: { onManage: () => void }) {
         details to copy into the app, then you'll sign in and approve access.
       </p>
       <p className="muted">
-        A sign-in within the last 15 minutes is required to create a connection.{" "}
+        Identity confirmation lasts 12 hours in the same browser and network.{" "}
         <Link href="/sign-in?reauth=1&next=/admin/integrations/mcp">
           Sign in again
         </Link>

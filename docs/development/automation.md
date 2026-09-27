@@ -83,7 +83,11 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   `prompt=consent` on every authorization.
 - Offer `offline_access` through the visible, initially selected **Keep connected**
   choice even when an explicit action scope omitted it. The person may decline
-  renewal. Never add application actions to an explicitly narrower client request.
+  renewal. Never silently add application actions to an explicitly narrower request.
+  A same-origin, owned-session **Review all allowed actions** action can restart
+  provider authorization with registered scopes and forced visible consent. Verify
+  the signed handoff and expected permission revision; preserve callback, resource,
+  state and PKCE. This review alone never changes or grants access.
 - Refresh-only requests may omit resource, defaulting to the one fixed MCP
   resource. Initial authorization/code exchange stay explicit; wrong or repeated
   resources fail. A ten-second provider retry grace returns the same refresh
@@ -92,7 +96,8 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 - Provider resource seeding merges the current supported action list on upgrade
   without replacing resource policy. It does not update registered client scopes
   or consent. Omitted authorization scope defaults only to that client's registered
-  selection; explicit subsets and existing credential limits remain narrow.
+  selection; explicit subsets remain narrow until a human chooses a wider review
+  and approves it. Existing credential limits still apply.
 - Existing-client permission edits are a cookie-authenticated administration
   workflow, never REST automation operations or MCP tools. Require current client
   ownership, organization/capabilities, recent sign-in and an expected permission
@@ -107,6 +112,12 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   data. Historical tool calls before this feature are unavailable.
 - Every tool is also a registered REST operation. MCP annotations are hints, not
   permissions. Unknown operations, extra fields and missing scopes fail closed.
+- Contract 1.7 adds `grantedScopes`, `permissions` (scope and label) and `accessMode`
+  to capability discovery. MCP initialization includes that same issued grant in
+  its instructions. Do not report a registration's larger allowance as token
+  authority. Origins require `sources:read`; current feature and record checks
+  still apply. Sensitive actions share the platform's 12-hour original-sign-in
+  window and current browser/trusted-proxy address checks, not a sliding refresh.
 - Recheck connection identity, grants, current resource access and expected state
   after expensive image processing or browser rendering, before releasing private
   output. An authorization snapshot at the start is insufficient for these flows.

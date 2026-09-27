@@ -106,6 +106,7 @@ export async function oauthJourney(
       state,
       code_challenge: createHash("sha256").update(verifier).digest("base64url"),
       code_challenge_method: "S256",
+      scope: "website:read",
     });
     const bad = new URLSearchParams(params);
     const navigationHeaders = {
@@ -153,6 +154,55 @@ export async function oauthJourney(
         exact: true,
       }),
     ).toBeVisible();
+    await expect(
+      owner.getByRole("checkbox", {
+        name: "Read website content",
+        exact: true,
+      }),
+    ).toBeChecked();
+    await expect(
+      owner.getByText("The app requested 1 of 8 allowed actions.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      owner.getByText("1 action selected · Read-only access", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      owner.getByRole("checkbox", {
+        name: "Publish website content and settings on request",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await owner.screenshot({
+      path: ".local/oauth-requested-permissions-desktop.png",
+      fullPage: true,
+    });
+    await owner.setViewportSize({ width: 390, height: 844 });
+    await owner.screenshot({
+      path: ".local/oauth-requested-permissions-phone.png",
+      fullPage: true,
+    });
+    await owner
+      .getByRole("button", { name: "Review all allowed actions", exact: true })
+      .click();
+    await expect(
+      owner.getByRole("checkbox", {
+        name: "Publish website content and settings on request",
+        exact: true,
+      }),
+    ).toBeChecked();
+    await expect(
+      owner.getByRole("button", {
+        name: "Review all allowed actions",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    if (viewport) await owner.setViewportSize(viewport);
+    await owner.screenshot({
+      path: ".local/oauth-reviewed-permissions-desktop.png",
+      fullPage: true,
+    });
     for (const name of [
       "Publish website content and settings on request",
       "Publish calendars, activities and page design on request",
@@ -186,7 +236,7 @@ export async function oauthJourney(
     expect(originalSession.rows.length).toBe(1);
     try {
       await database.query(
-        "UPDATE club.session SET created_at=now()-interval '16 minutes' WHERE id=$1",
+        "UPDATE club.session SET created_at=now()-interval '13 hours' WHERE id=$1",
         [session.id],
       );
       const staleConsent = owner.waitForResponse(
@@ -300,6 +350,7 @@ export async function oauthJourney(
     const reconnectVerifier = randomBytes(32).toString("base64url");
     const reconnectState = randomBytes(24).toString("base64url");
     const reconnectParams = new URLSearchParams(params);
+    reconnectParams.set("scope", tokens.scope);
     reconnectParams.set("state", reconnectState);
     reconnectParams.set(
       "code_challenge",

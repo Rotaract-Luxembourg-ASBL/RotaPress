@@ -176,6 +176,11 @@ export const operationDescriptionOutput = z.strictObject({
 });
 export const capabilitiesOutput = z.strictObject({
   version: z.string(),
+  grantedScopes: z.array(automationScopeSchema),
+  accessMode: z.enum(["read-only", "read-write"]),
+  permissions: z.array(
+    z.strictObject({ scope: automationScopeSchema, label: z.string() }),
+  ),
   publication: publicationPolicy,
   sourceOrigins: z.array(z.string()),
   features: z.array(

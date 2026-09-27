@@ -17,7 +17,8 @@ is `/admin/integrations/rest`; append `?tab=docs` to open the reference.
    mutation, including publication for an authorized publish endpoint. Review
    example IDs and facts first. Download OpenAPI for another client.
 
-Token generation requires a sign-in within the last 15 minutes. The screen provides
+Token generation requires identity confirmation within the last 12 hours in the
+same browser and network. The screen provides
 **Sign in again** when renewal is needed. Tokens expire after 5 minutes to 8 hours
 and stop when their parent session ends. Revoke unwanted tokens from this workspace.
 
@@ -57,7 +58,7 @@ Paths in the tables below are relative to `/api/v1`.
 
 | Method and path                         | Purpose                                                                |
 | --------------------------------------- | ---------------------------------------------------------------------- |
-| `GET /capabilities`                     | Compact granted operation catalogue, source origins and feature states |
+| `GET /capabilities`                     | Granted scopes and permission labels, read/write mode, operation catalogue, source origins and feature states |
 | `GET /openapi.json`                     | Full OpenAPI 3.1 document; input/output schemas and request examples   |
 | `GET /prompts`                          | Prompt names and arguments                                             |
 | `POST /prompts/adapt_reference_website` | Adaptation instructions for `sourceUrl`, optional `locale` and `brief` |

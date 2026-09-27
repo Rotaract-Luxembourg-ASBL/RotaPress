@@ -58,6 +58,17 @@ replace an independent security assessment.
   Offering `offline_access` must never add application actions to a narrow request.
   AI-app reconnect prompts and publication-tool approval are not controlled by
   the server's token renewal policy.
+- A human can select **Review all allowed actions** when a client requests fewer
+  permissions. The same-origin, cookie-authenticated action verifies the provider's
+  signed request, ownership and current registration version. It restarts provider
+  authorization with the registered scopes and `prompt=consent`, retaining state,
+  resource, callback and PKCE. It never mints tokens or silently expands consent.
+  Approval still checks current permissions, sensitive-session policy and revision.
+- Sensitive actions share a 12-hour maximum from the original sign-in. Current
+  browser requests compare the library session's original browser and, only behind
+  the configured trusted proxy, IP snapshot. Changed evidence requires identity
+  confirmation; session refresh does not move the authentication timestamp.
+  Remembered OAuth consent cannot bypass a detected browser/network change.
 - A ten-second provider replay grace is restricted to the same refresh client,
   scopes and resource. It replays the issued response, not a broader grant.
   Refresh-only omitted resource defaults to the fixed MCP endpoint; explicit
@@ -90,6 +101,10 @@ eight hours, a valid older staff session, new-permission reauthentication and a
 concurrent narrowing between consent reads. B01 expires issued access, renews it,
 retries renewal and reconnects using saved consent. It also checks sign-in recovery
 when a consent page remains open past the recent-authentication window.
+`oauth-consent-cases.ts` verifies deliberate scope expansion, preserved flow
+bindings, stale/forged/cross-origin denial, real issued-token scope context and
+two-hour browser-session continuity. `recent-authentication.test.ts` covers the
+12-hour boundary, changed browser/trusted IP, spoofed forwarding and invalid dates.
 
 `automation-website-cases.ts` checks copy retry receipts, exact revision/language
 access, nested CustomCode rejection, current membership and private site settings.

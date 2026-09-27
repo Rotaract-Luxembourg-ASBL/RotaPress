@@ -318,7 +318,7 @@ export function automationContentPublicationChecks(
           ...s.principal,
           actor: {
             ...s.owner,
-            authenticatedAt: new Date(Date.now() - 16 * 60_000),
+            authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000),
           },
         }),
       ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });

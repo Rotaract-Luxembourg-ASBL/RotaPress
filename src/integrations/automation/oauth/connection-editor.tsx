@@ -241,6 +241,15 @@ export function ConnectionEditor({
                 </ul>
               </details>
             )}
+            {saved.approvedScopes.length > 0 &&
+              saved.approvedScopes.length < saved.scopes.length && (
+                <p className="small">
+                  The app has fewer approved actions than this connection
+                  allows. Reconnect in the AI app and choose{" "}
+                  <strong>Review all allowed actions</strong> on the consent
+                  screen to approve the other permissions.
+                </p>
+              )}
           </div>
           <div className="oauth-save-messages" ref={messageRef}>
             {receipt && !dirty && (
@@ -310,7 +319,8 @@ export function ConnectionEditor({
                 </span>
               </div>
               <p className="small muted">
-                Permission changes require a sign-in within the last 15 minutes.
+                Identity confirmation lasts 12 hours in the same browser and
+                network.
               </p>
             </div>
           </form>

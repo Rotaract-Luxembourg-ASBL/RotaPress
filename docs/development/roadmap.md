@@ -69,6 +69,11 @@ OAuth connections have a separate **Existing connections** tab with editable
 permissions/reference origins, saved-consent status and recent tool activity.
 Permission changes preserve client credentials, invalidate existing tokens and
 require fresh consent; access keys still require replacement for new grants.
+Consent explains requested versus allowed actions and lets the person review the
+full allowed set before explicitly approving it. MCP initialization and capability
+discovery expose the issued scope names, labels and read/write mode (contract 1.7).
+Platform-wide sensitive actions use a 12-hour sign-in window, with earlier identity
+confirmation after a detected browser or trusted-proxy network change.
 Bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them. Separate grants allow explicitly requested publication of exact

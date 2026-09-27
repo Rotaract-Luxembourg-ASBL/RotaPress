@@ -230,6 +230,11 @@ export async function eventPrizesJourney(
     manager,
     panel.getByRole("button", { name: "Disable Prizes", exact: true }),
   );
+  // Inputs also disable while saving; wait for the server-confirmed module state
+  // before reloading a different browser's public page.
+  await expect(
+    panel.getByRole("button", { name: "Enable Prizes", exact: true }),
+  ).toBeEnabled();
   await expect(titleInput).toBeDisabled();
   await visitor.reload();
   await expect(gallery).toHaveCount(0);

@@ -61,6 +61,17 @@ export async function oauthManagementJourney(
   expect(names).not.toContain("events_create");
   expect(await call("automation_capabilities", {})).toMatchObject({
     publication: "on-request",
+    accessMode: "read-write",
+    grantedScopes: expect.arrayContaining([
+      "website:publish",
+      "calendar:write",
+    ]),
+    permissions: expect.arrayContaining([
+      {
+        scope: "calendar:write",
+        label: "Create and manage calendar and activity drafts",
+      },
+    ]),
   });
   type Changed = { id: string; version: number };
   const before = await call<CalendarWorkspace>("calendar_read", {});

@@ -44,8 +44,9 @@ Disabling one rejects its new requests with 409, including existing credentials,
 while retaining content and connection settings. Re-enabling resumes unexpired
 connections; revoke any no longer wanted. A request already completing may finish.
 
-Creating a key requires a sign-in within 15 minutes. Keys expire after 5 minutes to
-8 hours (default 1 hour), never later than their parent session. Sign-out, expired
+Creating a key requires identity confirmation within 12 hours in the same browser
+and network. Keys expire after 5 minutes to 8 hours (default 1 hour), never later
+than their parent session. Sign-out, expired
 sessions, suspended membership or an incompatible Google-only policy stops access.
 Revoke a key from the same screen. Keys cannot grant new permissions, enable
 features or create keys. Issuance is rate limited and asks you to revoke an existing

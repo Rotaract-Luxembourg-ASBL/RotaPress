@@ -318,7 +318,7 @@ describe("C02 membership authority and current staff policy", () => {
     });
     const stale = {
       ...owner,
-      authenticatedAt: new Date(Date.now() - 16 * 60_000),
+      authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000),
     };
     await expect(
       members.change(stale, {
@@ -462,7 +462,7 @@ describe("C02 membership authority and current staff policy", () => {
     ).rejects.toMatchObject({ code: "VERIFIED_IDENTITY_REQUIRED" });
     await expect(
       service.complete(
-        { ...owner, authenticatedAt: new Date(Date.now() - 16 * 60_000) },
+        { ...owner, authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000) },
         { claim },
       ),
     ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });

@@ -22,6 +22,7 @@ import {
   oauthConsentInput,
   oauthScopeList,
   oauthPermissionsInput,
+  oauthReviewInput,
   validOAuthRedirect,
 } from "./policy";
 import { replaceOAuthPermissions } from "./permission_store";
@@ -292,13 +293,68 @@ export class OAuthConnections {
       clientId: client.record.clientId,
       name: client.record.name ?? "AI client",
       scopes,
+      allowedScopes: (client.record.scopes ?? []).filter(
+        (scope) =>
+          scope === "offline_access" ||
+          automationScopeSchema.safeParse(scope).success,
+      ),
       sourceOrigins: client.metadata.sourceOrigins,
       redirectUri: query.get("redirect_uri") ?? "",
       resource: automationResource,
       approvedScopes,
       recentlyAuthenticated,
+      identityConfirmationRequired: actor.sessionContextChanged === true,
       permissionsRevision: client.metadata.permissionsRevision ?? "initial",
     };
+  }
+
+  /** A human may review their registered actions even when the app requested less.
+   * Start a fresh provider-owned consent flow; never enlarge an existing grant.
+   */
+  async reviewPermissions(
+    actor: TrustedActor,
+    headers: Headers,
+    input: unknown,
+  ) {
+    const parsed = oauthReviewInput.parse(input);
+    await this.limiter.consume("oauth-consent-review", actor.userId, 20);
+    const details = await this.details(actor, headers, parsed.oauth_query);
+    if (parsed.expectedRevision !== details.permissionsRevision)
+      throw new DomainError(
+        "OAUTH_PERMISSIONS_CHANGED",
+        "This connection's permissions changed. Reload and review them before continuing.",
+        409,
+      );
+    await this.checkScopes(actor, details.allowedScopes);
+    const verified = await auth.api.readAutomationOAuthRequest({
+      headers,
+      body: { oauth_query: parsed.oauth_query },
+    });
+    // Provider handoffs can repeat internal continuation parameters. Carry only
+    // protocol bindings into a new authorization, never its signed handoff state.
+    const original = new URLSearchParams(verified.query);
+    const query = new URLSearchParams();
+    for (const key of [
+      "response_type",
+      "client_id",
+      "redirect_uri",
+      "resource",
+      "state",
+      "code_challenge",
+      "code_challenge_method",
+      "nonce",
+      "login_hint",
+      "max_age",
+      "response_mode",
+    ]) {
+      const value = original.get(key);
+      if (value !== null) query.set(key, value);
+    }
+    query.set("scope", details.allowedScopes.join(" "));
+    query.set("prompt", "consent");
+    const url = new URL("/api/auth/oauth2/authorize", config.APP_URL);
+    url.search = query.toString();
+    return { url: url.href };
   }
 
   async consent(actor: TrustedActor, headers: Headers, input: unknown) {
@@ -330,7 +386,8 @@ export class OAuthConnections {
       // a different tab may have narrowed consent since the details were loaded.
       if (
         parsed.accept &&
-        parsed.scopes.some((scope) => !approved.includes(scope))
+        (actor.sessionContextChanged ||
+          parsed.scopes.some((scope) => !approved.includes(scope)))
       )
         this.authorization.requireRecent(actor);
       const result = await auth.api.oauth2Consent({

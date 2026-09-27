@@ -131,6 +131,22 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+.oauth-consent-permissions {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #d6dfeb;
+  border-radius: 8px;
+  background: #f6f8fc;
+}
+.oauth-consent-permissions p {
+  margin: 0;
+  font-size: 14px;
+}
+.oauth-consent-permissions .button {
+  justify-self: start;
+  white-space: normal;
+}
 .oauth-consent-buttons {
   display: flex;
   flex-wrap: wrap;

@@ -137,6 +137,44 @@ describe("C14 documented contracts and failure privacy", () => {
       log.mockRestore();
     }
   });
+  it("puts the issued permissions in initialization context and offers only matching tools", async () => {
+    for (const scopes of [
+      ["website:read"],
+      ["website:read", "website:write", "website:publish"],
+    ]) {
+      const context = { principal: { scopes } } as unknown as AutomationContext;
+      const server = createMcpServer(context);
+      const client = new Client({
+        name: "permission-context-fixture",
+        version: "1",
+      });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+      try {
+        await server.connect(serverTransport);
+        await client.connect(clientTransport);
+        const instructions = client.getInstructions();
+        expect(instructions).toContain("website:read (Read website content)");
+        const tools = (await client.listTools()).tools.map((tool) => tool.name);
+        if (scopes.includes("website:write")) {
+          expect(instructions).toContain("read-write access");
+          expect(instructions).toContain(
+            "website:write (Create and edit website drafts)",
+          );
+          expect(tools).toContain("website_save");
+          expect(tools).toContain("website_publish");
+        } else {
+          expect(instructions).toContain("read-only access");
+          expect(instructions).not.toContain("website:write");
+          expect(tools).not.toContain("website_save");
+          expect(tools).not.toContain("website_publish");
+        }
+      } finally {
+        await client.close();
+        await server.close();
+      }
+    }
+  });
   it("keeps tester credentials on same-instance endpoints and omits browser cookies", async () => {
     const fetcher = vi
       .fn<typeof fetch>()

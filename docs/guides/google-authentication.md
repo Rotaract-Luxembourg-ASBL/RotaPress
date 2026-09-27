@@ -75,7 +75,8 @@ Membership and staff approval are always separate.
 
 - Staff with `integrations.manage` can read connection status and setup details.
   Credential/lifecycle changes require `ownership.manage`, a verified identity and
-  authentication within the last 15 minutes. The server reloads current membership
+  identity confirmation within the last 12 hours, sooner if the browser or trusted
+  network address changes. The server reloads current membership
   after acquiring the same organization lock used by sensitive changes.
 - Secrets are AES-256-GCM encrypted with `INTEGRATION_ENCRYPTION_KEY`, bound to the
   organization/provider. APIs return only the client ID, status and `hasSecret`.
@@ -95,6 +96,27 @@ Membership and staff approval are always separate.
   older installation that used environment credentials, save them in Integrations
   and keep a verified email owner session until setup is complete. Sessions without
   a recorded provider revision must sign in again.
+
+## Sensitive changes and session continuity
+
+The same policy applies platform-wide to sensitive credential, account and
+permission changes, for both email-code and Google sign-in. One sign-in allows
+these changes for **12 hours**. Ordinary session refresh does not extend that
+window. Routine editing continues under the normal active-session policy.
+
+A change from the browser information recorded at sign-in requires identity
+confirmation sooner. When `ROTAPRESS_PROXY=trusted`, a changed or missing valid
+`X-Real-IP` is also a reason to confirm identity. Configure this only behind a
+private upstream whose edge overwrites that header; arbitrary browser forwarding
+headers are not trusted. Without that proxy, network continuity cannot be verified:
+the time and browser checks still apply. Older sessions without a recorded browser
+or address use the available evidence and the same 12-hour maximum.
+
+Use **Sign in again** or the screen's sign-in link to confirm with the same account;
+signing out first is unnecessary. The new Better Auth session records the current
+browser and network. This does not change Google-only policy, membership approval,
+session expiry or revocation. Delegated AI calls use the originating session and
+are not compared with the AI provider's separate IP address.
 
 ## OAuth boundaries
 

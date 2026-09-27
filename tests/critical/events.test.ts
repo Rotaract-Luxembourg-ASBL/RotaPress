@@ -224,7 +224,10 @@ describe("C06 event drafting and current event scope", () => {
     ).rejects.toThrow();
     await expect(
       events.changeEditor(
-        { ...manager, authenticatedAt: new Date(Date.now() - 20 * 60_000) },
+        {
+          ...manager,
+          authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000),
+        },
         grant(),
       ),
     ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });
@@ -441,7 +444,7 @@ describe("C06 event drafting and current event scope", () => {
     ).rejects.toThrow();
     await expect(
       events.reassignManager(
-        { ...owner, authenticatedAt: new Date(Date.now() - 20 * 60_000) },
+        { ...owner, authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000) },
         change,
       ),
     ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });
@@ -525,7 +528,10 @@ describe("C06 event drafting and current event scope", () => {
     ).rejects.toMatchObject({ code: "23514" });
     await expect(
       events.archive(
-        { ...manager, authenticatedAt: new Date(Date.now() - 20 * 60_000) },
+        {
+          ...manager,
+          authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000),
+        },
         { id: event.id, expectedVersion: 2 },
       ),
     ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });

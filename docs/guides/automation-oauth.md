@@ -35,7 +35,10 @@ use the same permissions, private drafts and deliberate publication rules as the
    a client ID and no secret.
 5. Finish connecting in the assistant. It opens your RotaPress site. Sign in
    with the account that created this connection, then review the requested
-   actions and callback destination. Uncheck actions you do not want to grant.
+   actions and callback destination. If the app requests fewer actions than you
+   allowed, choose **Review all allowed actions** to include your other saved
+   permissions. This opens a fresh review; it does not grant access yet.
+   Uncheck actions you do not want to grant.
    **Keep connected** is selected by default so the app can renew access without
    repeated sign-in. Uncheck it if you only want a short connection without renewal.
    Publication has separate actions: grant them only if you want to request
@@ -47,10 +50,13 @@ use the same permissions, private drafts and deliberate publication rules as the
 Each administrator registers their own connection. Registration does not approve
 another member or give the assistant capabilities that the administrator lacks.
 Creating a connection, approving it for the first time or approving broader grants
-requires authentication within the last 15 minutes. Reusing the same or narrower
-approval uses your current valid staff session without asking you to sign in again
-just because 15 minutes have passed. A sign-in link appears when authentication
-needs renewal, with an explanation of why.
+requires identity confirmation within the last 12 hours in the same browser and
+network. Reusing the same or narrower approval uses your current valid staff
+session without asking you to sign in again just because the sensitive-change
+window has passed. A sign-in link explains when authentication needs renewal.
+A detected browser or network change
+requires identity confirmation sooner. You can sign in again without signing out;
+see the [shared session policy](google-authentication.md#sensitive-changes-and-session-continuity).
 
 ### Automatic settings and manual overrides
 
@@ -98,12 +104,13 @@ prove the assistant is currently connected or that its staff session is valid.
 
 - **Permissions** shows the saved allowed actions and the actions approved during
   consent. Change the grouped action selection and approved reference websites,
-  then choose **Save permissions**. A sign-in within 15 minutes is required.
+  then choose **Save permissions**. Identity confirmation within 12 hours is
+  required; a browser or detected network change requires confirmation sooner.
 - Saving stops current access, revokes existing access and refresh tokens, clears
   remembered consent and retains the same client ID, secret and callbacks.
   Reconnect from your AI app and review consent again. New actions never appear
-  automatically after an application upgrade. If the app requests an explicit
-  subset, update that selection in the app too.
+  automatically after an application upgrade. If the app requests fewer actions,
+  choose **Review all allowed actions** on the RotaPress consent screen.
 - **Activity** shows the latest 30 recorded creation, approval, permission-change
   and tool events, with timestamps and completed/failed outcomes. Tool history
   starts with this feature; older calls cannot be reconstructed. Prompts, request
@@ -126,9 +133,15 @@ connection can view its activity, edit it or revoke it.
 
 - A client that omits `scope` requests the actions selected when its connection
   was registered. These appear on the consent screen, where you can narrow them.
-  An explicitly requested subset stays narrow. Empty or repeated scope parameters
-  are rejected. RotaPress no longer forces every new connection to request only
-  website reading.
+  An explicitly requested subset stays narrow unless you choose **Review all
+  allowed actions**, review the fresh permission list and approve it. Empty or
+  repeated scope parameters are rejected. Existing grants are never enlarged
+  just by opening the review.
+- MCP initialization tells the assistant its actual granted scope names and
+  permission labels. `automation_capabilities` also returns `grantedScopes`,
+  `permissions` and `accessMode`, alongside scoped operations and feature states.
+  Reference origins appear only with `sources:read`. Allowed actions in settings
+  are a permission limit; only approved actions in the issued token reach the AI.
 - Existing connections retain their original allowed actions. Add or remove
   actions in **Existing connections → Permissions**, save and reconnect the
   assistant with fresh consent. Check `automation_capabilities` afterward.
@@ -188,7 +201,11 @@ registered `redirect_uri`, nonempty `state`, `resource`, `code_challenge`, and
 `code_challenge_method=S256`. The optional space-separated `scope` selects a subset
 of the registered actions; omitting it uses the registered defaults. RotaPress
 offers `offline_access` for the visible **Keep connected** choice without expanding
-application actions. Better Auth can reuse remembered consent for the same client,
+application actions. The same-origin human **Review all allowed actions** action
+verifies the signed request and owned registration, then restarts provider consent
+with those allowed scopes. It preserves the client, callback, resource, state and
+PKCE challenge, and requires a new approval before issuing the broader grant.
+Better Auth can reuse remembered consent for the same client,
 actions and resource; RotaPress does not force `prompt=consent`. The client must
 validate returned state and issuer.
 
@@ -252,6 +269,13 @@ Repeated prompts can come from different places:
 - **ChatGPT/Claude connection or tool approval** is controlled by that app.
   RotaPress token renewal does not suppress those prompts. In particular,
   publication-tool approval is separate from authentication and should stay enabled.
+
+If the popup shows only **Read website content** after selecting more permissions
+in RotaPress, the app requested a narrower grant. Use **Review all allowed actions**
+in that popup, approve the intended actions, then refresh the app's tool list or
+start a new conversation if it cached the old tools. Check `automation_capabilities`
+to see the actual issued grant. A client that independently restricts its scopes
+may also need its own scope selection updated.
 
 If the AI app asks to reconnect after every action, confirm that **Keep connected**
 was approved and that the app stores and uses the latest rotated refresh token.

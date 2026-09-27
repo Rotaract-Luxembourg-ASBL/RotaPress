@@ -10,6 +10,7 @@ import type { Database } from "../../infrastructure/database/client";
 import { DomainError } from "../DomainError";
 import { FeatureAvailability } from "../features/FeatureAvailability";
 import { featureForCapability } from "../features/feature_catalogue";
+import { sensitiveSessionWindowMs } from "../auth/recent_authentication";
 export { DomainError } from "../DomainError";
 
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -24,6 +25,8 @@ export type TrustedActor = {
   authenticatedAt: Date;
   authMethod: "email-otp" | "google" | "unknown";
   authProviderVersion?: string;
+  /** Server-observed browser/network change; never supplied by mutation input. */
+  sessionContextChanged?: boolean;
 };
 export type ScheduledIdentity = { actor: TrustedActor; expiresAt: Date };
 export type ResolveScheduledActor = (
@@ -125,10 +128,17 @@ export function requireVerifiedActor(actor: TrustedActor): void {
 
 export function requireRecentActor(actor: TrustedActor): void {
   const age = Date.now() - actor.authenticatedAt.getTime();
-  if (!Number.isFinite(age) || age < 0 || age > 15 * 60 * 1000) {
+  if (
+    !Number.isFinite(age) ||
+    age < 0 ||
+    age > sensitiveSessionWindowMs ||
+    actor.sessionContextChanged
+  ) {
     throw new DomainError(
       "RECENT_AUTH_REQUIRED",
-      "Sign out and sign in again before making this sensitive change.",
+      actor.sessionContextChanged
+        ? "Your browser or network changed. Confirm your identity by signing in again before this sensitive change. You do not need to sign out."
+        : "Confirm your identity by signing in again to make sensitive changes for another 12 hours. You do not need to sign out.",
       401,
     );
   }

@@ -193,7 +193,10 @@ it("C02 permits routine settings with an older session and keeps security change
     accepts: async () => true,
   });
   const current = await organization.settings(owner);
-  const older = { ...owner, authenticatedAt: new Date(Date.now() - 3600000) };
+  const older = {
+    ...owner,
+    authenticatedAt: new Date(Date.now() - 13 * 3600000),
+  };
   expect(
     (
       await organization.update(older, {

@@ -84,7 +84,7 @@ export function oauthConnectionChecks(context: () => RenewalContext) {
       };
       await expect(
         connections.updatePermissions(
-          { ...actor, authenticatedAt: new Date(Date.now() - 16 * 60000) },
+          { ...actor, authenticatedAt: new Date(Date.now() - 13 * 60 * 60000) },
           input,
         ),
       ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });

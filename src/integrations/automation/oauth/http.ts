@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { authenticationHandler, auth } from "@/core/auth/server";
 import { authenticationAddress } from "@/core/auth/request_address";
+import { getActor } from "@/core/auth/actor";
 import { config } from "@/core/config";
 import { readBoundedBody } from "@/core/http";
 import { services } from "@/composition/services";
@@ -87,6 +88,9 @@ export async function oauthProtocolRequest(
       }
       // Better Auth remembers matching scope/resource consent. Honor an explicit
       // client prompt, including consent/login/none, rather than forcing a review.
+      // A changed browser/network must not reuse consent to bypass identity review.
+      const actor = await getActor(headers);
+      if (actor?.sessionContextChanged) params.set("prompt", "login consent");
       forwarded = new Request(url, { headers });
     } else if (
       ["/oauth2/token", "/oauth2/revoke"].includes(path) &&

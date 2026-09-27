@@ -14,6 +14,7 @@ import { contentPublicationOperations } from "./content_publication_operations";
 import { projectOperations } from "./project_operations";
 import { publicationFor } from "./publication_policy";
 import { scopeDefinitions } from "./scopes";
+import { permissionContext } from "./permission_context";
 import { z } from "zod";
 import { capabilitiesOutput } from "./response_schemas";
 import { adaptationPrompt, promptInput } from "./prompts";
@@ -34,7 +35,7 @@ export const operations: readonly Operation[] = [
       path: "/capabilities",
       scope: null,
       description:
-        "Discover this connection's operations, approved source origins and enabled features before editing. Publishing requires a separate grant and an explicit user request for the identified saved content.",
+        "Read the actual granted scopes, permission labels, read/write access, operations, approved source origins and enabled features for this connection before acting. Publishing requires a separate grant and an explicit user request for the identified saved content.",
       input: z.strictObject({}),
       output: capabilitiesOutput,
       example: {},
@@ -74,7 +75,7 @@ export const operations: readonly Operation[] = [
   ...contentPublicationOperations,
   ...projectOperations,
 ];
-export const contractVersion = "1.6.0";
+export const contractVersion = "1.7.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))
@@ -96,8 +97,11 @@ export async function capabilities(context: AutomationContext) {
   );
   return {
     version: contractVersion,
+    ...permissionContext(context.principal.scopes),
     publication: publicationFor(context.principal.scopes),
-    sourceOrigins: context.principal.sourceOrigins,
+    sourceOrigins: context.principal.scopes.includes("sources:read")
+      ? context.principal.sourceOrigins
+      : [],
     features: features.map(({ key, enabled, version }) => ({
       key,
       enabled,

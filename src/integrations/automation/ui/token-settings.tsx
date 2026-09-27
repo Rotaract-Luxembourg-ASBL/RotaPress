@@ -131,7 +131,8 @@ export function TokenSettings({
         </p>
         <p className="small muted">
           Credentials expire within eight hours and stop when the staff session
-          ends. Creating one requires a sign-in within the last 15 minutes.
+          ends. Identity confirmation for creating keys lasts 12 hours in the
+          same browser and network.
         </p>
         <Link href={`/sign-in?reauth=1&next=/admin/integrations/${transport}`}>
           Sign in again

@@ -174,7 +174,10 @@ export function automationProposalChecks(get: () => Context) {
       ).rejects.toMatchObject({ code: "ACCESS_DENIED" });
       await expect(
         s.proposals.review(
-          { ...s.owner, authenticatedAt: new Date(Date.now() - 20 * 60_000) },
+          {
+            ...s.owner,
+            authenticatedAt: new Date(Date.now() - 13 * 60 * 60_000),
+          },
           s.review(proposal.id),
         ),
       ).rejects.toMatchObject({ code: "RECENT_AUTH_REQUIRED" });

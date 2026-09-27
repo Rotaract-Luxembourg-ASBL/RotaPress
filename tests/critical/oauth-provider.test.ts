@@ -2,9 +2,18 @@ import { createHash, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { parseEnv } from "node:util";
 import { Pool } from "pg";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { oauthRenewalChecks } from "./oauth-renewal-cases";
 import { oauthConnectionChecks } from "./oauth-connection-cases";
+import { oauthConsentChecks } from "./oauth-consent-cases";
 
 const delivery = vi.hoisted(() => ({ code: "" }));
 vi.mock("@/composition/email", async (original) => ({
@@ -66,7 +75,7 @@ beforeAll(async () => {
   });
   testConnection(env.DATABASE_URL);
   await migrationPool.query(
-    "TRUNCATE club.organization, club.user, club.installation CASCADE",
+    "TRUNCATE club.organization, club.user, club.installation, club.rate_limit CASCADE",
   );
   const configuration = await import("../../src/core/config");
   origin = configuration.config.APP_URL;
@@ -177,6 +186,12 @@ afterAll(async () => {
   await migrationPool?.end();
 });
 
+beforeEach(async () => {
+  // Independent flows share this suite's guarded disposable database and owner.
+  // Preserve production quotas within each test without inheriting another case's traffic.
+  await migrationPool.query("TRUNCATE club.rate_limit");
+});
+
 async function authorize(
   clientId: string,
   callback: string,
@@ -237,6 +252,19 @@ async function exchange(input: Record<string, string>) {
 }
 
 oauthRenewalChecks(() => ({
+  pool: migrationPool,
+  connections,
+  access,
+  actor,
+  headers,
+  origin,
+  resource,
+  protocol,
+  authorize,
+  exchange,
+}));
+
+oauthConsentChecks(() => ({
   pool: migrationPool,
   connections,
   access,

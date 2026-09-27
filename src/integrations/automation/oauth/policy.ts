@@ -40,6 +40,10 @@ export const oauthConsentInput = z.strictObject({
     .array(z.union([automationScopeSchema, z.literal("offline_access")]))
     .max(41),
 });
+export const oauthReviewInput = oauthConsentInput.pick({
+  oauth_query: true,
+  expectedRevision: true,
+});
 
 /** Exact callbacks only; loopback callbacks belong to local installations. */
 export function validOAuthRedirect(value: string, appUrl: string): boolean {

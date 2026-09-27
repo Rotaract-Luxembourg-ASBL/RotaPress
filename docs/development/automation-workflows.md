@@ -107,8 +107,8 @@ the connection. Revocation, session expiry and current policy changes stop acces
 
 Creating credentials, first consent and expanded grants/resource require recent
 authentication. Repeated same or narrower approval uses the owner's current valid
-staff session without another 15-minute age check. Better Auth can reuse remembered
-consent for the same client, actions and resource; do not force a new consent
+staff session without another sensitive-change age check. Better Auth can reuse
+remembered consent for the same client, actions and resource; do not force a new consent
 screen on each authorization.
 Five-minute access tokens renew with rotating refresh tokens lasting up to seven
 days while the originating session remains valid. Remove any independent eight-hour

@@ -106,11 +106,11 @@ export function oauthRenewalChecks(context: () => RenewalContext) {
         );
         expect(refresh.rows[0].lifetime).toBe(7 * 24 * 60 * 60);
         const consent = await pool.query(
-          "UPDATE club.oauth_consent SET updated_at=date_trunc('second',NOW()-INTERVAL '9 hours') WHERE client_id=$1 RETURNING updated_at",
+          "UPDATE club.oauth_consent SET updated_at=date_trunc('second',NOW()-INTERVAL '13 hours') WHERE client_id=$1 RETURNING updated_at",
           [client.clientId],
         );
         await pool.query(
-          "UPDATE club.session SET created_at=NOW()-INTERVAL '9 hours' WHERE id=$1",
+          "UPDATE club.session SET created_at=NOW()-INTERVAL '13 hours' WHERE id=$1",
           [actor.sessionId],
         );
         const { getActor } = await import("../../src/core/auth/actor");
@@ -223,7 +223,7 @@ export function oauthRenewalChecks(context: () => RenewalContext) {
           broadScopes.join(" "),
         );
         await pool.query(
-          "UPDATE club.session SET created_at=NOW()-INTERVAL '1 hour' WHERE id=$1",
+          "UPDATE club.session SET created_at=NOW()-INTERVAL '13 hours' WHERE id=$1",
           [actor.sessionId],
         );
         const { getActor } = await import("../../src/core/auth/actor");

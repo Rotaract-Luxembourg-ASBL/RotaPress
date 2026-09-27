@@ -269,9 +269,9 @@ export function SettingsPanel() {
                 <div>
                   <dt>Recent sign-in</dt>
                   <dd>
-                    Required for credentials and permission changes. Routine
-                    identity, profile and website edits use your current
-                    session.
+                    Valid for 12 hours for credentials and permission changes. A
+                    changed browser or detected network requires confirmation
+                    sooner. Routine edits use your current session.
                   </dd>
                 </div>
                 <div>

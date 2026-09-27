@@ -154,8 +154,11 @@ Disabled MCP requests return 409 before authentication. JSON-RPC batches fail.
 | `prompts/list`   | `adapt_reference_website`, `plan_native_website`, `prepare_event`, `prepare_project`, `review_page_design` and their arguments |
 | `prompts/get`    | Instructions for the selected workflow                                                                      |
 
-`automation_capabilities` exposes current scoped operations. Tools-only clients
-can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`,
+MCP initialization includes this token's granted scopes and permission labels.
+`automation_capabilities` exposes `grantedScopes`, `permissions`, `accessMode`
+(`read-only` or `read-write`), current scoped operations and feature states. These
+describe the issued grant, not every action allowed in the connection settings.
+Tools-only clients can use `automation_prompt`, `automation_website_prompt`, `automation_event_prompt`,
 `automation_project_prompt` and `automation_review_prompt` for workflow instructions. Tool failures set
 `isError: true` with a safe error text; check that even when HTTP is 200.
 HTTP authentication/origin/size failures occur before
