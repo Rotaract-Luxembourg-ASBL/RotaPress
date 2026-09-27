@@ -23,10 +23,18 @@ export const oauthClientMetadata = z.preprocess(
     purpose: z.literal("rotapress-oauth-v1"),
     organizationId: z.uuid(),
     sourceOrigins: connectionInput.shape.sourceOrigins,
+    permissionsRevision: z.uuid().optional(),
   }),
 );
+export const oauthPermissionsInput = z.strictObject({
+  clientId: z.string().min(1).max(200),
+  expectedRevision: z.string().min(1).max(100),
+  scopes: oauthClientInput.shape.scopes,
+  sourceOrigins: oauthClientInput.shape.sourceOrigins,
+});
 export const oauthConsentInput = z.strictObject({
   oauth_query: z.string().min(1).max(6000),
+  expectedRevision: z.string().min(1).max(100).default("initial"),
   accept: z.boolean(),
   scopes: z
     .array(z.union([automationScopeSchema, z.literal("offline_access")]))

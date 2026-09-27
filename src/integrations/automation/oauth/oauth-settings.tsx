@@ -1,9 +1,9 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { errorMessage, request, useResource } from "@/ui/api";
-import { Loading, Notice } from "@/ui/primitives";
-import { scopeDefinitions, type AutomationScope } from "../scopes";
+import { errorMessage, request } from "@/ui/api";
+import { Notice } from "@/ui/primitives";
+import { type AutomationScope } from "../scopes";
 import { ScopePicker } from "../ui/scope-picker";
 import { ReferenceOrigins } from "../ui/reference-origins";
 import {
@@ -18,20 +18,7 @@ import {
 } from "./oauth-issued-details";
 
 const endpoint = "/api/admin/integrations/automation/oauth";
-type OAuthClient = {
-  clientId: string;
-  name: string | null;
-  disabled: boolean;
-  redirectUris: string[];
-  scopes: string[];
-  sourceOrigins: string[];
-  authentication: string;
-};
-
-export function OAuthSettings() {
-  const { data, error, refresh } = useResource<{ clients: OAuthClient[] }>(
-    endpoint,
-  );
+export function OAuthSettings({ onManage }: { onManage: () => void }) {
   const [platform, setPlatform] = useState<OAuthPlatform>("chatgpt");
   const [setups, setSetups] = useState<Record<OAuthPlatform, OAuthSetup>>(
     () => ({
@@ -46,13 +33,11 @@ export function OAuthSettings() {
   const [issued, setIssued] = useState<IssuedOAuthClient>();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
-  const [receipt, setReceipt] = useState<string>();
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || issued) return;
     setBusy(true);
     setProblem(undefined);
-    setReceipt(undefined);
     try {
       setIssued(
         await request<IssuedOAuthClient>(endpoint, {
@@ -71,25 +56,6 @@ export function OAuthSettings() {
           }),
         }),
       );
-      refresh();
-    } catch (cause) {
-      setProblem(errorMessage(cause));
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function revoke(client: OAuthClient) {
-    if (busy) return;
-    setBusy(true);
-    setProblem(undefined);
-    try {
-      await request(endpoint, {
-        method: "DELETE",
-        body: JSON.stringify({ clientId: client.clientId }),
-      });
-      if (issued?.clientId === client.clientId) setIssued(undefined);
-      setReceipt(`Revoked ${client.name ?? "OAuth connection"}.`);
-      refresh();
     } catch (cause) {
       setProblem(errorMessage(cause));
     } finally {
@@ -112,8 +78,7 @@ export function OAuthSettings() {
           Sign in again
         </Link>
       </p>
-      {(problem || error) && <Notice>{problem || error}</Notice>}
-      {receipt && <Notice kind="success">{receipt}</Notice>}
+      {problem && <Notice>{problem}</Notice>}
       <form className="automation-form" onSubmit={create} hidden={!!issued}>
         <OAuthSetupFields
           platform={platform}
@@ -151,58 +116,11 @@ export function OAuthSettings() {
           onDone={() => setIssued(undefined)}
         />
       )}
-      <h3>Your OAuth connections</h3>
-      <p className="small muted">
-        Existing connections keep their original allowed actions. To add
-        actions, create a new connection with those permissions and reconnect
-        your AI app.
-      </p>
-      {error ? (
-        <button className="button button-outline" onClick={refresh}>
-          Reload OAuth connections
+      <p>
+        <button className="inline-button" onClick={onManage}>
+          Manage existing OAuth connections →
         </button>
-      ) : !data ? (
-        <Loading />
-      ) : !data.clients.length ? (
-        <p>No OAuth connections yet.</p>
-      ) : (
-        <ul className="automation-connections">
-          {data.clients.map((client) => (
-            <li key={client.clientId}>
-              <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-                <h4>{client.name ?? "OAuth connection"}</h4>
-                <p>{client.disabled ? "Revoked" : "Available for consent"}</p>
-                <p className="small muted">{client.redirectUris.join(" · ")}</p>
-                <details>
-                  <summary>{client.scopes.length} allowed actions</summary>
-                  <p>
-                    {client.scopes
-                      .map(
-                        (scope) =>
-                          scopeDefinitions[scope as AutomationScope]?.label ??
-                          scope,
-                      )
-                      .join(" · ")}
-                  </p>
-                  {client.sourceOrigins.length > 0 && (
-                    <p>{client.sourceOrigins.join(", ")}</p>
-                  )}
-                </details>
-              </div>
-              {!client.disabled && (
-                <button
-                  className="button button-outline"
-                  disabled={busy}
-                  aria-label={`Revoke OAuth ${client.name ?? "connection"}`}
-                  onClick={() => void revoke(client)}
-                >
-                  Revoke
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      </p>
     </section>
   );
 }

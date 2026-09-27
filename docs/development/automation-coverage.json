@@ -117,7 +117,7 @@
       "automation_project_prompt",
       "automation_review_prompt"
     ],
-    "manual": "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and approve actions; existing grants never widen automatically. Optional renewal and remembered consent avoid routine reapproval while current session and permission checks remain. New grants require recent sign-in. Publication needs an explicit grant, current authority, saved version and user request. Transport switches and applying operational proposals are never tools."
+    "manual": "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and approve actions; existing grants never widen automatically. OAuth connection owners can edit permissions with recent sign-in and revision checks, revoking tokens and requiring fresh consent while keeping client credentials. Activity review and permission editing are cookie-authenticated administration only, never tools or delegated REST operations. Optional renewal and remembered consent avoid routine reapproval while current session and permission checks remain. Publication needs an explicit grant, current authority, saved version and user request. Transport switches and applying operational proposals are never tools."
   },
   "integrations/email": {
     "operations": [],

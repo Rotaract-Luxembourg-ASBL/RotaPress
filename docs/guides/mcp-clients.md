@@ -43,8 +43,8 @@ depend on the chosen client's account and settings.
 
 New actions require new grants. Existing connections do not gain `website:manage`,
 `website:settings`, `calendar:write`, `calendar:design`, project actions or publication
-grants after an upgrade. Create a new connection with the needed actions and complete fresh OAuth consent, or issue
-a new MCP access key. When an OAuth request omits `scope`, it uses the actions
+grants after an upgrade. Edit OAuth permissions under **MCP → Existing connections**
+and complete fresh consent, or issue a new MCP access key. When an OAuth request omits `scope`, it uses the actions
 registered for that connection, subject to consent and current staff permissions.
 Explicit requested subsets stay narrow: a client requesting only `website:read`
 will not receive write access even when the registered connection allows it.

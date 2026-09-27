@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { oauthClient, oauthConsent } from "../../../../db/schema/oauth";
 import { auth } from "@/core/auth/server";
@@ -21,8 +21,12 @@ import {
   oauthClientMetadata,
   oauthConsentInput,
   oauthScopeList,
+  oauthPermissionsInput,
   validOAuthRedirect,
 } from "./policy";
+import { replaceOAuthPermissions } from "./permission_store";
+import { connectionHistory, recentConnectionActivity } from "./activity";
+import { withOAuthGrantLock } from "./grant_lock";
 
 export class OAuthConnections {
   constructor(
@@ -128,6 +132,12 @@ export class OAuthConnections {
       .where(eq(oauthClient.userId, actor.userId))
       .orderBy(desc(oauthClient.createdAt))
       .limit(100);
+    const history = await connectionHistory(
+      this.db,
+      access.organizationId,
+      actor.userId,
+      clients.map((client) => client.clientId),
+    );
     return clients.flatMap((client) => {
       const metadata = oauthClientMetadata.safeParse(client.metadata);
       if (
@@ -135,6 +145,13 @@ export class OAuthConnections {
         metadata.data.organizationId !== access.organizationId
       )
         return [];
+      const consent = history.consents.find(
+        (item) => item.clientId === client.clientId,
+      );
+      const lastUsedAt =
+        history.latest.find(
+          (item) => item.targetId === `oauth:${client.clientId}`,
+        )?.at ?? null;
       return [
         {
           clientId: client.clientId,
@@ -147,24 +164,91 @@ export class OAuthConnections {
           sourceOrigins: metadata.data.sourceOrigins,
           createdAt: client.createdAt,
           authentication: client.authentication,
+          permissionsRevision: metadata.data.permissionsRevision ?? "initial",
+          approvedScopes: (consent?.scopes ?? []).filter(
+            (scope) => automationScopeSchema.safeParse(scope).success,
+          ),
+          consentedAt: consent?.at ?? null,
+          lastUsedAt,
         },
       ];
     });
   }
 
   async revoke(actor: TrustedActor, headers: Headers, clientId: string) {
-    const client = await this.ownedClient(actor, clientId);
-    await auth.api.deleteOAuthClient({
-      headers,
-      body: { client_id: clientId },
+    return withOAuthGrantLock(this.db, async (tx) => {
+      const client = await this.ownedClient(actor, clientId);
+      await auth.api.deleteOAuthClient({
+        headers,
+        body: { client_id: clientId },
+      });
+      await this.audit(
+        actor,
+        client.metadata.organizationId,
+        "automation.oauth.revoked",
+        clientId,
+        tx,
+      );
+      return { revoked: true };
     });
-    await this.audit(
-      actor,
+  }
+
+  async activity(actor: TrustedActor, clientId: string) {
+    const client = await this.ownedClient(actor, clientId);
+    return recentConnectionActivity(
+      this.db,
       client.metadata.organizationId,
-      "automation.oauth.revoked",
+      actor.userId,
       clientId,
     );
-    return { revoked: true };
+  }
+
+  async updatePermissions(actor: TrustedActor, input: unknown) {
+    await this.authorization.require(actor, "integrations.manage");
+    this.authorization.requireRecent(actor);
+    const parsed = oauthPermissionsInput.parse(input);
+    return withOAuthGrantLock(this.db, async (tx) => {
+      const client = await this.ownedClient(actor, parsed.clientId);
+      if (
+        (client.metadata.permissionsRevision ?? "initial") !==
+        parsed.expectedRevision
+      )
+        throw new DomainError(
+          "OAUTH_PERMISSIONS_CHANGED",
+          "Permissions changed in another tab. Reload this connection before saving again.",
+          409,
+        );
+      await this.checkScopes(actor, parsed.scopes);
+      if (
+        parsed.scopes.includes("sources:read") &&
+        !parsed.sourceOrigins.length
+      )
+        throw new DomainError(
+          "SOURCE_ORIGIN_REQUIRED",
+          "Choose the reference websites this connection may read.",
+          422,
+        );
+      const scopes = [...new Set(parsed.scopes)];
+      const sourceOrigins = scopes.includes("sources:read")
+        ? [...new Set(parsed.sourceOrigins)]
+        : [];
+      const revision = await replaceOAuthPermissions(parsed.clientId, scopes, {
+        ...client.metadata,
+        sourceOrigins,
+      });
+      await this.audit(
+        actor,
+        client.metadata.organizationId,
+        "automation.oauth.permissions_updated",
+        parsed.clientId,
+        tx,
+      );
+      return {
+        saved: true,
+        permissionsRevision: revision,
+        reconnectRequired: true,
+      };
+    });
   }
 
   async details(actor: TrustedActor, headers: Headers, signedQuery: string) {
@@ -213,38 +297,30 @@ export class OAuthConnections {
       resource: automationResource,
       approvedScopes,
       recentlyAuthenticated,
+      permissionsRevision: client.metadata.permissionsRevision ?? "initial",
     };
   }
 
   async consent(actor: TrustedActor, headers: Headers, input: unknown) {
     const parsed = oauthConsentInput.parse(input);
-    const details = await this.details(actor, headers, parsed.oauth_query);
-    if (
-      parsed.scopes.some((scope) => !details.scopes.includes(scope)) ||
-      (parsed.accept &&
-        !parsed.scopes.some((scope) => scope !== "offline_access"))
-    )
-      throw new DomainError(
-        "OAUTH_SCOPE_INVALID",
-        "Select at least one requested action, or cancel this connection.",
-        422,
-      );
     await this.limiter.consume("oauth-consent", actor.userId, 20);
-    return this.db.transaction(async (tx) => {
-      // The provider writes through its own connection. Hold an advisory lock,
-      // not a row lock, across the current-grant check and that provider write.
-      // Only one consent write may hold a connection; other attempts can retry.
-      // This reserves pooled capacity for the provider's independent queries.
-      const locked = await tx.execute<{ acquired: boolean }>(sql`
-        SELECT pg_try_advisory_xact_lock(hashtextextended(
-          ${`oauth-consent:${config.APP_URL}`}, 0
-        )) AS acquired
-      `);
-      if (!locked.rows[0]?.acquired)
+    return withOAuthGrantLock(this.db, async (tx) => {
+      const details = await this.details(actor, headers, parsed.oauth_query);
+      if (parsed.expectedRevision !== details.permissionsRevision)
         throw new DomainError(
-          "OAUTH_CONSENT_BUSY",
-          "Another connection approval is being saved. Try again.",
+          "OAUTH_PERMISSIONS_CHANGED",
+          "This connection's permissions changed. Reload and review them before approving.",
           409,
+        );
+      if (
+        parsed.scopes.some((scope) => !details.scopes.includes(scope)) ||
+        (parsed.accept &&
+          !parsed.scopes.some((scope) => scope !== "offline_access"))
+      )
+        throw new DomainError(
+          "OAUTH_SCOPE_INVALID",
+          "Select at least one requested action, or cancel this connection.",
+          422,
         );
       const consent = await this.currentConsent(actor, details.clientId, tx);
       const approved = consent?.resources?.includes(automationResource)

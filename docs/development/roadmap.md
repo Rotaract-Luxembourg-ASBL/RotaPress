@@ -65,7 +65,10 @@ overrides in Advanced; it does not discover arbitrary platforms or account callb
 Native page schemas and templates let assistants prepare website and event drafts.
 Additional actions cover page copies, languages, revision restoration,
 draft menus/appearance, calendars, recurring activities and calendar page design.
-Existing connections require fresh registration and consent for these grants.
+OAuth connections have a separate **Existing connections** tab with editable
+permissions/reference origins, saved-consent status and recent tool activity.
+Permission changes preserve client credentials, invalidate existing tokens and
+require fresh consent; access keys still require replacement for new grants.
 Bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them. Separate grants allow explicitly requested publication of exact

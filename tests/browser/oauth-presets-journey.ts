@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { capture } from "./integration-credentials-journey";
+import { revokeOAuthConnection } from "./oauth-connections-journey";
 
 /** Registers local clients only. No browser is sent to a real provider callback. */
 export async function oauthPresetsJourney(owner: Page) {
@@ -17,11 +18,9 @@ export async function oauthPresetsJourney(owner: Page) {
   await expect(app).toHaveValue("chatgpt");
   await expect(callbacks).toBeHidden();
   await capture(owner, "mcp-platforms");
-  await owner
-    .context()
-    .grantPermissions(["clipboard-write"], {
-      origin: new URL(owner.url()).origin,
-    });
+  await owner.context().grantPermissions(["clipboard-write"], {
+    origin: new URL(owner.url()).origin,
+  });
   for (const [platform, name, redirect] of [
     [
       "chatgpt",
@@ -101,12 +100,8 @@ export async function oauthPresetsJourney(owner: Page) {
         scopes: ["website:read"],
       },
     );
-    await panel
-      .getByRole("button", { name: `Revoke OAuth ${name}`, exact: true })
-      .click();
-    await expect(
-      panel.getByText(`Revoked ${name}.`, { exact: true }),
-    ).toBeVisible();
+    await revokeOAuthConnection(owner, name);
+    await owner.getByRole("tab", { name: "Connections", exact: true }).click();
   }
   await app.selectOption("chatgpt");
   await advanced.click();

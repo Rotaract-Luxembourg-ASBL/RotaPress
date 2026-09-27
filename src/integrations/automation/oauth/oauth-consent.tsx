@@ -17,6 +17,7 @@ export function OAuthConsent({
     recentlyAuthenticated: boolean;
     sourceOrigins: string[];
     redirectUri: string;
+    permissionsRevision: string;
   };
 }) {
   const [selected, setSelected] = useState(details.scopes);
@@ -37,6 +38,7 @@ export function OAuthConsent({
           method: "POST",
           body: JSON.stringify({
             oauth_query: signedQuery,
+            expectedRevision: details.permissionsRevision,
             accept,
             scopes: selected,
           }),

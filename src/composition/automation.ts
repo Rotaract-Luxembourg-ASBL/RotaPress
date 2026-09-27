@@ -8,6 +8,7 @@ import { OAuthConnections } from "@/integrations/automation/oauth/OAuthConnectio
 import { OAuthAccess } from "@/integrations/automation/oauth/OAuthAccess";
 import { AutomationAvailability } from "@/integrations/automation/AutomationAvailability";
 import type { AutomationTransport } from "@/integrations/automation/availability_schemas";
+import { AuditRepository } from "@/core/audit/AuditRepository";
 
 export const automationAvailability = new AutomationAvailability(
   db,
@@ -54,9 +55,19 @@ export async function automationContext(
     );
     return principal;
   };
+  const principal = await authenticate(true);
   return {
     services,
-    principal: await authenticate(true),
+    principal,
+    recordActivity: principal.keyId.startsWith("oauth:")
+      ? (operation: string, outcome: "succeeded" | "failed") =>
+          new AuditRepository().record(db, {
+            organizationId: principal.organizationId,
+            actorUserId: principal.actor.userId,
+            targetId: principal.keyId,
+            action: `automation.tool.${outcome}.${operation}`,
+          })
+      : undefined,
     reauthorize: () => authenticate(false),
     imports: contentImports,
     sources,

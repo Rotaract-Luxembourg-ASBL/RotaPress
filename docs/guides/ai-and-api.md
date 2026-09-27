@@ -62,9 +62,12 @@ authorize or renew access. See
 [OAuth expiry and revocation](automation-oauth.md#permissions-expiry-and-revocation).
 
 Existing connections keep their original grants when new actions become available.
-To use broader website, project or calendar actions, create a new OAuth connection, MCP
-access key or REST token with those actions selected. Reconnect and approve the
-new OAuth consent when applicable; simply upgrading RotaPress does not add access.
+To change OAuth permissions, open **MCP → Existing connections → Permissions**.
+Saving stops current access and requires fresh consent from your AI app while
+keeping the same client ID and secret. This tab also shows recent tool activity.
+MCP access keys and REST tokens require a new key/token with the desired actions.
+Simply upgrading RotaPress does not add access. See
+[connection management](automation-oauth.md#manage-existing-connections).
 If an OAuth client omits `scope`, the request uses that registered connection's
 allowed actions and still needs an applicable consent. An explicit subset such as
 `website:read` remains read-only; RotaPress never expands it automatically.

@@ -127,23 +127,30 @@ export async function executeOperation(
       "This operation is unavailable.",
       404,
     );
-  if (operation.scope && !context.principal.scopes.includes(operation.scope))
-    throw new DomainError(
-      "AUTOMATION_SCOPE_REQUIRED",
-      `This connection needs ${operation.scope}.`,
-      403,
+  try {
+    if (operation.scope && !context.principal.scopes.includes(operation.scope))
+      throw new DomainError(
+        "AUTOMATION_SCOPE_REQUIRED",
+        `This connection needs ${operation.scope}.`,
+        403,
+      );
+    const current = await context.services.authorization.require(
+      context.principal.actor,
+      operation.scope
+        ? scopeDefinitions[operation.scope].capability
+        : "admin.access",
     );
-  const current = await context.services.authorization.require(
-    context.principal.actor,
-    operation.scope
-      ? scopeDefinitions[operation.scope].capability
-      : "admin.access",
-  );
-  if (current.organizationId !== context.principal.organizationId)
-    throw new DomainError(
-      "AUTOMATION_ORGANIZATION_CHANGED",
-      "Create a connection for the current club.",
-      403,
-    );
-  return operation.run(context, input);
+    if (current.organizationId !== context.principal.organizationId)
+      throw new DomainError(
+        "AUTOMATION_ORGANIZATION_CHANGED",
+        "Create a connection for the current club.",
+        403,
+      );
+    const result = await operation.run(context, input);
+    await context.recordActivity?.(operation.name, "succeeded");
+    return result;
+  } catch (error) {
+    await context.recordActivity?.(operation.name, "failed");
+    throw error;
+  }
 }

@@ -88,6 +88,40 @@ URL on your computer is not reachable from ChatGPT's or Claude's hosted service.
 Configure public HTTPS and any proxy according to the [hosting guide](hosting.md),
 then verify the connection with the actual client and account you intend to use.
 
+## Manage existing connections
+
+Open **Integrations → MCP → Existing connections**. This tab lists the latest
+100 OAuth connections registered by your account. Search by name or callback
+website. Each row shows allowed actions, approved actions, consent status and the
+last recorded tool call. **Consent saved** means you approved access; it does not
+prove the assistant is currently connected or that its staff session is valid.
+
+- **Permissions** shows the saved allowed actions and the actions approved during
+  consent. Change the grouped action selection and approved reference websites,
+  then choose **Save permissions**. A sign-in within 15 minutes is required.
+- Saving stops current access, revokes existing access and refresh tokens, clears
+  remembered consent and retains the same client ID, secret and callbacks.
+  Reconnect from your AI app and review consent again. New actions never appear
+  automatically after an application upgrade. If the app requests an explicit
+  subset, update that selection in the app too.
+- **Activity** shows the latest 30 recorded creation, approval, permission-change
+  and tool events, with timestamps and completed/failed outcomes. Tool history
+  starts with this feature; older calls cannot be reconstructed. Prompts, request
+  arguments, responses, tokens and secrets are not stored in this history.
+- **Connection details** shows the creation date, client ID, callbacks and
+  authentication method. The original secret cannot be retrieved here.
+- Use the row's **More options → Revoke connection** to review and confirm
+  removal. This deletes the registration and its token records, so reconnecting
+  afterward requires a new connection. Club content is preserved.
+
+Unsaved permissions survive switching between the connection's sections. Closing
+asks whether to discard changes. Failed saves keep your edits. If another tab
+saves first, reload the current permissions before trying again.
+
+MCP access keys remain under **Connections → MCP access key**; their permissions
+are replaced by issuing a new key. Only the account that registered an OAuth
+connection can view its activity, edit it or revoke it.
+
 ## Permissions, expiry and revocation
 
 - A client that omits `scope` requests the actions selected when its connection
@@ -95,9 +129,9 @@ then verify the connection with the actual client and account you intend to use.
   An explicitly requested subset stays narrow. Empty or repeated scope parameters
   are rejected. RotaPress no longer forces every new connection to request only
   website reading.
-- Existing connections retain their original allowed actions. To add publication,
-  calendar management, website settings or other new actions, create a connection with those
-  actions and reconnect the assistant. Check `automation_capabilities` afterward.
+- Existing connections retain their original allowed actions. Add or remove
+  actions in **Existing connections → Permissions**, save and reconnect the
+  assistant with fresh consent. Check `automation_capabilities` afterward.
 - Access tokens expire after five minutes. With **Keep connected**, the client
   renews them using rotating refresh tokens instead of asking you to connect
   again. Refresh tokens last up to seven days and require the originating staff
@@ -112,7 +146,7 @@ then verify the connection with the actual client and account you intend to use.
 - Sign-out, session expiry, membership suspension, changed staff authentication
   policy, removed capabilities and revoked connections are checked on the server.
   A linked Google account does not substitute for a current Google session.
-- **Revoke** in **Your OAuth connections** removes the registered client and its
+- **Revoke connection** in **Existing connections** removes the registered client and its
   token records. The assistant must connect with a new registration afterward.
 - Disabling **MCP** blocks authorization, consent, token exchange and renewal, as
   well as MCP operations. Administrators can still configure and revoke clients.

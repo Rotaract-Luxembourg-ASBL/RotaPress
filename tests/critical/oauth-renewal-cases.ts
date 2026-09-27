@@ -5,7 +5,7 @@ import type { TrustedActor } from "../../src/core/authorization/AuthorizationSer
 import type { OAuthAccess } from "../../src/integrations/automation/oauth/OAuthAccess";
 import type { OAuthConnections } from "../../src/integrations/automation/oauth/OAuthConnections";
 
-type RenewalContext = {
+export type RenewalContext = {
   pool: Pool;
   connections: OAuthConnections;
   access: OAuthAccess;

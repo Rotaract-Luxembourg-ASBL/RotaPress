@@ -93,6 +93,18 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   without replacing resource policy. It does not update registered client scopes
   or consent. Omitted authorization scope defaults only to that client's registered
   selection; explicit subsets and existing credential limits remain narrow.
+- Existing-client permission edits are a cookie-authenticated administration
+  workflow, never REST automation operations or MCP tools. Require current client
+  ownership, organization/capabilities, recent sign-in and an expected permission
+  revision. The provider's transactional adapter saves only scopes/reference
+  metadata, revokes access/refresh tokens (including cached rotation responses)
+  and removes consent together. Credentials and callback settings stay intact.
+  Consent, token exchange, edits and revocation share an advisory lock; a consent
+  page from an earlier permission revision cannot approve unseen changes.
+- OAuth tool activity records only known operation names, outcome, time and
+  trusted account/connection identifiers in the existing audit log. The owner-only
+  view returns 30 recent entries, never arguments, content, secrets or participant
+  data. Historical tool calls before this feature are unavailable.
 - Every tool is also a registered REST operation. MCP annotations are hints, not
   permissions. Unknown operations, extra fields and missing scopes fail closed.
 - Recheck connection identity, grants, current resource access and expected state
@@ -104,7 +116,7 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 - Publication grants are separate from draft writes: `website:publish`,
   `calendar:publish`, `forms:publish`, `events:publish`, `projects:publish` and
   `directory:publish`.
-  Existing credentials retain their grants; new OAuth registration and consent or
+  Existing credentials retain their grants; explicit OAuth permission edits and fresh consent or
   a newly issued key are required to add them.
 - Each operation requires strict `confirmed: true` and the exact current saved
   revision/version. Reuse domain authorization, readiness, private-media and

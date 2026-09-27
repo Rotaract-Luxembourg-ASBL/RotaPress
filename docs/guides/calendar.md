@@ -60,7 +60,8 @@ in Website menus to link to the dedicated page.
 
 Enable Calendar and the desired integration, then select its calendar actions when
 creating an [MCP connection or REST token](ai-and-api.md). Existing connections keep
-their original grants; create a new one and approve fresh OAuth consent when needed.
+their original grants. Edit OAuth permissions in **MCP → Existing connections**
+and approve fresh consent, or issue a new access key/token when needed.
 
 - **Read calendars and activity schedules** (`calendar:read`) supplies saved drafts,
   published versions and current version numbers through `calendar_read`.

@@ -1,0 +1,120 @@
+.oauth-existing,
+.oauth-connection-editor {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+.oauth-existing-heading,
+.oauth-activity-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.oauth-existing-heading h2,
+.oauth-activity-heading h3 {
+  margin: 0 0 0.4rem;
+}
+.oauth-existing-heading p,
+.oauth-activity-heading p {
+  margin: 0;
+}
+.oauth-existing .admin-collection-description {
+  line-height: 1.7;
+}
+.oauth-existing .admin-collection-description > span {
+  font-size: 0.75rem;
+}
+.oauth-existing .admin-collection-actions {
+  flex-wrap: nowrap;
+}
+.oauth-existing .admin-collection-actions .button {
+  padding-inline: 0.6rem;
+}
+.oauth-save-messages:not(:empty) {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.oauth-existing .button,
+.oauth-connection-editor .button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.admin-dialog:has(.oauth-connection-editor) {
+  width: min(62rem, calc(100vw - 2rem));
+  max-width: none;
+}
+.oauth-connection-editor [role="tabpanel"] {
+  min-width: 0;
+}
+.oauth-consent-summary,
+.oauth-save-bar {
+  padding: 1rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+}
+.oauth-consent-summary p,
+.oauth-save-bar p {
+  margin: 0.5rem 0;
+}
+.oauth-consent-summary ul {
+  padding-left: 1.25rem;
+  margin-top: 0.75rem;
+}
+.oauth-save-bar {
+  display: grid;
+  gap: 0.5rem;
+}
+.oauth-activity-heading {
+  align-items: start;
+}
+.oauth-activity-heading > div {
+  flex: 1 1 20rem;
+}
+.oauth-activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+.oauth-activity-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+.oauth-activity-list > li > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.oauth-connection-details {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0 0 1rem;
+}
+.oauth-connection-details dt {
+  font-weight: 600;
+}
+.oauth-connection-details dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .admin-dialog:has(.oauth-connection-editor) {
+    padding: 1rem;
+    width: calc(100vw - 1rem);
+  }
+  .oauth-existing-heading > .button {
+    width: 100%;
+  }
+  .oauth-connection-editor .integration-tabs button {
+    padding-inline: 0.5rem;
+  }
+}

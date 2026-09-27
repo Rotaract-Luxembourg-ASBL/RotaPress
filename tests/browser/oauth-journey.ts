@@ -6,6 +6,10 @@ import { capture } from "./integration-credentials-journey";
 import { oauthPresetsJourney } from "./oauth-presets-journey";
 import { openOAuthFromAssistant } from "./oauth-navigation-journey";
 import { oauthManagementJourney } from "./oauth-management-journey";
+import {
+  oauthConnectionsJourney,
+  revokeOAuthConnection,
+} from "./oauth-connections-journey";
 
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
@@ -352,16 +356,8 @@ export async function oauthJourney(
     await expect(
       owner.getByRole("region", { name: "Test response" }).getByRole("status"),
     ).toHaveText("Request succeeded · HTTP 200");
-    await owner.goto("/admin/integrations/mcp");
-    await owner
-      .getByRole("button", {
-        name: "Revoke OAuth Synthetic OAuth assistant",
-        exact: true,
-      })
-      .click();
-    await expect(
-      owner.getByText("Revoked Synthetic OAuth assistant.", { exact: true }),
-    ).toBeVisible();
+    await oauthConnectionsJourney(owner, rotated.access_token);
+    await revokeOAuthConnection(owner, "Synthetic OAuth assistant");
     expect(
       (
         await remote.request.get("/api/mcp", {

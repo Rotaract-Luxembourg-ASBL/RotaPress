@@ -10,6 +10,7 @@ import type {
   AutomationTransport,
 } from "../availability_schemas";
 import { OAuthSettings } from "../oauth/oauth-settings";
+import { ExistingConnections } from "../oauth/existing-connections";
 import { TokenSettings } from "./token-settings";
 import { AutomationDocs } from "./automation-docs";
 import { ClientInstructions } from "./client-instructions";
@@ -29,7 +30,8 @@ export function AutomationWorkspace({
 }) {
   const rest = transport === "rest";
   const [tab, setTab] = useState(
-    initialTab === "docs" || (!rest && initialTab === "guide")
+    initialTab === "docs" ||
+      (!rest && (initialTab === "guide" || initialTab === "existing"))
       ? initialTab
       : "connections",
   );
@@ -42,6 +44,7 @@ export function AutomationWorkspace({
   const state = data?.items.find((item) => item.kind === transport);
   const tabs = [
     { id: "connections", label: rest ? "API tokens" : "Connections" },
+    ...(!rest ? [{ id: "existing", label: "Existing connections" }] : []),
     ...(!rest ? [{ id: "guide", label: "Setup guide" }] : []),
     {
       id: "docs",
@@ -197,7 +200,7 @@ export function AutomationWorkspace({
         )}
         {!rest && (
           <div hidden={method !== "oauth"}>
-            <OAuthSettings />
+            <OAuthSettings onManage={() => activate("existing")} />
           </div>
         )}
         <div hidden={!rest && method !== "key"}>
@@ -210,6 +213,23 @@ export function AutomationWorkspace({
           />
         </div>
       </div>
+      {!rest && (
+        <div
+          role="tabpanel"
+          id="integration-panel-existing"
+          aria-labelledby="integration-tab-existing"
+          hidden={tab !== "existing"}
+        >
+          {tab === "existing" && (
+            <ExistingConnections
+              onCreate={() => {
+                setMethod("oauth");
+                activate("connections");
+              }}
+            />
+          )}
+        </div>
+      )}
       {!rest && (
         <div
           role="tabpanel"

@@ -7,6 +7,8 @@ import { readBoundedBody } from "@/core/http";
 import { services } from "@/composition/services";
 import { oauthAccess, automationAvailability } from "@/composition/automation";
 import { automationResource } from "@/core/auth/automation_oauth";
+import { db } from "@/infrastructure/database/client";
+import { withOAuthGrantLock } from "./grant_lock";
 
 const tokenInput = z.strictObject({
   grant_type: z.enum(["authorization_code", "refresh_token"]),
@@ -123,15 +125,24 @@ export async function oauthProtocolRequest(
         ).toString(),
       });
     } else return problem("unsupported_operation", 404);
-    const response = await authenticationHandler(forwarded);
-    if (path === "/oauth2/token" && response.ok) {
-      const result = z
-        .object({ access_token: z.string() })
-        .safeParse(await response.clone().json());
-      if (!result.success) return problem("invalid_grant");
-      // A valid OAuth exchange cannot escape current club/session policy, including refresh.
-      await oauthAccess.authenticate(result.data.access_token, false);
-    }
+    const exchange = async () => {
+      const response = await authenticationHandler(forwarded);
+      if (path === "/oauth2/token" && response.ok) {
+        const result = z
+          .object({ access_token: z.string() })
+          .safeParse(await response.clone().json());
+        if (!result.success) return problem("invalid_grant");
+        // A valid OAuth exchange cannot escape current club/session policy, including refresh.
+        await oauthAccess.authenticate(result.data.access_token, false);
+      }
+      return response;
+    };
+    // A refresh in flight cannot issue usable replacement tokens across a
+    // permission change or recreate the old grant after it has been revoked.
+    const response =
+      path === "/oauth2/token"
+        ? await withOAuthGrantLock(db, exchange)
+        : await exchange();
     const resultHeaders = new Headers(response.headers);
     resultHeaders.set("Cache-Control", "no-store, private");
     resultHeaders.set("Pragma", "no-cache");

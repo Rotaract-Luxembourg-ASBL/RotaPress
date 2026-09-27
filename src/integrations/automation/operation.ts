@@ -13,6 +13,10 @@ export type AutomationContext = {
   sources: ReferenceWebsiteClient;
   /** Recheck the connection after expensive work, before releasing private data. */
   reauthorize?: () => Promise<AutomationPrincipal>;
+  recordActivity?: (
+    operation: string,
+    outcome: "succeeded" | "failed",
+  ) => Promise<void>;
 };
 export type Operation = {
   name: string;

@@ -4,6 +4,7 @@ import { parseEnv } from "node:util";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { oauthRenewalChecks } from "./oauth-renewal-cases";
+import { oauthConnectionChecks } from "./oauth-connection-cases";
 
 const delivery = vi.hoisted(() => ({ code: "" }));
 vi.mock("@/composition/email", async (original) => ({
@@ -215,6 +216,7 @@ async function authorize(
   expect(details.scopes).toEqual(expectedScopes);
   const result = await connections.consent(actor, headers, {
     oauth_query: signed,
+    expectedRevision: details.permissionsRevision,
     accept: true,
     scopes: selectedScopes,
   });
@@ -235,6 +237,19 @@ async function exchange(input: Record<string, string>) {
 }
 
 oauthRenewalChecks(() => ({
+  pool: migrationPool,
+  connections,
+  access,
+  actor,
+  headers,
+  origin,
+  resource,
+  protocol,
+  authorize,
+  exchange,
+}));
+
+oauthConnectionChecks(() => ({
   pool: migrationPool,
   connections,
   access,

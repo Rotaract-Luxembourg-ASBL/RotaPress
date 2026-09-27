@@ -9,8 +9,24 @@ async function actor(request: Request) {
   return result;
 }
 export function GET(request: Request) {
+  return handle(async () => {
+    const current = await actor(request);
+    const clientId = new URL(request.url).searchParams.get("clientId");
+    return json(
+      clientId
+        ? { activities: await oauthConnections.activity(current, clientId) }
+        : { clients: await oauthConnections.list(current) },
+    );
+  });
+}
+export function PATCH(request: Request) {
   return handle(async () =>
-    json({ clients: await oauthConnections.list(await actor(request)) }),
+    json(
+      await oauthConnections.updatePermissions(
+        await actor(request),
+        await readMutation(request, 8192),
+      ),
+    ),
   );
 }
 export function POST(request: Request) {

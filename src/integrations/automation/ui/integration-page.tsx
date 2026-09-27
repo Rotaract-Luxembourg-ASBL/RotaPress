@@ -7,6 +7,7 @@ import { operationCatalogue, contractVersion } from "../catalogue";
 import type { AutomationTransport } from "../availability_schemas";
 import { AutomationWorkspace } from "./automation-workspace";
 import "./workspace.css";
+import "../oauth/connections.css";
 import "@/app/admin/integrations/automation/docs/docs.css";
 
 export async function IntegrationPage({
