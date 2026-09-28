@@ -49,6 +49,13 @@ registered for that connection, subject to consent and current staff permissions
 Explicit requested subsets stay narrow: a client requesting only `website:read`
 will not receive write access even when the registered connection allows it.
 
+After granting additional actions, refresh the AI app's imported tool list and
+start a new conversation. A live `automation_capabilities` response can include
+write operations while the app still exposes its old read-only tools. For ChatGPT,
+open the RotaPress connection in **Plugins**, select **Refresh**, verify the needed
+tools appear, then open the new conversation. See
+[approved permissions but missing tools](automation-oauth.md#approved-permissions-but-missing-tools).
+
 ## Claude Code and Codex
 
 Claude Code's `.mcp.json` can reference a protected environment variable:

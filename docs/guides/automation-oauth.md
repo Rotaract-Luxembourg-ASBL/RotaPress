@@ -43,7 +43,10 @@ use the same permissions, private drafts and deliberate publication rules as the
    repeated sign-in. Uncheck it if you only want a short connection without renewal.
    Publication has separate actions: grant them only if you want to request
    publication through this assistant. Draft-writing permission alone cannot publish.
-6. Select **Allow selected actions**. Return to the assistant and start with a
+6. Select **Allow selected actions**. If you expanded an existing connection's
+   permissions, refresh its tool list in the assistant and start a new conversation
+   as described under [approved permissions but missing tools](#approved-permissions-but-missing-tools).
+   Return to the assistant and start with a
    bounded request, such as preparing one private event and its page. Review the
    returned drafts and visual previews before publication.
 
@@ -272,10 +275,45 @@ Repeated prompts can come from different places:
 
 If the popup shows only **Read website content** after selecting more permissions
 in RotaPress, the app requested a narrower grant. Use **Review all allowed actions**
-in that popup, approve the intended actions, then refresh the app's tool list or
+in that popup, approve the intended actions, then refresh the app's tool list and
 start a new conversation if it cached the old tools. Check `automation_capabilities`
 to see the actual issued grant. A client that independently restricts its scopes
 may also need its own scope selection updated.
+
+### Approved permissions but missing tools
+
+An assistant can have a valid token with write permissions while still using a
+tool list imported when the connection was read-only. Reconnecting and approving
+more actions does not prove the AI app refreshed that list. **Consent saved** in
+RotaPress records your approval; RotaPress cannot inspect the tools loaded into
+another app's conversation.
+
+Ask the assistant to call `automation_capabilities` and compare its `grantedScopes`
+and `operations` with the tools it can actually call. For example, `calendar:write`
+and `calendar_create` in the live response establish that the connection permits
+calendar creation, even if the assistant has no calendar tool available. The
+calendar feature being enabled alone does not establish permission.
+
+For a ChatGPT connection created in developer mode:
+
+1. Open **Plugins** in ChatGPT and select your RotaPress connection.
+2. Select **Refresh** to import the current tools and their descriptions.
+3. Check that the needed tools, such as `calendar_read` and `calendar_create`,
+   appear in the connection's action list.
+4. Start a **new conversation**, select the RotaPress plugin, and retry the task.
+
+These are separate steps: starting a new chat alone can reuse the old imported
+list, while refreshing the connection does not replace tools already loaded into
+an existing chat. See OpenAI's [connection refresh instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt#refresh-metadata).
+Published plugins follow their publisher's tool-update review process instead.
+
+If the refreshed action list is still incomplete, check the AI app's selected
+actions and workspace restrictions, then inspect its tool-import errors. If the
+live capability response itself lacks the required scope, return to RotaPress
+permissions and fresh consent. Do not keep saving or recreating a connection whose
+live grant is already correct; saving permissions revokes its current tokens.
+
+### Other connection problems
 
 If the AI app asks to reconnect after every action, confirm that **Keep connected**
 was approved and that the app stores and uses the latest rotated refresh token.
