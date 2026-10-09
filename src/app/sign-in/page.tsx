@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SignInForm } from "@/ui/sign-in-form";
-import { PublishedSiteShell } from "@/ui/published-site-shell";
 import { services } from "@/composition/services";
 import { googleAuthStore } from "@/core/auth/google_configuration";
 import { signInDestination } from "@/core/auth/sign_in_destination";
@@ -15,16 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; reauth?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, reauth } = await searchParams;
   if (!(await services.installation.isComplete())) {
     return <SignInForm setup googleError={Boolean(error)} />;
   }
   const policy = await services.organization.signInPolicy();
   const returnTo = signInDestination(next ?? null);
+  const club = await services.organization.publicIdentity();
   if (policy.googleOnly) {
-    const club = await services.organization.publicIdentity();
     const google = await googleAuthStore.current();
     return (
       <SignInForm
@@ -34,17 +33,19 @@ export default async function SignInPage({
         hostedDomain={google.hostedDomain}
         clubName={club?.name}
         returnTo={returnTo}
+        reauth={reauth === "1"}
         brand={club ? <PublishedClubBrand club={club} /> : undefined}
       />
     );
   }
   return (
-    <PublishedSiteShell>
-      <SignInForm
-        googleError={Boolean(error)}
-        appearance={policy.appearance}
-        returnTo={returnTo}
-      />
-    </PublishedSiteShell>
+    <SignInForm
+      googleError={Boolean(error)}
+      appearance={policy.appearance}
+      clubName={club?.name}
+      returnTo={returnTo}
+      reauth={reauth === "1"}
+      brand={club ? <PublishedClubBrand club={club} /> : undefined}
+    />
   );
 }

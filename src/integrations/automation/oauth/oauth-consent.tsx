@@ -1,16 +1,31 @@
 "use client";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Notice } from "@/ui/primitives";
 import { ApiError, errorMessage, request } from "@/ui/api";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
 import { readOnlyScopes } from "../permission_context";
 
+const actionGroups = [
+  { prefix: "website:", name: "Website" },
+  { prefix: "media:", name: "Images" },
+  { prefix: "projects:", name: "Projects" },
+  { prefix: "events:", name: "Events" },
+  { prefix: "forms:", name: "Forms" },
+  { prefix: "directory:", name: "Directory" },
+  { prefix: "calendar:", name: "Calendar" },
+  { prefix: "sources:", name: "Reference websites" },
+];
+
+type PendingAction = "review" | "allow" | "cancel";
+
 export function OAuthConsent({
   signedQuery,
   details,
+  clubName,
 }: {
   signedQuery: string;
+  clubName: string;
   details: {
     name: string;
     scopes: string[];
@@ -24,13 +39,17 @@ export function OAuthConsent({
   };
 }) {
   const [selected, setSelected] = useState(details.scopes);
+  const [pending, setPending] = useState<PendingAction>();
+  const [error, setError] = useState<string>();
+  const [signInRequired, setSignInRequired] = useState(false);
+  const [reloadRequired, setReloadRequired] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const labelPrefix = useId();
+  const busy = pending !== undefined;
   const needsSignIn =
     details.identityConfirmationRequired ||
     (!details.recentlyAuthenticated &&
       selected.some((scope) => !details.approvedScopes.includes(scope)));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
-  const [signInRequired, setSignInRequired] = useState(false);
   const actions = details.scopes.filter((scope) => scope !== "offline_access");
   const allowedActions = details.allowedScopes.filter(
     (scope) => scope !== "offline_access",
@@ -39,8 +58,47 @@ export function OAuthConsent({
     (scope) => scope !== "offline_access",
   );
   const readOnly = readOnlyScopes(selectedActions);
+  const publication = selectedActions.some((scope) =>
+    scope.endsWith(":publish"),
+  );
+  const callbackHost = URL.canParse(details.redirectUri)
+    ? new URL(details.redirectUri).host
+    : details.redirectUri;
+  const groups = actionGroups
+    .map((group) => ({
+      ...group,
+      scopes: actions.filter((scope) => scope.startsWith(group.prefix)),
+    }))
+    .filter((group) => group.scopes.length > 0);
+  const otherScopes = actions.filter(
+    (scope) => !actionGroups.some((group) => scope.startsWith(group.prefix)),
+  );
+  if (otherScopes.length)
+    groups.push({
+      prefix: "other",
+      name: "Other actions",
+      scopes: otherScopes,
+    });
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.focus();
+      errorRef.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [error]);
+
+  function failed(cause: unknown) {
+    setError(errorMessage(cause));
+    if (cause instanceof ApiError && cause.status === 401)
+      setSignInRequired(true);
+    if (cause instanceof ApiError && cause.status === 409)
+      setReloadRequired(true);
+    setPending(undefined);
+  }
+
   async function reviewAllowed() {
-    setBusy(true);
+    if (busy) return;
+    setPending("review");
     setError(undefined);
     try {
       const result = await request<{ url: string }>(
@@ -55,15 +113,13 @@ export function OAuthConsent({
       );
       window.location.assign(result.url);
     } catch (cause) {
-      setError(errorMessage(cause));
-      if (cause instanceof ApiError && cause.status === 401)
-        setSignInRequired(true);
-      setBusy(false);
+      failed(cause);
     }
   }
+
   async function submit(accept: boolean) {
     if (busy) return;
-    setBusy(true);
+    setPending(accept ? "allow" : "cancel");
     setError(undefined);
     try {
       const result = await request<{ url: string }>(
@@ -80,165 +136,285 @@ export function OAuthConsent({
       );
       window.location.assign(result.url);
     } catch (cause) {
-      setError(errorMessage(cause));
-      // A session can age or end while this consent page is open. Keep recovery
-      // available even when the original server-rendered details were current.
-      if (cause instanceof ApiError && cause.status === 401)
-        setSignInRequired(true);
-      setBusy(false);
+      failed(cause);
     }
   }
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submit(true);
   }
+
+  function toggle(scope: string, checked: boolean) {
+    setSelected((current) =>
+      checked
+        ? current.includes(scope)
+          ? current
+          : [...current, scope]
+        : current.filter((value) => value !== scope),
+    );
+  }
+
   return (
     <section
       className="oauth-consent-card"
       aria-labelledby="oauth-consent-title"
+      aria-busy={busy}
     >
+      <ol className="oauth-consent-progress" aria-label="Connection progress">
+        <li>
+          <span aria-hidden="true">1</span> Sign in
+        </li>
+        <li aria-current="step">
+          <span aria-hidden="true">2</span> Review access
+        </li>
+        <li>
+          <span aria-hidden="true">3</span> Return to app
+        </li>
+      </ol>
       <header className="oauth-consent-heading">
-        <p className="eyebrow">AI connection</p>
+        <p className="eyebrow">Review permissions</p>
         <h1 id="oauth-consent-title">
           Allow {details.name} to help your club?
         </h1>
+        <p>
+          Choose what this app can do. Only the actions you select are granted.
+        </p>
       </header>
-      <p>
-        Choose what this AI client may do. Only the selected actions are
-        granted. Publishing needs its own permission and your explicit request.
-        Participant operations are unavailable.
-      </p>
-      <p>
-        Access follows your current staff permissions and ends when you sign
-        out, your session expires, or you revoke the connection.
-      </p>
-      {error && <Notice>{error}</Notice>}
+      <div className="oauth-consent-connection" aria-label="Connection details">
+        <div>
+          <span>AI app</span>
+          <strong>{details.name}</strong>
+        </div>
+        <span aria-hidden="true">→</span>
+        <div>
+          <span>Club</span>
+          <strong>{clubName}</strong>
+        </div>
+      </div>
+      {error && (
+        <div ref={errorRef} tabIndex={-1} className="oauth-consent-error">
+          <Notice>
+            <strong>{error}</strong>
+            <p>Your action selections have been kept.</p>
+            {reloadRequired && (
+              <button
+                type="button"
+                className="inline-button"
+                onClick={() => window.location.reload()}
+              >
+                Reload and review permissions
+              </button>
+            )}
+          </Notice>
+        </div>
+      )}
       {actions.length < allowedActions.length && (
         <aside
-          className="oauth-consent-permissions"
+          className="oauth-consent-request"
           aria-label="Permission request"
         >
-          <strong>
-            The app requested {actions.length} of {allowedActions.length}{" "}
-            allowed actions.
-          </strong>
-          <p>
-            Your connection allows more than the app requested. To include the
-            other permissions you selected in RotaPress, review them here before
-            approving.
-          </p>
+          <div>
+            <strong>
+              The app requested {actions.length} of {allowedActions.length}{" "}
+              allowed actions.
+            </strong>
+            <p>
+              Approve this smaller selection, or review the other actions
+              already allowed in your connection settings. Nothing is added
+              without your approval.
+            </p>
+          </div>
           <button
             type="button"
             className="button button-outline"
             disabled={busy}
             onClick={() => void reviewAllowed()}
           >
-            Review all allowed actions
+            {pending === "review"
+              ? "Opening review…"
+              : "Review all allowed actions"}
           </button>
         </aside>
       )}
       <form className="oauth-consent-form" onSubmit={onSubmit}>
-        <fieldset disabled={busy}>
+        <div className="oauth-consent-summary" role="status" aria-live="polite">
+          <div>
+            <strong>
+              {selectedActions.length}{" "}
+              {selectedActions.length === 1 ? "action" : "actions"} selected
+              {selectedActions.length > 0 && readOnly
+                ? " · Read-only access"
+                : ""}
+            </strong>
+            <p>
+              {!selectedActions.length
+                ? "Select at least one action to continue."
+                : readOnly
+                  ? "This selection cannot edit or publish content."
+                  : publication
+                    ? "Publication is available only for selected areas and your explicit requests."
+                    : "The app can prepare changes that remain private drafts."}
+            </p>
+          </div>
+          {selectedActions.length > 0 && (
+            <span
+              className="oauth-consent-mode"
+              data-mode={publication ? "publish" : readOnly ? "read" : "draft"}
+            >
+              {publication
+                ? "Publication enabled"
+                : readOnly
+                  ? "Read only"
+                  : "Draft editing"}
+            </span>
+          )}
+        </div>
+        <fieldset disabled={busy} className="oauth-consent-requested">
           <legend>Requested actions</legend>
-          <div className="oauth-consent-actions">
-            {details.scopes
-              .filter((scope) => scope !== "offline_access")
-              .map((scope) => (
-                <label key={scope} className="oauth-consent-action">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(scope)}
-                    onChange={(event) =>
-                      setSelected((current) =>
-                        event.target.checked
-                          ? [...current, scope]
-                          : current.filter((value) => value !== scope),
-                      )
-                    }
-                  />
-                  <span>
-                    {scopeDefinitions[scope as AutomationScope]?.label ?? scope}
-                  </span>
-                </label>
-              ))}
+          <p className="oauth-consent-section-hint">
+            Reads may include private drafts. Participant records are never
+            included.
+          </p>
+          <div className="oauth-consent-groups">
+            {groups.map((group) => (
+              <fieldset key={group.prefix} className="oauth-consent-group">
+                <legend>{group.name}</legend>
+                <div className="oauth-consent-actions">
+                  {group.scopes.map((scope) => (
+                    <label key={scope} className="oauth-consent-action">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(scope)}
+                        onChange={(event) =>
+                          toggle(scope, event.target.checked)
+                        }
+                        aria-labelledby={`${labelPrefix}-${scope}`}
+                      />
+                      <span className="oauth-consent-action-copy">
+                        <span id={`${labelPrefix}-${scope}`}>
+                          {scopeDefinitions[scope as AutomationScope]?.label ??
+                            scope}
+                        </span>
+                        <span
+                          className="oauth-consent-action-kind"
+                          data-kind={
+                            scope.endsWith(":publish")
+                              ? "publish"
+                              : readOnlyScopes([scope])
+                                ? "read"
+                                : "draft"
+                          }
+                          aria-hidden="true"
+                        >
+                          {scope.endsWith(":publish")
+                            ? "Publish"
+                            : readOnlyScopes([scope])
+                              ? "Read"
+                              : "Draft"}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
           </div>
         </fieldset>
-        {details.scopes.includes("offline_access") && (
-          <fieldset disabled={busy}>
-            <legend>Connection</legend>
-            <label className="oauth-consent-action">
-              <input
-                type="checkbox"
-                checked={selected.includes("offline_access")}
-                onChange={(event) =>
-                  setSelected((current) =>
-                    event.target.checked
-                      ? [...current, "offline_access"]
-                      : current.filter((scope) => scope !== "offline_access"),
-                  )
-                }
-              />
-              <span>Keep connected</span>
-            </label>
-            <p className="oauth-consent-return">
-              Renew automatically while your RotaPress sign-in remains active.
-              You can revoke access at any time. If turned off, access ends
-              within five minutes.
+        {publication && (
+          <aside
+            className="oauth-consent-publication"
+            aria-label="Publication permissions"
+          >
+            <strong>Publication needs your explicit request</strong>
+            <p>
+              These actions allow publishing exact reviewed targets. Selecting
+              them does not publish anything now.
             </p>
-          </fieldset>
+            {selected.includes("media:publish") && (
+              <p>
+                Published image files and metadata become public, even before a
+                page uses them.
+              </p>
+            )}
+            {(selected.includes("calendar:publish") ||
+              selected.includes("forms:publish")) && (
+              <p>
+                {selected.includes("calendar:publish") &&
+                  "Published activities may notify subscribers. "}
+                {selected.includes("forms:publish") &&
+                  "Published forms may accept responses."}
+              </p>
+            )}
+          </aside>
         )}
         {selected.includes("sources:read") &&
           details.sourceOrigins.length > 0 && (
-            <div className="oauth-consent-sources">
-              <h2>Approved reference websites</h2>
+            <section
+              className="oauth-consent-sources"
+              aria-labelledby={`${labelPrefix}-sources`}
+            >
+              <h2 id={`${labelPrefix}-sources`}>Approved reference websites</h2>
               <ul>
                 {details.sourceOrigins.map((origin) => (
                   <li key={origin}>{origin}</li>
                 ))}
               </ul>
-            </div>
+            </section>
           )}
-        <div
-          className="oauth-consent-permissions"
-          role="status"
-          aria-live="polite"
-        >
-          <strong>
-            {selectedActions.length}{" "}
-            {selectedActions.length === 1 ? "action" : "actions"} selected
-            {selectedActions.length > 0 && readOnly
-              ? " · Read-only access"
-              : ""}
-          </strong>
-          <p>
-            {readOnly
-              ? "This selection cannot edit or publish content."
-              : "The AI will receive these permissions and the matching tools when it connects."}
-          </p>
+        {details.scopes.includes("offline_access") && (
+          <fieldset disabled={busy} className="oauth-consent-renewal">
+            <legend>Stay connected</legend>
+            <label className="oauth-consent-action">
+              <input
+                type="checkbox"
+                checked={selected.includes("offline_access")}
+                onChange={(event) =>
+                  toggle("offline_access", event.target.checked)
+                }
+                aria-describedby={`${labelPrefix}-renewal`}
+              />
+              <span>Keep connected</span>
+            </label>
+            <p id={`${labelPrefix}-renewal`} className="oauth-consent-return">
+              Renew automatically while your RotaPress sign-in remains active.
+              Revoke access at any time. If turned off, access ends within five
+              minutes.
+            </p>
+          </fieldset>
+        )}
+        <div className="oauth-consent-destination">
+          <span>After your choice, return to</span>
+          <strong>{callbackHost}</strong>
+          <details>
+            <summary>View exact return URL</summary>
+            <code>{details.redirectUri}</code>
+          </details>
         </div>
-        <p className="oauth-consent-destination">
-          After your choice, return to {details.redirectUri}.
-        </p>
-        <div className="oauth-consent-buttons">
-          {(needsSignIn || signInRequired) && (
-            <p role="status">
+        {(needsSignIn || signInRequired) && (
+          <div className="oauth-consent-reauth" role="status">
+            <p>
               {signInRequired
                 ? "Your sign-in needs to be renewed to continue."
-                : "These new permissions need a recent sign-in."}{" "}
-              <Link href={`/api/automation/oauth/sign-in?${signedQuery}`}>
-                Sign in to continue
-              </Link>
+                : "These new permissions need a recent sign-in."}
             </p>
-          )}
+            <Link href={`/api/automation/oauth/sign-in?${signedQuery}`}>
+              Sign in to continue
+            </Link>
+          </div>
+        )}
+        <div className="oauth-consent-buttons">
           <button
             className="button button-accent"
             disabled={
               busy ||
               needsSignIn ||
-              !selected.some((scope) => scope !== "offline_access")
+              signInRequired ||
+              reloadRequired ||
+              !selectedActions.length
             }
           >
-            {busy ? "Connecting…" : "Allow selected actions"}
+            {pending === "allow" ? "Connecting…" : "Allow selected actions"}
           </button>
           <button
             type="button"
@@ -246,9 +422,22 @@ export function OAuthConsent({
             disabled={busy}
             onClick={() => void submit(false)}
           >
-            Cancel connection
+            {pending === "cancel" ? "Cancelling…" : "Cancel connection"}
           </button>
         </div>
+        {pending && (
+          <p className="oauth-consent-return" role="status" aria-live="polite">
+            {pending === "review"
+              ? "Opening the full permission review…"
+              : pending === "allow"
+                ? "Connecting your app with the selected actions…"
+                : "Cancelling this connection and returning to your app…"}
+          </p>
+        )}
+        <p className="oauth-consent-return">
+          Access follows your current staff permissions. It ends when you sign
+          out, your session expires, or you revoke this connection.
+        </p>
       </form>
     </section>
   );

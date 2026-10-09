@@ -59,6 +59,7 @@
 @import "./styles/website-appearance.css";
 @import "./styles/public-shell.css";
 @import "./styles/account-sign-in.css";
+@import "./styles/auth-shell.css";
 @import "./styles/event-directory.css";
 @import "./styles/admin-sections.css";
 @import "./styles/member-portal.css";

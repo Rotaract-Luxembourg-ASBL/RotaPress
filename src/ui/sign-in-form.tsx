@@ -7,9 +7,13 @@ import {
   defaultStaffLogin,
   type StaffLogin,
 } from "@/core/organization/club_profile";
-import { WorkspaceSignIn } from "./workspace-sign-in";
+import { WorkspaceSignIn, signInContext } from "./workspace-sign-in";
+import { AuthShell } from "./auth-shell";
 import { authClient } from "@/core/auth/client";
-import { signInDestination } from "@/core/auth/sign_in_destination";
+import {
+  signInDestination,
+  signInErrorCallbackURL,
+} from "@/core/auth/sign_in_destination";
 import { en } from "@/locales/en";
 import { type CurrentUser, errorMessage, useResource } from "./api";
 import { Arrow, Loading, Notice } from "./primitives";
@@ -31,6 +35,7 @@ export function SignInForm({
   hostedDomain = "",
   clubName = "your club",
   returnTo,
+  reauth = false,
 }: {
   googleError?: boolean;
   setup?: boolean;
@@ -40,12 +45,17 @@ export function SignInForm({
   hostedDomain?: string;
   clubName?: string;
   returnTo?: string;
+  reauth?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<"google" | "send" | "verify" | null>(
+    null,
+  );
+  const [failedField, setFailedField] = useState<"email" | "otp">();
+  const busy = pending !== null;
   const [error, setError] = useState<string | undefined>(
     googleError
       ? "Google sign-in did not finish. Start again with an allowed Google account."
@@ -56,11 +66,44 @@ export function SignInForm({
     error: loadError,
     refresh,
   } = useResource<CurrentUser>("/api/me");
+  const target = returnTo ?? "/membership";
+  const copy = signInContext(target, reauth, appearance);
+  const optionsLoading = !setup && !me && !loadError;
+  const hasDestinationAccess =
+    !target.startsWith("/admin") ||
+    Boolean(me?.capabilities.includes("admin.access"));
+
+  function accountPanel(children: ReactNode) {
+    return (
+      <AuthShell
+        brand={brand ?? <Link href="/">{clubName}</Link>}
+        context={copy.context}
+        introductionHeading={copy.introductionHeading}
+        description={copy.description}
+        identity={
+          me?.actor ? (
+            <p>
+              Signed in as <strong>{me.actor.email}</strong>
+            </p>
+          ) : undefined
+        }
+        footer={
+          <Link className="text-link" href="/">
+            Back to website <Arrow />
+          </Link>
+        }
+      >
+        {children}
+      </AuthShell>
+    );
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setError(undefined);
-    setBusy(true);
+    setFailedField(undefined);
+    setPending(sent ? "verify" : "send");
     try {
       if (sent) {
         const result = await authClient.signIn.emailOtp({
@@ -88,18 +131,25 @@ export function SignInForm({
       }
     } catch (cause: unknown) {
       setError(errorMessage(cause));
+      setFailedField(sent ? "otp" : "email");
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
 
   async function googleSignIn() {
-    setBusy(true);
+    if (busy) return;
+    setPending("google");
     setError(undefined);
+    setFailedField(undefined);
     try {
       const result = await authClient.signIn.social({
         provider: "google",
         callbackURL: setup ? "/setup" : (returnTo ?? destination()),
+        errorCallbackURL: signInErrorCallbackURL(
+          setup ? "/setup" : (returnTo ?? destination()),
+          reauth,
+        ),
       });
       if (result.error)
         throw new Error(
@@ -107,13 +157,10 @@ export function SignInForm({
         );
     } catch (cause: unknown) {
       setError(errorMessage(cause));
-      setBusy(false);
+      setPending(null);
     }
   }
 
-  const reauth =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("reauth") === "1";
   if (googleOnly)
     return (
       <WorkspaceSignIn
@@ -121,20 +168,16 @@ export function SignInForm({
         brand={brand}
         domain={hostedDomain}
         clubName={clubName}
-        staffDestination={(returnTo ?? "/admin").startsWith("/admin")}
+        returnTo={target}
         reauth={reauth}
         loading={!me && !loadError}
         available={Boolean(me?.googleConfigured)}
         busy={busy}
-        error={error || loadError}
+        error={error}
+        loadError={loadError}
         email={me?.actor?.email}
         canContinue={
-          !reauth &&
-          Boolean(me?.actor) &&
-          (!(returnTo ?? "/admin").startsWith("/admin") ||
-            Boolean(me?.capabilities.includes("admin.access")))
-            ? (returnTo ?? "/admin")
-            : false
+          !reauth && Boolean(me?.actor) && hasDestinationAccess ? target : false
         }
         onSignIn={() => void googleSignIn()}
         onRetry={refresh}
@@ -186,39 +229,66 @@ export function SignInForm({
       </SetupFrame>
     );
   if (me?.actor && !reauth)
-    return (
-      <main id="main-content" className="account-sign-in">
-        <section className="panel auth-panel signed-in-actions">
-          <p className="eyebrow">Signed in</p>
-          <h1>Welcome back</h1>
-          <p>{me.actor.email}</p>
+    return accountPanel(
+      <section className="auth-card" aria-labelledby="sign-in-title">
+        <header className="auth-card-heading">
+          <h1 id="sign-in-title">
+            {hasDestinationAccess
+              ? "You're signed in"
+              : "Workspace access needs approval"}
+          </h1>
+          <p>
+            {hasDestinationAccess
+              ? "Your account is ready. Continue when you're ready."
+              : "You're signed in. Club staff must be approved before opening the workspace."}
+          </p>
+        </header>
+        {!hasDestinationAccess && (
+          <Notice kind="info">
+            Contact your club owner for staff access. Sign out to use another
+            account, or continue to your member account.
+          </Notice>
+        )}
+        <div className="auth-actions">
           <Link
-            className="button button-accent"
-            href={me.installed ? (returnTo ?? destination()) : "/setup"}
+            className="button button-accent button-full"
+            href={
+              !me.installed
+                ? "/setup"
+                : hasDestinationAccess
+                  ? target
+                  : "/membership"
+            }
           >
-            Continue to your account <Arrow />
+            {hasDestinationAccess ? copy.continueLabel : "Open member account"}{" "}
+            <Arrow />
           </Link>
           <SignOutButton />
-        </section>
-      </main>
+        </div>
+      </section>,
     );
+  const combinedError =
+    error ||
+    (loadError
+      ? "Sign-in options could not be loaded. Try again to check the available sign-in methods."
+      : undefined);
   const panel = (
-    <section className="panel auth-panel" aria-labelledby="sign-in-title">
+    <section
+      className={setup ? "panel auth-panel" : "auth-card"}
+      aria-labelledby="sign-in-title"
+    >
       {setup ? (
         <h2 id="sign-in-title">
           {sent ? "Check your inbox." : "Verify your owner email."}
         </h2>
       ) : (
-        <header className="account-sign-in-heading">
-          <p className="eyebrow">Your club account</p>
-          <h1 id="sign-in-title">
-            {sent ? "Check your inbox" : "Welcome back"}
-          </h1>
+        <header className="auth-card-heading">
+          <h1 id="sign-in-title">{sent ? "Check your inbox" : copy.title}</h1>
           <p>
             {sent
               ? "Enter the six-digit code we sent to your email."
               : me?.googleConfigured
-                ? "Sign in to access your membership and club activities."
+                ? "Choose how you'd like to sign in to your club account."
                 : "We’ll email you a code to sign in. No password needed."}
           </p>
         </header>
@@ -229,104 +299,147 @@ export function SignInForm({
           account: {me.actor.email}.
         </Notice>
       )}
-      {error && <Notice>{error}</Notice>}
-      {loadError && (
-        <Notice>
-          Sign-in options could not be loaded.{" "}
-          <button type="button" className="inline-button" onClick={refresh}>
-            Try again
-          </button>
-        </Notice>
+      {combinedError && (
+        <div id="sign-in-error">
+          <Notice>
+            {combinedError}
+            {loadError && (
+              <div>
+                <button
+                  type="button"
+                  className="inline-button"
+                  onClick={refresh}
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+          </Notice>
+        </div>
       )}
-      {!sent && me?.googleConfigured && (
+      {optionsLoading && <Loading />}
+      {!sent && me?.googleConfigured && !loadError && (
         <>
           <GoogleSignInButton
             disabled={busy}
             onClick={googleSignIn}
             theme={appearance.buttonTheme}
             shape={appearance.buttonShape}
-          />
+          >
+            {pending === "google" ? "Opening Google…" : "Sign in with Google"}
+          </GoogleSignInButton>
+          {pending === "google" && (
+            <p className="auth-status" role="status">
+              Opening Google sign-in…
+            </p>
+          )}
           <p className="auth-provider-divider">or continue with email</p>
         </>
       )}
-      <form onSubmit={submit} className="form-stack" aria-busy={busy}>
-        {!sent ? (
-          <>
-            <label>
-              {en.auth.email}
-              <input
-                type="email"
-                autoComplete="email"
-                name="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                maxLength={254}
-                required
-              />
-            </label>
-          </>
-        ) : (
-          <>
-            <p className="muted">
-              {en.auth.sent} <strong>{email}</strong>
-            </p>
-            <label>
-              {en.auth.code}
-              <input
-                className="otp-input"
-                name="otp"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                minLength={6}
-                maxLength={6}
-                value={otp}
-                onChange={(event) => setOtp(event.target.value)}
-                required
-                autoFocus
-              />
-            </label>
-          </>
-        )}
-        <button
-          className="button button-accent button-full"
-          type="submit"
-          disabled={busy}
+      {Boolean(setup || me || sent) && (
+        <form
+          onSubmit={submit}
+          className="form-stack"
+          aria-busy={pending === "send" || pending === "verify"}
         >
-          {busy
-            ? sent
-              ? en.auth.verifying
-              : en.auth.sending
-            : sent
-              ? en.auth.verify
-              : en.auth.send}
-          <Arrow />
-        </button>
-        {sent && (
+          {!sent ? (
+            <>
+              <label>
+                {en.auth.email}
+                <input
+                  type="email"
+                  autoComplete="email"
+                  name="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (failedField === "email") {
+                      setError(undefined);
+                      setFailedField(undefined);
+                    }
+                  }}
+                  aria-invalid={failedField === "email" || undefined}
+                  aria-describedby={
+                    failedField === "email" ? "sign-in-error" : undefined
+                  }
+                  disabled={busy}
+                  maxLength={254}
+                  required
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <p className="muted" id="sign-in-code-help">
+                {en.auth.sent} <strong>{email}</strong>
+              </p>
+              <label>
+                {en.auth.code}
+                <input
+                  className="otp-input"
+                  name="otp"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  minLength={6}
+                  maxLength={6}
+                  value={otp}
+                  onChange={(event) => {
+                    setOtp(event.target.value);
+                    if (failedField === "otp") {
+                      setError(undefined);
+                      setFailedField(undefined);
+                    }
+                  }}
+                  aria-invalid={failedField === "otp" || undefined}
+                  aria-describedby={
+                    failedField === "otp"
+                      ? "sign-in-code-help sign-in-error"
+                      : "sign-in-code-help"
+                  }
+                  disabled={busy}
+                  required
+                  autoFocus
+                />
+              </label>
+            </>
+          )}
           <button
-            type="button"
-            className="inline-button"
+            className="button button-accent button-full"
+            type="submit"
             disabled={busy}
-            onClick={() => {
-              setSent(false);
-              setOtp("");
-              setError(undefined);
-            }}
           >
-            {en.auth.change}
+            {pending === "verify"
+              ? en.auth.verifying
+              : pending === "send"
+                ? en.auth.sending
+                : sent
+                  ? en.auth.verify
+                  : en.auth.send}
+            <Arrow />
           </button>
-        )}
-      </form>
-      <p className="small muted auth-footnote">
+          {sent && (
+            <button
+              type="button"
+              className="inline-button"
+              disabled={busy}
+              onClick={() => {
+                setSent(false);
+                setOtp("");
+                setError(undefined);
+                setFailedField(undefined);
+              }}
+            >
+              {en.auth.change}
+            </button>
+          )}
+        </form>
+      )}
+      <p className={setup ? "small muted auth-footnote" : "auth-policy"}>
         {setup
           ? "Use the owner email nominated during setup. After verification, you’ll enter your club details and installation claim."
           : "Signing in verifies your identity. Membership and club access are reviewed separately."}
       </p>
-      {!setup && (
-        <Link className="text-link account-sign-in-back" href="/">
-          Back to website <Arrow />
-        </Link>
-      )}
     </section>
   );
   if (setup)
@@ -348,9 +461,5 @@ export function SignInForm({
         </div>
       </SetupFrame>
     );
-  return (
-    <main id="main-content" className="account-sign-in">
-      {panel}
-    </main>
-  );
+  return accountPanel(panel);
 }

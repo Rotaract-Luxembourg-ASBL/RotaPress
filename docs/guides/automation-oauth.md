@@ -138,6 +138,14 @@ connection can view its activity, edit it or revoke it.
 
 ## Permissions, expiry and revocation
 
+The authorization screen shows the club, signed-in account and requesting app.
+Requested actions are grouped by area and labeled Read, Draft or Publish. The
+selection summary updates as you narrow access; publication effects appear when
+a publishing action is selected. **Keep connected** is a separate renewal choice.
+Review the return website before allowing access; its exact URL is available in
+the return details. Failed requests keep your selections and explain whether to
+retry, sign in again or reload changed permissions.
+
 - A client that omits `scope` requests the actions selected when its connection
   was registered. These appear on the consent screen, where you can narrow them.
   An explicitly requested subset stays narrow unless you choose **Review all

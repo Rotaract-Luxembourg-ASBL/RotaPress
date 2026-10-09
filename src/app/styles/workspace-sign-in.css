@@ -1,72 +1,4 @@
-.workspace-sign-in {
-  min-height: 100svh;
-  display: grid;
-  place-items: center;
-  padding: 48px 24px;
-  background: #f6f8fc;
-  color: #082643;
-}
-.workspace-sign-in-card {
-  width: min(100%, 480px);
-  display: grid;
-  gap: 24px;
-  padding: 40px;
-  background: #fff;
-  border: 1px solid #dce3eb;
-  border-radius: 20px;
-  box-shadow: 0 16px 48px #08264308;
-  overflow-wrap: anywhere;
-}
-.workspace-sign-in-card h1 {
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  line-height: 1.2;
-  margin: 0;
-}
-.workspace-sign-in-card > p {
-  margin: 0;
-  line-height: 1.6;
-}
-.workspace-sign-in-brand {
-  margin-bottom: 12px;
-}
-.workspace-sign-in-brand .site-brand {
-  margin: 0;
-}
-.workspace-sign-in-brand .site-brand > a {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-.workspace-sign-in-brand .site-logo {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 112px;
-  max-height: 48px;
-  object-fit: contain;
-}
-.workspace-sign-in-brand > p {
-  margin: 20px 0 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #526278;
-}
-.workspace-sign-in-card > .google-sign-in {
-  width: 100%;
-  min-height: 48px;
-}
-.workspace-sign-in-policy {
-  border-top: 1px solid #d6dfeb;
-  padding-top: 24px;
-  font-size: 0.85rem;
-}
+/* Provider appearance is also used by the owner settings preview. */
 .google-sign-in.google-theme-light {
   background: #fff;
   color: #1f1f1f;
@@ -150,13 +82,6 @@
   display: inline;
 }
 @media (max-width: 540px) {
-  .workspace-sign-in {
-    padding: 32px 16px;
-    align-items: start;
-  }
-  .workspace-sign-in-card {
-    padding: 28px 24px;
-  }
   .setup-template-options {
     grid-template-columns: 1fr;
   }

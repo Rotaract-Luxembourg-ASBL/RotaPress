@@ -129,9 +129,7 @@ export async function brandingJourney(
   for (const path of paths) {
     await visitor.goto(path);
     await expect(
-      visitor
-        .locator("header")
-        .getByRole("img", { name: logoAlt, exact: true }),
+      visitor.getByRole("img", { name: logoAlt, exact: true }),
     ).toHaveCount(0);
   }
   const previewPromise = page.waitForEvent("popup");
@@ -154,27 +152,37 @@ export async function brandingJourney(
       await visitor.setViewportSize({ width, height: 1000 });
       await visitor.goto(path);
       const logo = visitor
-        .locator("header")
+        .locator(path === "/sign-in" ? ".auth-shell-brand" : "header")
         .getByRole("img", { name: logoAlt, exact: true });
       await expect(logo).toBeVisible();
       await expect(logo).toHaveAttribute("src", `/media/${assetId}`);
-      await expect(visitor.locator(".cms-public")).toHaveAttribute(
-        "data-theme",
-        "rotary-service",
-      );
-      expect(
-        await visitor
-          .locator(".cms-public")
-          .evaluate((root) =>
-            getComputedStyle(root).getPropertyValue("--club-accent"),
-          ),
-      ).toBe("#365a69");
-      expect(
-        await visitor
-          .locator("h1")
-          .first()
-          .evaluate((heading) => getComputedStyle(heading).fontFamily),
-      ).toContain("Georgia");
+      if (path === "/sign-in") {
+        await expect(visitor.locator(".cms-public")).toHaveCount(0);
+        await expect(visitor.locator(".auth-shell")).toBeVisible();
+        expect(
+          await visitor
+            .locator("h1")
+            .evaluate((heading) => getComputedStyle(heading).fontFamily),
+        ).not.toContain("Georgia");
+      } else {
+        await expect(visitor.locator(".cms-public")).toHaveAttribute(
+          "data-theme",
+          "rotary-service",
+        );
+        expect(
+          await visitor
+            .locator(".cms-public")
+            .evaluate((root) =>
+              getComputedStyle(root).getPropertyValue("--club-accent"),
+            ),
+        ).toBe("#365a69");
+        expect(
+          await visitor
+            .locator("h1")
+            .first()
+            .evaluate((heading) => getComputedStyle(heading).fontFamily),
+        ).toContain("Georgia");
+      }
       await expect(
         visitor.locator(`link[rel="icon"][href="/media/${assetId}"]`),
       ).toHaveCount(1);

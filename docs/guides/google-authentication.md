@@ -40,8 +40,14 @@ requirements. A failed or unavailable Google connection does not offer email as 
 fallback. Return destinations never choose the authentication policy. Ordinary
 sign-in continues to the member account; staff links retain their workspace
 destination.
-In **Settings → Sign-in & security**, customize its heading, welcome message,
-sign-in label and Google button (light, dark or neutral; rounded, pill or square).
+Login uses the published club identity with a focused account panel. Its title and
+explanation match the destination: membership, staff workspace, calendar or AI
+connection. Identity confirmation has its own explanation. Google cancellation
+returns to the same supported destination so the person can retry.
+
+In **Settings → Sign-in & security**, customize the staff workspace's welcome
+heading, message and label, and the Google button for all installed-club login
+screens (light, dark or neutral; rounded, pill or square).
 The Google mark and sign-in wording are retained. These settings save immediately;
 public logo changes still follow Website publication.
 
