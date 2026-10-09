@@ -45,6 +45,10 @@ const uploadSchema = mediaMetadataSchema
       ),
     bytes: z.instanceof(Buffer),
     requestId: z.uuid().optional(),
+    sourceFingerprint: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
   })
   .strict();
 const referencesSchema = z
@@ -101,10 +105,16 @@ export class MediaService {
     reauthorize?: () => Promise<void>,
   ): Promise<MediaAssetDto> {
     await this.authorization.require(actor, "media.manage");
-    const { bytes, filename, requestId, ...metadata } =
+    const { bytes, filename, requestId, sourceFingerprint, ...metadata } =
       uploadSchema.parse(input);
     const inputHash = createHash("sha256")
-      .update(JSON.stringify({ filename, ...metadata }))
+      .update(
+        JSON.stringify({
+          filename,
+          ...metadata,
+          ...(sourceFingerprint ? { sourceFingerprint } : {}),
+        }),
+      )
       .update(bytes)
       .digest("hex");
     const image = await prepareImage(bytes);

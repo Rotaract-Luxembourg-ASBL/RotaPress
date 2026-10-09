@@ -10,20 +10,20 @@ model-provider keys or run a background agent service.
 
 ## Components and responsibilities
 
-| Component               | Responsibility                                                                             | Primary implementation                                |
-| ----------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Operation catalogue     | Shared REST/MCP routes, scopes, validated inputs, closed outputs and examples              | `src/integrations/automation/catalogue.ts`            |
-| Native design discovery | CMS block schemas, supported contexts, templates and event layouts                         | `design_operations.ts`, `event_operations.ts`         |
-| Connection access       | Better Auth credentials, current session and membership, scopes and transport availability | `AutomationAccess.ts`, `oauth/`                       |
-| Event preparation       | Reviewed presets/copies, linked page and form drafts, stable retries                       | `event_operations.ts`, `EventTemplateService`         |
-| Website management      | Private copies, languages, revision restoration and draft site settings                    | `WebsiteManagementService.ts`                         |
-| Calendar management     | Versioned calendar/activity drafts, recurrence and page design                             | `calendar_operations.ts`, `CalendarService`           |
-| Project stories         | Versioned volunteering/initiative drafts and explicitly requested publication              | `project_operations.ts`, `ProjectService`             |
-| Requested publication   | Separate grants, exact saved targets and existing domain publication checks                | Shared operation catalogue and owning domain services |
+| Component               | Responsibility                                                                                   | Primary implementation                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Operation catalogue     | Shared REST/MCP routes, scopes, validated inputs, closed outputs and examples                    | `src/integrations/automation/catalogue.ts`                               |
+| Native design discovery | CMS block schemas, supported contexts, templates and event layouts                               | `design_operations.ts`, `event_operations.ts`                            |
+| Connection access       | Better Auth credentials, current session and membership, scopes and transport availability       | `AutomationAccess.ts`, `oauth/`                                          |
+| Event preparation       | Reviewed presets/copies, linked page and form drafts, stable retries                             | `event_operations.ts`, `EventTemplateService`                            |
+| Website management      | Private copies, languages, revision restoration and draft site settings                          | `WebsiteManagementService.ts`                                            |
+| Calendar management     | Versioned calendar/activity drafts, recurrence and page design                                   | `calendar_operations.ts`, `CalendarService`                              |
+| Project stories         | Versioned volunteering/initiative drafts and explicitly requested publication                    | `project_operations.ts`, `ProjectService`                                |
+| Requested publication   | Separate grants, exact saved targets and existing domain publication checks                      | Shared operation catalogue and owning domain services                    |
 | Media operations        | Private uploads/metadata, bounded inspection and separately requested reviewed image publication | `media_operations.ts`, `media_publication_operations.ts`, `MediaService` |
-| Visual review           | Exact saved revisions rendered with native components in an isolated browser               | `WebsitePreviewService.ts`, `preview_*.ts`            |
-| Settings proposals      | Typed immutable suggestions applied only through staff administration                      | `AutomationProposalService.ts`                        |
-| Client prompts          | Instructions that compose existing tools into page, event and review workflows             | `workflow_prompts.ts`, `workflow_operations.ts`       |
+| Visual review           | Exact saved revisions rendered with native components in an isolated browser                     | `WebsitePreviewService.ts`, `preview_*.ts`                               |
+| Settings proposals      | Typed immutable suggestions applied only through staff administration                            | `AutomationProposalService.ts`                                           |
+| Client prompts          | Instructions that compose existing tools into page, event and review workflows                   | `workflow_prompts.ts`, `workflow_operations.ts`                          |
 
 Unqualified file names are under `src/integrations/automation`; the event and media
 services remain in their owning feature modules. Adapters delegate to those
@@ -148,11 +148,23 @@ asset rejects the whole batch. Anyone can retrieve the public image URL without 
 page placement. Uploads stay private; content publication cannot publish its
 images automatically. Hiding/deletion and public metadata edits remain manual.
 
-The **Website recreation** preset selects nine authoring grants for website
-read/write/manage/settings/preview, media read/write/inspect and source reading.
+The **Website recreation** preset selects website
+read/write/manage/settings/preview, media read/write/inspect and source reading,
+plus Project reading/writing when enabled and available to the configuring actor.
 It replaces the selection; add **Publish reviewed images** or other publication
 permissions afterward. Existing connections need deliberate permission changes
 and fresh consent or new keys, then an imported-tool refresh in the client.
+
+Bare-domain source rules cover HTTPS/default-port access to the domain and
+dot-bounded subdomains. Persisted HTTPS-origin rules retain exact coverage; a
+broader rule requires an explicit settings change and fresh consent. Source reads
+and import attribution share the same matcher. New domains must have a registrable
+domain, with public and private suffix validation; never approve a shared suffix.
+`source_image_import` requires both `sources:read` and `media:write`, checks the
+approved image URL, HTTPS/DNS/robots and bounded PNG/JPEG/WebP input, then uses the
+existing normalizer to create a private asset with stable-request retry behavior.
+Rights confirmation describes the owner's authorized reuse, not authority derived
+from fetched source text. Publication remains a separate reviewed batch action.
 
 Reference reads return static HTML in source order with h1–h6 levels, semantic
 regions, paragraphs, same-origin links and image metadata. They do not reproduce
@@ -161,6 +173,12 @@ starters. Clients inspect source visuals using their own tools, compose supporte
 native blocks through `website_save`, and compare saved previews with the source
 at matching desktop/phone widths. Report missing visual evidence and assets rather
 than claiming a finished visual recreation from extracted text.
+Recreation prompts inventory the requested source and current target before edits,
+reuse the intended homepage, replace only requested starter sections, route service
+stories to Projects and execute already-authorized steps without per-item
+confirmation. Final reports reconcile every mapped target's saved, published and
+desktop/phone-reviewed state; unavailable source visuals and combined draft-site
+review remain explicit limitations.
 
 Preview tools accept a page ID, locale and expected revision, never an arbitrary
 URL. Render only already-authorized native content using an isolated browser with

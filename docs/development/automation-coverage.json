@@ -89,6 +89,7 @@
       "media_list",
       "media_get",
       "media_upload",
+      "source_image_import",
       "media_inspect",
       "media_metadata_save",
       "media_publish"

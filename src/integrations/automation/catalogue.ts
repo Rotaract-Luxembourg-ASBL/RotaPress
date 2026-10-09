@@ -3,6 +3,7 @@ import { websiteOperations } from "./website_operations";
 import { featureOperations } from "./feature_operations";
 import { mediaOperations } from "./media_operations";
 import { mediaPublicationOperations } from "./media_publication_operations";
+import { sourceImageOperations } from "./source_image_operations";
 import { previewOperations } from "./preview_operations";
 import { eventOperations } from "./event_operations";
 import { workflowOperations } from "./workflow_operations";
@@ -24,6 +25,8 @@ import {
   outputJsonSchema,
   successSchema,
   operation,
+  operationAllowed,
+  operationScopes,
   type AutomationContext,
   type Operation,
 } from "./operation";
@@ -67,6 +70,7 @@ export const operations: readonly Operation[] = [
   ...featureOperations,
   ...mediaOperations,
   ...mediaPublicationOperations,
+  ...sourceImageOperations,
   ...previewOperations,
   ...eventOperations,
   ...workflowOperations,
@@ -77,15 +81,16 @@ export const operations: readonly Operation[] = [
   ...contentPublicationOperations,
   ...projectOperations,
 ];
-export const contractVersion = "1.8.0";
+export const contractVersion = "1.9.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
-    .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))
+    .filter((o) => operationAllowed(o, scopes))
     .map((o) => ({
       name: o.name,
       method: o.method,
       path: `/api/v1${o.path}`,
       scope: o.scope,
+      requiredScopes: operationScopes(o),
       description: o.description,
       readOnly: o.readOnly,
       inputSchema: inputJsonSchema(o.input),
@@ -110,12 +115,13 @@ export async function capabilities(context: AutomationContext) {
       version,
     })),
     operations: operations
-      .filter((o) => !o.scope || context.principal.scopes.includes(o.scope))
+      .filter((o) => operationAllowed(o, context.principal.scopes))
       .map((o) => ({
         name: o.name,
         method: o.method,
         path: `/api/v1${o.path}`,
         scope: o.scope,
+        requiredScopes: operationScopes(o),
         description: o.description,
         readOnly: o.readOnly,
       })),
@@ -134,10 +140,13 @@ export async function executeOperation(
       404,
     );
   try {
-    if (operation.scope && !context.principal.scopes.includes(operation.scope))
+    const missingScope = operationScopes(operation).find(
+      (scope) => !context.principal.scopes.includes(scope),
+    );
+    if (missingScope)
       throw new DomainError(
         "AUTOMATION_SCOPE_REQUIRED",
-        `This connection needs ${operation.scope}.`,
+        `This connection needs ${missingScope}.`,
         403,
       );
     const current = await context.services.authorization.require(

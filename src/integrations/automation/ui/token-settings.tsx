@@ -10,7 +10,11 @@ import {
 } from "../scopes";
 import type { AutomationTransport } from "../availability_schemas";
 import { ScopePicker } from "./scope-picker";
-import { ReferenceOrigins } from "./reference-origins";
+import {
+  ReferenceCoverage,
+  ReferenceOrigins,
+  referenceEntries,
+} from "./reference-origins";
 
 const endpoint = "/api/admin/integrations/automation";
 type Connection = {
@@ -54,10 +58,7 @@ export function TokenSettings({
       scopes,
       expiresIn,
       sourceOrigins: scopes.includes("sources:read")
-        ? origins
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((value) => value.replace(/\/$/, ""))
+        ? referenceEntries(origins)
         : [],
     });
     if (!parsed.success) {
@@ -278,7 +279,7 @@ export function TokenSettings({
                       ))}
                     </ul>
                     {connection.sourceOrigins.length > 0 && (
-                      <p>{connection.sourceOrigins.join(", ")}</p>
+                      <ReferenceCoverage rules={connection.sourceOrigins} />
                     )}
                   </details>
                 </div>

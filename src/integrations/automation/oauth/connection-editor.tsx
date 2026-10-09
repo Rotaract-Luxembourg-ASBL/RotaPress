@@ -12,8 +12,9 @@ import { ApiError, errorMessage, request, useResource } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import { StatusBadge } from "@/ui/collection";
 import { ScopePicker } from "../ui/scope-picker";
-import { ReferenceOrigins } from "../ui/reference-origins";
+import { ReferenceOrigins, referenceEntries } from "../ui/reference-origins";
 import { scopeDefinitions } from "../scopes";
+import { readOnlyScopes } from "../permission_context";
 import {
   oauthEndpoint,
   connectionStatus,
@@ -69,10 +70,7 @@ export function ConnectionEditor({
     setProblem(undefined);
     setReceipt(false);
     const sourceOrigins = scopes.includes("sources:read")
-      ? origins
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((value) => value.replace(/\/$/, ""))
+      ? referenceEntries(origins)
       : [];
     try {
       const result = await request<{ permissionsRevision: string }>(
@@ -224,7 +222,7 @@ export function ConnectionEditor({
         >
           <div className="oauth-consent-summary">
             <strong>
-              {saved.approvedScopes.length} actions approved by you
+              {saved.approvedScopes.length} actions approved in saved consent
             </strong>
             <p className="small muted">
               {saved.consentedAt
@@ -244,6 +242,9 @@ export function ConnectionEditor({
             {saved.approvedScopes.length > 0 &&
               saved.approvedScopes.length < saved.scopes.length && (
                 <p className="small">
+                  {readOnlyScopes(saved.approvedScopes) &&
+                    !readOnlyScopes(saved.scopes) &&
+                    "Saved consent is read-only, even though draft actions are allowed in these settings. "}
                   The app has fewer approved actions than this connection
                   allows. Reconnect in the AI app and choose{" "}
                   <strong>Review all allowed actions</strong> on the consent

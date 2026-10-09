@@ -5,7 +5,7 @@ import { errorMessage, request } from "@/ui/api";
 import { Notice } from "@/ui/primitives";
 import { type AutomationScope } from "../scopes";
 import { ScopePicker } from "../ui/scope-picker";
-import { ReferenceOrigins } from "../ui/reference-origins";
+import { ReferenceOrigins, referenceEntries } from "../ui/reference-origins";
 import {
   defaultOAuthSetup,
   type OAuthPlatform,
@@ -48,10 +48,7 @@ export function OAuthSettings({ onManage }: { onManage: () => void }) {
             authentication: setup.authentication,
             scopes,
             sourceOrigins: scopes.includes("sources:read")
-              ? origins
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .map((origin) => origin.replace(/\/$/, ""))
+              ? referenceEntries(origins)
               : [],
           }),
         }),

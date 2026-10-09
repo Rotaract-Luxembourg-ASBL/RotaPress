@@ -29,6 +29,8 @@ export async function oauthWebsiteRecreationJourney(owner: Page) {
     "Upload images and edit private media metadata",
     "View image pixels, including private media",
     "Read approved reference websites",
+    "Read project stories and drafts",
+    "Create and edit project drafts",
   ])
     await expect(
       picker.getByRole("checkbox", { name: action, exact: true }),
@@ -51,8 +53,25 @@ export async function oauthWebsiteRecreationJourney(owner: Page) {
   await expect(imagePublication).not.toBeChecked();
   await expect(groupedImagePublication).not.toBeChecked();
   await owner
-    .getByLabel("Approved reference websites", { exact: true })
-    .fill("https://www.reference.example.test");
+    .getByLabel("Reference website domains", { exact: true })
+    .fill("https://www.rotaract.lu/a-page");
+  await panel
+    .getByRole("button", {
+      name: "Use rotaract.lu and subdomains",
+      exact: true,
+    })
+    .click();
+  await expect(
+    panel.getByLabel("Reference website domains", { exact: true }),
+  ).toHaveValue("rotaract.lu");
+  await expect(
+    panel.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText(
+    "HTTPS rotaract.lu and all subdomains, including www.rotaract.lu",
+  );
   await capture(owner, "mcp-website-recreation");
   await captureTask(owner);
   // Keyboard selection opts into only publication of explicitly reviewed images.
@@ -94,11 +113,11 @@ export async function oauthWebsiteRecreationJourney(owner: Page) {
       "media:inspect",
       "sources:read",
       "media:publish",
+      "projects:read",
+      "projects:write",
     ].sort(),
   );
-  expect(connection?.sourceOrigins).toEqual([
-    "https://www.reference.example.test",
-  ]);
+  expect(connection?.sourceOrigins).toEqual(["rotaract.lu"]);
   await revokeOAuthConnection(owner, name);
   await owner.getByRole("tab", { name: "Connections", exact: true }).click();
   // Return to the manual callback setup used by the principal consent journey.

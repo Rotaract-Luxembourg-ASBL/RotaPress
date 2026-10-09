@@ -81,6 +81,49 @@ describe("C14 documented contracts and failure privacy", () => {
     });
     expect(String(error)).not.toContain("synthetic-secret");
   });
+  it("discovers the recreation guide and filters the two-grant image tool over MCP", async () => {
+    for (const scopes of [
+      ["sources:read"],
+      ["media:write"],
+      ["sources:read", "media:write"],
+    ]) {
+      const context = { principal: { scopes } } as unknown as AutomationContext;
+      const server = createMcpServer(context);
+      const client = new Client({
+        name: "recreation-guide-fixture",
+        version: "1",
+      });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+      try {
+        await server.connect(serverTransport);
+        await client.connect(clientTransport);
+        expect(
+          (await client.listTools()).tools.some(
+            (tool) => tool.name === "source_image_import",
+          ),
+        ).toBe(scopes.length === 2);
+        expect((await client.listResources()).resources).toContainEqual(
+          expect.objectContaining({
+            uri: "rotapress://website-recreation",
+            mimeType: "text/markdown",
+          }),
+        );
+        const guide = await client.readResource({
+          uri: "rotapress://website-recreation",
+        });
+        expect(guide.contents[0]).toMatchObject({ mimeType: "text/markdown" });
+        const content = guide.contents[0];
+        if (!("text" in content))
+          throw new Error("Expected a text workflow guide.");
+        expect(content.text).toContain("source_image_import");
+        expect(content.text).toContain("publication");
+      } finally {
+        await client.close();
+        await server.close();
+      }
+    }
+  });
   it("requires confirmation and client approval for every publication action", () => {
     const publishing = operations.filter((op) =>
       op.scope?.endsWith(":publish"),

@@ -162,8 +162,12 @@ export function ClientInstructions({ origin }: { origin: string }) {
         <p>
           Start with capabilities to discover granted operations. For website
           work, choose the <strong>Website recreation</strong> action preset and
-          add the reference website's exact HTTPS origins. This includes images,
-          draft appearance and desktop/phone previews. Uploads start private;
+          add the reference website's domain. Domain coverage includes HTTPS on
+          the root, www and subdomains; saved HTTPS origins remain exact. This
+          includes private pages, images, draft appearance, desktop/phone
+          previews and Project stories when enabled. Images you are authorized
+          to reuse can be imported directly from the approved source. New images
+          start private;
           <strong> Publish reviewed images</strong> is a separate optional
           permission for publishing a chosen batch after your explicit request.
         </p>
@@ -173,8 +177,9 @@ export function ClientInstructions({ origin }: { origin: string }) {
             blocks and theme.
           </li>
           <li>
-            <code>adapt_reference_website</code>: prepare drafts from a
-            permitted reference URL and verified club facts.
+            <code>adapt_reference_website</code>: inventory the source and
+            existing website, import approved images, compose native layouts and
+            compare saved previews with the reference.
           </li>
           <li>
             <code>prepare_event</code>: prepare an event with private pages,
@@ -188,7 +193,10 @@ export function ClientInstructions({ origin }: { origin: string }) {
         <p>
           Clients without prompts can use the workflow tools in{" "}
           <strong>Tools & connection test</strong>. Review returned draft links
-          and sources before publishing. Event suggestions require staff
+          and sources before publishing. For a public result, include the exact
+          pages, images and settings to publish in your request and grant their
+          publication actions. The assistant can continue those authorized steps
+          without asking again for every item. Event suggestions require staff
           approval.
         </p>
         <details>
@@ -203,7 +211,7 @@ export function ClientInstructions({ origin }: { origin: string }) {
             <li>
               For 401, check credential type, expiry and the parent staff
               session. For 403, check the requested permissions and approved
-              reference origins.
+              reference website coverage.
             </li>
             <li>
               Use a reachable HTTPS URL for hosted clients. Local stdio clients

@@ -8,7 +8,9 @@ is `/admin/integrations/rest`; append `?tab=docs` to open the reference.
    or administrator can generate a token even while access is disabled.
 2. In **API tokens**, enter a recognizable name and expiry. Choose actions by
    group, or use **Select all**, **Clear all**, **Read only** or **Website drafts**.
-   Reference reading requires exact approved HTTPS origins.
+   Reference reading and image imports require approved source rules: a bare domain
+   covers its HTTPS/default-port host and subdomains; saved HTTPS origins remain
+   exact until explicitly changed.
 3. Select **Generate API token**. Copy the one-time token into protected client
    settings, or select **Use in live tester** to test it here without repasting.
 4. Start with the capabilities endpoint. Search or select another endpoint to
@@ -56,16 +58,16 @@ and OAuth tokens are rejected by REST.
 
 Paths in the tables below are relative to `/api/v1`.
 
-| Method and path                         | Purpose                                                                |
-| --------------------------------------- | ---------------------------------------------------------------------- |
+| Method and path                         | Purpose                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `GET /capabilities`                     | Granted scopes and permission labels, read/write mode, operation catalogue, source origins and feature states |
-| `GET /openapi.json`                     | Full OpenAPI 3.1 document; input/output schemas and request examples   |
-| `GET /prompts`                          | Prompt names and arguments                                             |
-| `POST /prompts/adapt_reference_website` | Adaptation instructions for `sourceUrl`, optional `locale` and `brief` |
-| `POST /prompts/plan_native_website`     | Native page design workflow for a `brief` and optional `locale`        |
-| `POST /prompts/prepare_event`           | Event preparation workflow for a `brief` and optional `locale`         |
-| `POST /prompts/prepare_project`         | Project story workflow for a `brief` and optional `locale`              |
-| `POST /prompts/review_page_design`      | Saved-page visual review workflow for `pageId` and optional `locale`   |
+| `GET /openapi.json`                     | Full OpenAPI 3.1 document; input/output schemas and request examples                                          |
+| `GET /prompts`                          | Prompt names and arguments                                                                                    |
+| `POST /prompts/adapt_reference_website` | Adaptation instructions for `sourceUrl`, optional `locale` and `brief`                                        |
+| `POST /prompts/plan_native_website`     | Native page design workflow for a `brief` and optional `locale`                                               |
+| `POST /prompts/prepare_event`           | Event preparation workflow for a `brief` and optional `locale`                                                |
+| `POST /prompts/prepare_project`         | Project story workflow for a `brief` and optional `locale`                                                    |
+| `POST /prompts/review_page_design`      | Saved-page visual review workflow for `pageId` and optional `locale`                                          |
 
 Capabilities and workflow prompts describe the available preparation workflows.
 Prompts return instructions; RotaPress does not run a model or generate images.
@@ -90,6 +92,7 @@ registry that handles requests. Use them for every field, enum and required valu
 | `/website/content/{id}/languages`                         | POST       | `website:manage`                               |
 | `/website/settings`                                       | PATCH      | `website:settings`                             |
 | `/sources/read`                                           | POST       | `sources:read`                                 |
+| `/sources/images`                                         | POST       | `sources:read` and `media:write`               |
 | `/imports`                                                | POST       | `website:write`                                |
 | `/imports/{requestId}`                                    | GET        | `website:read`                                 |
 | `/media`                                                  | GET        | `media:read`                                   |
@@ -166,7 +169,7 @@ gain publication grants; issue a new token with the required actions selected.
 | `POST /events/{eventId}/prizes/{id}/publish`                    | `events:publish`    | Editorial prize `expectedVersion` and owning event                                   |
 | `POST /directory/{id}/publish`                                  | `directory:publish` | Profile `expectedVersion`                                                            |
 | `POST /projects/{id}/publish`                                   | `projects:publish`  | Project story `expectedVersion`                                                      |
-| `POST /media/publish`                                           | `media:publish`     | 1–50 distinct `assets` with `id` and `expectedRevision` from each `metadataRevision`   |
+| `POST /media/publish`                                           | `media:publish`     | 1–50 distinct `assets` with `id` and `expectedRevision` from each `metadataRevision` |
 
 Read the target immediately before publishing. A stale revision/version conflicts;
 do not silently substitute a newer unreviewed draft. The server also enforces
@@ -221,6 +224,19 @@ and limitation information. It does not capture rendered CSS, fonts, screenshots
 JavaScript content or image bytes. Use the client's own visual tools to inspect
 the reference and compare saved previews at desktop/phone widths. `content_import`
 creates text starters; compose finished layouts and images through `website_save`.
+
+`source_image_import` (`POST /sources/images`) imports one public PNG, JPEG or
+WebP of at most **5 MiB** directly from an approved reference domain. It requires
+both `sources:read` and `media:write`, checks HTTPS/public DNS and robots rules,
+rejects redirects and normalizes the result into a **private** club asset. Supply
+the exact image URL, UUID `requestId`, filename and metadata, and
+`rightsConfirmed: true` only when reuse is authorized. Domain approval and public
+availability do not establish image rights. Keep the URL, source bytes and
+metadata identical when retrying the same request ID: its fingerprint includes
+the normalized source URL, rights confirmation, fetched bytes and metadata. A
+changed URL, bytes or metadata under the same ID returns 409. Inspect the returned
+asset with `media_inspect` and use its actual ID in native blocks; import does not
+publish it.
 
 An AI client can upload a PNG, JPEG or WebP with `media_upload`: canonical base64
 containing at most **180 KiB** of decoded bytes inside the normal JSON limit. A
@@ -305,20 +321,21 @@ These are project stories, with no volunteer, attendance or registration records
 The `prepare_project` prompt
 and `automation_project_prompt` tool describe this workflow.
 
-| Update                      | Concurrency field                              |
-| --------------------------- | ---------------------------------------------- |
-| Page / visual preview       | `expectedRevisionId` from `draft.id`           |
-| Form                        | `expectedRevision` from `draftRevision`        |
+| Update                              | Concurrency field                              |
+| ----------------------------------- | ---------------------------------------------- |
+| Page / visual preview               | `expectedRevisionId` from `draft.id`           |
+| Form                                | `expectedRevision` from `draftRevision`        |
 | Event/profile/project/package/prize | `expectedVersion` from `version`               |
-| Private media metadata      | `expectedRevision` from `metadataRevision`     |
-| Event settings proposal     | Target event or registration `expectedVersion` |
+| Private media metadata              | `expectedRevision` from `metadataRevision`     |
+| Event settings proposal             | Target event or registration `expectedVersion` |
 
 For new page batches, prefer `content_import`: one UUID request ID, 1–10 pages,
 each containing 1–12 plain-text sections. The transaction creates all drafts or
 none. Repeating the same parsed payload and UUID returns the receipt; changing
 the payload under that UUID returns 409. Existing slugs are never overwritten.
-Image uploads, event preparation and event-setting proposals also support stable
-`requestId` retries. Keep the exact bytes/metadata or reviewed payload and token.
+Image uploads, source-image imports, event preparation and event-setting proposals
+also support stable `requestId` retries. Keep the exact source URL, bytes/metadata
+or reviewed payload and token.
 Receipts remain bound to the creating actor and organization; a changed payload
 conflicts. Deleting an uploaded asset does not let its old request ID recreate it.
 Other create operations are not idempotent; do not retry them blindly on timeout.

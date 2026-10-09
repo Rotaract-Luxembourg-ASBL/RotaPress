@@ -5,6 +5,7 @@ import { Notice } from "@/ui/primitives";
 import { ApiError, errorMessage, request } from "@/ui/api";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
 import { readOnlyScopes } from "../permission_context";
+import { ReferenceCoverage } from "../ui/reference-origins";
 
 const actionGroups = [
   { prefix: "website:", name: "Website" },
@@ -220,6 +221,9 @@ export function OAuthConsent({
               allowed actions.
             </strong>
             <p>
+              {readOnlyScopes(actions) &&
+                !readOnlyScopes(allowedActions) &&
+                "The app requested read-only access, so it cannot prepare drafts with this selection. "}
               Approve this smaller selection, or review the other actions
               already allowed in your connection settings. Nothing is added
               without your approval.
@@ -354,12 +358,8 @@ export function OAuthConsent({
               className="oauth-consent-sources"
               aria-labelledby={`${labelPrefix}-sources`}
             >
-              <h2 id={`${labelPrefix}-sources`}>Approved reference websites</h2>
-              <ul>
-                {details.sourceOrigins.map((origin) => (
-                  <li key={origin}>{origin}</li>
-                ))}
-              </ul>
+              <h2 id={`${labelPrefix}-sources`}>Reference website coverage</h2>
+              <ReferenceCoverage rules={details.sourceOrigins} />
             </section>
           )}
         {details.scopes.includes("offline_access") && (
