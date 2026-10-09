@@ -4,7 +4,10 @@ import {
   validateProviderIdentity,
   googleFlowIsCurrent,
 } from "../../src/core/auth/session_policy";
-import { signInDestination } from "../../src/core/auth/sign_in_destination";
+import {
+  signInDestination,
+  signInErrorCallbackURL,
+} from "../../src/core/auth/sign_in_destination";
 import { googleSignInSchema } from "../../src/core/auth/google_sign_in";
 import { DomainError } from "../../src/core/DomainError";
 
@@ -196,6 +199,102 @@ describe("Authentication transport and provider policy", () => {
           }).success,
         ).toBe(false);
     }
+  });
+  it("retains supported destinations and identity confirmation only in Google error recovery", () => {
+    const id = "12345678-1234-4321-8123-123456789012";
+    for (const returnTo of [
+      "/setup",
+      "/admin/integrations/mcp",
+      "/calendar?tab=subscriptions",
+      `/forms/${id}`,
+      `/events/${id}/fr/registration`,
+    ]) {
+      for (const reauth of [false, true]) {
+        const errorCallbackURL = signInErrorCallbackURL(returnTo, reauth);
+        const query = new URL(errorCallbackURL, "http://127.0.0.1:3000")
+          .searchParams;
+        expect(query.get("next")).toBe(returnTo);
+        expect(query.get("reauth")).toBe(reauth ? "1" : null);
+        for (const value of [
+          errorCallbackURL,
+          `http://127.0.0.1:3000${errorCallbackURL}`,
+        ]) {
+          expect(
+            googleSignInSchema.safeParse({
+              provider: "google",
+              callbackURL: returnTo,
+              errorCallbackURL: value,
+            }).success,
+          ).toBe(true);
+          for (const key of ["callbackURL", "newUserCallbackURL"])
+            expect(
+              googleSignInSchema.safeParse({
+                provider: "google",
+                [key]: value,
+              }).success,
+            ).toBe(false);
+        }
+      }
+    }
+    expect(signInErrorCallbackURL("//untrusted.example", true)).toBe(
+      "/sign-in?next=%2Fmembership&reauth=1",
+    );
+  });
+  it("rejects unknown, repeated and unsafe Google recovery parameters", async () => {
+    for (const errorCallbackURL of [
+      "https://untrusted.example/sign-in?next=%2Fadmin",
+      "//untrusted.example/sign-in?next=%2Fadmin",
+      "http://user:password@127.0.0.1:3000/sign-in?next=%2Fadmin",
+      "/sign-in?next=%2Fadmin#fragment",
+      "/sign-in?next=%2Fadmin&next=%2Fguest",
+      "/sign-in?next=%2Fadmin&reauth=1&reauth=1",
+      "/sign-in?next=%2Fadmin&reauth=0",
+      "/sign-in?next=%2Fadmin&reauth=true",
+      "/sign-in?next=%2Fadmin&error=access_denied",
+      "/sign-in?next=%2Fadmin&callbackURL=%2Fguest",
+      "/sign-in?next=%2F%2Funtrusted.example",
+      "/sign-in?next=https%3A%2F%2Funtrusted.example",
+      "/sign-in?next=%252f%252funtrusted.example",
+      "/sign-in?next=%2Fguest%2F..%2Fadmin",
+      "/sign-in?next=%2Fguest%3Fnext%3D%2Fadmin",
+      "/sign-in?next=%2Fsign-in%3Fnext%3D%2Fadmin",
+      "/sign-in?next=",
+      "/sign-in?reauth=1",
+    ]) {
+      const response = await POST(
+        new Request("http://127.0.0.1:3000/api/auth/sign-in/social", {
+          method: "POST",
+          headers: {
+            origin: "http://127.0.0.1:3000",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ provider: "google", errorCallbackURL }),
+        }),
+      );
+      expect(response.status).toBe(400);
+    }
+    expect(handler).not.toHaveBeenCalled();
+  });
+  it("forwards the reviewed Google recovery URL to Better Auth without owning OAuth state", async () => {
+    const input = {
+      provider: "google",
+      callbackURL: "/admin/integrations/mcp",
+      errorCallbackURL: signInErrorCallbackURL("/admin/integrations/mcp", true),
+    };
+    const response = await POST(
+      new Request("http://127.0.0.1:3000/api/auth/sign-in/social", {
+        method: "POST",
+        headers: {
+          origin: "http://127.0.0.1:3000",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(input),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+    expect(await handler.mock.calls[0][0].json()).toEqual(input);
+    expect(response.headers.get("cache-control")).toBe("no-store, private");
   });
   it("keeps library responses private and prevents forwarded-header rate-limit evasion on both verbs", async () => {
     const requests = [

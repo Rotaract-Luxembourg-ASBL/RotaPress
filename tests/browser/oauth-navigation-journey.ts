@@ -12,6 +12,7 @@ export async function openOAuthFromAssistant(page: Page, authorizeUrl: string) {
   try {
     await page.goto(assistant);
     await page.getByRole("link", { name: "Connect to RotaPress" }).click();
+    await page.waitForLoadState("load");
   } finally {
     await page.unroute(assistant);
   }

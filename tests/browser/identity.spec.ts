@@ -298,6 +298,22 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   );
   await applicant.goto("/admin");
   await expect(applicant).toHaveURL(/\/membership$/);
+  await applicant.goto("/sign-in?next=/admin");
+  await expect(
+    applicant.getByRole("heading", {
+      name: "Workspace access needs approval",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    applicant.getByRole("link", { name: "Open workspace", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    applicant.getByRole("link", { name: "Open member account", exact: true }),
+  ).toHaveAttribute("href", "/membership");
+  await expect(
+    applicant.getByRole("button", { name: "Sign out", exact: true }),
+  ).toBeVisible();
 
   await page.goto("/admin/members");
   await page

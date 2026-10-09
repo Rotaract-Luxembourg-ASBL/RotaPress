@@ -31,3 +31,13 @@ export function signInDestination(next: string | null): string {
     return next;
   return "/membership";
 }
+
+/** Return failed Google flows to sign-in without losing the supported destination. */
+export function signInErrorCallbackURL(
+  returnTo: string,
+  reauth = false,
+): string {
+  const query = new URLSearchParams({ next: signInDestination(returnTo) });
+  if (reauth) query.set("reauth", "1");
+  return `/sign-in?${query.toString()}`;
+}

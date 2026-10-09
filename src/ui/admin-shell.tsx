@@ -92,6 +92,10 @@ export function AdminShell({
       </main>
     );
 
+  // Consent owns its page landmark while keeping the trusted staff context.
+  if (pathname === "/admin/integrations/automation/authorize")
+    return <UserContext.Provider value={me}>{children}</UserContext.Provider>;
+
   const links = [
     {
       href: "/admin",

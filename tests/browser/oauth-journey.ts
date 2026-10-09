@@ -12,6 +12,16 @@ import {
   revokeOAuthConnection,
 } from "./oauth-connections-journey";
 
+async function captureConsent(page: Page, path: string) {
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+    window.scrollTo(0, 0);
+  });
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.screenshot({ path, fullPage: true });
+}
+
 /** Existing real OTP owner session; callback is intercepted on loopback, never external. */
 export async function oauthJourney(
   owner: Page,
@@ -156,6 +166,46 @@ export async function oauthJourney(
         exact: true,
       }),
     ).toBeVisible();
+    // Retain the provider-signed request through the actual recovery endpoint.
+    // The owner keeps the already authenticated local fixture session.
+    const signedQuery = new URL(owner.url()).search;
+    await owner.goto(`/api/automation/oauth/sign-in${signedQuery}`);
+    await expect(owner).toHaveURL(
+      `${smokeOrigin}/sign-in?reauth=1&next=/admin/integrations/automation/authorize`,
+    );
+    await owner.goto("/admin/integrations/automation/authorize");
+    await expect(
+      owner.getByRole("heading", {
+        name: "Allow Synthetic OAuth assistant to help your club?",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(owner.getByRole("main")).toHaveCount(1);
+    await expect(owner.locator("#main-content")).toHaveCount(1);
+    await expect(owner.locator(".admin-layout")).toHaveCount(0);
+    await expect(
+      owner.getByRole("navigation", { name: "Administration", exact: true }),
+    ).toHaveCount(0);
+    await expect(owner.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(
+      owner
+        .getByRole("list", { name: "Connection progress", exact: true })
+        .locator('[aria-current="step"]'),
+    ).toContainText("Review access");
+    await expect(owner.locator(".oauth-consent-account strong")).toBeVisible();
+    await expect
+      .poll(() =>
+        owner
+          .locator(".oauth-consent-account strong")
+          .evaluate(
+            (identity) =>
+              identity.getBoundingClientRect().bottom + window.scrollY,
+          ),
+      )
+      .toBeLessThanOrEqual(900);
+    await expect(
+      owner.getByRole("group", { name: "Website", exact: true }),
+    ).toBeVisible();
     await expect(
       owner.getByRole("checkbox", {
         name: "Read website content",
@@ -170,21 +220,48 @@ export async function oauthJourney(
     await expect(
       owner.getByText("1 action selected · Read-only access", { exact: true }),
     ).toBeVisible();
+    const requestedRead = owner.getByRole("checkbox", {
+      name: "Read website content",
+      exact: true,
+    });
+    await requestedRead.focus();
+    await requestedRead.press("Space");
+    await expect(
+      owner.getByRole("button", {
+        name: "Allow selected actions",
+        exact: true,
+      }),
+    ).toBeDisabled();
+    await expect(
+      owner.getByText("0 actions selected", { exact: true }),
+    ).toBeVisible();
+    await requestedRead.press("Space");
+    await expect(requestedRead).toBeChecked();
+    await expect(
+      owner.getByRole("complementary", {
+        name: "Publication permissions",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    const returnDetails = owner.locator(".oauth-consent-destination details");
+    await expect(returnDetails.locator("code")).toBeHidden();
+    await returnDetails.locator("summary").focus();
+    await returnDetails.locator("summary").press("Enter");
+    await expect(returnDetails.locator("code")).toHaveText(callback);
+    await returnDetails.locator("summary").press("Enter");
+    await expect(returnDetails.locator("code")).toBeHidden();
     await expect(
       owner.getByRole("checkbox", {
         name: "Publish website content and settings on request",
         exact: true,
       }),
     ).toHaveCount(0);
-    await owner.screenshot({
-      path: ".local/oauth-requested-permissions-desktop.png",
-      fullPage: true,
-    });
+    await captureConsent(
+      owner,
+      ".local/oauth-requested-permissions-desktop.png",
+    );
     await owner.setViewportSize({ width: 390, height: 844 });
-    await owner.screenshot({
-      path: ".local/oauth-requested-permissions-phone.png",
-      fullPage: true,
-    });
+    await captureConsent(owner, ".local/oauth-requested-permissions-phone.png");
     await owner
       .getByRole("button", { name: "Review all allowed actions", exact: true })
       .click();
@@ -200,11 +277,20 @@ export async function oauthJourney(
         exact: true,
       }),
     ).toHaveCount(0);
+    await expect(
+      owner.getByRole("group", { name: "Calendar", exact: true }),
+    ).toBeVisible();
+    await expect(
+      owner.getByRole("complementary", {
+        name: "Publication permissions",
+        exact: true,
+      }),
+    ).toContainText("Publication needs your explicit request");
     if (viewport) await owner.setViewportSize(viewport);
-    await owner.screenshot({
-      path: ".local/oauth-reviewed-permissions-desktop.png",
-      fullPage: true,
-    });
+    await captureConsent(
+      owner,
+      ".local/oauth-reviewed-permissions-desktop.png",
+    );
     for (const name of [
       "Publish website content and settings on request",
       "Publish calendars, activities and page design on request",
@@ -221,10 +307,7 @@ export async function oauthJourney(
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-    await owner.screenshot({
-      path: ".local/oauth-consent-phone.png",
-      fullPage: true,
-    });
+    await captureConsent(owner, ".local/oauth-consent-phone.png");
     if (viewport) await owner.setViewportSize(viewport);
     const ownerSession = await owner.request.get("/api/auth/get-session");
     expect(ownerSession.status()).toBe(200);
@@ -253,12 +336,27 @@ export async function oauthJourney(
       await expect(
         owner.getByRole("link", { name: "Sign in to continue", exact: true }),
       ).toBeVisible();
+      await expect(
+        owner.getByRole("button", {
+          name: "Allow selected actions",
+          exact: true,
+        }),
+      ).toBeDisabled();
+      await expect(owner.locator(".oauth-consent-error")).toBeFocused();
+      await expect(
+        owner.getByRole("checkbox", {
+          name: "Publish website content and settings on request",
+          exact: true,
+        }),
+      ).toBeChecked();
     } finally {
       await database.query(
         "UPDATE club.session SET created_at=$2 WHERE id=$1",
         [session.id, originalSession.rows[0].created_at],
       );
     }
+    // Reload consent details after restoring the current fixture identity.
+    await owner.reload();
     await owner
       .getByRole("button", { name: "Allow selected actions", exact: true })
       .click();

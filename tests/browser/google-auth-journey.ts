@@ -1,6 +1,10 @@
 import { expect, type Browser, type Page } from "@playwright/test";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import type { Pool } from "pg";
+import {
+  signInGooglePendingJourney,
+  signInRecoveryJourney,
+} from "./sign-in-recovery-journey";
 
 /** B01 continuation: real OTP owner, synthetic credentials, no Google requests. */
 export async function googleAuthJourney(
@@ -168,6 +172,7 @@ export async function googleAuthJourney(
     await confirm("Enable Google sign-in");
     await settings(true, true);
     await publicAvailability(true);
+    await signInGooglePendingJourney(visitor);
 
     // Parse the real library response locally; OAuth state and the URL never leave this closure.
     const redirect = await visitor.evaluate(async (body) => {
@@ -315,22 +320,34 @@ export async function googleAuthJourney(
       ).toBeVisible();
       for (const width of [1440, 390]) {
         await visitor.setViewportSize({ width, height: 900 });
-        for (const next of [
-          "",
-          "/membership",
-          "/admin",
-          "/guest",
-          "/registrations",
-          "/calendar",
-          "/setup",
-          "https://untrusted.example/",
+        for (const [next, heading, contextLabel] of [
+          ["", "Sign in to your club account", "Member access"],
+          ["/membership", "Sign in to your club account", "Member access"],
+          ["/admin", "Sign in to your workspace", "Your club account"],
+          [
+            "/admin/integrations/automation/authorize",
+            "Sign in to connect",
+            "AI connection",
+          ],
+          ["/guest", "Sign in to continue", "Your club account"],
+          ["/registrations", "Sign in to continue", "Your club account"],
+          ["/calendar", "Sign in to your calendar", "Club calendar"],
+          ["/setup", "Sign in to continue", "Your club account"],
+          [
+            "https://untrusted.example/",
+            "Sign in to your club account",
+            "Member access",
+          ],
         ]) {
           await visitor.goto(
             `/sign-in${next ? `?next=${encodeURIComponent(next)}` : ""}`,
           );
           await expect(
-            visitor.getByRole("heading", { name: "Welcome back", exact: true }),
+            visitor.getByRole("heading", { name: heading, exact: true }),
           ).toBeVisible();
+          await expect(visitor.getByRole("heading", { level: 1 })).toHaveCount(
+            1,
+          );
           await expect(
             visitor.getByRole("button", {
               name: "Sign in with Google",
@@ -338,8 +355,12 @@ export async function googleAuthJourney(
             }),
           ).toBeVisible();
           await expect(
-            visitor.getByText("Your club account", { exact: true }),
+            visitor.getByText(contextLabel, { exact: true }),
           ).toBeVisible();
+          if (next === "/admin")
+            await expect(
+              visitor.getByText("Welcome back", { exact: true }),
+            ).toBeVisible();
           await expect(visitor.getByLabel("Email address")).toHaveCount(0);
           await expect(
             visitor.getByRole("button", { name: "Send verification code" }),
@@ -364,6 +385,18 @@ export async function googleAuthJourney(
           path: `.local/feedback-captures/sign-in-google-${width}.png`,
           fullPage: true,
         });
+        await visitor.goto("/sign-in?next=/admin");
+        await expect(
+          visitor.getByRole("heading", {
+            name: "Sign in to your workspace",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await visitor.screenshot({
+          path: `.local/feedback-captures/sign-in-staff-${width}.png`,
+          fullPage: true,
+        });
+        await visitor.goto("/sign-in?next=/membership");
       }
       for (const [path, data] of [
         [
@@ -420,15 +453,16 @@ export async function googleAuthJourney(
         "Google sign-in did not finish",
       );
       await expect(visitor.getByLabel("Email address")).toHaveCount(0);
+      await signInRecoveryJourney(visitor);
       await visitor.goto("/sign-in?next=/membership");
       await database.query(
         "UPDATE club.google_auth_configuration SET enabled = false",
       );
       try {
         await visitor.reload();
-        await expect(visitor.getByRole("main").getByRole("alert")).toContainText(
-          "Google sign-in is currently unavailable",
-        );
+        await expect(
+          visitor.getByRole("main").getByRole("alert"),
+        ).toContainText("Google sign-in is currently unavailable");
         await expect(visitor.getByLabel("Email address")).toHaveCount(0);
         await database.query(
           "UPDATE club.google_auth_configuration SET enabled = true",
