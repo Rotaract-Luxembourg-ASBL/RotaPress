@@ -4,6 +4,15 @@ The [guided installer](../guides/hosting.md) is the default standalone path.
 `Dockerfile` is also the artifact for other container hosts; no hosting SDK,
 vendor database engine or separate application architecture is used.
 
+The Node base image comes from Docker's official publisher on
+[ECR Public](https://aws.amazon.com/blogs/containers/docker-official-images-now-available-on-amazon-elastic-container-registry-public/).
+Both stages use the same version and immutable multi-platform manifest digest,
+verified against the corresponding Docker Hub image. Public pulls need no AWS
+account. When updating Node, update the Dockerfile version and digest together
+and verify the registry manifests match. Container hosts may override the public
+`NODE_IMAGE` build argument with an approved distribution of that same image;
+never put credentials in this argument.
+
 ## Runtime
 
 - Build the root Dockerfile without database access or deployment secrets.

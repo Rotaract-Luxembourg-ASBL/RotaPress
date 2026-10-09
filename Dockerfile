@@ -1,4 +1,7 @@
-FROM node:24.21.0-bookworm-slim AS build
+# Docker's ECR Public distribution avoids shared Docker Hub pull limits.
+# Keep the official image version and manifest digest together when updating.
+ARG NODE_IMAGE=public.ecr.aws/docker/library/node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -11,7 +14,7 @@ RUN DATABASE_URL=postgresql://rotapress_app:unused@127.0.0.1/rotapress \
     APP_URL=http://127.0.0.1:3000 EMAIL_PROVIDER=disabled \
     node scripts/pnpm.mjs build
 
-FROM node:24.21.0-bookworm-slim AS runtime
+FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 ROTAPRESS_DEPLOYMENT=hosted
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/.browsers
