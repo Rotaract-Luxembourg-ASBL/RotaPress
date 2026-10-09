@@ -51,17 +51,17 @@ export async function oauthConnectionsJourney(
     exact: true,
   });
   await reference.check();
-  const origins = dialog.getByLabel("Approved reference websites", {
+  const origins = dialog.getByLabel("Reference website domains", {
     exact: true,
   });
-  await origins.fill("https://www.example.org/path");
+  await origins.fill("https://www.rotaract.lu/path");
   await dialog.getByRole("tab", { name: "Activity", exact: true }).click();
   await expect(
     dialog.getByText("Automation capabilities", { exact: true }).first(),
   ).toBeVisible();
   await dialog.screenshot({ path: ".local/oauth-activity-desktop.png" });
   await dialog.getByRole("tab", { name: "Permissions", exact: true }).click();
-  await expect(origins).toHaveValue("https://www.example.org/path");
+  await expect(origins).toHaveValue("https://www.rotaract.lu/path");
   await owner.keyboard.press("Escape");
   await expect(
     dialog
@@ -76,11 +76,30 @@ export async function oauthConnectionsJourney(
     exact: true,
   });
   await save.click();
-  await expect(dialog.getByRole("alert")).toContainText(
-    "HTTPS website origin without a path",
+  await expect(dialog.getByRole("alert")).toContainText(/domain|HTTPS/);
+  await expect(origins).toHaveValue("https://www.rotaract.lu/path");
+  await origins.fill("https://www.rotaract.lu");
+  await expect(
+    dialog.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText("Exact HTTPS host only");
+  await dialog
+    .getByRole("button", {
+      name: "Use rotaract.lu and subdomains",
+      exact: true,
+    })
+    .click();
+  await expect(origins).toHaveValue("rotaract.lu");
+  await expect(
+    dialog.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText(
+    "HTTPS rotaract.lu and all subdomains, including www.rotaract.lu",
   );
-  await expect(origins).toHaveValue("https://www.example.org/path");
-  await origins.fill("https://www.example.org");
   await dialog
     .getByRole("checkbox", {
       name: "Copy pages, add languages and restore drafts",
@@ -123,7 +142,7 @@ export async function oauthConnectionsJourney(
   ).toBeVisible();
   await trigger.click();
   await expect(reference).toBeChecked();
-  await expect(origins).toHaveValue("https://www.example.org");
+  await expect(origins).toHaveValue("rotaract.lu");
   await expect(
     dialog.getByRole("checkbox", {
       name: "Copy pages, add languages and restore drafts",

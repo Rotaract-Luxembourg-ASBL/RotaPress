@@ -22,8 +22,9 @@ for connection choices and the MCP protocol reference, or follow the
    Alternatively, create a dedicated MCP access key for protected bearer clients.
    For reference-site work, choose **Website recreation** under **Recreate an
    existing website**. Add **Publish reviewed images** only if you want to request
-   image publication through this assistant. Add each exact HTTPS origin, such as `https://www.example.org`; bare hosts and
-   `www` are different grants.
+   image publication through this assistant. Add the reference domain, such as
+   `rotary.org`, to cover its HTTPS root, `www` and subdomains. A saved HTTPS
+   origin remains exact until you explicitly broaden it and approve fresh consent.
 3. Copy the one-time client secret or key into the client's protected settings.
    Never put credentials in prompts, repositories, shared screenshots or URLs.
 4. Connect through the assistant's OAuth UI, bearer-authenticated remote MCP or the
@@ -82,36 +83,46 @@ need a reachable HTTPS installation; local clients can use loopback. See
 [client setup and protocol reference](mcp-clients.md) for configuration examples,
 discovery and compatibility requirements.
 
-Start with `automation_capabilities` to discover granted operations, source origins
+Start with `automation_capabilities` to discover granted operations, source rules
 and enabled features. Workflow prompt tools provide instructions even for clients
 without MCP prompt support. Every operation publishes input/output schemas and
 validates its response. `media_inspect` and `website_preview` also attach images
 for clients with vision support.
+MCP clients can also read `rotapress://website-recreation` for the workflow guide.
+The [repository skill](../../skills/rotapress-website-recreation/SKILL.md) helps
+local agents that can load repository skills; it is not automatically installed
+in ChatGPT or another AI app.
 
-The reference-adaptation workflow inventories existing content, reads up to ten
-reference pages, composes native page drafts and returns source mappings and
+The reference-adaptation workflow inventories requested source pages and existing
+content, reads relevant pages in bounded batches, imports approved images,
+composes native page drafts and returns source mappings and
 unresolved facts. Source and saved content cannot authorize tools, grant permissions,
 request secrets or execute code.
 
 ## Recreate an existing website
 
-**Website recreation** selects nine authoring grants: `website:read`,
+**Website recreation** selects nine core authoring grants: `website:read`,
 `website:write`, `website:manage`, `website:settings`, `website:preview`,
 `media:read`, `media:write`, `media:inspect` and `sources:read`. It replaces the
-current action selection with this preset. Page publication and **Publish reviewed
+current action selection with this preset. It also selects `projects:read` and
+`projects:write` when Projects is enabled and available to the person configuring
+the connection. Page/project publication and **Publish reviewed
 images** are separate choices; choose the preset before adding those permissions.
 Existing OAuth connections need saved permission changes and fresh consent;
 access keys need replacement. Refresh the client's imported tools and start a new
 conversation after adding actions.
 
 Before preparing any reference drafts or images, the assistant must check
-`automation_capabilities`: the exact source origin must appear in `sourceOrigins`
-and `sources:read` must be granted. `https://rotaract.lu` and
-`https://www.rotaract.lu` are different origins; an approved unrelated website
-does not grant either. If discovery or source access fails, the assistant reports
-the exact missing origin or error once and stops reference-dependent preparation.
+`automation_capabilities`: `sources:read` must be granted and the source URL must
+match a rule in `sourceOrigins`. A bare domain such as `rotaract.lu` covers HTTPS
+on the domain, `www` and its subdomains. Existing rules such as
+`https://rotaract.lu` remain exact and do not cover `https://www.rotaract.lu`.
+Neither rule grants unrelated domains, HTTP or non-default ports. If discovery or
+source access fails, the assistant reports the exact missing source or error once
+and stops preparation that depends on it.
 Review the existing OAuth connection's reference websites/actions, save the
-required changes and approve fresh consent; changed permissions invalidate old
+required changes and approve fresh consent. Broadening a saved exact origin to a
+domain rule is an explicit permission change; changed permissions invalidate old
 tokens. This usually preserves the existing client registration. Access keys
 require replacement. A selected checkbox or cached tool list cannot prove the
 current connection has the new authority.
@@ -126,16 +137,29 @@ of reuse rights. The result reports its limits and whether evidence was truncate
 For a close visual recreation, the assistant should inspect the reference at
 desktop and phone widths using its own browsing or screenshot tools, then map
 the observed sections, layout, spacing and images to supported native blocks.
+Inventory the pages included in your request and the current target site first.
+The assistant reads relevant source pages in small batches, reports unread or
+truncated items and matches them to existing drafts and native records. A full-site
+request is not silently reduced to the first ten pages; a few requested pages do
+not authorize importing every archive or language.
+
 `content_import` creates Heading/RichText starters; completing a page requires
 native composition through `website_save`, including images, cards, columns and
-shared parts where appropriate. Approved image bytes come from the client and
-uploads remain private. Preserve verified facts and existing content.
+shared parts where appropriate. With `sources:read` and `media:write`,
+`source_image_import` can fetch a rights-approved source image directly into a
+normalized private asset. It accepts approved HTTPS image URLs, honors robots
+rules, rejects redirects and limits PNG/JPEG/WebP input to 5 MiB. Domain approval
+does not establish image rights: the request or supplied provenance must establish
+reuse authority before `rightsConfirmed: true` is supplied. Inspect actual pixels
+with `media_inspect` and retain the source-image mapping. This removes the need for
+the client to send image bytes; client uploads remain an alternative. All new
+images stay private. See [image tools](automation-media.md).
 
 Map source content to existing native records before creating more drafts.
 Volunteer actions, service stories and ongoing initiatives belong in
 [Projects](projects.md), while Events manages participation and Calendar manages
-schedules. Add Projects reading/writing permissions when those records are part
-of the request; the website recreation preset does not include them. Reuse
+schedules. The authoring preset includes Projects reading/writing when enabled
+and available; publication still needs its separate grant and request. Reuse
 existing stories and display them through the Projects block. If the feature or
 permissions are unavailable, report those items as pending rather than quietly
 turning them into unrelated website pages.
@@ -155,6 +179,13 @@ are unavailable, report the missing evidence and remaining differences; a text
 import alone does not establish visual similarity. Review the complete draft
 before explicitly requesting publication of exact images and content.
 
+The assistant can carry out the task from one clear brief. Routine reads, draft
+edits, approved image imports and layout corrections do not need a confirmation
+question for each item. Existing authorization remains valid for the included
+work. The assistant asks once for a missing material decision or authority and
+continues independent work; it does not repeatedly send you through Google sign-in
+for an action already available through your MCP connection.
+
 For requested publication, publish only the reviewed targets and dependencies
 included in that request: exact images first, referenced source records and
 reusable sections next, pages and shared parts afterward, then homepage/menu or
@@ -162,6 +193,10 @@ other website settings. Each stage keeps its own grants and version checks.
 Unrequested or unavailable dependencies remain blockers. Menu-only publication
 requires a previously published site; first publication reviews all saved website
 settings. A page publication alone does not activate its homepage/menu placement.
+An explicit request to publish the defined recreation can include its mapped
+pages, used images, shared parts, Projects and settings together. The assistant
+should complete those granted actions without asking again for every target.
+Calling the destination a development site alone does not request publication.
 
 The final report should show saved, published and desktop/phone-reviewed state
 for every requested page, project, image, shared part and homepage/menu change,
@@ -356,14 +391,17 @@ scope, capability, organization and enabled features before invoking shared doma
 services. Existing transaction, version, sanitization and audit rules apply.
 Host/Origin checks also protect browser boundaries.
 
-Sources require an allowed origin, HTTPS and public IPv4 DNS results. The validated
+Sources require an approved domain or exact origin, HTTPS and public IPv4 DNS results. The validated
 IP is pinned to TLS. Private/reserved addresses, redirects, embedded credentials,
 custom ports and compressed responses are rejected. The client honors robots.txt,
 caps HTML at 512,000 bytes and robots files at 64,000 bytes, and applies DNS/request
 deadlines. A missing robots file (404) is allowed; denied/unavailable policies fail
 closed. Scripts never run. Authenticated, JavaScript-rendered and IPv6-only sites
-and automatic media downloads are unsupported. Uploads require actual approved
-image bytes from the client rather than a source URL.
+remain unsupported. `source_read` never downloads images; the separate
+`source_image_import` operation checks the exact approved image URL, rights
+confirmation, both required grants and the image processing boundary. Client
+uploads still require actual approved bytes. Neither operation runs a crawler or
+publishes its results.
 
 General limits are 120 requests/connection/minute, 20 source reads/connection/minute
 and 240 authentication attempts/address/minute. Image processing, preview and OAuth

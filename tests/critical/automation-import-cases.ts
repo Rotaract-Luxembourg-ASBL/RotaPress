@@ -154,6 +154,60 @@ export function automationImportChecks(context: () => Context) {
         (await cms.detail(principal.actor, saved.id, "en")).draft.title,
       ).toBe("Original");
     });
+    it("accepts approved domain attribution across subdomains while retaining exact legacy attribution", async () => {
+      const { service, principal, input, cms } = await fixture();
+      const domainPrincipal = { ...principal, sourceOrigins: ["rotaract.lu"] };
+      const hosts = ["rotaract.lu", "www.rotaract.lu", "foo.rotaract.lu"];
+      const pages = hosts.map((host, index) => ({
+        ...input.pages[0],
+        title: `Source domain ${index}`,
+        slug: `source-domain-${index}`,
+        sourceUrl: `https://${host}/about`,
+      }));
+      const result = await service.create(domainPrincipal, { ...input, pages });
+      expect(result.status).toBe("private-drafts");
+      expect(result.pages.map((page) => page.sourceUrl)).toEqual(
+        pages.map((page) => page.sourceUrl),
+      );
+      for (const page of result.pages)
+        expect(
+          (await cms.detail(principal.actor, page.id, "en"))
+            .publishedRevisionId,
+        ).toBeNull();
+      for (const host of ["evilrotaract.lu", "rotaract.lu.evil"])
+        await expect(
+          service.create(domainPrincipal, {
+            requestId: randomUUID(),
+            pages: [
+              {
+                ...pages[0],
+                slug: "denied-source",
+                sourceUrl: `https://${host}/about`,
+              },
+            ],
+          }),
+        ).rejects.toMatchObject({ code: "SOURCE_NOT_ALLOWED" });
+      await expect(
+        service.create(
+          { ...principal, sourceOrigins: ["https://rotaract.lu"] },
+          {
+            requestId: randomUUID(),
+            pages: [
+              {
+                ...pages[0],
+                slug: "legacy-source",
+                sourceUrl: "https://www.rotaract.lu/about",
+              },
+            ],
+          },
+        ),
+      ).rejects.toMatchObject({ code: "SOURCE_NOT_ALLOWED" });
+      expect(
+        (await cms.list(principal.actor)).some((page) =>
+          ["denied-source", "legacy-source"].includes(page.slug),
+        ),
+      ).toBe(false);
+    });
     it("rechecks current membership even for a previously valid import receipt", async () => {
       const { service, principal, input, db } = await fixture();
       await service.create(principal, input);

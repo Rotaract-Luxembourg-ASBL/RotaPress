@@ -55,8 +55,14 @@ export async function integrationCredentialsJourney(owner: Page) {
     })
     .check();
   await owner
-    .getByLabel("Approved reference websites", { exact: true })
+    .getByLabel("Reference website domains", { exact: true })
     .fill("https://www.rotary.org");
+  await expect(
+    owner.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText("Exact HTTPS host only");
   await owner
     .getByLabel("Token name", { exact: true })
     .fill("Synthetic REST script");
@@ -110,6 +116,25 @@ export async function integrationCredentialsJourney(owner: Page) {
       exact: true,
     }),
   ).toBeVisible();
+  const savedRest = owner.locator(".automation-connections > li").filter({
+    has: owner.getByRole("heading", {
+      name: "Synthetic REST script",
+      exact: true,
+    }),
+  });
+  await savedRest.locator("summary").click();
+  await expect(
+    savedRest.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText("https://www.rotary.org");
+  await expect(
+    savedRest.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText("Exact HTTPS host only");
   await capture(owner, "rest-tokens");
 
   await owner.goto("/admin/integrations");
@@ -152,8 +177,16 @@ export async function integrationCredentialsJourney(owner: Page) {
     })
     .check();
   await owner
-    .getByLabel("Approved reference websites", { exact: true })
-    .fill("https://www.rotary.org");
+    .getByLabel("Reference website domains", { exact: true })
+    .fill("rotary.org");
+  await expect(
+    owner.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText(
+    "HTTPS rotary.org and all subdomains, including www.rotary.org",
+  );
   const mcpCreated = owner.waitForResponse(
     (r) => r.url().endsWith(endpoint) && r.request().method() === "POST",
   );
@@ -177,6 +210,21 @@ export async function integrationCredentialsJourney(owner: Page) {
   await owner
     .getByRole("button", { name: "I saved the key", exact: true })
     .click();
+  const savedMcp = owner.locator(".automation-connections > li").filter({
+    has: owner.getByRole("heading", {
+      name: "Synthetic MCP assistant",
+      exact: true,
+    }),
+  });
+  await savedMcp.locator("summary").click();
+  await expect(
+    savedMcp.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    }),
+  ).toContainText(
+    "HTTPS rotary.org and all subdomains, including www.rotary.org",
+  );
   await expect(
     owner.getByRole("button", {
       name: "Revoke Synthetic REST script",

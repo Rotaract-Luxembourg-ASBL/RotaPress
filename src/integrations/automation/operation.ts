@@ -24,12 +24,33 @@ export type Operation = {
   path: string;
   description: string;
   scope: AutomationScope | null;
+  /** Additional grants required together with the primary operation scope. */
+  requiredScopes?: readonly AutomationScope[];
   readOnly: boolean;
   input: z.ZodType;
   output: z.ZodType;
   example: Record<string, unknown>;
   run: (context: AutomationContext, input: unknown) => Promise<unknown>;
 };
+export function operationScopes(
+  operation: Operation,
+): readonly AutomationScope[] {
+  return [
+    ...new Set([
+      ...(operation.scope ? [operation.scope] : []),
+      ...(operation.requiredScopes ?? []),
+    ]),
+  ];
+}
+export function operationAllowed(
+  operation: Operation,
+  scopes?: readonly string[],
+) {
+  return (
+    !scopes ||
+    operationScopes(operation).every((scope) => scopes.includes(scope))
+  );
+}
 export function operation<I extends z.ZodType>(
   definition: Omit<Operation, "input" | "run" | "readOnly"> & {
     input: I;

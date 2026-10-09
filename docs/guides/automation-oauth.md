@@ -26,11 +26,15 @@ use the same permissions, private drafts and deliberate publication rules as the
 3. Select actions by group, or use **Select all**,
    **Clear all**, **Read only** or **Website drafts**. For an existing-site recreation,
    choose **Website recreation** under **Recreate an existing website**. This
-   selects nine authoring grants for private pages, copies/languages, settings,
-   media, source reads and previews. It replaces the current action selection;
+   selects authoring grants for private pages, copies/languages, settings,
+   media, source reads and previews, plus Project reading/writing when enabled
+   and available. It replaces the current action selection;
    add other permissions afterward. **Publish reviewed images** is an optional
-   separate grant; page publication needs its own selected action. List each exact
-   HTTPS reference origin. These origins are displayed again during consent.
+   separate grant; page and Project publication need their own selected actions.
+   Enter each reference domain, such as `rotary.org`, for HTTPS access to its root,
+   `www` and subdomains. Pasted links offer an explicit domain conversion; saved
+   HTTPS-origin rules stay exact until you choose broader coverage. The displayed
+   coverage is reviewed again during consent.
 4. Select **Create OAuth connection**. Follow **Finish connecting** to copy the
    server URL, client ID and one-time secret into the assistant. In ChatGPT,
    create an MCP app, choose OAuth and enter the credentials under **Advanced OAuth

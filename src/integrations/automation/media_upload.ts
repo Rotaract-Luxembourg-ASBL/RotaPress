@@ -78,8 +78,10 @@ function matchesMime(bytes: Buffer, mime: ImageMime) {
 export async function uploadAutomationImage(
   context: AutomationContext,
   input: unknown,
-  source: Buffer | (() => Promise<Buffer>),
-  mimeType: ImageMime,
+  source:
+    Buffer | (() => Promise<Buffer | { bytes: Buffer; mimeType: ImageMime }>),
+  mimeType?: ImageMime,
+  sourceFingerprint?: string,
 ) {
   await requireMediaScope(context, "media:write");
   const metadata = mediaUploadMetadata.parse(input);
@@ -108,7 +110,9 @@ export async function uploadAutomationImage(
   }
   return withAutomationImageWork(async () => {
     // Reserve bounded work before buffering a larger original image from REST.
-    const bytes = typeof source === "function" ? await source() : source;
+    const result = typeof source === "function" ? await source() : source;
+    const bytes = Buffer.isBuffer(result) ? result : result.bytes;
+    const declaredMime = Buffer.isBuffer(result) ? mimeType : result.mimeType;
     if (!bytes.length || bytes.length > MAX_UPLOAD_BYTES) {
       throw new DomainError(
         "UPLOAD_SIZE_INVALID",
@@ -116,7 +120,7 @@ export async function uploadAutomationImage(
         422,
       );
     }
-    if (!matchesMime(bytes, mimeType)) {
+    if (!declaredMime || !matchesMime(bytes, declaredMime)) {
       throw new DomainError(
         "UPLOAD_TYPE_INVALID",
         "The declared PNG, JPEG or WebP type must match the image bytes.",
@@ -125,19 +129,23 @@ export async function uploadAutomationImage(
     }
     const asset = await context.services.media.upload(
       context.principal.actor,
-      { ...metadata, bytes },
+      {
+        ...metadata,
+        bytes,
+        ...(sourceFingerprint ? { sourceFingerprint } : {}),
+      },
       () => requireMediaScope(context, "media:write", true),
     );
-    const result = mediaDetailOutput.safeParse({
+    const output = mediaDetailOutput.safeParse({
       asset,
       metadataRevision: mediaMetadataRevision(asset),
     });
-    if (!result.success)
+    if (!output.success)
       throw new DomainError(
         "AUTOMATION_RESPONSE_INVALID",
         "The response did not match the API contract.",
         500,
       );
-    return result.data;
+    return output.data;
   });
 }

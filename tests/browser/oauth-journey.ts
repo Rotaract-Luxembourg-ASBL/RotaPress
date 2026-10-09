@@ -83,8 +83,12 @@ export async function oauthJourney(
       "Create and manage calendar and activity drafts",
       "Edit draft calendar page design",
       "Publish calendars, activities and page design on request",
+      "Read approved reference websites",
     ])
       await picker.getByRole("checkbox", { name, exact: true }).check();
+    await panel
+      .getByLabel("Reference website domains", { exact: true })
+      .fill("rotaract.lu\nhttps://assets.example.org");
     await capture(owner, "mcp-oauth");
     const created = owner.waitForResponse(
       (response) =>
@@ -213,10 +217,16 @@ export async function oauthJourney(
       }),
     ).toBeChecked();
     await expect(
-      owner.getByText("The app requested 1 of 8 allowed actions.", {
+      owner.getByText("The app requested 1 of 9 allowed actions.", {
         exact: true,
       }),
     ).toBeVisible();
+    await expect(
+      owner.getByRole("complementary", {
+        name: "Permission request",
+        exact: true,
+      }),
+    ).toContainText("The app requested read-only access");
     await expect(
       owner.getByText("1 action selected · Read-only access", { exact: true }),
     ).toBeVisible();
@@ -286,6 +296,15 @@ export async function oauthJourney(
         exact: true,
       }),
     ).toContainText("Publication needs your explicit request");
+    const sourceCoverage = owner.getByRole("list", {
+      name: "Reference website coverage",
+      exact: true,
+    });
+    await expect(sourceCoverage).toContainText(
+      "HTTPS rotaract.lu and all subdomains, including www.rotaract.lu",
+    );
+    await expect(sourceCoverage).toContainText("https://assets.example.org");
+    await expect(sourceCoverage).toContainText("Exact HTTPS host only");
     if (viewport) await owner.setViewportSize(viewport);
     await captureConsent(
       owner,

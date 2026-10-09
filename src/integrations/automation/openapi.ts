@@ -1,5 +1,10 @@
 import { contractVersion, operations } from "./catalogue";
-import { inputJsonSchema, outputJsonSchema, successSchema } from "./operation";
+import {
+  inputJsonSchema,
+  outputJsonSchema,
+  successSchema,
+  operationScopes,
+} from "./operation";
 import { automationPrompts } from "./prompts";
 import { binaryMediaUploadPath } from "./media_openapi";
 
@@ -67,6 +72,7 @@ export function openApiDocument() {
       tags: [operation.scope?.split(":")[0] ?? "discovery"],
       description: operation.description,
       "x-rotapress-scope": operation.scope,
+      "x-rotapress-required-scopes": operationScopes(operation),
       "x-rotapress-read-only": operation.readOnly,
       security: [{ staffConnection: [] }],
       parameters,

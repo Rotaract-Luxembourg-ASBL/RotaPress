@@ -13,6 +13,8 @@ const websiteRecreationScopes: AutomationScope[] = [
   "media:write",
   "media:inspect",
   "sources:read",
+  "projects:read",
+  "projects:write",
 ];
 
 const groups = [
@@ -50,7 +52,7 @@ const groups = [
   {
     name: "Reference websites",
     prefix: "sources:",
-    hint: "Only the HTTPS origins you approve below",
+    hint: "Only the domains or exact HTTPS hosts you approve below",
   },
 ] as const;
 
@@ -147,9 +149,9 @@ export function ScopePicker({
       <div className="scope-picker-task">
         <strong>Recreate an existing website</strong>
         <p className="small muted">
-          Prepare pages, menus, appearance and images, then compare private
-          previews. Add each exact HTTPS reference origin below, including www
-          when used.
+          Prepare pages, menus, appearance, images and project stories when
+          Projects is enabled, then compare private previews. Add the reference
+          domain below once to include its HTTPS website, www and subdomains.
         </p>
         <div className="actions">
           <button

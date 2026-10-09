@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { automationTransport } from "./availability_schemas";
+import { sourceRuleSchema, storedSourceRulesSchema } from "./source_rules";
 import {
   scopeDefinitions,
   type AutomationScope,
@@ -20,28 +21,7 @@ export const connectionInput = z.strictObject({
     .min(1)
     .max(Object.keys(scopeDefinitions).length),
   expiresIn: z.int().min(300).max(28800).default(3600),
-  sourceOrigins: z
-    .array(
-      z
-        .url()
-        .max(250)
-        .refine((value) => {
-          try {
-            const url = new URL(value);
-            return (
-              url.protocol === "https:" &&
-              value === url.origin &&
-              !url.username &&
-              !url.password &&
-              (!url.port || url.port === "443")
-            );
-          } catch {
-            return false;
-          }
-        }, "Use an HTTPS website origin without a path, such as https://www.example.org."),
-    )
-    .max(5)
-    .default([]),
+  sourceOrigins: z.array(sourceRuleSchema).max(5).default([]),
 });
 export const connectionMetadata = z.strictObject({
   purpose: z.literal("rotapress-automation-v1"),
@@ -49,5 +29,5 @@ export const connectionMetadata = z.strictObject({
   transport: automationTransport.default("rest"),
   sessionId: z.string().min(1),
   organizationId: z.uuid(),
-  sourceOrigins: connectionInput.shape.sourceOrigins,
+  sourceOrigins: storedSourceRulesSchema,
 });

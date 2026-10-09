@@ -23,6 +23,7 @@ import type { Database } from "../../src/infrastructure/database/client";
 import { LocalStorageDriver } from "../../src/infrastructure/storage/LocalStorageDriver";
 import { mediaPublicationOperations } from "../../src/integrations/automation/media_publication_operations";
 import type { AutomationContext } from "../../src/integrations/automation/operation";
+import { sourceImageChecks } from "./source-image-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -130,6 +131,14 @@ afterAll(async () => {
   }
   await rm(storageRoot, { recursive: true, force: true });
 });
+
+sourceImageChecks(() => ({
+  db,
+  media,
+  authorization,
+  imageBytes,
+  installedClub,
+}));
 
 describe("C04 media authorization, safe decoding and private local storage", () => {
   it("C14 requires a separate current publication grant and exact batch confirmation", async () => {

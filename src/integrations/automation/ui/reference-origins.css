@@ -1,0 +1,35 @@
+.reference-input .button {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.reference-input-problem {
+  color: #9d2929;
+}
+.reference-coverage {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.reference-coverage li,
+.automation-workspace .automation-connections .reference-coverage li {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.reference-coverage strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.reference-coverage span {
+  color: #586a7d;
+  font-size: 12px;
+  line-height: 1.6;
+}

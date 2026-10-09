@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { automationScopeSchema, connectionInput } from "../scopes";
+import { storedSourceRulesSchema } from "../source_rules";
 
 export const oauthClientInput = z.strictObject({
   name: z.string().trim().min(2).max(80),
@@ -22,7 +23,7 @@ export const oauthClientMetadata = z.preprocess(
   z.strictObject({
     purpose: z.literal("rotapress-oauth-v1"),
     organizationId: z.uuid(),
-    sourceOrigins: connectionInput.shape.sourceOrigins,
+    sourceOrigins: storedSourceRulesSchema,
     permissionsRevision: z.uuid().optional(),
   }),
 );

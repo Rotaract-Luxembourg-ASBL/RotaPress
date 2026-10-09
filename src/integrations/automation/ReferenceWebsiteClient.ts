@@ -3,6 +3,8 @@ import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { isPublicWebhookAddress } from "@/infrastructure/http/WebhookClient";
 import { DomainError } from "@/core/DomainError";
+import { sourceRulesAllow } from "./source_rules";
+import { ReferenceImageClient } from "./ReferenceImageClient";
 import {
   referenceContent,
   referenceUrlSchema,
@@ -13,7 +15,7 @@ export interface ReferenceTransport {
   read(
     url: string,
     maxBytes: number,
-  ): Promise<{ status: number; type: string; text: string }>;
+  ): Promise<{ status: number; type: string; text: string; bytes?: Buffer }>;
 }
 
 /** Every DNS result is checked; the validated address is pinned to TLS. No cookies, redirects or proxies. */
@@ -42,56 +44,61 @@ export class ReferenceHttpTransport implements ReferenceTransport {
         "This reference website does not resolve to a public address.",
         422,
       );
-    return new Promise<{ status: number; type: string; text: string }>(
-      (resolve, reject) => {
-        const outgoing = request(
-          url,
-          {
-            method: "GET",
-            agent: false,
-            family: 4,
-            signal: AbortSignal.timeout(8000),
-            lookup: (_host, _options, callback) =>
-              callback(null, addresses[0].address, 4),
-            headers: {
-              accept: "text/html,text/plain",
-              "accept-encoding": "identity",
-              "user-agent": "RotaPress-Content/1",
-            },
+    return new Promise<{
+      status: number;
+      type: string;
+      text: string;
+      bytes: Buffer;
+    }>((resolve, reject) => {
+      const outgoing = request(
+        url,
+        {
+          method: "GET",
+          agent: false,
+          family: 4,
+          signal: AbortSignal.timeout(8000),
+          lookup: (_host, _options, callback) =>
+            callback(null, addresses[0].address, 4),
+          headers: {
+              accept: "text/html,text/plain,image/png,image/jpeg,image/webp",
+            "accept-encoding": "identity",
+            "user-agent": "RotaPress-Content/1",
           },
-          (response) => {
-            if (
-              response.headers["content-encoding"] &&
-              response.headers["content-encoding"] !== "identity"
-            ) {
-              response.destroy();
-              reject(new Error("SOURCE_ENCODING_UNSUPPORTED"));
-              return;
-            }
-            const chunks: Buffer[] = [];
-            let bytes = 0;
-            response.on("data", (chunk: Buffer) => {
-              bytes += chunk.length;
-              if (bytes > maxBytes)
-                outgoing.destroy(new Error("SOURCE_TOO_LARGE"));
-              else chunks.push(chunk);
+        },
+        (response) => {
+          if (
+            response.headers["content-encoding"] &&
+            response.headers["content-encoding"] !== "identity"
+          ) {
+            response.destroy();
+            reject(new Error("SOURCE_ENCODING_UNSUPPORTED"));
+            return;
+          }
+          const chunks: Buffer[] = [];
+          let bytes = 0;
+          response.on("data", (chunk: Buffer) => {
+            bytes += chunk.length;
+            if (bytes > maxBytes)
+              outgoing.destroy(new Error("SOURCE_TOO_LARGE"));
+            else chunks.push(chunk);
+          });
+          response.on("error", () =>
+            reject(new Error("SOURCE_REQUEST_FAILED")),
+          );
+          response.on("end", () => {
+            const bytes = Buffer.concat(chunks);
+            resolve({
+              status: response.statusCode ?? 500,
+              type: response.headers["content-type"] ?? "",
+              text: bytes.toString("utf8"),
+              bytes,
             });
-            response.on("error", () =>
-              reject(new Error("SOURCE_REQUEST_FAILED")),
-            );
-            response.on("end", () =>
-              resolve({
-                status: response.statusCode ?? 500,
-                type: response.headers["content-type"] ?? "",
-                text: Buffer.concat(chunks).toString("utf8"),
-              }),
-            );
-          },
-        );
-        outgoing.on("error", () => reject(new Error("SOURCE_REQUEST_FAILED")));
-        outgoing.end();
-      },
-    );
+          });
+        },
+      );
+      outgoing.on("error", () => reject(new Error("SOURCE_REQUEST_FAILED")));
+      outgoing.end();
+    });
   }
 }
 
@@ -101,7 +108,7 @@ export class ReferenceWebsiteClient {
   ) {}
   async inspect(raw: string, allowedOrigins: string[]) {
     const url = new URL(referenceUrlSchema.parse(raw));
-    if (!allowedOrigins.includes(url.origin))
+    if (!sourceRulesAllow(url, allowedOrigins))
       throw new DomainError(
         "SOURCE_ORIGIN_DENIED",
         "This connection is not allowed to read that reference website.",
@@ -138,5 +145,9 @@ export class ReferenceWebsiteClient {
         422,
       );
     }
+  }
+
+  async importImage(raw: string, allowedRules: readonly string[]) {
+    return new ReferenceImageClient(this.transport).inspect(raw, allowedRules);
   }
 }

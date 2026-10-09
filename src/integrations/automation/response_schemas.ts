@@ -160,6 +160,7 @@ export const operationDescriptionOutput = z.strictObject({
   method: z.enum(["GET", "POST", "PATCH"]),
   path: z.string(),
   scope: automationScopeSchema.nullable(),
+  requiredScopes: z.array(automationScopeSchema),
   description: z.string(),
   readOnly: z.boolean(),
   inputSchema: jsonSchemaOutput,

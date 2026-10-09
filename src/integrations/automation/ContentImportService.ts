@@ -14,6 +14,7 @@ import { CmsRepository } from "@/features/cms/CmsRepository";
 import type { CmsData } from "@/features/cms/cms_schemas";
 import type { AutomationPrincipal } from "./AutomationAccess";
 import { importPagesInput, importReceiptSchema } from "./import_schemas";
+import { sourceRulesAllow } from "./source_rules";
 
 const escape = (text: string) =>
   text.replace(
@@ -40,7 +41,7 @@ export class ContentImportService {
     for (const page of parsed.pages) {
       if (
         page.sourceUrl &&
-        !principal.sourceOrigins.includes(new URL(page.sourceUrl).origin)
+        !sourceRulesAllow(page.sourceUrl, principal.sourceOrigins)
       )
         throw new DomainError(
           "SOURCE_NOT_ALLOWED",

@@ -253,21 +253,8 @@
   color: #654414;
   font-size: 14px;
 }
-.oauth-consent-sources ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  list-style: none;
+.oauth-consent-sources .reference-coverage {
   margin: 10px 0 0;
-  padding: 0;
-}
-.oauth-consent-sources li {
-  max-width: 100%;
-  border: 1px solid #e0e6ef;
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 12px;
-  overflow-wrap: anywhere;
 }
 .oauth-consent-renewal .oauth-consent-return {
   margin-top: 10px;

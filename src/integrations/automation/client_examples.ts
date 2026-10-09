@@ -33,6 +33,7 @@ export const contentTools = [
   "website_locale_create",
   "website_settings_save",
   "source_read",
+  "source_image_import",
   "content_import",
   "import_get",
   "media_list",

@@ -71,8 +71,10 @@ Permission changes preserve client credentials, invalidate existing tokens and
 require fresh consent; access keys still require replacement for new grants.
 Consent explains requested versus allowed actions and lets the person review the
 full allowed set before explicitly approving it. MCP initialization and capability
-discovery expose the issued scope names, labels and read/write mode. Contract 1.8
-adds a **Website recreation** authoring preset, bounded ordered source outlines
+discovery expose the issued scope names, labels and read/write mode. Contract 1.9.0
+adds domain approval rules and direct approved-source image imports. Website
+recreation includes a focused authoring preset, with Project reading/writing when
+the feature is enabled, bounded ordered source outlines
 with h1–h6 levels and same-origin image metadata, and separately requested
 `media_publish` batches of 1–50 reviewed images. Uploads remain private; image
 publication needs `media:publish`, confirmation and current fingerprints, and
@@ -80,7 +82,20 @@ preserves metadata/bytes atomically. Hiding/deletion and public metadata editing
 remain in administration. Existing connections require new grants and consent or
 new keys, plus an AI-client tool refresh. Source reads do not capture CSS, scripts,
 screenshots or image bytes; clients compose native blocks and compare source
-visuals with saved previews at desktop/phone widths.
+visuals with saved previews at desktop/phone widths. Approved bare domains cover
+HTTPS on the domain and its subdomains; saved HTTPS-origin rules retain exact
+coverage until an explicit change and fresh consent. `source_image_import` uses
+both source-reading and media-writing grants to fetch a rights-approved image
+through checked HTTPS/DNS/robots boundaries, normalize it as a private asset and
+reuse a stable request ID bound to the source URL, image bytes and metadata. This
+avoids requiring client-side binary image fetching.
+Recreation prompts inventory the requested source and existing target in batches,
+reuse the intended homepage, compose native layouts, inspect exact saved previews
+and execute already-requested publication in dependency order. They report each
+target's actual saved, published and reviewed state rather than declaring a text
+import or partial publication a complete copy. Source screenshots still depend on
+the client's browser/vision tools; MCP page captures use published appearance and
+shared content rather than the full draft website settings.
 Platform-wide sensitive actions use a 12-hour sign-in window, with earlier identity
 confirmation after a detected browser or trusted-proxy network change.
 Bounded private image uploads and saved-revision
@@ -89,22 +104,23 @@ member applies them. Separate grants allow explicitly requested publication of e
 saved website, calendar, form, event-detail, project, directory and media targets. Server checks
 retain readiness, media visibility, current authority and revision/version guards;
 dependencies never publish automatically. The AI client must honor the user's
-request and should require approval. Every feature change requires an
+request and retain the client's tool-approval controls without repeatedly asking
+for the same authorized action. Every feature change requires an
 API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
 [workflow architecture](automation-workflows.md).
 
-| Area           | Current boundary                                                                                                                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                                                            |
-| AI & API       | Native drafts, staff-reviewed settings and separately granted requested content/image publication; no participant operations, unpublish/delete, image hiding, public media metadata edits or unattended publication |
-| Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments                                                |
-| Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control                                                |
-| Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                                                                     |
-| Email          | Server SMTP/Resend configuration precedes owner sign-in; development capture is opt-in and prohibited in production mode                                                                         |
-| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                                                                     |
-| File storage   | Persistent disk images with bounded hosted backup/restore; object storage is not implemented                                                                                                     |
-| Owner recovery | The local `.test` recovery command is not a hosted email-lockout procedure                                                                                                                       |
-| Hosting        | One application replica, PostgreSQL 17, persistent uploads, trusted HTTPS proxy and the hosted job supervisor                                                                                    |
+| Area           | Current boundary                                                                                                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                                                                                                |
+| AI & API       | Native drafts, staff-reviewed settings and separately granted requested content/image publication; no participant operations, unpublish/delete, image hiding, public media metadata edits or publication without an explicit request |
+| Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments                                                                                    |
+| Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control                                                                                    |
+| Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                                                                                                         |
+| Email          | Server SMTP/Resend configuration precedes owner sign-in; development capture is opt-in and prohibited in production mode                                                                                                             |
+| Domains        | Ownership/setup records do not provision DNS, certificates, routing or custom-domain hosting                                                                                                                                         |
+| File storage   | Persistent disk images with bounded hosted backup/restore; object storage is not implemented                                                                                                                                         |
+| Owner recovery | The local `.test` recovery command is not a hosted email-lockout procedure                                                                                                                                                           |
+| Hosting        | One application replica, PostgreSQL 17, persistent uploads, trusted HTTPS proxy and the hosted job supervisor                                                                                                                        |
 
 External provider access defaults to disabled where operator flags apply. Saved
 configuration does not establish a working connection or authorize real mail.
