@@ -72,5 +72,7 @@ records. Re-enabling restores the previously published stories.
 REST and MCP use shared scoped actions for reading projects and preparing private
 drafts. Publication needs a separate **projects:publish** grant, explicit user
 instruction and the exact saved version. Assistants cannot archive or unpublish
-projects through these actions. Existing connections do not gain new permissions
+projects through these actions. Cover media must already be public; a separately
+requested `media_publish` batch with `media:publish` can publish exact reviewed
+covers first. Project publication never publishes images automatically. Existing connections do not gain new permissions
 automatically. See [AI & API](ai-and-api.md).

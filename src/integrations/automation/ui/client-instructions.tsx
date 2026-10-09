@@ -70,9 +70,9 @@ export function ClientInstructions({ origin }: { origin: string }) {
         <p>
           Keys expire within eight hours and stop when their parent staff
           session ends. OAuth access tokens last five minutes, with optional
-          rotating renewal for up to eight hours after consent while that
-          session remains active. Reconnect when access expires; revoke unwanted
-          connections from this workspace.
+          rotating renewal for up to seven days while that session remains
+          active. Reconnect when access expires; revoke unwanted connections
+          from this workspace.
         </p>
       </section>
       <section className="panel" aria-labelledby="mcp-examples-title">
@@ -161,8 +161,11 @@ export function ClientInstructions({ origin }: { origin: string }) {
         <h2>What to ask your assistant</h2>
         <p>
           Start with capabilities to discover granted operations. For website
-          work, choose website reading and drafting. Add reference reading and
-          exact HTTPS origins when adapting another website.
+          work, choose the <strong>Website recreation</strong> action preset and
+          add the reference website's exact HTTPS origins. This includes images,
+          draft appearance and desktop/phone previews. Uploads start private;
+          <strong> Publish reviewed images</strong> is a separate optional
+          permission for publishing a chosen batch after your explicit request.
         </p>
         <ul>
           <li>

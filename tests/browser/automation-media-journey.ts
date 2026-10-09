@@ -17,6 +17,7 @@ export async function automationMediaJourney(
       "media:read",
       "media:write",
       "media:inspect",
+      "media:publish",
       "website:read",
       "website:write",
       "website:preview",
@@ -197,6 +198,37 @@ export async function automationMediaJourney(
           element instanceof HTMLImageElement && element.naturalWidth > 0,
       ),
     ).toBe(true);
+    const currentMedia = await api.get(`/api/v1/media/${assetId}`, {
+      headers: bearer,
+    });
+    expect(currentMedia.status()).toBe(200);
+    const publish = {
+      assets: [
+        {
+          id: assetId,
+          expectedRevision: (await currentMedia.json()).data.metadataRevision,
+        },
+      ],
+      confirmed: true,
+    };
+    expect(
+      (
+        await api.post("/api/v1/media/publish", {
+          headers: { authorization: `Bearer ${restrictedKey}` },
+          data: publish,
+        })
+      ).status(),
+    ).toBe(403);
+    const publication = (await (await rpc("media_publish", publish)).json())
+      .result;
+    expect(publication.isError).toBe(false);
+    expect(publication.structuredContent.data.items[0].asset).toMatchObject({
+      id: assetId,
+      visibility: "public",
+      alt: metadata.alt,
+    });
+    expect((await api.get(`/media/${assetId}`)).status()).toBe(200);
+    expect((await api.get(`/pages/en/${slug}`)).status()).toBe(404);
     return { pageId: created.id as string, assetId };
   } finally {
     await owner.request.delete("/api/admin/integrations/automation", {

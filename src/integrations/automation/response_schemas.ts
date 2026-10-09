@@ -80,15 +80,7 @@ export const websiteDetailOutput = z.strictObject({
     })
     .optional(),
 });
-export const referenceOutput = z.strictObject({
-  sourceUrl: z.string(),
-  trust: z.literal("untrusted-reference-content"),
-  title: z.string().max(200),
-  headings: z.array(z.string().max(250)).max(50),
-  text: z.string().max(24000),
-  links: z.array(z.string()).max(60),
-  instructions: z.string(),
-});
+export { referenceOutput } from "./reference_schemas";
 export const formOutput = z.strictObject({
   id,
   kind: z.enum(formKinds),

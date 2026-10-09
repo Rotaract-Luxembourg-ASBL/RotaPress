@@ -174,8 +174,8 @@ export async function eventWebsiteJourney(
       await manager.request
         .get(`/api/admin/events/${eventId}/media`)
         .then((r) => r.json())
-    ).assets,
-  ).toHaveLength(0);
+    ).assets.map((image: { id: string }) => image.id),
+  ).not.toContain(asset.id);
   expect(
     (
       await owner.request.patch(`/api/admin/media/${asset.id}`, {

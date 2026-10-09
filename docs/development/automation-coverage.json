@@ -36,7 +36,7 @@
       "website_publish",
       "website_settings_publish"
     ],
-    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance. Timed publication, deleting, template installation, private-media visibility and executable code require staff workflows."
+    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance; dependencies and images never publish automatically. Timed publication, deleting, template installation and executable code require staff workflows."
   },
   "features/events": {
     "operations": [
@@ -78,7 +78,7 @@
       "projects_save",
       "projects_publish"
     ],
-    "manual": "Project stories use separate read/write grants, current versions and saved public snapshots. Publishing requires projects:publish, confirmed=true and an explicit request; cover media must already be public. Archive, restore, unpublish, feature availability and media visibility remain staff workflows. Projects do not manage volunteer identities, attendance or registration."
+    "manual": "Project stories use separate read/write grants, current versions and saved public snapshots. Publishing requires projects:publish, confirmed=true and an explicit request; cover media must already be public through a separately reviewed media publication. Archive, restore, unpublish and feature availability remain staff workflows. Projects do not manage volunteer identities, attendance or registration."
   },
   "features/guests": {
     "operations": [],
@@ -90,9 +90,10 @@
       "media_get",
       "media_upload",
       "media_inspect",
-      "media_metadata_save"
+      "media_metadata_save",
+      "media_publish"
     ],
-    "manual": "New uploads are private. Image pixels need an explicit inspection scope. Public visibility and deletion remain manual."
+    "manual": "New uploads are private. Image pixels need an explicit inspection scope. Publishing 1-50 exact reviewed images requires media:publish, explicit intent, confirmed=true and current metadata fingerprints; the atomic batch changes visibility only and never publishes dependencies. Hiding images, deletion, file replacement and public-image metadata edits remain manual."
   },
   "features/members": {
     "operations": [],

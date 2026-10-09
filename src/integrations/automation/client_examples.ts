@@ -1,6 +1,7 @@
 // Client-safe example allowlist. The server still filters discovery and execution
 // by the connection's explicit grants; these names never grant new permissions.
 export const publicationTools = [
+  "media_publish",
   "website_publish",
   "website_settings_publish",
   "calendar_publish",

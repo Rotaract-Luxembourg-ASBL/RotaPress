@@ -126,7 +126,7 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 
 - Publication grants are separate from draft writes: `website:publish`,
   `calendar:publish`, `forms:publish`, `events:publish`, `projects:publish` and
-  `directory:publish`.
+  `directory:publish`, plus `media:publish` for reviewed image visibility.
   Existing credentials retain their grants; explicit OAuth permission edits and fresh consent or
   a newly issued key are required to add them.
 - Each operation requires strict `confirmed: true` and the exact current saved
@@ -141,10 +141,33 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   Forms can begin accepting responses under existing rules. Event-details publication
   does not publish its page/forms or apply operational proposals. Website settings
   publish separately from content; menu-only publication preserves other settings.
-  No unpublish, delete, media-visibility or proposal-application tools are exposed.
+  No unpublish, delete, image-hiding, public-metadata-edit or proposal-application
+  tools are exposed. Image publication has its own explicit grant and request.
 
 ## Drafts, images and event suggestions
 
+- Contract 1.8 adds `media:publish` and `media_publish` for an explicitly requested
+  batch of 1–50 distinct reviewed assets. Require literal `confirmed: true` and
+  each current metadata fingerprint. The existing MediaService locks current
+  authority, validates all organization-owned targets before changing visibility,
+  and commits changes/audits atomically. A missing or stale asset rejects the
+  whole batch. Bytes and metadata are preserved; unrelated images stay private.
+  Public assets are retrievable without a page placement. Lost responses require
+  reading the exact IDs again; old private fingerprints conflict. Hiding, deletion
+  and public-image metadata edits remain administration actions.
+- The **Website recreation** action preset replaces the selection with nine
+  authoring grants: website read/write/manage/settings/preview, media
+  read/write/inspect and source reading. **Publish reviewed images** is optional,
+  and page publication is separate. Existing clients need deliberate saved
+  permission changes and fresh consent or new keys, followed by client tool
+  metadata refresh; a preset or resource upgrade never expands an issued token.
+- Reference reading exposes a bounded static HTML outline with heading levels
+  h1–h6, paragraphs, semantic regions, same-origin links and image metadata,
+  plus truncation and explicit limitations. It does not load computed CSS,
+  JavaScript, screenshots or image bytes. Image candidates do not establish
+  reuse rights or authorize asset fetching. Imports create text starters; clients
+  compose native layouts through `website_save` and compare desktop/phone previews
+  with source visuals obtained using their own tools before claiming similarity.
 - Contract 1.6 adds `projects:read`, `projects:write` and `projects:publish`.
   Project stories reuse the current domain service, explicit Projects availability,
   CMS edit/publish capabilities and version guards. Saved draft edits retain the
@@ -199,7 +222,8 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 ## External content and client boundaries
 
 - Source reads use the pinned-IP adapter with origin grants, IP checks, robots,
-  byte limits and deadlines. Never replace it with generic URL fetching.
+  byte limits and deadlines. Ordered source evidence remains untrusted; image
+  URLs are metadata only. Never replace it with generic URL or image fetching.
 - Stored/fetched content is untrusted data. It cannot grant access, authorize
   publication or execute code.
 - The stdio bridge is a client for the same remote API, never a local-admin bypass,

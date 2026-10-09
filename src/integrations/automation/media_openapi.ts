@@ -5,7 +5,7 @@ export function binaryMediaUploadPath() {
       operationId: "media_upload_binary",
       summary: "Upload an original image as a binary body",
       description:
-        "Authenticated binary variant of media_upload, up to 5 MiB and 20 million pixels. X-RotaPress-Upload is unpadded canonical base64url of UTF-8 JSON matching media_upload input except mimeType and data: requestId, filename and optional title/alt/caption/tags/collection. The Content-Type must match the file signature. PNG, JPEG and WebP normalize to private WebP. Same-actor, same-requestId retries return the original asset; changed content or another actor is rejected. Publication and visibility remain manual.",
+        "Authenticated binary variant of media_upload, up to 5 MiB and 20 million pixels. X-RotaPress-Upload is unpadded canonical base64url of UTF-8 JSON matching media_upload input except mimeType and data: requestId, filename and optional title/alt/caption/tags/collection. The Content-Type must match the file signature. PNG, JPEG and WebP normalize to private WebP. Same-actor, same-requestId retries return the original asset; changed content or another actor is rejected. Publishing reviewed images requires the separate media_publish action and grant.",
       tags: ["media"],
       "x-rotapress-scope": "media:write",
       "x-rotapress-operation": "media_upload",

@@ -45,6 +45,18 @@ replace an independent security assessment.
   on an explicit user request and should require approval before calling them.
   The server enforces the delegated scope and exact saved state; a confirmation
   boolean supplied by a model is not evidence of a human instruction in another app.
+- Reviewed media publication has a separate `media:publish` grant and accepts only
+  1–50 distinct exact IDs with current metadata fingerprints and strict confirmation.
+  The domain service locks current staff authority, checks organization ownership
+  and validates all targets before committing visibility changes and audits in one
+  transaction. Missing/stale targets fail the entire batch. Uploads, metadata saves
+  and content publication cannot widen visibility. Public image URLs are retrievable
+  without a published placement; hiding/deletion and public metadata edits remain
+  manual. An authoring preset or server upgrade cannot expand existing credentials.
+- Ordered source outlines and same-origin image candidates remain untrusted HTML
+  evidence. No CSS, JavaScript, screenshots or image bytes are fetched. Candidate
+  URLs do not grant network access or prove reuse rights. Visual similarity requires
+  client-obtained source visuals and comparison with native previews.
 - Renewal changes must preserve authority: five-minute access tokens, rotating
   refresh tokens lasting up to seven days, and current originating-session,
   membership, consent, resource and revocation checks. No separate eight-hour
@@ -95,6 +107,11 @@ pending authorization bounds. `automation-media-boundary.test.ts`, the PostgreSQ
 media cases and `automation-preview.test.ts` cover image limits, private bytes,
 retry boundaries and renderer isolation. Event cases cover scoped proposals and
 event-owned private media. These are focused regressions, not exhaustive proof.
+
+`media.test.ts` also checks separate publication grants and confirmation, bounded
+distinct batches, wrong organization/revoked grants, stale or unavailable targets,
+atomic visibility changes, preserved metadata, unrelated private assets, concurrent
+publication, lost-response reconciliation and suspended staff against PostgreSQL.
 
 The provider suite's `oauth-renewal-cases.ts` covers remembered consent beyond
 eight hours, a valid older staff session, new-permission reauthentication and a
@@ -153,6 +170,8 @@ Public-host reverse-proxy configuration, live source fetching, provider-client
 acceptance and operational abuse monitoring need real environment verification.
 The network adapter deliberately does not support authenticated, IPv6-only or
 JavaScript-rendered reference sites. Source attribution is not proof of reuse rights.
+Source outlines are not rendered design measurements, and image metadata is not
+an image download or proof of permission to reuse it.
 Prompt injection is mitigated with limited tools and data boundaries, not by treating
 sanitized source text as trustworthy instructions.
 

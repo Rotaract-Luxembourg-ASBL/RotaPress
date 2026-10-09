@@ -9,7 +9,7 @@ import sharp from "sharp";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import * as schema from "../../db/schema";
 import { user } from "../../db/schema/auth";
-import { membership } from "../../db/schema/club";
+import { auditEntry, membership } from "../../db/schema/club";
 import { automationMediaUpload, mediaAsset } from "../../db/schema/media";
 import {
   AuthorizationService,
@@ -21,6 +21,8 @@ import { MediaService } from "../../src/features/media/MediaService";
 import { mediaMetadataRevision } from "../../src/features/media/media_automation";
 import type { Database } from "../../src/infrastructure/database/client";
 import { LocalStorageDriver } from "../../src/infrastructure/storage/LocalStorageDriver";
+import { mediaPublicationOperations } from "../../src/integrations/automation/media_publication_operations";
+import type { AutomationContext } from "../../src/integrations/automation/operation";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -130,6 +132,223 @@ afterAll(async () => {
 });
 
 describe("C04 media authorization, safe decoding and private local storage", () => {
+  it("C14 requires a separate current publication grant and exact batch confirmation", async () => {
+    const { owner, scope } = await installedClub();
+    const asset = await media.upload(owner, {
+      filename: "reviewed.png",
+      bytes: imageBytes,
+    });
+    const context = {
+      principal: {
+        actor: owner,
+        keyId: "synthetic-media-publication",
+        organizationId: scope.organizationId,
+        scopes: ["media:read", "media:write", "media:inspect"],
+        sourceOrigins: [],
+      },
+      services: { authorization, media, limiter: { consume: async () => {} } },
+    } as unknown as AutomationContext;
+    const operation = mediaPublicationOperations[0];
+    const input = {
+      assets: [
+        { id: asset.id, expectedRevision: mediaMetadataRevision(asset) },
+      ],
+      confirmed: true,
+    };
+    await expect(operation.run(context, input)).rejects.toMatchObject({
+      code: "AUTOMATION_SCOPE_REQUIRED",
+    });
+    context.principal.scopes = ["media:publish"];
+    for (const invalid of [
+      { assets: input.assets },
+      { ...input, confirmed: false },
+      { ...input, visibility: "public" },
+      { ...input, assets: [] },
+      { ...input, assets: [input.assets[0], input.assets[0]] },
+      {
+        ...input,
+        assets: Array.from({ length: 51 }, () => ({
+          id: randomUUID(),
+          expectedRevision: "0".repeat(64),
+        })),
+      },
+    ]) {
+      await expect(operation.run(context, invalid)).rejects.toThrow();
+    }
+    context.principal.organizationId = randomUUID();
+    await expect(operation.run(context, input)).rejects.toMatchObject({
+      code: "AUTOMATION_ORGANIZATION_CHANGED",
+    });
+    context.principal.organizationId = scope.organizationId;
+    context.reauthorize = async () => ({ ...context.principal, scopes: [] });
+    await expect(operation.run(context, input)).rejects.toMatchObject({
+      code: "AUTOMATION_SCOPE_REQUIRED",
+    });
+    expect((await media.detail(owner, asset.id)).visibility).toBe("private");
+    await expect(media.read(null, asset.id)).rejects.toMatchObject({
+      code: "MEDIA_NOT_FOUND",
+    });
+    expect(
+      await db
+        .select()
+        .from(auditEntry)
+        .where(eq(auditEntry.action, "media.published")),
+    ).toHaveLength(0);
+  });
+
+  it("C14 publishes only reviewed targets atomically and preserves their metadata", async () => {
+    const { owner, scope } = await installedClub();
+    const uploaded = await Promise.all(
+      ["first", "second", "unrelated"].map((label) =>
+        media.upload(owner, {
+          filename: `${label}.png`,
+          bytes: imageBytes,
+          title: `Synthetic ${label}`,
+          alt: `${label} alternative text`,
+          caption: "Reviewed caption",
+          tags: ["fixture"],
+          collection: "Website",
+        }),
+      ),
+    );
+    const [first, second, unrelated] = uploaded;
+    const original = {
+      assets: [first, second].map((asset) => ({
+        id: asset.id,
+        expectedRevision: mediaMetadataRevision(asset),
+      })),
+      confirmed: true,
+    };
+    const changed = await media.savePrivateMetadata(owner, {
+      id: second.id,
+      expectedRevision: mediaMetadataRevision(second),
+      title: second.title,
+      alt: "Revised after review",
+      caption: second.caption,
+      tags: second.tags,
+      collection: second.collection,
+    });
+    await expect(media.publishReviewed(owner, original)).rejects.toMatchObject({
+      code: "MEDIA_METADATA_CHANGED",
+    });
+    await expect(
+      media.publishReviewed(owner, {
+        ...original,
+        assets: [
+          original.assets[0],
+          { id: randomUUID(), expectedRevision: "0".repeat(64) },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "MEDIA_NOT_FOUND" });
+    expect((await media.detail(owner, first.id)).visibility).toBe("private");
+    expect((await media.detail(owner, second.id)).visibility).toBe("private");
+    const context = {
+      principal: {
+        actor: owner,
+        keyId: "synthetic-media-publication",
+        organizationId: scope.organizationId,
+        scopes: ["media:publish"],
+        sourceOrigins: [],
+      },
+      services: { authorization, media, limiter: { consume: async () => {} } },
+    } as unknown as AutomationContext;
+    const input = {
+      ...original,
+      assets: [
+        original.assets[0],
+        { id: changed.id, expectedRevision: mediaMetadataRevision(changed) },
+      ],
+    };
+    const output = await mediaPublicationOperations[0].run(context, input);
+    const publicAssets = await Promise.all(
+      [first, changed].map((asset) => media.detail(owner, asset.id)),
+    );
+    expect(output).toEqual({
+      items: publicAssets.map((asset) => ({
+        asset,
+        metadataRevision: mediaMetadataRevision(asset),
+        mediaUrl: `/media/${asset.id}`,
+      })),
+      reviewUrl: "/admin/media",
+    });
+    expect(publicAssets).toEqual(
+      [first, changed].map((asset) => ({ ...asset, visibility: "public" })),
+    );
+    expect((await media.detail(owner, unrelated.id)).visibility).toBe(
+      "private",
+    );
+    expect((await media.read(null, first.id)).visibility).toBe("public");
+    await expect(media.publishReviewed(owner, input)).rejects.toMatchObject({
+      code: "MEDIA_METADATA_CHANGED",
+    });
+    expect(
+      await media.publishReviewed(owner, {
+        assets: publicAssets.map((asset) => ({
+          id: asset.id,
+          expectedRevision: mediaMetadataRevision(asset),
+        })),
+        confirmed: true,
+      }),
+    ).toEqual(publicAssets);
+    expect(
+      await db
+        .select()
+        .from(auditEntry)
+        .where(eq(auditEntry.action, "media.published")),
+    ).toHaveLength(2);
+  });
+
+  it("C14 rejects current suspended staff and races without partially publishing a batch", async () => {
+    const { owner } = await installedClub();
+    const assets = await Promise.all(
+      ["one", "two"].map((label) =>
+        media.upload(owner, {
+          filename: `${label}.png`,
+          bytes: imageBytes,
+        }),
+      ),
+    );
+    const input = {
+      assets: assets.map((asset) => ({
+        id: asset.id,
+        expectedRevision: mediaMetadataRevision(asset),
+      })),
+      confirmed: true,
+    };
+    const outcomes = await Promise.allSettled([
+      media.publishReviewed(owner, input),
+      media.publishReviewed(owner, input),
+    ]);
+    expect(
+      outcomes.filter((outcome) => outcome.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      outcomes.find((outcome) => outcome.status === "rejected"),
+    ).toMatchObject({ reason: { code: "MEDIA_METADATA_CHANGED" } });
+    const unpublished = await media.upload(owner, {
+      filename: "suspended.png",
+      bytes: imageBytes,
+    });
+    await db
+      .update(membership)
+      .set({ status: "suspended" })
+      .where(eq(membership.userId, owner.userId));
+    await expect(
+      media.publishReviewed(owner, {
+        assets: [
+          {
+            id: unpublished.id,
+            expectedRevision: mediaMetadataRevision(unpublished),
+          },
+        ],
+        confirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    await expect(media.read(null, unpublished.id)).rejects.toMatchObject({
+      code: "MEDIA_NOT_FOUND",
+    });
+  });
+
   it("serializes actor-bound automation upload retries, cleans duplicates and retains deletion tombstones", async () => {
     const { owner, scope } = await installedClub();
     await mkdir(storageRoot, { recursive: true });

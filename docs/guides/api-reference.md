@@ -166,12 +166,14 @@ gain publication grants; issue a new token with the required actions selected.
 | `POST /events/{eventId}/prizes/{id}/publish`                    | `events:publish`    | Editorial prize `expectedVersion` and owning event                                   |
 | `POST /directory/{id}/publish`                                  | `directory:publish` | Profile `expectedVersion`                                                            |
 | `POST /projects/{id}/publish`                                   | `projects:publish`  | Project story `expectedVersion`                                                      |
+| `POST /media/publish`                                           | `media:publish`     | 1–50 distinct `assets` with `id` and `expectedRevision` from each `metadataRevision`   |
 
 Read the target immediately before publishing. A stale revision/version conflicts;
 do not silently substitute a newer unreviewed draft. The server also enforces
 current identity, publication capability, resource ownership and domain readiness.
-Private media and missing published dependencies remain blockers; calls never
-change visibility or publish dependencies automatically.
+Private media and missing published dependencies remain blockers for content
+publication. Only a separately requested `/media/publish` batch changes reviewed
+image visibility. Content calls never publish dependencies automatically.
 
 `scope: "settings"` activates all saved website settings, including appearance;
 review them together. `scope: "menu"` activates homepage/menu selections while
@@ -185,8 +187,15 @@ runs a draw. Package publication remains in administration because it can affect
 Calendar details, activities and page design publish independently and honor the
 saved audience; an unpublished calendar still prevents public activity display.
 Normal subscriber notifications can follow publication. Published forms can accept
-responses under their existing rules. Unpublish, delete and media-visibility
-operations are not exposed.
+responses under their existing rules. Unpublish, delete, hiding images and public
+image metadata edits are not exposed.
+
+Media publication is atomic and changes only visibility for the reviewed targets;
+it preserves metadata and file bytes. A missing or changed asset rejects the
+entire batch. The result supplies exact public assets, new `metadataRevision`
+values, media URLs and a Media review link. Public URLs are retrievable even
+without a page placement. After a lost response, read the exact IDs before retrying;
+old private fingerprints conflict. See [image publication](automation-media.md#publish-reviewed-images-together).
 
 Project publication activates only the saved project story. Its cover image must
 already be public; the call does not publish another page, add a calendar schedule
@@ -205,6 +214,13 @@ shared-part and event contexts, starter templates, bundled images and event
 layouts. Use real record IDs for connected content. Templates create editable
 content; they do not install a theme. Current branding and publication rules still
 apply. Custom HTML/JavaScript remains unavailable to automation.
+
+`POST /sources/read` returns an ordered static HTML outline with h1–h6 levels,
+paragraphs, semantic regions, same-origin links and image metadata, plus truncation
+and limitation information. It does not capture rendered CSS, fonts, screenshots,
+JavaScript content or image bytes. Use the client's own visual tools to inspect
+the reference and compare saved previews at desktop/phone widths. `content_import`
+creates text starters; compose finished layouts and images through `website_save`.
 
 An AI client can upload a PNG, JPEG or WebP with `media_upload`: canonical base64
 containing at most **180 KiB** of decoded bytes inside the normal JSON limit. A

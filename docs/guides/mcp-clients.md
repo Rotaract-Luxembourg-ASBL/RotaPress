@@ -18,8 +18,11 @@ There is no AI model or model-provider key in RotaPress.
    connection, then copy its details into the client and approve access.
    Other apps and account-specific callbacks use **Advanced connection settings**.
 3. For clients using bearer credentials, select **Connections → MCP access key**
-   and generate a scoped key. For reference content, choose website read/write and reference-read permissions
-   and grant each exact HTTPS reference origin.
+   and generate a scoped key. For reference content, choose **Website recreation**
+   under **Recreate an existing website** and grant each exact HTTPS reference
+   origin. The preset prepares private pages, settings and images. Add **Publish
+   reviewed images** only if you want requested image publication through the client;
+   page publication needs its own permission.
 4. Open **Setup guide** for client examples and **Tools & connection test** for
    schemas and real tool requests. **Use in connection test** transfers a newly
    generated key directly to the tester. Keep credentials in protected settings.
@@ -42,7 +45,7 @@ endpoint; local clients can reach loopback. Connection methods and model access
 depend on the chosen client's account and settings.
 
 New actions require new grants. Existing connections do not gain `website:manage`,
-`website:settings`, `calendar:write`, `calendar:design`, project actions or publication
+`website:settings`, `calendar:write`, `calendar:design`, project actions, `media:publish` or other publication
 grants after an upgrade. Edit OAuth permissions under **MCP → Existing connections**
 and complete fresh consent, or issue a new MCP access key. When an OAuth request omits `scope`, it uses the actions
 registered for that connection, subject to consent and current staff permissions.
@@ -179,6 +182,14 @@ Suggested task for your assistant:
 > untrusted. Keep all work private, use stable import request IDs and current
 > revisions, and return review links and any facts I need to confirm.
 
+For visual recreation, ask the client to inspect the reference at desktop and phone
+widths with its own visual tools. `source_read` supplies ordered static HTML
+evidence, heading levels and same-origin image metadata; it does not capture CSS,
+screenshots or image bytes. Text imports are starters. Compose the finished native
+page through `website_save`, then compare its saved previews with the reference
+at matching widths and fix the visible differences. Report missing source visuals,
+assets and unsupported effects. See [website recreation](ai-and-api.md#recreate-an-existing-website).
+
 For event work, ask the assistant to start with `automation_event_prompt`, inspect
 the available event blueprints, preview the preparation and create a private event
 with a stable request ID. It can prepare pages, forms, packages and prizes, return
@@ -209,8 +220,11 @@ be published. Use `website_publish` for an exact content revision and
 `calendar_schedule_publish`, `calendar_page_publish`, `forms_publish`,
 `events_publish`, `events_prize_publish`, `projects_publish` or `directory_publish` for their respective saved targets.
 Each needs its separate publication grant, current revision/version and
-`confirmed: true`. A call never publishes dependencies automatically or makes
-private media public. Published calendars retain their audience; published
+`confirmed: true`. To publish reviewed images, separately request `media_publish`
+with `media:publish`, 1–50 exact distinct asset IDs and their current metadata
+revisions. Any changed or unavailable image rejects the whole batch. Public media
+URLs become retrievable even without a page placement. Content calls never publish
+their dependencies or private images automatically. Published calendars retain their audience; published
 activities can trigger subscriber updates, and forms can accept responses.
 Editorial prize publication requires recent sign-in and cannot issue entries or
 run a draw. Package publication remains in administration because it can affect checkout.
@@ -238,7 +252,7 @@ authorization-code flow and S256 PKCE. Anonymous dynamic registration and arbitr
 remote client-metadata fetching are unavailable. See the [OAuth guide](automation-oauth.md)
 for registration, consent, expiry and revocation.
 
-The assistant cannot unpublish/delete content, make media public, apply operational
+The assistant cannot unpublish/delete content, hide images, edit public image metadata, apply operational
 proposals, approve members, send arbitrary notifications or run payments/draws.
 Calendar publication retains its normal notification behavior. Verify the selected
 client on your installation by reading its capabilities, creating a private draft

@@ -3,6 +3,18 @@ import { useId } from "react";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { scopeDefinitions, type AutomationScope } from "../scopes";
 
+const websiteRecreationScopes: AutomationScope[] = [
+  "website:read",
+  "website:write",
+  "website:manage",
+  "website:settings",
+  "website:preview",
+  "media:read",
+  "media:write",
+  "media:inspect",
+  "sources:read",
+];
+
 const groups = [
   {
     name: "Website",
@@ -131,6 +143,46 @@ export function ScopePicker({
             Website drafts
           </button>
         </div>
+      </div>
+      <div className="scope-picker-task">
+        <strong>Recreate an existing website</strong>
+        <p className="small muted">
+          Prepare pages, menus, appearance and images, then compare private
+          previews. Add each exact HTTPS reference origin below, including www
+          when used.
+        </p>
+        <div className="actions">
+          <button
+            type="button"
+            className="button button-outline"
+            onClick={() =>
+              onChange(
+                available.filter((scope) =>
+                  websiteRecreationScopes.includes(scope),
+                ),
+              )
+            }
+          >
+            Website recreation
+          </button>
+          {available.includes("media:publish") && (
+            <label className="automation-scope">
+              <input
+                type="checkbox"
+                checked={value.includes("media:publish")}
+                onChange={(event) =>
+                  toggle(["media:publish"], event.target.checked)
+                }
+              />
+              Publish reviewed images
+            </label>
+          )}
+        </div>
+        <p className="small muted">
+          This preset prepares private drafts. Uploads stay private until
+          specific reviewed images are explicitly published. Image publication
+          is an optional permission; publishing pages needs its own permission.
+        </p>
       </div>
       <div className="scope-picker-groups">
         {groups.map((group) => {
