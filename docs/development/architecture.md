@@ -87,7 +87,9 @@ Sensitive owner and integration changes require recent authentication.
 The content automation layer exposes versioned REST and MCP through one operation
 catalogue. Each transport defaults to disabled. Better Auth owns session-bound
 connection keys and OAuth tokens; operations recheck current scope and call the
-existing domain services. Content and media writes remain private. Settings that
+existing domain services. Draft content, uploads and metadata writes remain private.
+Separately granted publication targets exact reviewed saved content or image batches
+and reuses current authority, version checks and domain transactions. Settings that
 lack a draft model use typed proposals for staff review. See the
 [workflow architecture](automation-workflows.md) and
 [API/MCP extension contract](automation.md).
@@ -119,6 +121,9 @@ caching. Event pages reuse the CMS schema, renderer and revision services.
 
 Uploaded images start private, are validated and normalized, and live outside
 the web root. Publication checks ownership and deliberate public visibility.
+Automation can publish 1–50 exact reviewed images through a separate grant,
+confirmation and current metadata fingerprints in one authorized transaction.
+Content publication never changes its dependencies' visibility automatically.
 Retained references protect media used by earlier revisions. Storage metadata is
 in PostgreSQL; actual file bytes are separate and must be included in recovery.
 

@@ -34,6 +34,10 @@ export const scopeDefinitions = {
     label: "View image pixels, including private media",
     capability: "media.manage",
   },
+  "media:publish": {
+    label: "Make reviewed images public on request",
+    capability: "media.manage",
+  },
   "website:preview": {
     label: "Capture private website previews",
     capability: "cms.edit",

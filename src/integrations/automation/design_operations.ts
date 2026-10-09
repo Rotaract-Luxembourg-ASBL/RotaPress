@@ -28,6 +28,12 @@ import {
   eventLayouts,
 } from "@/features/events/event_layouts";
 import { inputJsonSchema, operation } from "./operation";
+import {
+  blockGuidance,
+  blockGuidanceSchema,
+  compositionSchema,
+  designCompositions,
+} from "./design_compositions";
 
 function object(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -128,6 +134,8 @@ const designOutput = z.strictObject({
   bundledImages: z.array(
     z.strictObject({ id: z.string(), title: z.string(), alt: z.string() }),
   ),
+  blockGuidance: z.array(blockGuidanceSchema),
+  compositions: z.array(compositionSchema),
   rules: z.array(z.string()),
 });
 
@@ -256,6 +264,8 @@ export function websiteDesign() {
       title: value.title,
       alt: value.alt,
     })),
+    blockGuidance: [...blockGuidance],
+    compositions: designCompositions(),
     rules: [
       "dataSchema describes the website_save data field, not the complete save request. Read website_get and retain expectedRevisionId when saving.",
       "Use the matching context allowlist for every block, including layout children. Unique props.id and version 1 are required. Maximum 80 top-level and 120 total blocks; nested layouts cannot nest again.",
@@ -263,9 +273,12 @@ export function websiteDesign() {
       "The schema is a content/layout vocabulary, not permission to use a feature. Discover actual connection grants and feature states with automation_capabilities.",
       "Event layouts require an event Website and do not create registrations, payments or guest access. Use the event tools and reference real records.",
       "Copying a page template creates editable example content; it does not install a website kit or activate its theme. Preserve current branding from website_context.",
+      "For a reference website, use source_read.outline and images to map actual section order to blockGuidance and compositions. Source reads provide static HTML evidence, not computed styling or a visual clone. State missing visual evidence and supported approximations explicitly.",
+      "Composition examples are schema-valid editable documents with placeholder copy and empty image IDs. Replace placeholders and generate unique block IDs when combining examples. They do not create content, authorize media, activate themes or publish anything.",
+      "content_import creates text-only Heading/RichText drafts; it does not reproduce a reference design. Read each imported page and use website_save to compose the intended native sections before visual review.",
       "Shared sections and connected forms, directory profiles, calendars, project collections and event collections use domain records and publication rules. Never invent reference IDs or achievements.",
       "ProjectCollection displays already-published Projects stories filtered by status and limit; it does not create or publish projects. Use projects_list and projects_get for existing records, then the separate project draft/publication tools when granted. Projects must be enabled. Keep volunteering stories distinct from calendar schedules and event registration.",
-      "Custom HTML/JavaScript is unavailable to automation. Publication, image visibility and real delivery remain deliberate human actions.",
+      "Custom HTML/JavaScript is unavailable to automation. Page and image publication require an explicit user request and separate publication grants; uploads and draft saves keep media private. Real delivery and operational settings remain staff actions.",
       "After saving, use website_preview on desktop and phone, inspect images and follow nextOffsetY. Screenshots do not validate inactive interactive blocks.",
     ],
   };
@@ -279,7 +292,7 @@ export const designOperations = [
       path: "/website/design",
       scope: "website:read",
       description:
-        "Discover the native page/block JSON Schema, allowed block contexts, copy-only templates, event layouts and locale rules before designing. Executable CustomCode is excluded. Event layouts require an event Website; templates never activate features or publish content.",
+        "Discover the native block schema, practical block-selection guidance, schema-valid layout examples, supported contexts, templates and event layouts before designing. Map reference sections to native compositions and review saved desktop/phone previews. CustomCode is excluded; examples/templates never activate themes, features or publication.",
       input: z.strictObject({}),
       output: designOutput,
       example: {},

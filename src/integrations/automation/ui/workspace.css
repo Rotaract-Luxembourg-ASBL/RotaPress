@@ -108,6 +108,19 @@
   padding: 0.5rem 0.75rem;
   min-height: 2.75rem;
 }
+.scope-picker-task {
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--paper);
+}
+.scope-picker-task > p {
+  margin: 0.4rem 0 0.75rem;
+}
+.scope-picker-task > p:last-child {
+  margin: 0.75rem 0 0;
+}
 .scope-picker-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

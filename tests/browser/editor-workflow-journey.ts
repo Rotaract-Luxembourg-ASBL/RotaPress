@@ -231,7 +231,8 @@ export async function editorWorkflowJourney(
   await page.getByRole("tab", { name: "Page", exact: true }).click();
   await page.getByRole("button", { name: "List view", exact: true }).click();
   const outline = page.getByRole("complementary", { name: "Page outline" });
-  await outline.getByRole("button", { name: "Form", exact: true }).click();
+  // Puck's draggable wrapper also has role=button; select its actual row button.
+  await outline.locator("button").filter({ hasText: /^Form$/ }).click();
   await expect(outline).not.toBeVisible();
   await expect(
     page.getByRole("tab", { name: "Block", exact: true }),

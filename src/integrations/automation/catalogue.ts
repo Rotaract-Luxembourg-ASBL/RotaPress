@@ -2,6 +2,7 @@ import { DomainError } from "@/core/authorization/AuthorizationService";
 import { websiteOperations } from "./website_operations";
 import { featureOperations } from "./feature_operations";
 import { mediaOperations } from "./media_operations";
+import { mediaPublicationOperations } from "./media_publication_operations";
 import { previewOperations } from "./preview_operations";
 import { eventOperations } from "./event_operations";
 import { workflowOperations } from "./workflow_operations";
@@ -65,6 +66,7 @@ export const operations: readonly Operation[] = [
   ...websiteManagementOperations,
   ...featureOperations,
   ...mediaOperations,
+  ...mediaPublicationOperations,
   ...previewOperations,
   ...eventOperations,
   ...workflowOperations,
@@ -75,7 +77,7 @@ export const operations: readonly Operation[] = [
   ...contentPublicationOperations,
   ...projectOperations,
 ];
-export const contractVersion = "1.7.0";
+export const contractVersion = "1.8.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => !o.scope || !scopes || scopes.includes(o.scope))

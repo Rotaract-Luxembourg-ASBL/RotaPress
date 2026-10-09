@@ -64,6 +64,41 @@ describe("C14 native design discovery", () => {
     walk(schema);
   });
 
+  it("provides practical editable compositions valid in their advertised contexts", () => {
+    const design = websiteDesign();
+    expect(design.compositions.map((item) => item.id)).toContain(
+      "photo-story-home",
+    );
+    expect(
+      design.blockGuidance.some((item) =>
+        item.blockTypes.some((type) => type === "Cover"),
+      ),
+    ).toBe(true);
+    for (const composition of design.compositions) {
+      const data = cmsDataSchema.parse(composition.exampleDocument);
+      expect(data.content.length).toBeGreaterThan(0);
+      for (const contextId of composition.contexts) {
+        const context = design.contexts.find((item) => item.id === contextId)!;
+        expect(context).toBeDefined();
+        expect(
+          () => validateContent(data, context.kind),
+          composition.id,
+        ).not.toThrow();
+        for (const block of flattenBlocks(data.content)) {
+          expect(context.allowedBlockTypes, composition.id).toContain(
+            block.type,
+          );
+          expect(block.type).not.toBe("CustomCode");
+        }
+      }
+    }
+    // Discovery returns independent examples; caller edits cannot corrupt future responses.
+    design.compositions[0].exampleDocument.content.splice(0);
+    expect(
+      websiteDesign().compositions[0].exampleDocument.content.length,
+    ).toBeGreaterThan(0);
+  });
+
   it("advertises templates only in compatible native content and event contexts", () => {
     const design = websiteDesign();
     for (const template of design.pageTemplates) {

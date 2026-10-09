@@ -20,7 +20,7 @@ model-provider keys or run a background agent service.
 | Calendar management     | Versioned calendar/activity drafts, recurrence and page design                             | `calendar_operations.ts`, `CalendarService`           |
 | Project stories         | Versioned volunteering/initiative drafts and explicitly requested publication              | `project_operations.ts`, `ProjectService`             |
 | Requested publication   | Separate grants, exact saved targets and existing domain publication checks                | Shared operation catalogue and owning domain services |
-| Media operations        | Validated private uploads, bounded pixel inspection and private metadata edits             | `media_operations.ts`, `MediaService`                 |
+| Media operations        | Private uploads/metadata, bounded inspection and separately requested reviewed image publication | `media_operations.ts`, `media_publication_operations.ts`, `MediaService` |
 | Visual review           | Exact saved revisions rendered with native components in an isolated browser               | `WebsitePreviewService.ts`, `preview_*.ts`            |
 | Settings proposals      | Typed immutable suggestions applied only through staff administration                      | `AutomationProposalService.ts`                        |
 | Client prompts          | Instructions that compose existing tools into page, event and review workflows             | `workflow_prompts.ts`, `workflow_operations.ts`       |
@@ -139,6 +139,28 @@ Keep large binary upload separate from ordinary JSON control requests. Both the
 bounded MCP upload and original-image REST upload must call the same validated
 media pipeline. Require stable upload request IDs; changed retries conflict.
 Library listing does not imply permission to disclose private image bytes.
+
+`media_publish` needs the separate `media:publish` grant, an explicit request,
+strict confirmation and 1–50 distinct current metadata fingerprints. MediaService
+locks current authority, validates all organization-owned targets, then changes
+only their visibility and audits them in one transaction. A changed or unavailable
+asset rejects the whole batch. Anyone can retrieve the public image URL without a
+page placement. Uploads stay private; content publication cannot publish its
+images automatically. Hiding/deletion and public metadata edits remain manual.
+
+The **Website recreation** preset selects nine authoring grants for website
+read/write/manage/settings/preview, media read/write/inspect and source reading.
+It replaces the selection; add **Publish reviewed images** or other publication
+permissions afterward. Existing connections need deliberate permission changes
+and fresh consent or new keys, then an imported-tool refresh in the client.
+
+Reference reads return static HTML in source order with h1–h6 levels, semantic
+regions, paragraphs, same-origin links and image metadata. They do not reproduce
+computed CSS, responsive layout, screenshots or image bytes. Text imports create
+starters. Clients inspect source visuals using their own tools, compose supported
+native blocks through `website_save`, and compare saved previews with the source
+at matching desktop/phone widths. Report missing visual evidence and assets rather
+than claiming a finished visual recreation from extracted text.
 
 Preview tools accept a page ID, locale and expected revision, never an arbitrary
 URL. Render only already-authorized native content using an isolated browser with

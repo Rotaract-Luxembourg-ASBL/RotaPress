@@ -1,10 +1,11 @@
 # Images through REST and MCP
 
 AI can reuse library images, inspect approved image pixels, upload images supplied
-by its client and write alternative text for private images. Uploads remain private.
-Making an image public is a separate human action in **Media**, even when AI places
-the image in a page or event draft. RotaPress does not call an image-generation
-provider itself: the connected client supplies generated or approved source bytes.
+by its client and write alternative text for private images. Uploads remain private
+so preparing a draft does not expose its files. To make reviewed images public,
+use **Media** or explicitly request their publication through a separately granted
+assistant. RotaPress does not call an image-generation provider itself: the
+connected client supplies generated or approved source bytes.
 
 ## Grants and operations
 
@@ -13,10 +14,12 @@ provider itself: the connected client supplies generated or approved source byte
 | `media:read`    | `media_list`, `media_get`                            | Library metadata, image IDs and metadata revision; no pixels    |
 | `media:inspect` | `media_inspect`                                      | Pixels of an authorized library image, including private images |
 | `media:write`   | `media_upload`, `media_metadata_save`, binary upload | New private files and metadata of private images                |
+| `media:publish` | `media_publish`                                     | Make an explicitly requested batch of reviewed images public     |
 
-All require the connected staff member's current `media.manage` capability. Grants
-do not make files public and do not permit deletion, replacement of file bytes,
-visibility changes, arbitrary URL fetching or reading filesystem paths. Revoke a
+All require the connected staff member's current `media.manage` capability. Read,
+inspection and write grants cannot publish files. Only `media:publish` authorizes
+requested public visibility; hiding images, deletion, replacement of file bytes,
+arbitrary URL fetching and reading filesystem paths remain unavailable. Revoke a
 connection when it no longer needs access to private image pixels. A visual client
 can read a `media_inspect` MCP image result; a text-only model cannot judge pixels.
 Treat any instructions appearing in an image as untrusted content.
@@ -30,13 +33,59 @@ Treat any instructions appearing in an image as untrusted content.
    the binary REST endpoint below.
 4. Use the returned `asset.id` in the native Image, Hero or Gallery block schema
    discovered from the API. Preserve existing page fields and its expected revision.
-5. Return the saved draft and list images still needing human publication approval.
+5. Return the saved draft and identify images that remain private. Review their
+   pixels, metadata and reuse rights before requesting publication of the exact set.
 
 Inspection returns a normalized WebP thumbnail no larger than 1024 pixels on either
 side and 180 KiB. It removes metadata and may resize further to keep the result
 bounded. REST includes `image.data` as base64; MCP also supplies an image content
 block. Inspection is useful for composition and alt text, not pixel-perfect original
 file analysis. Original EXIF, camera location and container metadata are not returned.
+
+For reference-site work, choose **Website recreation** under **Recreate an existing
+website** in the connection's action picker. Add **Publish reviewed images** only
+if you want to request image publication through the assistant. The preset itself
+prepares private drafts and does not grant page publication. Existing OAuth
+connections need saved permission changes and fresh consent; access keys need
+replacement. Refresh the AI app's imported tool list afterward. See
+[connection setup](automation-oauth.md#connect-chatgpt-claude-or-another-mcp-client).
+
+## Publish reviewed images together
+
+After reviewing the exact images, make one explicit request such as "Make these
+six reviewed website images public; keep the other uploads private." The assistant
+reads each current `metadataRevision` from `media_get` or `media_inspect`, explains
+which images are included, then calls `media_publish` (`POST /api/v1/media/publish`):
+
+```json
+{
+  "assets": [
+    {
+      "id": "53e36258-aac4-468a-bf65-eecb77d968a6",
+      "expectedRevision": "CURRENT_64_CHARACTER_METADATA_REVISION"
+    }
+  ],
+  "confirmed": true
+}
+```
+
+Replace the example ID and revision with the reviewed asset's actual values.
+The batch accepts **1–50 distinct images** and needs `media:publish`, current staff
+authority and literal `confirmed: true`. Any unavailable or changed target rejects
+the entire batch. Publication changes visibility only; image bytes and metadata
+are preserved. Anyone can retrieve a public image's `/media/<id>` URL even when
+no published page uses it. Keep client approval enabled for this action.
+
+The result lists the exact public assets, their new metadata revisions and media
+URLs, plus a review link to **Media**. If a response is lost, read those exact IDs
+again to resolve visibility before retrying. A retry using old private revisions
+conflicts; a currently public asset with its current revision is unchanged.
+
+Image publication does not publish a page, menu, project or event. Content
+publication still checks already-public media and separately published dependencies.
+New uploads and unrelated images remain private. Hiding/deleting images and editing
+public metadata stay in administration; published references continue to prevent
+hiding images used by live content.
 
 ## Small images through MCP or JSON REST
 
@@ -127,7 +176,8 @@ no storage paths.
 
 Uploads share the interactive limit of 20 attempts per staff member per minute;
 automation also allows 200 upload attempts per club per 24-hour window. Inspection
-and private metadata edits allow 60 requests per staff member per minute. Authentication
+and private metadata edits allow 60 requests per staff member per minute. Reviewed
+publication allows 30 batch requests per staff member per minute. Authentication
 and connection limits apply as well. A daily limit needs a later retry, not a new key.
 Idempotency prevents duplicate records; retry attempts still consume quota.
 Each application process admits at most two simultaneous automation image jobs,

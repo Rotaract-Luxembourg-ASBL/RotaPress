@@ -49,6 +49,16 @@ page or event edit returns `409`; reread and review the new revision.
 ## What the image shows
 
 The page's layout, text, images and native styling are real rendered pixels.
+Page captures use the published site appearance, menus, header/footer and shared
+sections. They do not jointly preview changes saved with
+`website_settings_save`; shared-part drafts can be inspected individually.
+Use **Website → Preview website** for signed-in review of the saved website draft
+and review its settings in **Website**. An assistant must report which settings
+or shared-part changes still need that review, even when a page screenshot passes.
+If the client's browser cannot sign in, retain the page's actual MCP preview
+receipt and list the unavailable whole-site or interactive review without claiming
+it succeeded or repeatedly requesting the same login.
+
 Custom code, forms, calendar controls, registration and other interactive controls
 remain inactive or show their normal preview placeholder. Sliders show their initial
 frame. This review cannot verify submissions, payments, keyboard interactions or

@@ -23,6 +23,7 @@ import {
   mediaMetadataRevision,
   privateMetadataSchema,
 } from "./media_automation";
+import { reviewedMediaPublicationSchema } from "./media_publication";
 
 const uploadSchema = mediaMetadataSchema
   .extend({
@@ -269,6 +270,62 @@ export class MediaService {
     });
   }
 
+  /** A reviewed batch changes visibility only, in one authorized transaction. */
+  async publishReviewed(
+    actor: TrustedActor,
+    input: unknown,
+  ): Promise<MediaAssetDto[]> {
+    const { assets: targets } = reviewedMediaPublicationSchema.parse(input);
+    return this.db.transaction(async (tx) => {
+      const scope = await this.authorization.lock(actor, "media.manage", tx);
+      const assets: MediaAssetDto[] = [];
+      for (const target of targets) {
+        const asset = await this.repository.details(
+          target.id,
+          scope.organizationId,
+          tx,
+        );
+        if (!asset) throw this.unavailable();
+        if (mediaMetadataRevision(asset) !== target.expectedRevision) {
+          throw new DomainError(
+            "MEDIA_METADATA_CHANGED",
+            "One or more reviewed images changed. Read their current metadata and review the batch again before publishing.",
+            409,
+          );
+        }
+        assets.push(asset);
+      }
+      const published: MediaAssetDto[] = [];
+      for (const asset of assets) {
+        if (asset.visibility === "public") {
+          published.push(asset);
+          continue;
+        }
+        const updated = await this.repository.update(
+          asset.id,
+          scope.organizationId,
+          {
+            title: asset.title,
+            alt: asset.alt,
+            caption: asset.caption,
+            tags: asset.tags,
+            collection: asset.collection,
+            visibility: "public",
+          },
+          tx,
+        );
+        await this.audit.record(tx, {
+          organizationId: scope.organizationId,
+          actorUserId: actor.userId,
+          action: "media.published",
+          targetId: asset.id,
+        });
+        published.push(updated);
+      }
+      return published;
+    });
+  }
+
   async delete(actor: TrustedActor, id: string): Promise<void> {
     z.uuid().parse(id);
     const key = await this.db.transaction(async (tx) => {
@@ -382,7 +439,7 @@ export class MediaService {
     ) {
       throw new DomainError(
         "MEDIA_NOT_PUBLIC",
-        "Make every selected image public in Media before publishing this content.",
+        "Review and make every selected image public before publishing this content.",
         422,
       );
     }

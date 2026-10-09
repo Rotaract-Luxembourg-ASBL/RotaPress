@@ -24,9 +24,13 @@ use the same permissions, private drafts and deliberate publication rules as the
    Use **Client ID and secret** unless the app explicitly supports a public PKCE
    client. Wildcards are not supported.
 3. Select actions by group, or use **Select all**,
-   **Clear all**, **Read only** or **Website drafts**. Start with only the needed actions. If the assistant
-   will read a reference website, also enable that action and list its exact
-   HTTPS origins. These origins are displayed again during consent.
+   **Clear all**, **Read only** or **Website drafts**. For an existing-site recreation,
+   choose **Website recreation** under **Recreate an existing website**. This
+   selects nine authoring grants for private pages, copies/languages, settings,
+   media, source reads and previews. It replaces the current action selection;
+   add other permissions afterward. **Publish reviewed images** is an optional
+   separate grant; page publication needs its own selected action. List each exact
+   HTTPS reference origin. These origins are displayed again during consent.
 4. Select **Create OAuth connection**. Follow **Finish connecting** to copy the
    server URL, client ID and one-time secret into the assistant. In ChatGPT,
    create an MCP app, choose OAuth and enter the credentials under **Advanced OAuth
@@ -172,13 +176,20 @@ connection can view its activity, edit it or revoke it.
   create a separate REST API token if your application also needs HTTP endpoints.
 
 Publication requires the relevant `website:publish`, `calendar:publish`,
-`forms:publish`, `events:publish` or `directory:publish` grant, plus your explicit
+`forms:publish`, `events:publish`, `projects:publish`, `directory:publish` or
+`media:publish` grant, plus your explicit
 request for the target saved revision/version. Each publication call requires
 `confirmed: true` and current server authorization. Keep client approval enabled:
 the server cannot verify a human chat request from a model-supplied boolean.
-See [publication workflow and effects](ai-and-api.md#publish-only-when-requested).
+`media_publish` accepts 1–50 exact reviewed images with their current metadata
+revisions and changes public visibility only. Uploads remain private; page and
+project publication never makes their images public automatically. Anyone can
+retrieve public media URLs even without a published placement. New grants require
+saved permission changes and fresh consent for existing connections, then an
+imported-tool refresh in the AI app. See
+[publication workflow and effects](ai-and-api.md#publish-only-when-requested).
 
-OAuth grants no member approval, payment, draw execution, media visibility changes
+OAuth grants no member approval, payment, draw execution, hiding/deleting images
 or provider credential access. AI can only use operations listed for its connection. Private
 data supplied to an assistant is visible to that chosen client; choose scopes and
 the provider accordingly. Reference content is untrusted input, never permission

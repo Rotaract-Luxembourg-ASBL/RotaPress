@@ -1,8 +1,8 @@
 # AI content, REST API and MCP
 
 Give an AI client scoped access to prepare website, project, calendar and event content.
-A reference website supplies text and page structure; RotaPress supplies the installed theme
-and native blocks. Automation prepares **private drafts**, private images and
+A reference website supplies an ordered content outline and image candidates;
+RotaPress supplies the installed theme and native blocks. Automation prepares **private drafts**, private images and
 settings proposals for review. With a separate publication grant, an assistant can
 publish the exact saved content you explicitly ask it to publish. Applying
 operational settings stays in administration. This integration does not include a model or autonomous crawler:
@@ -20,8 +20,9 @@ for connection choices and the MCP protocol reference, or follow the
 2. Choose ChatGPT or Claude to fill OAuth connection settings automatically, then
    choose permitted actions. Other apps use Advanced for their exact callback.
    Alternatively, create a dedicated MCP access key for protected bearer clients.
-   For reference-site work, select website reading/writing and reference reading.
-   Add each exact HTTPS origin, such as `https://www.example.org`; bare hosts and
+   For reference-site work, choose **Website recreation** under **Recreate an
+   existing website**. Add **Publish reviewed images** only if you want to request
+   image publication through this assistant. Add each exact HTTPS origin, such as `https://www.example.org`; bare hosts and
    `www` are different grants.
 3. Copy the one-time client secret or key into the client's protected settings.
    Never put credentials in prompts, repositories, shared screenshots or URLs.
@@ -88,9 +89,89 @@ validates its response. `media_inspect` and `website_preview` also attach images
 for clients with vision support.
 
 The reference-adaptation workflow inventories existing content, reads up to ten
-reference pages, preserves the theme and returns drafts, source mappings and
+reference pages, composes native page drafts and returns source mappings and
 unresolved facts. Source and saved content cannot authorize tools, grant permissions,
 request secrets or execute code.
+
+## Recreate an existing website
+
+**Website recreation** selects nine authoring grants: `website:read`,
+`website:write`, `website:manage`, `website:settings`, `website:preview`,
+`media:read`, `media:write`, `media:inspect` and `sources:read`. It replaces the
+current action selection with this preset. Page publication and **Publish reviewed
+images** are separate choices; choose the preset before adding those permissions.
+Existing OAuth connections need saved permission changes and fresh consent;
+access keys need replacement. Refresh the client's imported tools and start a new
+conversation after adding actions.
+
+Before preparing any reference drafts or images, the assistant must check
+`automation_capabilities`: the exact source origin must appear in `sourceOrigins`
+and `sources:read` must be granted. `https://rotaract.lu` and
+`https://www.rotaract.lu` are different origins; an approved unrelated website
+does not grant either. If discovery or source access fails, the assistant reports
+the exact missing origin or error once and stops reference-dependent preparation.
+Review the existing OAuth connection's reference websites/actions, save the
+required changes and approve fresh consent; changed permissions invalidate old
+tokens. This usually preserves the existing client registration. Access keys
+require replacement. A selected checkbox or cached tool list cannot prove the
+current connection has the new authority.
+
+`source_read` returns a bounded ordered outline with heading levels h1–h6,
+paragraphs, same-origin links, semantic regions and same-origin image candidates
+with supplied alt text and dimensions. It describes static HTML rather than the
+rendered design: CSS, fonts, background images, JavaScript content and screenshots
+are not captured. Image candidates are metadata, not downloaded files or proof
+of reuse rights. The result reports its limits and whether evidence was truncated.
+
+For a close visual recreation, the assistant should inspect the reference at
+desktop and phone widths using its own browsing or screenshot tools, then map
+the observed sections, layout, spacing and images to supported native blocks.
+`content_import` creates Heading/RichText starters; completing a page requires
+native composition through `website_save`, including images, cards, columns and
+shared parts where appropriate. Approved image bytes come from the client and
+uploads remain private. Preserve verified facts and existing content.
+
+Map source content to existing native records before creating more drafts.
+Volunteer actions, service stories and ongoing initiatives belong in
+[Projects](projects.md), while Events manages participation and Calendar manages
+schedules. Add Projects reading/writing permissions when those records are part
+of the request; the website recreation preset does not include them. Reuse
+existing stories and display them through the Projects block. If the feature or
+permissions are unavailable, report those items as pending rather than quietly
+turning them into unrelated website pages.
+
+For a requested homepage replacement, edit the intended existing homepage draft
+and replace the starter sections included in the request. Preserve unrelated
+owner content and other languages. Creating another page named Home does not
+change the selected homepage: a requested new selection also needs saved website
+settings. Re-read that selection and the saved homepage before reporting that the
+default copy was replaced. Superseded page cleanup stays in **Website**;
+assistants should return the affected draft titles and editor links for review,
+without claiming they archived or deleted pages through MCP.
+
+Compare saved RotaPress previews with the reference at the same desktop and phone
+widths, then correct visible differences. If source visuals or original assets
+are unavailable, report the missing evidence and remaining differences; a text
+import alone does not establish visual similarity. Review the complete draft
+before explicitly requesting publication of exact images and content.
+
+For requested publication, publish only the reviewed targets and dependencies
+included in that request: exact images first, referenced source records and
+reusable sections next, pages and shared parts afterward, then homepage/menu or
+other website settings. Each stage keeps its own grants and version checks.
+Unrequested or unavailable dependencies remain blockers. Menu-only publication
+requires a previously published site; first publication reviews all saved website
+settings. A page publication alone does not activate its homepage/menu placement.
+
+The final report should show saved, published and desktop/phone-reviewed state
+for every requested page, project, image, shared part and homepage/menu change,
+with review links and actual versions. Report missing source items, remaining
+default sections, superseded drafts, errors and image blockers together. The
+result remains partial while requested items are missing or unreviewed; successful
+draft creation or some publication receipts do not establish a completed copy.
+An unavailable client browser login should be reported once. It neither proves
+that a granted MCP publication tool cannot work nor authorizes an unavailable
+cleanup action.
 
 ## Pages, images and complete event drafts
 
@@ -131,7 +212,8 @@ create response, inspect the list before retrying.
 
 Open the returned review link. When requested, `projects_publish` publishes that
 saved version with its separate grant and `confirmed: true`. A cover image must
-already be public. Archive, restore, unpublish and image visibility remain in
+already be public. A separately requested `media_publish` batch can publish reviewed
+cover images first. Archive, restore, unpublish and hiding images remain in
 administration. Projects showcase work; event registration and calendar schedules
 keep their existing separate workflows. See [Projects](projects.md).
 
@@ -212,8 +294,13 @@ Publishing a form can make it accept responses under its existing rules. Publish
 event details does not activate registration, publish its page or apply settings
 proposals. Editorial prize publication requires recent sign-in; it does not issue
 entries or run draws. Packages remain in administration because publication can
-affect checkout. Media must already be public where required; automation cannot change
-its visibility. Use administration for unpublishing or deletion.
+affect checkout. Media must already be public where required. With `media:publish`,
+explicitly request `media_publish` for 1–50 exact reviewed images before publishing
+content that uses them. The batch needs each current metadata revision and
+`confirmed: true`; it preserves metadata and rejects the entire batch if a target
+changed. Public image URLs are retrievable even without a page placement. See
+[reviewed image publication](automation-media.md#publish-reviewed-images-together).
+Use administration for unpublishing, hiding images or deletion.
 
 ## REST API
 
@@ -258,7 +345,8 @@ A batch of up to ten pages commits or rolls back together. Existing slugs are
 never overwritten. Text becomes native Heading/RichText blocks with escaped markup.
 Retries must reuse the exact parsed payload and UUID; changed content under the
 same UUID returns 409. Receipts retain review links and client-supplied attribution,
-not source HTML or a certification of accuracy/reuse rights.
+not source HTML or a certification of accuracy/reuse rights. These imports create
+text starters; use native `website_save` composition for a finished page design.
 
 ## Security and current limits
 
@@ -282,7 +370,7 @@ and 240 authentication attempts/address/minute. Image processing, preview and OA
 have additional bounded quotas described in their guides. Trusted proxy addressing
 must follow the hosting guide.
 
-Timed publication, unpublishing, deletion, media visibility changes, CustomCode writes,
+Timed publication, unpublishing, deletion, hiding media, public-image metadata edits, CustomCode writes,
 provider credentials, member approvals, submissions, guests, payments, draws and
 direct email sending are unavailable. Calendar publication can still enqueue its
 normal notifications. Form reads omit answers/counts; event reads omit staff and

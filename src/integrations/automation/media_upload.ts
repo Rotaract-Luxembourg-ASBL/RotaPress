@@ -14,7 +14,8 @@ import {
 } from "./media_schemas";
 
 type ImageMime = z.infer<typeof imageMimeSchema>;
-type MediaScope = "media:read" | "media:write" | "media:inspect";
+type MediaScope =
+  "media:read" | "media:write" | "media:inspect" | "media:publish";
 
 /** Also protects the binary route, which intentionally does not use JSON dispatch. */
 export async function requireMediaScope(

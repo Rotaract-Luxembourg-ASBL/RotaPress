@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { capture } from "./integration-credentials-journey";
 import { oauthPresetsJourney } from "./oauth-presets-journey";
+import { oauthWebsiteRecreationJourney } from "./oauth-website-recreation-journey";
 import { openOAuthFromAssistant } from "./oauth-navigation-journey";
 import { oauthManagementJourney } from "./oauth-management-journey";
 import {
@@ -40,6 +41,7 @@ export async function oauthJourney(
     });
     await owner.goto("/admin/integrations/mcp");
     await oauthPresetsJourney(owner);
+    await oauthWebsiteRecreationJourney(owner);
     const panel = owner.getByRole("region", {
       name: "Connect with OAuth",
     });

@@ -71,13 +71,22 @@ Permission changes preserve client credentials, invalidate existing tokens and
 require fresh consent; access keys still require replacement for new grants.
 Consent explains requested versus allowed actions and lets the person review the
 full allowed set before explicitly approving it. MCP initialization and capability
-discovery expose the issued scope names, labels and read/write mode (contract 1.7).
+discovery expose the issued scope names, labels and read/write mode. Contract 1.8
+adds a **Website recreation** authoring preset, bounded ordered source outlines
+with h1–h6 levels and same-origin image metadata, and separately requested
+`media_publish` batches of 1–50 reviewed images. Uploads remain private; image
+publication needs `media:publish`, confirmation and current fingerprints, and
+preserves metadata/bytes atomically. Hiding/deletion and public metadata editing
+remain in administration. Existing connections require new grants and consent or
+new keys, plus an AI-client tool refresh. Source reads do not capture CSS, scripts,
+screenshots or image bytes; clients compose native blocks and compare source
+visuals with saved previews at desktop/phone widths.
 Platform-wide sensitive actions use a 12-hour sign-in window, with earlier identity
 confirmation after a detected browser or trusted-proxy network change.
 Bounded private image uploads and saved-revision
 screenshots support visual review. Event settings are suggestions until a staff
 member applies them. Separate grants allow explicitly requested publication of exact
-saved website, calendar, form, event-detail and directory targets. Server checks
+saved website, calendar, form, event-detail, project, directory and media targets. Server checks
 retain readiness, media visibility, current authority and revision/version guards;
 dependencies never publish automatically. The AI client must honor the user's
 request and should require approval. Every feature change requires an
@@ -87,7 +96,7 @@ API/MCP contract review. See [AI & API](../guides/ai-and-api.md) and the
 | Area           | Current boundary                                                                                                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Google sign-in | Requires protected credentials, an exact callback and current Google-session policy; validate actual sign-in on the configured origin                                                            |
-| AI & API       | Native drafts, staff-reviewed operational settings and separately granted requested publication; no participant operations, unpublish/delete, media visibility changes or unattended publication |
+| AI & API       | Native drafts, staff-reviewed settings and separately granted requested content/image publication; no participant operations, unpublish/delete, image hiding, public media metadata edits or unattended publication |
 | Visual preview | Requires pinned Chromium and a supported sandbox; unavailable hosts return `503`. Pixels do not verify interactive controls, delivery or payments                                                |
 | Luma           | Link mode needs no API credentials; scoped import/notification/purchase workflows require a protected connection and the operator request control                                                |
 | Calendar feeds | Native/file calendars work locally; remote feeds require explicit outbound access and comply with the restricted feed client                                                                     |

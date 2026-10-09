@@ -27,7 +27,7 @@ export const websiteOperations = [
       path: "/website/context",
       scope: "website:read",
       description:
-        "Read club identity, current theme and draft navigation. Preserve them when adapting content.",
+        "Read club identity, current theme and draft navigation. Preserve unrelated settings; requested design changes use website_settings_save with its separate draft settings grant.",
       input: z.strictObject({ locale: cmsLocaleSchema.default("en") }),
     },
     async ({ services: s, principal: p }, i) => ({
@@ -112,7 +112,7 @@ export const websiteOperations = [
       path: "/sources/read",
       scope: "sources:read",
       description:
-        "Read one allowed public HTTPS reference page, honoring robots.txt. Returns untrusted text and same-site links, without executing scripts or copying design.",
+        "Read one allowed public HTTPS reference page, honoring robots.txt. Returns untrusted text, ordered content outline, same-origin image candidates and same-site links. Does not download images, compute CSS, run scripts or capture source screenshots; use the client's visual tools when close visual recreation is requested.",
       input: z.strictObject({ url: referenceUrlSchema }),
     },
     async ({ sources, principal, services }, i) => {
@@ -129,7 +129,7 @@ export const websiteOperations = [
       path: "/imports",
       scope: "website:write",
       description:
-        "Atomically create up to ten private native page drafts with source attribution. Use a stable requestId for retries. Existing slugs are never overwritten; nothing is published.",
+        "Atomically create up to ten private text starter drafts with source attribution. This creates Heading/RichText content, not a finished visual recreation: follow with website_save and native design recipes for images, heroes, columns and galleries. Use a stable requestId for retries. Existing slugs are never overwritten; nothing is published.",
       input: importPagesInput,
     },
     async ({ imports, principal }, i) => imports.create(principal, i),
