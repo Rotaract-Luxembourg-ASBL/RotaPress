@@ -15,20 +15,23 @@ can access.
 | My profile   | Save personal details, see membership status and apply when eligible.                                                           |
 
 Navigation uses URLs such as `/membership?tab=profile`, so reloading retains the
-selected area. Desktop navigation has five destinations; phones use a labeled
-menu with Escape dismissal and focus return. Calendar and booking destinations
-follow current feature availability. The administration link appears only for
+selected area. Desktop navigation has five horizontal tabs; phones show the
+current area in a labeled menu with Escape dismissal and focus return.
+Calendar and booking destinations follow current feature availability. The administration link appears only for
 accounts with current staff capabilities.
 
-The portal uses the published club identity and logo with its own workspace
-layout. The public membership application and standalone calendar, registration
-and guest pages remain available.
+The portal shares the published website header, footer, logo, colors, typography
+and theme with the public membership page. Account navigation sits below the page
+heading, with sign-out and permitted administration access nearby. Changing the
+website's published appearance also updates the member space; administration
+keeps its own styling. The public membership application and standalone calendar,
+registration and guest pages remain available.
 
 An approved membership is a compact status on Home. Application, suspension and
 other membership states still explain the next step; the full membership panel is
 also available under My profile. Membership status refreshes when returning to the
-window. Profile edits warn before following a portal link or signing out, and
-before reloading with unsaved changes. Saving retains the existing version check
+window. Profile edits warn before following a portal or website header/footer
+link or signing out, and before reloading with unsaved changes. Saving retains the existing version check
 and keeps entered details if the request fails.
 
 Bookings reuse the existing registration and guest components. In the member

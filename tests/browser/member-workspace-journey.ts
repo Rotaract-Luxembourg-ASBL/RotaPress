@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 /** Uses B01's actual email-OTP member session, without staff privileges. */
 export async function memberWorkspaceJourney(member: Page) {
+  await member.setViewportSize({ width: 1440, height: 1000 });
   const me = await member.request.get("/api/me");
   expect(await me.json()).toMatchObject({
     membership: { status: "approved", role: "member" },
@@ -18,6 +19,8 @@ export async function memberWorkspaceJourney(member: Page) {
     await expect(member.locator(".admin-layout")).toHaveCount(0);
   }
   await member.goto("/membership");
+  await expect(member.locator(".cms-public .member-portal")).toBeVisible();
+  await expect(member.locator(".cms-public > header")).toHaveCount(1);
   await expect(member.getByRole("heading", { name: /Welcome/ })).toBeVisible();
   await expect(
     member.getByRole("link", { name: "Open administration", exact: true }),
@@ -27,14 +30,24 @@ export async function memberWorkspaceJourney(member: Page) {
     exact: true,
   });
   await expect(
+    navigation.getByRole("link", { name: "Home", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
     member.getByRole("button", {
       name: "Refresh membership status",
       exact: true,
     }),
   ).toHaveCount(0);
-  await navigation
-    .getByRole("link", { name: "My profile", exact: true })
-    .click();
+  const profileLink = navigation.getByRole("link", {
+    name: "My profile",
+    exact: true,
+  });
+  await profileLink.focus();
+  await profileLink.press("Enter");
+  await expect(profileLink).toHaveAttribute("aria-current", "page");
+  await expect(
+    member.getByRole("heading", { name: "My profile", exact: true }),
+  ).toBeFocused();
   await member
     .getByLabel("Display name", { exact: true })
     .fill("Synthetic community member");
@@ -43,6 +56,39 @@ export async function memberWorkspaceJourney(member: Page) {
     .fill("Community gardening");
   member.once("dialog", (dialog) => dialog.dismiss());
   await navigation.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(
+    member.getByRole("textbox", { name: "Interests and skills", exact: true }),
+  ).toHaveValue("Community gardening");
+  member.once("dialog", (dialog) => dialog.dismiss());
+  await member.locator(".cms-public > header a[href='/']").first().click();
+  await expect(member).toHaveURL(/\/membership\?tab=profile$/);
+  await expect(
+    member.getByRole("textbox", { name: "Interests and skills", exact: true }),
+  ).toHaveValue("Community gardening");
+  const reloadWarning = member.waitForEvent("dialog");
+  const reload = member.evaluate(() => window.location.reload());
+  const reloadDialog = await reloadWarning;
+  expect(reloadDialog.type()).toBe("beforeunload");
+  await reloadDialog.dismiss();
+  await reload;
+  await expect(
+    member.getByRole("textbox", { name: "Interests and skills", exact: true }),
+  ).toHaveValue("Community gardening");
+  const skipDialogs: string[] = [];
+  const rejectSkip = async (dialog: import("@playwright/test").Dialog) => {
+    skipDialogs.push(dialog.type());
+    await dialog.dismiss();
+  };
+  member.on("dialog", rejectSkip);
+  const skipLink = member.getByRole("link", {
+    name: "Skip to content",
+    exact: true,
+  });
+  await skipLink.focus();
+  await skipLink.press("Enter");
+  await expect(member).toHaveURL(/#main-content$/);
+  member.off("dialog", rejectSkip);
+  expect(skipDialogs).toEqual([]);
   await expect(
     member.getByRole("textbox", { name: "Interests and skills", exact: true }),
   ).toHaveValue("Community gardening");
@@ -63,33 +109,55 @@ export async function memberWorkspaceJourney(member: Page) {
       exact: true,
     }),
   ).toBeVisible();
-  for (const width of [1440, 390]) {
+  const menu = member.getByRole("button", {
+    name: "Open member menu",
+    exact: true,
+  });
+  const memberMenu = member.getByRole("dialog", {
+    name: "Member menu",
+    exact: true,
+  });
+  for (const width of [1440, 800, 320, 390]) {
     await member.setViewportSize({ width, height: 1000 });
     expect(
       await member.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    if (width < 800) {
+      await expect(menu).toContainText("Home");
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await menu.focus();
+      await menu.press("Enter");
+      await expect(memberMenu).toBeVisible();
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await expect(
+        memberMenu.getByRole("link", { name: "Home", exact: true }),
+      ).toHaveAttribute("aria-current", "page");
+      await memberMenu.getByRole("link", { name: "Home", exact: true }).click();
+      await expect(memberMenu).toHaveCount(0);
+      await expect(menu).toBeFocused();
+      await menu.press("Enter");
+      await expect(memberMenu).toBeVisible();
+      await member.keyboard.press("Escape");
+      await expect(memberMenu).toHaveCount(0);
+      await expect(menu).toBeFocused();
+    }
     await member.screenshot({
-      path: `.local/member-space-${width === 1440 ? "desktop" : "phone"}.png`,
+      path: `.local/member-space-${width}.png`,
       fullPage: true,
       mask: [member.locator(".account-email")],
     });
   }
-  const menu = member.getByRole("button", {
-    name: "Open member menu",
+  await menu.click();
+  const bookingsLink = memberMenu.getByRole("link", {
+    name: "My bookings",
     exact: true,
   });
-  await menu.click();
-  await member.keyboard.press("Escape");
-  await expect(menu).toBeFocused();
-  await menu.click();
-  await navigation
-    .getByRole("link", { name: "My bookings", exact: true })
-    .click();
-  await expect(
-    member.getByRole("dialog", { name: "Member menu", exact: true }),
-  ).toHaveCount(0);
+  await bookingsLink.focus();
+  await bookingsLink.press("Enter");
+  await expect(memberMenu).toHaveCount(0);
+  await expect(menu).toContainText("My bookings");
   await expect(
     member.getByRole("heading", { name: "My registrations", exact: true }),
   ).toBeVisible();

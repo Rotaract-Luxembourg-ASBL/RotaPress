@@ -13,9 +13,9 @@
 }
 .member-card {
   padding: 24px;
-  background: white;
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--cms-radius);
   min-width: 0;
 }
 .member-card-heading {
@@ -25,13 +25,16 @@
   gap: 16px;
   margin-bottom: 22px;
 }
+.member-card-heading > div {
+  min-width: 0;
+}
 .member-card-heading p {
   color: var(--muted);
   font-size: 12px;
   margin-top: 5px;
 }
 .member-card-heading > svg {
-  color: #7c929c;
+  color: var(--muted);
   flex-shrink: 0;
 }
 .member-card-heading > .text-link {
@@ -48,7 +51,7 @@
   margin: 0;
 }
 .member-agenda li + li {
-  border-top: 1px solid #edf1f4;
+  border-top: 1px solid var(--line);
 }
 .member-agenda a {
   display: flex;
@@ -64,8 +67,8 @@
   width: 54px;
   flex-shrink: 0;
   text-align: center;
-  background: #f0f5f6;
-  border-radius: 8px;
+  background: var(--cms-soft);
+  border-radius: var(--cms-radius);
   padding: 6px;
 }
 .member-date small {
@@ -101,10 +104,11 @@
 }
 .member-row-arrow {
   margin-left: auto;
-  color: #6d8792;
+  color: var(--muted);
+  flex-shrink: 0;
 }
 .member-card-footnote {
-  border-top: 1px solid #edf1f4;
+  border-top: 1px solid var(--line);
   padding-top: 14px;
   margin-top: 10px;
   display: flex;
@@ -114,20 +118,20 @@
   color: var(--muted);
 }
 .member-account-card {
-  background: linear-gradient(135deg, #eef5f5, #f9fcfc);
-  border-color: #d8e6e7;
+  background: color-mix(in srgb, var(--club-accent) 5%, var(--panel));
+  border-color: color-mix(in srgb, var(--club-accent) 18%, var(--line));
 }
 .member-account-icon {
   width: 46px;
   height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: white;
+  border-radius: var(--cms-radius);
+  background: var(--panel);
   color: var(--club-accent);
   margin-bottom: 20px;
 }
-.member-account-card h2 {
+.member-portal .member-account-card h2 {
   font-size: 1.25rem;
   margin-top: 7px;
 }
@@ -157,9 +161,9 @@
   gap: 10px;
 }
 .member-empty > svg {
-  color: #62838b;
-  background: #f0f5f6;
-  border-radius: 10px;
+  color: var(--club-accent);
+  background: var(--cms-soft);
+  border-radius: var(--cms-radius);
   box-sizing: content-box;
   padding: 12px;
   margin-bottom: 3px;
@@ -206,14 +210,15 @@
   overflow-wrap: anywhere;
 }
 .member-row-icon {
-  color: #7b919d;
+  color: var(--muted);
+  flex-shrink: 0;
 }
 .member-pill {
   display: inline-block;
   padding: 3px 8px;
-  background: #f0f5f4;
-  color: #376657;
-  border-radius: 5px;
+  background: var(--cms-soft);
+  color: var(--ink);
+  border-radius: var(--cms-radius);
   font-size: 11px;
   line-height: 1.5;
   white-space: nowrap;
@@ -311,9 +316,9 @@
   margin: 5px 0;
 }
 .member-booking-detail .guest-booking {
-  background: #f3f7f8;
+  background: var(--cms-soft);
   padding: 20px;
-  border-radius: 9px;
+  border-radius: var(--cms-radius);
   display: grid;
   gap: 12px;
   justify-items: start;
@@ -340,17 +345,17 @@
 .member-profile-fields textarea,
 .member-profile-fields select {
   width: 100%;
-  border: 1px solid #ced9e0;
-  border-radius: 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--cms-radius);
   padding: 10px 12px;
   font-size: 14px;
   font-weight: 400;
   min-height: 44px;
-  background: #fff;
+  background: var(--panel);
   color: var(--ink);
 }
 .member-profile-fields input[readonly] {
-  background: #f7f9fa;
+  background: var(--cms-soft);
   color: var(--muted);
 }
 .member-profile-fields .field-help {
@@ -381,7 +386,7 @@
   padding: 24px;
   margin: 0 0 24px;
   max-width: none;
-  border-radius: 12px;
+  border-radius: var(--cms-radius);
 }
 .member-portal .membership-panel h2 {
   font-size: 1.15rem;
@@ -409,7 +414,7 @@
   margin-top: 12px;
   cursor: pointer;
 }
-.member-calendar .calendar-period h2 {
+.member-portal .member-calendar .calendar-period h2 {
   font-size: 1.1rem;
 }
 .member-calendar .calendar-filters {
@@ -425,24 +430,10 @@
 .member-calendar .calendar-subscription-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
-.member-calendar .calendar-empty h3 {
+.member-portal .member-calendar .calendar-empty h3 {
   font-size: 1rem;
 }
-@media (min-width: 800px) {
-  .member-sidebar {
-    position: sticky;
-    top: 0;
-    max-height: 100dvh;
-    min-height: calc(100dvh - 80px);
-  }
-}
 @media (max-width: 1100px) {
-  .member-layout {
-    grid-template-columns: 194px minmax(0, 1fr);
-  }
-  .member-main {
-    padding-inline: 24px;
-  }
   .member-home-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -452,43 +443,8 @@
   .member-reminder-link {
     grid-column: 1 / -1;
   }
-  .member-page-heading {
-    align-items: start;
-  }
-  .member-brand .site-brand-name {
-    max-width: 220px;
-  }
 }
 @media (max-width: 799px) {
-  .member-topbar {
-    height: 72px;
-    padding: 0 20px;
-    gap: 12px;
-  }
-  .member-topbar-actions {
-    gap: 12px;
-  }
-  .member-portal-label,
-  .member-sidebar {
-    display: none;
-  }
-  .member-menu-button {
-    display: flex;
-    flex-shrink: 0;
-  }
-  .member-mobile-website {
-    display: flex;
-  }
-  .member-layout {
-    display: block;
-  }
-  .member-main {
-    padding: 28px 20px 20px;
-  }
-  .member-page-heading {
-    flex-direction: column;
-    gap: 18px;
-  }
   .member-main .member-card {
     padding: 20px;
   }
@@ -506,46 +462,15 @@
   .member-calendar .calendar-period {
     flex-wrap: wrap;
   }
-  .member-calendar .calendar-period h2 {
+  .member-portal .member-calendar .calendar-period h2 {
     min-width: 0;
     flex: 1;
   }
-  .member-footer {
-    flex-direction: column;
-    gap: 4px;
-  }
 }
 @media (max-width: 520px) {
-  .member-website-link {
-    display: none;
-  }
-  .member-brand .site-brand-name {
-    font-size: 11px;
-    max-width: 110px;
-  }
-  .member-brand .site-logo-small .template-brand-mark .site-logo {
-    max-width: 66px;
-    width: 66px;
-  }
-  .member-brand .site-brand > a {
-    gap: 8px;
-  }
-  .member-brand {
-    max-width: 210px;
-  }
-  .member-brand .club-text-identity {
-    display: block;
-    overflow-wrap: anywhere;
-    font-size: 14px;
-  }
-  .member-topbar {
-    padding-inline: 16px;
-  }
-  .member-main {
-    padding-inline: 16px;
-  }
   .member-card-heading {
     gap: 10px;
+    flex-wrap: wrap;
   }
   .member-agenda a {
     gap: 12px;

@@ -25,12 +25,6 @@ export function MemberProfileEditor({
     onDirty(dirty || busy);
     return () => onDirty(false);
   }, [dirty, busy, onDirty]);
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
   async function save(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
