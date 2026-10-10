@@ -1,197 +1,156 @@
-/* The member workspace shares published identity, with its own readable app layout. */
+﻿/* Member accounts are part of the published website, with scoped task layouts. */
 .member-portal {
-  --paper: #f5f7fa;
-  --panel: #fff;
-  --ink: #20313f;
-  --muted: #657481;
-  --line: #e2e8ed;
-  --club-accent: #245f68;
-  --accent-foreground: #fff;
-  background: var(--paper);
   color: var(--ink);
-  min-height: 100dvh;
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.55;
-  & h1,
-  & h2,
-  & h3 {
-    font-family: var(--sans);
-    letter-spacing: -0.025em;
-    font-weight: 650;
-  }
-  & h1 {
-    font-size: clamp(1.65rem, 2.3vw, 2rem);
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-  & h2 {
-    font-size: 1.08rem;
-    line-height: 1.4;
-  }
-  & h3 {
-    font-size: 0.94rem;
-    line-height: 1.45;
-  }
-  & .button {
-    min-height: 42px;
-    padding: 10px 16px;
-    gap: 9px;
-    border-radius: 8px;
-    font-size: 13px;
-  }
-  & .button-outline {
-    border-color: #cfdae1;
-    background: white;
-  }
-  & .button-outline:hover {
-    background: #f3f7f8;
-  }
-  & .text-link {
-    font-size: 13px;
-    gap: 6px;
-    color: var(--club-accent);
-    white-space: nowrap;
-  }
-  & .notice {
-    border-radius: 8px;
-  }
-  & .panel {
-    background: white;
-    border-color: var(--line);
-    box-shadow: none;
-  }
-}
-.member-topbar {
-  height: 80px;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  background: white;
-  border-bottom: 1px solid var(--line);
-}
-.member-brand {
-  container-type: normal;
-  min-width: 0;
-  max-width: 390px;
-}
-.member-brand .site-brand .template-brand-identity {
-  flex-direction: row;
-  align-items: center;
-}
-.member-brand .site-logo-small .template-brand-mark {
-  padding: 0;
-  flex-shrink: 0;
-}
-.member-brand .site-brand > a {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.member-brand .site-brand-name {
+  font-family: var(--cms-font, var(--sans));
   font-size: 15px;
+  line-height: 1.6;
+}
+.cms-public .member-portal :is(h1, h2, h3) {
+  font-family: var(--cms-font, var(--sans));
+  letter-spacing: -0.025em;
   font-weight: 650;
-  line-height: 1.35;
+  text-wrap: pretty;
 }
-.member-brand .site-logo-small .site-logo {
-  max-height: 36px;
-  width: auto;
+.cms-public .member-portal h1 {
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
-.member-brand .template-brand-mark {
-  border: 0;
-  padding: 0;
-  width: auto;
+.cms-public .member-portal h2 {
+  font-size: 1.2rem;
+  line-height: 1.4;
 }
-.member-brand .site-logo-small .template-brand-mark .site-logo {
-  width: 92px;
-  max-width: 92px;
-  height: 38px;
-  object-fit: contain;
+.cms-public .member-portal h3 {
+  font-size: 1rem;
+  line-height: 1.45;
 }
-.member-portal-label {
-  border-left: 1px solid var(--line);
-  padding-left: 24px;
-  color: var(--muted);
-  font-size: 13px;
-  white-space: nowrap;
+.member-portal .button {
+  min-height: 44px;
+  padding: 11px 18px;
+  gap: 10px;
+  border-radius: var(--cms-radius);
+  font-size: 14px;
 }
-.member-topbar-actions {
-  margin-left: auto;
+.member-portal .button-outline {
+  border-color: var(--line);
+  background: var(--panel);
+}
+.member-portal .button-outline:hover {
+  background: var(--cms-soft);
+}
+.member-portal .text-link {
+  font-size: 14px;
+  gap: 6px;
+  color: var(--club-accent);
+}
+.member-portal :is(.notice, .panel, .admin-dialog) {
+  border-radius: var(--cms-radius);
+}
+.member-portal :is(.panel, .admin-dialog) {
+  background: var(--panel);
+  color: var(--ink);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.member-portal .admin-dialog {
+  --paper: inherit;
+  --panel: inherit;
+  --ink: inherit;
+  --muted: inherit;
+  --line: inherit;
+  --club-accent: inherit;
+  --accent-foreground: inherit;
+  font-family: inherit;
+}
+.member-portal :focus-visible {
+  outline-color: var(--club-accent);
+}
+.member-main {
+  padding-block: 32px 64px;
+  min-width: 0;
+}
+.member-account-bar {
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 22px;
 }
-.member-website-link {
+.member-kicker {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--club-accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.member-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+.member-secondary-link {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--muted);
   font-size: 13px;
-  white-space: nowrap;
+  min-height: 44px;
 }
-.member-avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #e8eff1;
-  color: #245f68;
-  font-weight: 700;
-  font-size: 12px;
+.member-secondary-link:hover {
+  text-decoration: underline;
+}
+.member-signout .inline-button {
+  color: var(--muted);
+  min-height: 44px;
+}
+.member-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.member-page-heading h1 {
+  margin-bottom: 12px;
+}
+.member-page-heading h1:focus {
+  outline: none;
+}
+.member-page-heading p {
+  color: var(--muted);
+  max-width: 580px;
+}
+.member-page-heading > .button {
   flex-shrink: 0;
 }
-.member-menu-button {
-  display: none;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  height: 40px;
-  width: 40px;
-  align-items: center;
-  justify-content: center;
-}
-.member-layout {
-  display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
-  min-height: calc(100dvh - 80px);
-}
-.member-sidebar {
-  padding: 34px 16px 24px;
-  background: white;
-  border-right: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-}
-.member-nav-label {
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  font-weight: 650;
-  text-transform: uppercase;
-  margin: 0 14px 14px;
+.member-navigation {
+  margin-bottom: 32px;
 }
 .member-nav {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
 }
 .member-nav a {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  color: #546574;
-  font-size: 13px;
+  gap: 9px;
+  padding: 12px 16px;
+  min-height: 50px;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-size: 14px;
   font-weight: 550;
-  min-height: 46px;
 }
 .member-nav a:hover {
-  background: #f6f8fa;
+  color: var(--ink);
+  background: var(--cms-soft);
 }
 .member-nav a[aria-current] {
-  background: #eaf2f2;
-  color: #215b64;
+  border-color: var(--club-accent);
+  color: var(--club-accent);
   font-weight: 650;
 }
 .member-nav a svg {
@@ -199,94 +158,101 @@
   width: 18px;
   height: 18px;
 }
-.member-nav-bottom {
-  margin-top: auto;
-  padding: 36px 12px 0;
-  display: grid;
-  gap: 19px;
-  font-size: 12px;
+.member-menu-button {
+  display: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--cms-radius);
+  min-height: 52px;
+  width: 100%;
+  padding: 12px 16px;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
 }
-.member-membership-label {
+.member-menu-label {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
+  font-size: 13px;
   color: var(--muted);
 }
-.member-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #aa7827;
+.member-menu-button svg {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
-.member-status-dot.is-approved {
-  background: #39826d;
+.member-mobile-navigation .member-nav {
+  display: grid;
+  gap: 6px;
+  border: 0;
 }
-.member-secondary-link {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+.member-mobile-navigation .member-nav a {
+  border-radius: var(--cms-radius);
+  border-bottom: 0;
+  border-left: 3px solid transparent;
+}
+.member-mobile-navigation .member-nav a[aria-current] {
+  border-left-color: var(--club-accent);
+  background: color-mix(in srgb, var(--club-accent) 8%, var(--panel));
+}
+.member-loading {
+  padding-block: 64px;
+  min-height: 360px;
+}
+.member-loading h1 {
+  margin-block: 16px 32px;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.public-utility-page .membership-layout {
+  gap: clamp(32px, 6vw, 80px);
+  padding-block: 64px 80px;
+}
+.public-utility-page .membership-intro h1 {
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  line-height: 1.15;
+}
+.membership-benefits {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 28px 0 0;
   color: var(--muted);
-  line-height: 1.5;
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
 }
-.member-secondary-link svg {
-  width: 16px;
-  height: 16px;
+.membership-benefits li::marker {
+  color: var(--club-accent);
 }
-.member-mobile-website {
-  display: none;
-}
-.member-signout .inline-button {
-  color: var(--muted);
-  text-decoration: none;
-  padding-block: 8px;
-}
-.member-signout .inline-button:hover {
-  text-decoration: underline;
-}
-.member-main {
-  padding: 40px clamp(24px, 3.8vw, 60px) 24px;
-  width: 100%;
-  max-width: 1340px;
-  margin-inline: auto;
-  min-width: 0;
-}
-.member-page-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 30px;
-}
-.member-page-heading h1 {
-  margin: 8px 0;
-}
-.member-page-heading h1:focus {
-  outline: none;
-}
-.member-page-heading p:last-child {
-  color: var(--muted);
-}
-.member-page-heading > .button {
-  flex-shrink: 0;
-}
-.member-kicker {
-  display: block;
-  font-size: 10px;
-  font-weight: 650;
-  color: #647982;
-  letter-spacing: 0.12em;
-}
-.member-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 36px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
-}
-.member-mobile-navigation .member-nav-bottom {
-  padding-top: 28px;
+@media (max-width: 799px) {
+  .member-desktop-navigation {
+    display: none;
+  }
+  .member-menu-button {
+    display: flex;
+  }
+  .member-main {
+    padding-block: 24px 40px;
+  }
+  .member-account-bar {
+    gap: 4px 16px;
+    margin-bottom: 16px;
+  }
+  .member-account-actions {
+    gap: 4px 16px;
+  }
+  .member-page-heading {
+    flex-direction: column;
+    align-items: start;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .member-navigation {
+    margin-bottom: 24px;
+  }
+  .public-utility-page .membership-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 40px;
+  }
 }

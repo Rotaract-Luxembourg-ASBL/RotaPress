@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import type { PublicOrganization } from "@/core/organization/organization_schemas";
 import type { PublicFormDto } from "@/features/forms/form_types";
 import { PublicFormContent } from "@/features/forms/ui/public-form";
@@ -46,13 +46,7 @@ const membershipCopy: Record<
   },
 };
 
-export function MembershipPage({
-  club,
-  brand,
-}: {
-  club?: PublicOrganization | null;
-  brand?: ReactNode;
-}) {
+export function MembershipPage({ club }: { club?: PublicOrganization | null }) {
   const {
     data: me,
     error: loadError,
@@ -118,16 +112,16 @@ export function MembershipPage({
         </>
       ) : !me.actor ? (
         <>
-          <h2>A warm welcome starts here.</h2>
+          <h2>Welcome to your club account.</h2>
           <p>
-            Verify your email, then send a membership request to the club. Your
-            club reviews each application.
+            Sign in to find your activities, bookings and personal details, or
+            apply to join. The club reviews each membership application.
           </p>
           <Link
             href="/sign-in?next=/membership"
             className="button button-accent"
           >
-            Sign in to apply <Arrow />
+            Sign in to continue <Arrow />
           </Link>
         </>
       ) : (
@@ -193,37 +187,41 @@ export function MembershipPage({
   );
   if (me?.actor && me.installed)
     return (
-      <MemberDashboard me={me} club={club} brand={brand}>
+      <MemberDashboard me={me} club={club}>
         {panel}
       </MemberDashboard>
     );
-  if (brand && !me)
+  if (!me)
     return (
-      <div className="member-portal">
-        <header className="member-topbar">
-          <div className="member-brand cms-site-part">{brand}</div>
-          <span className="member-portal-label">Member portal</span>
-        </header>
-        <main id="main-content" className="member-main">
-          {loadError ? (
-            <Notice>
-              {loadError}{" "}
-              <button className="inline-button" onClick={refresh}>
-                Try again
-              </button>
-            </Notice>
-          ) : (
-            <Loading />
-          )}
-        </main>
-      </div>
+      <main id="main-content" className="member-loading content-width">
+        <p className="eyebrow">Member space</p>
+        <h1>Your club account</h1>
+        {loadError ? (
+          <Notice>
+            {loadError}{" "}
+            <button className="inline-button" onClick={refresh}>
+              Try again
+            </button>
+          </Notice>
+        ) : (
+          <Loading />
+        )}
+      </main>
     );
   return (
     <main id="main-content" className="membership-layout content-width">
       <div className="membership-intro">
-        <p className="eyebrow">Your place in the community</p>
-        <h1>Join your community.</h1>
-        <p>Sign in, apply for membership and keep up with your club.</p>
+        <p className="eyebrow">Member space</p>
+        <h1>Your club, closer.</h1>
+        <p>
+          A place to stay connected with {club?.name || "your community"}, take
+          part and keep your details up to date.
+        </p>
+        <ul className="membership-benefits">
+          <li>Find club activities and your event bookings.</li>
+          <li>Follow your membership application.</li>
+          <li>Keep your profile and form responses together.</li>
+        </ul>
       </div>
       {panel}
     </main>

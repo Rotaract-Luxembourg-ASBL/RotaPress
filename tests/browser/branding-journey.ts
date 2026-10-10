@@ -25,7 +25,7 @@ export async function brandingJourney(
       .then((response) => response.json())) as SiteDraft;
   const before = await current();
   const logoAlt = "Synthetic shared club logo";
-  const paths = ["/", `/forms/${contact!.id}`, "/sign-in"];
+  const paths = ["/", `/forms/${contact!.id}`, "/sign-in", "/membership"];
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/admin/website?tab=appearance");
   await expect(
@@ -210,8 +210,22 @@ export async function brandingJourney(
           visitor.getByRole("button", { name: "Send message", exact: true }),
         ).toBeVisible();
       }
+      if (path === "/membership") {
+        await expect(
+          visitor.getByRole("heading", {
+            name: "Your club, closer.",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(
+          visitor.getByRole("link", {
+            name: "Sign in to continue",
+            exact: true,
+          }),
+        ).toBeVisible();
+      }
       await visitor.screenshot({
-        path: `.local/branding-${path === "/" ? "website" : path === "/sign-in" ? "sign-in" : "form"}-${width}.png`,
+        path: `.local/branding-${path === "/" ? "website" : path === "/sign-in" ? "sign-in" : path === "/membership" ? "membership" : "form"}-${width}.png`,
         fullPage: false,
       });
     }
@@ -231,14 +245,101 @@ export async function brandingJourney(
   });
   const memberPortal = await page.context().newPage();
   await memberPortal.goto("/membership");
+  const portal = memberPortal.locator(".cms-public .member-portal");
   await expect(
     memberPortal
-      .locator(".member-portal header")
+      .locator(".cms-public > header")
       .getByRole("img", { name: logoAlt, exact: true }),
   ).toBeVisible();
-  await expect(memberPortal.locator(".member-portal")).toBeVisible();
-  await expect(memberPortal.locator(".cms-public")).toHaveCount(0);
+  await expect(portal).toBeVisible();
+  await expect(memberPortal.locator(".cms-public")).toHaveAttribute(
+    "data-theme",
+    "rotary-service",
+  );
+  expect(
+    await portal.evaluate((root) =>
+      getComputedStyle(root).getPropertyValue("--club-accent"),
+    ),
+  ).toBe("#365a69");
+  expect(
+    await portal
+      .locator("h1")
+      .evaluate((heading) => getComputedStyle(heading).fontFamily),
+  ).toContain("Georgia");
+  await expect(
+    portal.getByRole("link", { name: "Explore events", exact: true }),
+  ).toHaveCSS("background-color", "rgb(54, 90, 105)");
+  for (const width of [1440, 390, 320]) {
+    await memberPortal.setViewportSize({ width, height: 1000 });
+    expect(
+      await memberPortal.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    if (width < 1440) {
+      const menu = memberPortal.getByRole("button", {
+        name: "Open member menu",
+        exact: true,
+      });
+      await menu.click();
+      const dialog = memberPortal.getByRole("dialog", {
+        name: "Member menu",
+        exact: true,
+      });
+      await expect(dialog).toBeVisible();
+      expect(
+        await dialog.evaluate((root) =>
+          getComputedStyle(root).getPropertyValue("--club-accent"),
+        ),
+      ).toBe("#365a69");
+      await memberPortal.keyboard.press("Escape");
+      await expect(menu).toBeFocused();
+    }
+    await memberPortal.screenshot({
+      path: `.local/branding-member-portal-${width}.png`,
+      fullPage: true,
+      mask: [memberPortal.locator("[data-private]")],
+    });
+  }
+  await memberPortal.setViewportSize({ width: 1440, height: 1000 });
+  await memberPortal.goto("/membership?tab=profile");
+  await memberPortal
+    .getByLabel("Display name", { exact: true })
+    .fill("Unsaved native navigation");
+  const nativeLink = memberPortal
+    .locator(".site-menu-wide a[href^='/']")
+    .first();
+  await expect(nativeLink).toBeVisible();
+  const destination = await nativeLink.getAttribute("href");
+  const leaveDialogs: string[] = [];
+  const acceptLeave = async (dialog: import("@playwright/test").Dialog) => {
+    leaveDialogs.push(dialog.type());
+    await dialog.accept();
+  };
+  memberPortal.on("dialog", acceptLeave);
+  await nativeLink.click();
+  await expect(memberPortal).toHaveURL(
+    new URL(destination!, memberPortal.url()).href,
+  );
+  memberPortal.off("dialog", acceptLeave);
+  expect(leaveDialogs).toEqual(["confirm"]);
+  await memberPortal.goto("/membership?tab=profile");
+  await expect(
+    memberPortal.getByLabel("Display name", { exact: true }),
+  ).not.toHaveValue("Unsaved native navigation");
   await memberPortal.close();
   await expect(page.locator(".admin-layout")).toBeVisible();
   await expect(page.locator(".cms-public")).toHaveCount(0);
+  expect(
+    await page
+      .locator(".admin-layout")
+      .evaluate((root) =>
+        getComputedStyle(root).getPropertyValue("--club-accent"),
+      ),
+  ).not.toBe("#365a69");
+  expect(
+    await page
+      .locator(".admin-layout h1")
+      .evaluate((heading) => getComputedStyle(heading).fontFamily),
+  ).not.toContain("Georgia");
 }
