@@ -35,6 +35,10 @@ use the same permissions, private drafts and deliberate publication rules as the
    `www` and subdomains. Pasted links offer an explicit domain conversion; saved
    HTTPS-origin rules stay exact until you choose broader coverage. The displayed
    coverage is reviewed again during consent.
+   Several links to the same domain offer one **Use domain and subdomains**
+   action. Choosing it combines those related entries into one domain; unrelated
+   websites remain. Until you choose it, distinct HTTPS hosts keep their exact
+   access. Repeated identical entries count once toward the five-entry limit.
 4. Select **Create OAuth connection**. Follow **Finish connecting** to copy the
    server URL, client ID and one-time secret into the assistant. In ChatGPT,
    create an MCP app, choose OAuth and enter the credentials under **Advanced OAuth

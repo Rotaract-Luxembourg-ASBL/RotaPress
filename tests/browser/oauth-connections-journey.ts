@@ -78,36 +78,100 @@ export async function oauthConnectionsJourney(
   await save.click();
   await expect(dialog.getByRole("alert")).toContainText(/domain|HTTPS/);
   await expect(origins).toHaveValue("https://www.rotaract.lu/path");
-  await origins.fill("https://www.rotaract.lu");
+  const coverage = dialog.getByRole("list", {
+    name: "Reference website coverage",
+    exact: true,
+  });
+  const conversion = dialog.getByRole("button", {
+    name: "Use rotaract.lu and subdomains",
+    exact: true,
+  });
+  const duplicates = Array<string>(6)
+    .fill("https://www.rotaract.lu")
+    .join("\n");
+  await origins.fill(duplicates);
+  await expect(origins).toHaveValue(duplicates);
+  await expect(origins).toHaveAttribute("aria-invalid", "false");
+  await expect(coverage.getByRole("listitem")).toHaveCount(1);
+  await expect(conversion).toHaveCount(1);
+  const distinctOrigins = Array.from(
+    { length: 6 },
+    (_, index) => `https://reference-${index}.rotary.org`,
+  ).join("\n");
+  await origins.fill(distinctOrigins);
+  await expect(origins).toHaveValue(distinctOrigins);
+  await expect(origins).toHaveAttribute("aria-invalid", "true");
   await expect(
-    dialog.getByRole("list", {
-      name: "Reference website coverage",
+    dialog.getByText("Add no more than five reference website entries.", {
       exact: true,
     }),
-  ).toContainText("Exact HTTPS host only");
-  await dialog
-    .getByRole("button", {
-      name: "Use rotaract.lu and subdomains",
-      exact: true,
-    })
-    .click();
-  await expect(origins).toHaveValue("rotaract.lu");
+  ).toBeVisible();
+  const exactOrigins = [
+    "https://www.rotaract.lu",
+    "https://rotaract.lu",
+    "https://dev.rotaract.lu",
+  ];
+  await origins.fill(exactOrigins.join("\n"));
+  await expect(origins).toHaveValue(exactOrigins.join("\n"));
+  await expect(coverage.getByRole("listitem")).toHaveCount(3);
   await expect(
-    dialog.getByRole("list", {
-      name: "Reference website coverage",
+    coverage.getByText("Exact HTTPS host only · subdomains are not included", {
       exact: true,
     }),
-  ).toContainText(
+  ).toHaveCount(3);
+  for (const exactOrigin of exactOrigins)
+    await expect(
+      coverage.getByText(exactOrigin, { exact: true }),
+    ).toBeVisible();
+  await expect(conversion).toHaveCount(1);
+  await conversion.locator("..").screenshot({
+    path: ".local/oauth-reference-group-desktop.png",
+  });
+  await coverage.screenshot({
+    path: ".local/oauth-reference-coverage-desktop.png",
+  });
+  const unrelated = "https://reference.rotary.org";
+  const invalid = "invalid-reference";
+  const pasted = [...exactOrigins, unrelated, invalid].join("\n");
+  await origins.fill(pasted);
+  await expect(origins).toHaveValue(pasted);
+  await expect(origins).toHaveAttribute("aria-invalid", "true");
+  await expect(coverage.getByRole("listitem")).toHaveCount(4);
+  await expect(conversion).toHaveCount(1);
+  const viewport = owner.viewportSize();
+  await owner.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await dialog.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  await conversion.locator("..").screenshot({
+    path: ".local/oauth-reference-group-phone.png",
+  });
+  await conversion.focus();
+  await expect(conversion).toBeFocused();
+  await conversion.press("Enter");
+  await expect(origins).toHaveValue(`rotaract.lu\n${unrelated}\n${invalid}`);
+  await expect(origins).toBeFocused();
+  await expect(origins).toHaveAttribute("aria-invalid", "true");
+  await expect(conversion).toHaveCount(0);
+  await expect(coverage.getByRole("listitem")).toHaveCount(2);
+  await expect(coverage.getByText(unrelated, { exact: true })).toBeVisible();
+  await expect(coverage).toContainText(
     "HTTPS rotaract.lu and all subdomains, including www.rotaract.lu",
   );
+  await coverage.screenshot({
+    path: ".local/oauth-reference-coverage-phone.png",
+  });
+  const savedOrigins = ["rotaract.lu", unrelated];
+  await origins.fill(savedOrigins.join("\n"));
+  await expect(origins).toHaveAttribute("aria-invalid", "false");
   await dialog
     .getByRole("checkbox", {
       name: "Copy pages, add languages and restore drafts",
       exact: true,
     })
     .uncheck();
-  const viewport = owner.viewportSize();
-  await owner.setViewportSize({ width: 390, height: 844 });
   expect(
     await owner.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -142,7 +206,7 @@ export async function oauthConnectionsJourney(
   ).toBeVisible();
   await trigger.click();
   await expect(reference).toBeChecked();
-  await expect(origins).toHaveValue("rotaract.lu");
+  await expect(origins).toHaveValue(savedOrigins.join("\n"));
   await expect(
     dialog.getByRole("checkbox", {
       name: "Copy pages, add languages and restore drafts",
@@ -161,6 +225,10 @@ export async function oauthConnectionsJourney(
     }[];
   };
   const current = list.clients.find((item) => item.name === name)!;
+  expect(current.sourceOrigins).toEqual(savedOrigins);
+  expect(current.scopes).toContain("sources:read");
+  expect(current.scopes).toContain("website:read");
+  expect(current.scopes).not.toContain("website:manage");
   const changed = await owner.request.patch(endpoint, {
     headers: { origin: new URL(owner.url()).origin },
     data: {

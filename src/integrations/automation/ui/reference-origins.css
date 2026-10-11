@@ -7,6 +7,15 @@
 .reference-input-problem {
   color: #9d2929;
 }
+.reference-domain-choice {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.reference-domain-choice p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .reference-coverage {
   display: grid;
   gap: 8px;

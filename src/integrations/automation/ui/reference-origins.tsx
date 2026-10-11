@@ -1,16 +1,32 @@
 "use client";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { normalizeReferenceDomain, sourceRuleSchema } from "../source_rules";
 import "./reference-origins.css";
 
 export function referenceEntries(value: string): string[] {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((entry) => {
-      const rule = sourceRuleSchema.safeParse(entry.replace(/\/$/, ""));
-      return rule.success ? rule.data : entry;
-    });
+  return [
+    ...new Set(
+      value
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((entry) => {
+          const rule = sourceRuleSchema.safeParse(entry.replace(/\/$/, ""));
+          return rule.success ? rule.data : entry;
+        }),
+    ),
+  ];
+}
+
+function combineDomainEntries(entries: string[], domain: string): string {
+  let replaced = false;
+  return entries
+    .flatMap((entry) => {
+      if (normalizeReferenceDomain(entry) !== domain) return [entry];
+      if (replaced) return [];
+      replaced = true;
+      return [domain];
+    })
+    .join("\n");
 }
 
 export function ReferenceCoverage({ rules }: { rules: readonly string[] }) {
@@ -42,7 +58,8 @@ export function ReferenceOrigins({
   const help = useId();
   const field = useId();
   const validation = useId();
-  const entries = value.split(/\s+/).filter(Boolean);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const entries = referenceEntries(value);
   const parsed = entries.map((entry) =>
     sourceRuleSchema.safeParse(entry.replace(/\/$/, "")),
   );
@@ -50,9 +67,21 @@ export function ReferenceOrigins({
     rule.success ? [rule.data] : [],
   );
   const invalid = parsed.find((rule) => !rule.success);
+  const relatedEntries = new Map<string, string[]>();
+  for (const entry of entries) {
+    const domain = normalizeReferenceDomain(entry);
+    if (domain)
+      relatedEntries.set(domain, [
+        ...(relatedEntries.get(domain) ?? []),
+        entry,
+      ]);
+  }
+  const suggestions = [...relatedEntries].filter(([domain, related]) =>
+    related.some((entry) => entry !== domain),
+  );
   const problem =
     entries.length > 5
-      ? "Add no more than five reference domains."
+      ? "Add no more than five reference website entries."
       : invalid && !invalid.success
         ? invalid.error.issues[0]?.message
         : undefined;
@@ -61,6 +90,7 @@ export function ReferenceOrigins({
       <label htmlFor={field}>Reference website domains</label>
       <textarea
         id={field}
+        ref={input}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={2}
@@ -74,35 +104,39 @@ export function ReferenceOrigins({
         aria-describedby={`${help}${problem ? ` ${validation}` : ""}`}
       />
       <p id={help} className="small muted">
-        Enter up to five domains, one per line. A domain includes its HTTPS
-        website, www and all subdomains. Paste a website link and choose the
-        domain option below to include its subdomains. Existing HTTPS entries
-        keep exact-host access until you change them.
+        Add up to five entries, one per line. A domain such as rotaract.lu
+        includes its HTTPS website, www and all subdomains. Saved HTTPS origins
+        allow only that exact host. Use the domain option below to combine
+        related entries and include all subdomains.
       </p>
       {problem && (
         <p id={validation} className="small reference-input-problem">
           {problem}
         </p>
       )}
-      {entries.map((entry, index) => {
-        const domain = normalizeReferenceDomain(entry);
-        if (!domain || entry === domain) return null;
+      {suggestions.map(([domain, related], index) => {
+        const description = `${field}-domain-${index}`;
         return (
-          <button
-            key={`${entry}-${index}`}
-            type="button"
-            className="button button-outline"
-            disabled={disabled}
-            onClick={() =>
-              onChange(
-                entries
-                  .map((current, at) => (at === index ? domain : current))
-                  .join("\n"),
-              )
-            }
-          >
-            Use {domain} and subdomains
-          </button>
+          <div className="reference-domain-choice" key={domain}>
+            <p id={description} className="small muted">
+              {related.length > 1
+                ? `Combine ${related.length} entries for ${domain} into one domain.`
+                : `Replace this entry with the domain ${domain}.`}{" "}
+              This allows its HTTPS website and every subdomain.
+            </p>
+            <button
+              type="button"
+              className="button button-outline"
+              disabled={disabled}
+              aria-describedby={description}
+              onClick={() => {
+                onChange(combineDomainEntries(entries, domain));
+                input.current?.focus();
+              }}
+            >
+              Use {domain} and subdomains
+            </button>
+          </div>
         );
       })}
       {validRules.length > 0 && <ReferenceCoverage rules={validRules} />}
