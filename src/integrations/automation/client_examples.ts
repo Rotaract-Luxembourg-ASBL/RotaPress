@@ -4,6 +4,7 @@ export const publicationTools = [
   "media_publish",
   "website_publish",
   "website_settings_publish",
+  "website_archive",
   "calendar_publish",
   "calendar_schedule_publish",
   "calendar_page_publish",

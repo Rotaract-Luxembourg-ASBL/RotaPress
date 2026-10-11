@@ -141,8 +141,16 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   Forms can begin accepting responses under existing rules. Event-details publication
   does not publish its page/forms or apply operational proposals. Website settings
   publish separately from content; menu-only publication preserves other settings.
-  No unpublish, delete, image-hiding, public-metadata-edit or proposal-application
-  tools are exposed. Image publication has its own explicit grant and request.
+  Image publication has its own explicit grant and request. No general unpublish,
+  hard-delete, image-hiding, public-metadata-edit or proposal-application tools are exposed.
+- Contract 1.10 adds `website_archive` for explicitly requested removal of one
+  ordinary single-language club page. Require both `website:manage` and
+  `website:publish`, current `cms.publish`, literal confirmation and the current
+  draft revision. Reject shared/event content, multilingual pages and references
+  from draft or published homepage, menu or Events selections, including the
+  implicit home page. These checks and archival share the CMS organization lock
+  and transaction. Reuse CMS public-pointer/media-usage removal and audit behavior;
+  retain history, with no direct unarchive or hard deletion.
 
 ## Drafts, images and event suggestions
 

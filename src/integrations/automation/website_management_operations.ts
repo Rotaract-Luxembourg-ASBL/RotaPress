@@ -12,9 +12,34 @@ import {
   websiteCopyInput,
   websiteRevisionOutput,
   websiteSettingsInput,
+  websiteArchiveInput,
 } from "./website_management_schemas";
 
 export const websiteManagementOperations = [
+  operation(
+    {
+      name: "website_archive",
+      method: "PATCH",
+      path: "/website/content/{id}/archive",
+      scope: "website:publish",
+      requiredScopes: ["website:manage"],
+      description:
+        "Archive one identified ordinary club page ONLY after the user explicitly asks to remove it. Requires website:manage and website:publish, current staff publication authority, website_get's current expectedRevisionId and confirmed=true. Rejects multilingual, shared and event content, and pages referenced by draft/published homepage, menu or Events settings. Remove those references deliberately first. Clears publication and public media usage, retains the page/revisions, and never hard-deletes. Direct unarchive is unavailable; an ordinary archived page can be copied into a new private draft. Does not archive other pages, publish settings or hide image files.",
+      input: websiteArchiveInput,
+      output: websiteDetailOutput,
+      example: {
+        id: exampleId,
+        locale: "en",
+        expectedRevisionId: exampleId,
+        confirmed: true,
+      },
+    },
+    async ({ principal }, input) => {
+      const { websiteManagement } =
+        await import("./website_management_service");
+      return websiteManagement.archive(principal, input);
+    },
+  ),
   operation(
     {
       name: "website_revision_get",

@@ -65,7 +65,12 @@ dependencies: reviewed images first, referenced native records and reusable
 sections next, pages/shared parts afterward, then homepage/menu/settings. Read
 current versions and report actual receipts. Keep client tool approvals intact.
 Ask once for a material missing decision or authority and continue independent
-work. Superseded-page cleanup remains in Website administration.
+work. Explicitly requested superseded-page removal can use `website_archive` with
+both management and publication grants, a current revision and confirmation.
+It accepts only ordinary single-language club pages and rejects draft/published
+homepage, menu or Events references. Preserve unrelated content and remove only
+identified targets. Report archival accurately: history is retained, direct
+unarchive is unavailable, and broader cleanup remains in Website administration.
 
 Reconcile the source-to-target map before finishing. Report each target's saved,
 published and desktop/phone-reviewed state with review links. Missing images,

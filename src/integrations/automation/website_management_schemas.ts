@@ -26,6 +26,13 @@ export const websiteSettingsInput = z.strictObject({
 export const websitePublishInput = expectedInput.extend({
   confirmed: publicationConfirmation,
 });
+export const websiteArchiveInput = expectedInput.extend({
+  confirmed: z
+    .literal(true)
+    .describe(
+      "Set true only after the user explicitly asks to archive this identified page. Archive removes its publication and preserves history; it does not hard-delete or support direct unarchive.",
+    ),
+});
 export const websiteSettingsPublishInput = z.strictObject({
   locale: cmsLocaleSchema,
   expectedVersion: z.int().nonnegative(),

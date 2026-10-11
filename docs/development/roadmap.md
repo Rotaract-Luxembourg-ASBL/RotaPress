@@ -14,6 +14,12 @@ own workspace and opens without discarding the page draft. The editor retains
 separate save/publication, language and audience boundaries; these controls do not
 test external provider connections. See [website editing](../guides/cms-and-media.md).
 
+Native photograph sections support canvas-bounded website width, taller hero
+photos and overlaid copy panels, photo-background feature sections, and manually
+controlled multi-photo strips. Older saved blocks keep their existing layout.
+These use the shared editor, media references and publication checks; they do not
+make uploaded images public automatically.
+
 Projects provides a simple showcase for volunteer actions and community
 initiatives, with private drafts, reviewed publication, reversible archival,
 public stories and a connected website block. It reuses website content

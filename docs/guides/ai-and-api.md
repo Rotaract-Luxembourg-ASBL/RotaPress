@@ -169,9 +169,15 @@ and replace the starter sections included in the request. Preserve unrelated
 owner content and other languages. Creating another page named Home does not
 change the selected homepage: a requested new selection also needs saved website
 settings. Re-read that selection and the saved homepage before reporting that the
-default copy was replaced. Superseded page cleanup stays in **Website**;
-assistants should return the affected draft titles and editor links for review,
-without claiming they archived or deleted pages through MCP.
+default copy was replaced. When you explicitly request removal of an identified
+superseded page, `website_archive` can archive an ordinary club page with one
+language. It needs `website:manage`, `website:publish`, the current saved revision
+and `confirmed: true`. First remove the page from both saved draft and published
+homepage, menu and Events selections. Shared parts, event pages and multilingual
+content require review in **Website** administration. Archive removes publication
+while retaining the page and history. Direct unarchive is unavailable; an ordinary
+archived page can be copied into a new private draft. It does not hard-delete pages
+or hide image files.
 
 Compare saved RotaPress previews with the reference at the same desktop and phone
 widths, then correct visible differences. If source visuals or original assets

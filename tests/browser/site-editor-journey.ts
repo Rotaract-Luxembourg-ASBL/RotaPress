@@ -175,10 +175,19 @@ export async function siteEditorJourney({
   await page
     .getByRole("button", { name: "Undo block edit", exact: true })
     .click();
+  await page
+    .getByRole("navigation", { name: "Selected block location", exact: true })
+    .getByRole("button", { name: "Layout row", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Design", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Section background", exact: true })
+    .selectOption("dark");
   await save();
   const footer = await detail(footerId);
   const footerRow = footer.draft.data.content[0];
   if (footerRow.type !== "SiteRow") throw new Error("Expected footer columns");
+  expect(footerRow.props.design?.tone).toBe("dark");
   expect(
     footerRow.props.center.filter((item) => item.type === "SiteContact"),
   ).toHaveLength(1);
@@ -227,6 +236,13 @@ export async function siteEditorJourney({
     });
     await publicPage.goto(`${origin}/pages/en/shared-layout`);
     await expect(publicPage.locator("footer")).toContainText("Visit the club");
+    const footerTone = await publicPage.locator("footer").evaluate((footer) => ({
+      shell: getComputedStyle(footer).backgroundColor,
+      row: getComputedStyle(footer.querySelector(".cms-design")!).backgroundColor,
+      text: getComputedStyle(footer).color,
+    }));
+    expect(footerTone.shell).toBe(footerTone.row);
+    expect(footerTone.text).toBe("rgb(255, 255, 255)");
     expect(
       await publicPage.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

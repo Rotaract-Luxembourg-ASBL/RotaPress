@@ -39,8 +39,11 @@ export const sectionBlockSchemas = [
       )
       .max(8),
     position: z.enum(["left", "right"]),
+    height: z.enum(["standard", "tall"]).optional(),
+    presentation: z.enum(["panel", "overlay"]).optional(),
   }),
   block("FeatureSection", {
+    layout: z.enum(["split", "background"]).optional(),
     eyebrow: shortText,
     title: shortText,
     body: text,

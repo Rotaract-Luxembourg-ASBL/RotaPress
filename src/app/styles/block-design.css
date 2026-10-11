@@ -9,12 +9,15 @@
 }
 .cms-design[data-spacing="compact"] {
   padding: 1rem;
+  --cms-section-inset: 1rem;
 }
 .cms-design[data-spacing="comfortable"] {
   padding: clamp(1.25rem, 4%, 2.5rem);
+  --cms-section-inset: clamp(1.25rem, 4%, 2.5rem);
 }
 .cms-design[data-spacing="spacious"] {
   padding: clamp(1.5rem, 6%, 4rem);
+  --cms-section-inset: clamp(1.5rem, 6%, 4rem);
 }
 .cms-design[data-content-width="reading"] {
   max-width: 48rem;
@@ -23,6 +26,43 @@
 .cms-design[data-content-width="full"] {
   max-width: none;
   width: 100%;
+}
+/* Break out of the reading column only within the actual website/canvas bounds. */
+.public-site:has(.cms-design[data-content-width="viewport"]) {
+  container-type: inline-size;
+  container-name: cms-viewport;
+}
+.editor-canvas {
+  container-name: cms-viewport;
+}
+.cms-design[data-content-width="viewport"] {
+  max-width: none;
+  width: 100%;
+}
+.cms-design[data-content-width="viewport"]:has(
+    > .cms-hero-slider,
+    > .cms-cover,
+    > .cms-feature-background
+  ) {
+  padding: 0;
+}
+.cms-design[data-content-width="viewport"][data-spacing]
+  > .cms-hero-slider
+  > .cms-hero-slide,
+.cms-design[data-content-width="viewport"][data-spacing]
+  > .cms-feature-background {
+  padding: var(--cms-section-inset);
+}
+@container cms-viewport (min-width: 0px) {
+  .cms-design[data-content-width="viewport"] {
+    width: 100cqw;
+    margin-inline: calc(50% - 50cqw);
+  }
+}
+/* A block placed in a column fills that column rather than crossing its neighbors. */
+:is(.cms-columns, .site-column) .cms-design[data-content-width="viewport"] {
+  width: 100%;
+  margin-inline: 0;
 }
 .cms-design[data-tone="paper"] {
   background: var(--paper);
