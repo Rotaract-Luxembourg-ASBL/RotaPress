@@ -21,6 +21,10 @@ import {
   type PreviewInput,
   type PreviewOutput,
 } from "./preview_schemas";
+import {
+  reportPreviewFailure,
+  type PreviewFailureStage,
+} from "./preview_diagnostics";
 
 type Dependencies = {
   cms: Pick<typeof services.cms, "detail" | "preview" | "publicSite">;
@@ -69,6 +73,7 @@ export class WebsitePreviewService {
     );
     const release = claimPreviewRenderer();
     let revoke: (() => void) | undefined;
+    let stage: PreviewFailureStage = "load_snapshot";
     try {
       const snapshot = await this.load(principal, input);
       const contents = [
@@ -106,10 +111,13 @@ export class WebsitePreviewService {
         );
       const privateMedia = principal.scopes.includes("media:inspect");
       let privateUsed = false;
+      stage = "prepare_document";
       const ticket = issuePreviewDocument(snapshot);
       revoke = ticket.revoke;
       const origin = previewOrigin();
+      stage = "fetch_document";
       const document = await this.documentFetcher(origin, ticket.token);
+      stage = "render_image";
       const capture = await this.browser.capture({
         origin,
         document,
@@ -131,6 +139,7 @@ export class WebsitePreviewService {
           }
         },
       });
+      stage = "reauthorize";
       const current = await reauthorize();
       requireGrants(current);
       if (
@@ -155,6 +164,7 @@ export class WebsitePreviewService {
           "media.manage",
         );
       }
+      stage = "verify_revision";
       const latest = await this.services.cms.detail(
         current.actor,
         input.id,
@@ -180,6 +190,7 @@ export class WebsitePreviewService {
         reviewUrl: `/admin/website/${input.id}/preview?locale=${input.locale}`,
       };
     } catch (error) {
+      reportPreviewFailure(stage, error);
       if (error instanceof DomainError) throw error;
       throw new DomainError(
         "PREVIEW_UNAVAILABLE",

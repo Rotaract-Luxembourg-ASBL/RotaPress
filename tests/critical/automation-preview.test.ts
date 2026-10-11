@@ -216,6 +216,47 @@ describe("C14 private visual review", () => {
     ).rejects.toMatchObject({ status: 403 });
   });
 
+  it("logs only safe failure stages and codes while retaining the preview 503", async () => {
+    const fixture = setup();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      fixture.fetcher.mockRejectedValueOnce(
+        new Error("synthetic-private-token https://private.example.invalid"),
+      );
+      await expect(
+        fixture.service.capture(principal, input, fixture.reauthorize),
+      ).rejects.toMatchObject({ code: "PREVIEW_UNAVAILABLE", status: 503 });
+      fixture.browser.capture.mockRejectedValueOnce(
+        new Error(
+          "browserType.launch: Failed to move to new namespace: Operation not permitted; synthetic-private-token",
+        ),
+      );
+      await expect(
+        fixture.service.capture(principal, input, fixture.reauthorize),
+      ).rejects.toMatchObject({ code: "PREVIEW_UNAVAILABLE", status: 503 });
+      expect(
+        log.mock.calls.map(([entry]) => JSON.parse(String(entry))),
+      ).toEqual([
+        {
+          event: "automation_preview_failed",
+          stage: "fetch_document",
+          code: "PREVIEW_OPERATION_FAILED",
+        },
+        {
+          event: "automation_preview_failed",
+          stage: "render_image",
+          code: "CHROMIUM_SANDBOX_UNAVAILABLE",
+        },
+      ]);
+      expect(JSON.stringify(log.mock.calls)).not.toContain(
+        "synthetic-private-token",
+      );
+      expect(JSON.stringify(log.mock.calls)).not.toContain("https://");
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("does not expose private images without a separate media inspection grant", async () => {
     const fixture = setup();
     const limited = {

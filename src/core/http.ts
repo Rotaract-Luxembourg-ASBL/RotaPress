@@ -2,6 +2,7 @@ import "server-only";
 import { ZodError } from "zod";
 import { config } from "./config";
 import { permittedBrowserOrigin } from "./origin-policy";
+import { DomainError } from "./DomainError";
 
 export class HttpError extends Error {
   constructor(
@@ -80,6 +81,19 @@ export async function handle(
             .join(" "),
         },
         400,
+      );
+    // This authored preview failure is actionable; never return exception text.
+    if (
+      error instanceof DomainError &&
+      error.code === "PREVIEW_UNAVAILABLE" &&
+      error.status === 503
+    )
+      return json(
+        {
+          error:
+            "Visual preview is unavailable. Check the application runtime and installed Chromium, then try again.",
+        },
+        503,
       );
     if (
       error instanceof Error &&
