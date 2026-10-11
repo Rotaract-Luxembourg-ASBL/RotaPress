@@ -92,7 +92,7 @@ that client supplies under **Advanced connection settings**. Claude Code, Codex 
 and other native clients must use their own callback or the [MCP access-key setup](mcp-clients.md).
 Switching AI apps retains each app's unsaved settings while this screen stays open.
 **Restore app defaults** resets the selected app's callback and authentication only.
-An existing registered connection keeps its callbacks until revoked and replaced;
+An existing registered connection keeps its callbacks until removed and replaced;
 updating a preset does not silently change existing credentials.
 
 ChatGPT's documented connection methods include predefined clients and the
@@ -132,9 +132,14 @@ prove the assistant is currently connected or that its staff session is valid.
   arguments, responses, tokens and secrets are not stored in this history.
 - **Connection details** shows the creation date, client ID, callbacks and
   authentication method. The original secret cannot be retrieved here.
-- Use the row's **More options → Revoke connection** to review and confirm
-  removal. This deletes the registration and its token records, so reconnecting
-  afterward requires a new connection. Club content is preserved.
+- Use **More options → Revoke access** to stop the assistant and clear its saved
+  consent. The client ID, secret, callback and allowed actions stay the same.
+  Reconnect from your AI app and review access again. Existing tokens and pending
+  authorization codes cannot resume the old grant.
+- Use **More options → Remove connection** only when you want to remove the
+  registration permanently. Its client ID and secret stop working; create a new
+  OAuth connection and update the details in your AI app before reconnecting.
+  Both actions require recent identity confirmation and preserve club content.
 
 Unsaved permissions survive switching between the connection's sections. Closing
 asks whether to discard changes. Failed saves keep your edits. If another tab
@@ -182,8 +187,9 @@ retry, sign in again or reload changed permissions.
 - Sign-out, session expiry, membership suspension, changed staff authentication
   policy, removed capabilities and revoked connections are checked on the server.
   A linked Google account does not substitute for a current Google session.
-- **Revoke connection** in **Existing connections** removes the registered client and its
-  token records. The assistant must connect with a new registration afterward.
+- **Revoke access** in **Existing connections** keeps the registration and requires
+  fresh consent. **Remove connection** also removes the registration and requires
+  new connection details in the assistant.
 - Disabling **MCP** blocks authorization, consent, token exchange and renewal, as
   well as MCP operations. Administrators can still configure and revoke clients.
   Existing credentials do not override the disabled state.
@@ -281,8 +287,9 @@ and the [MCP authorization specification](https://modelcontextprotocol.io/specif
    approved reference origins on the consent screen.
 2. Ask the assistant to read `automation_capabilities`, then prepare one private
    draft using the granted operations. Confirm the draft in administration.
-3. Revoke the connection and confirm that subsequent tool calls fail. Register a
-   new connection if you want to continue using the assistant.
+3. Revoke access and confirm that subsequent tool calls fail. Reconnect with the
+   same client ID and secret, review fresh consent and confirm that access resumes.
+   Removing the connection instead requires a new registration.
 
 For a failed connection, check that MCP is enabled, the client supports predefined
 OAuth registration, and its callback and resource match exactly. A disabled
@@ -341,6 +348,19 @@ permissions and fresh consent. Do not keep saving or recreating a connection who
 live grant is already correct; saving permissions revokes its current tokens.
 
 ### Other connection problems
+
+An **AI connection unavailable** page means the connection request could not
+continue. Open MCP settings from that page. If you removed the registration,
+create a new OAuth connection and replace its client ID and secret in the AI app;
+then start connecting from that app again. Signing in cannot restore removed
+credentials. Older versions could report `client_id is required` even when the
+app supplied an ID for a registration that had already been removed.
+
+Connection failures are separate from Google sign-in errors. A valid pending
+request resumes on the connection review page after sign-in. Signing out from
+that sign-in screen retains the connection destination, so signing back in can
+continue the same unexpired request. If the request expires, start a new one from
+your AI app; no access is approved automatically.
 
 If the AI app asks to reconnect after every action, confirm that **Keep connected**
 was approved and that the app stores and uses the latest rotated refresh token.

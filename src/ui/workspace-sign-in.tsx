@@ -14,7 +14,10 @@ export function signInContext(
   reauth: boolean,
   appearance: StaffLogin,
 ) {
-  if (reauth && returnTo === "/admin/integrations/automation/authorize")
+  const connection =
+    returnTo === "/oauth/continue" ||
+    returnTo === "/admin/integrations/automation/authorize";
+  if (reauth && connection)
     return {
       context: "AI connection",
       introductionHeading: "Your club. Connected.",
@@ -32,7 +35,7 @@ export function signInContext(
       title: "Confirm it's you",
       continueLabel: "Continue to security settings",
     };
-  if (returnTo === "/admin/integrations/automation/authorize")
+  if (connection)
     return {
       context: "AI connection",
       introductionHeading: "Your club. Connected.",
@@ -113,7 +116,8 @@ export function WorkspaceSignIn({
   onRetry: () => void;
 }) {
   const copy = signInContext(returnTo, reauth, appearance);
-  const staffDestination = returnTo.startsWith("/admin");
+  const staffDestination =
+    returnTo.startsWith("/admin") || returnTo === "/oauth/continue";
   const unavailable = !loading && !loadError && !available && !canContinue;
   const notice =
     error ||
@@ -183,7 +187,7 @@ export function WorkspaceSignIn({
             >
               {copy.continueLabel} <Arrow />
             </Link>
-            <SignOutButton />
+            <SignOutButton signInReturnTo={returnTo} reauth={reauth} />
           </div>
         ) : (
           <>
@@ -209,7 +213,9 @@ export function WorkspaceSignIn({
                 Opening Google sign-in…
               </p>
             )}
-            {email && <SignOutButton />}
+            {email && (
+              <SignOutButton signInReturnTo={returnTo} reauth={reauth} />
+            )}
           </>
         )}
         <p className="auth-policy">

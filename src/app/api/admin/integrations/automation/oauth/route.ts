@@ -1,7 +1,7 @@
-import { z } from "zod";
 import { getActor } from "@/core/auth/actor";
 import { oauthConnections } from "@/composition/automation";
 import { handle, HttpError, json, readMutation } from "@/core/http";
+import { oauthDisconnectInput } from "@/integrations/automation/oauth/policy";
 
 async function actor(request: Request) {
   const result = await getActor(request.headers);
@@ -43,11 +43,16 @@ export function POST(request: Request) {
 export function DELETE(request: Request) {
   return handle(async () => {
     const current = await actor(request);
-    const { clientId } = z
-      .strictObject({ clientId: z.string().min(1).max(200) })
-      .parse(await readMutation(request, 1024));
+    const { clientId, action, expectedRevision } = oauthDisconnectInput.parse(
+      await readMutation(request, 1024),
+    );
     return json(
-      await oauthConnections.revoke(current, request.headers, clientId),
+      await oauthConnections[action](
+        current,
+        request.headers,
+        clientId,
+        expectedRevision,
+      ),
     );
   });
 }

@@ -33,6 +33,12 @@ export const oauthPermissionsInput = z.strictObject({
   scopes: oauthClientInput.shape.scopes,
   sourceOrigins: oauthClientInput.shape.sourceOrigins,
 });
+export const oauthDisconnectInput = z.strictObject({
+  clientId: z.string().min(1).max(200),
+  action: z.enum(["revoke", "remove"]),
+  expectedRevision: z.string().min(1).max(100),
+  confirmed: z.literal(true),
+});
 export const oauthConsentInput = z.strictObject({
   oauth_query: z.string().min(1).max(6000),
   expectedRevision: z.string().min(1).max(100).default("initial"),

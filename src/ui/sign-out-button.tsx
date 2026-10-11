@@ -3,11 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/core/auth/client";
+import { signInErrorCallbackURL } from "@/core/auth/sign_in_destination";
 import { en } from "@/locales/en";
 import { errorMessage } from "./api";
 import { Notice } from "./primitives";
 
-export function SignOutButton() {
+export function SignOutButton({
+  signInReturnTo,
+  reauth = false,
+}: {
+  signInReturnTo?: string;
+  reauth?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -22,7 +29,9 @@ export function SignOutButton() {
           result.error.message || "Sign out failed. Please try again.",
         );
       window.dispatchEvent(new Event("rotapress-signed-out"));
-      router.replace("/");
+      router.replace(
+        signInReturnTo ? signInErrorCallbackURL(signInReturnTo, reauth) : "/",
+      );
       router.refresh();
     } catch (cause: unknown) {
       setError(errorMessage(cause));

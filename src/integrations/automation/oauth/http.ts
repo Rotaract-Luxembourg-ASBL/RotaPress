@@ -10,6 +10,7 @@ import { oauthAccess, automationAvailability } from "@/composition/automation";
 import { automationResource } from "@/core/auth/automation_oauth";
 import { db } from "@/infrastructure/database/client";
 import { withOAuthGrantLock } from "./grant_lock";
+import { oauthErrorPath } from "./errors";
 
 const tokenInput = z.strictObject({
   grant_type: z.enum(["authorization_code", "refresh_token"]),
@@ -141,13 +142,28 @@ export async function oauthProtocolRequest(
       }
       return response;
     };
-    // A refresh in flight cannot issue usable replacement tokens across a
-    // permission change or recreate the old grant after it has been revoked.
+    // Serialize remembered-consent code issuance and token exchange with grant
+    // changes so revocation cannot race a new code or replacement token.
     const response =
-      path === "/oauth2/token"
+      path === "/oauth2/token" || path === "/oauth2/authorize"
         ? await withOAuthGrantLock(db, exchange)
         : await exchange();
     const resultHeaders = new Headers(response.headers);
+    if (path === "/oauth2/authorize" && resultHeaders.has("location")) {
+      const redirect = new URL(resultHeaders.get("location")!, config.APP_URL);
+      if (
+        redirect.origin === new URL(config.APP_URL).origin &&
+        redirect.pathname === "/sign-in" &&
+        redirect.searchParams.has("error")
+      )
+        resultHeaders.set(
+          "location",
+          new URL(
+            oauthErrorPath(redirect.searchParams.get("error")),
+            config.APP_URL,
+          ).href,
+        );
+    }
     resultHeaders.set("Cache-Control", "no-store, private");
     resultHeaders.set("Pragma", "no-cache");
     return new Response(response.body, {

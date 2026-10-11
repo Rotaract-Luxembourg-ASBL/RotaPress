@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useState } from "react";
-import { errorMessage, request, useResource } from "@/ui/api";
+import Link from "next/link";
+import { ApiError, errorMessage, request, useResource } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import {
   Collection,
@@ -28,9 +29,13 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
     client: OAuthClient;
     tab: "Permissions" | "Activity";
   }>();
-  const [revoking, setRevoking] = useState<OAuthClient>();
+  const [change, setChange] = useState<{
+    client: OAuthClient;
+    action: "revoke" | "remove";
+  }>();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
+  const [problemStatus, setProblemStatus] = useState<number>();
   const [receipt, setReceipt] = useState<string>();
   const clients =
     data?.clients.filter((client) =>
@@ -38,20 +43,32 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
         .toLowerCase()
         .includes(query.toLowerCase().trim()),
     ) ?? [];
-  async function revoke() {
-    if (!revoking || busy) return;
+  async function applyChange() {
+    if (!change || busy) return;
     setBusy(true);
     setProblem(undefined);
+    setProblemStatus(undefined);
     try {
       await request(oauthEndpoint, {
         method: "DELETE",
-        body: JSON.stringify({ clientId: revoking.clientId }),
+        body: JSON.stringify({
+          clientId: change.client.clientId,
+          action: change.action,
+          expectedRevision: change.client.permissionsRevision,
+          confirmed: true,
+        }),
       });
-      setReceipt(`Revoked ${revoking.name ?? "OAuth connection"}.`);
-      setRevoking(undefined);
+      const name = change.client.name ?? "OAuth connection";
+      setReceipt(
+        change.action === "revoke"
+          ? `Access revoked for ${name}. Reconnect from your AI app to review access again.`
+          : `Removed ${name}. Create a new connection to use this app again.`,
+      );
+      setChange(undefined);
       refresh();
     } catch (cause) {
       setProblem(errorMessage(cause));
+      setProblemStatus(cause instanceof ApiError ? cause.status : undefined);
     } finally {
       setBusy(false);
     }
@@ -176,13 +193,24 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
                           label={`More options for ${client.name ?? "OAuth connection"}`}
                         >
                           <button
-                            aria-label={`Revoke OAuth ${client.name ?? "connection"}`}
+                            aria-label={`Revoke access for ${client.name ?? "OAuth connection"}`}
                             onClick={() => {
                               setProblem(undefined);
-                              setRevoking(client);
+                              setProblemStatus(undefined);
+                              setChange({ client, action: "revoke" });
                             }}
                           >
-                            Revoke connection
+                            Revoke access
+                          </button>
+                          <button
+                            aria-label={`Remove ${client.name ?? "OAuth connection"}`}
+                            onClick={() => {
+                              setProblem(undefined);
+                              setProblemStatus(undefined);
+                              setChange({ client, action: "remove" });
+                            }}
+                          >
+                            Remove connection
                           </button>
                         </ActionsMenu>
                       )}
@@ -207,32 +235,63 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
           onSaved={refresh}
         />
       )}
-      {revoking && (
+      {change && (
         <Dialog
-          title={`Revoke ${revoking.name ?? "OAuth connection"}?`}
-          onClose={() => setRevoking(undefined)}
+          title={`${change.action === "revoke" ? "Revoke access for" : "Remove"} ${change.client.name ?? "OAuth connection"}?`}
+          onClose={() => setChange(undefined)}
           canClose={() => !busy}
         >
           <p>
-            This stops the assistant's access and removes its client
-            registration and tokens. To connect again, create a new connection.
-            Your club content is kept.
+            {change.action === "revoke"
+              ? "This stops the assistant's current access and clears its saved consent. Its client ID, secret and callback stay the same. Reconnect from your AI app and review access again. Your club content is kept."
+              : "This stops the assistant's access and permanently removes its registration. Its client ID and secret will no longer work. To connect again, create a new OAuth connection and update the details in your AI app. Your club content is kept."}
           </p>
-          {problem && <Notice>{problem}</Notice>}
+          {problem && (
+            <Notice>
+              {problem}
+              {problemStatus === 401 && (
+                <Link
+                  href="/sign-in?reauth=1&next=%2Fadmin%2Fintegrations%2Fmcp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Sign in again in a new tab, then retry
+                </Link>
+              )}
+              {problemStatus === 409 && (
+                <button
+                  className="button button-outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setChange(undefined);
+                    refresh();
+                  }}
+                >
+                  Reload connections
+                </button>
+              )}
+            </Notice>
+          )}
           <div className="actions">
             <button
               className="button button-outline"
               disabled={busy}
-              onClick={() => setRevoking(undefined)}
+              onClick={() => setChange(undefined)}
             >
               Keep connection
             </button>
             <button
               className="button button-danger"
               disabled={busy}
-              onClick={() => void revoke()}
+              onClick={() => void applyChange()}
             >
-              {busy ? "Revoking…" : "Confirm revoke"}
+              {busy
+                ? change.action === "revoke"
+                  ? "Revoking…"
+                  : "Removing…"
+                : change.action === "revoke"
+                  ? "Revoke access"
+                  : "Remove connection"}
             </button>
           </div>
         </Dialog>

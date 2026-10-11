@@ -14,6 +14,8 @@ import {
 import { oauthRenewalChecks } from "./oauth-renewal-cases";
 import { oauthConnectionChecks } from "./oauth-connection-cases";
 import { oauthConsentChecks } from "./oauth-consent-cases";
+import { removeOAuthConnection } from "./oauth-test-cleanup";
+import { oauthLifecycleChecks } from "./oauth-lifecycle-cases";
 
 const delivery = vi.hoisted(() => ({ code: "" }));
 vi.mock("@/composition/email", async (original) => ({
@@ -290,6 +292,19 @@ oauthConnectionChecks(() => ({
   exchange,
 }));
 
+oauthLifecycleChecks(() => ({
+  pool: migrationPool,
+  connections,
+  access,
+  actor,
+  headers,
+  origin,
+  resource,
+  protocol,
+  authorize,
+  exchange,
+}));
+
 describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
   it("binds discovery, PKCE, signed consent, exact audience, refresh, current policy and immediate revocation", async () => {
     const callback = `${origin}/synthetic-oauth-callback`;
@@ -446,7 +461,7 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       [issued.clientId],
     );
     expect((await exchange(refreshInput)).ok).toBe(false); // Reuse outside the retry window is rejected.
-    await connections.revoke(actor, headers, issued.clientId);
+    await removeOAuthConnection(connections, actor, headers, issued.clientId);
     await expect(
       access.authenticate(renewed.access_token),
     ).rejects.toMatchObject({ status: 401 });
@@ -543,7 +558,12 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
           )?.scopes,
         ).toEqual(selected);
       } finally {
-        await connections.revoke(actor, headers, client.clientId);
+        await removeOAuthConnection(
+          connections,
+          actor,
+          headers,
+          client.clientId,
+        );
       }
     }
   });
@@ -602,7 +622,7 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       );
       expect(stored.rows[0].count).toBe(0);
     } finally {
-      await connections.revoke(actor, headers, client.clientId);
+      await removeOAuthConnection(connections, actor, headers, client.clientId);
     }
   });
 

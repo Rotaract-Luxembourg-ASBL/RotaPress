@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { capture } from "./integration-credentials-journey";
-import { revokeOAuthConnection } from "./oauth-connections-journey";
+import { removeOAuthConnection } from "./oauth-connections-journey";
 
 /** Complete authoring grant with a separate media opt-in; only synthetic local records. */
 export async function oauthWebsiteRecreationJourney(owner: Page) {
@@ -118,7 +118,7 @@ export async function oauthWebsiteRecreationJourney(owner: Page) {
     ].sort(),
   );
   expect(connection?.sourceOrigins).toEqual(["rotaract.lu"]);
-  await revokeOAuthConnection(owner, name);
+  await removeOAuthConnection(owner, name);
   await owner.getByRole("tab", { name: "Connections", exact: true }).click();
   // Return to the manual callback setup used by the principal consent journey.
   await panel

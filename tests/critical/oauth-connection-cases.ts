@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { removeOAuthConnection } from "./oauth-test-cleanup";
 import type { RenewalContext } from "./oauth-renewal-cases";
 
 export function oauthConnectionChecks(context: () => RenewalContext) {
@@ -251,7 +252,7 @@ export function oauthConnectionChecks(context: () => RenewalContext) {
       expect(
         results.filter((result) => result.status === "rejected"),
       ).toHaveLength(1);
-      await connections.revoke(actor, headers, client.clientId);
+      await removeOAuthConnection(connections, actor, headers, client.clientId);
       await expect(
         connections.activity(actor, client.clientId),
       ).rejects.toMatchObject({ status: 403 });

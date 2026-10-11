@@ -75,6 +75,11 @@ OAuth connections have a separate **Existing connections** tab with editable
 permissions/reference origins, saved-consent status and recent tool activity.
 Permission changes preserve client credentials, invalidate existing tokens and
 require fresh consent; access keys still require replacement for new grants.
+OAuth access revocation also preserves client credentials while invalidating
+tokens, pending authorization codes and saved consent. Permanent connection
+removal is a separate action. A dedicated connection handoff retains the consent
+destination through sign-out/sign-in, and invalid registrations have their own
+recovery page instead of falling through to the member portal.
 Consent explains requested versus allowed actions and lets the person review the
 full allowed set before explicitly approving it. MCP initialization and capability
 discovery expose the issued scope names, labels and read/write mode. Contract 1.9.0

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { removeOAuthConnection } from "./oauth-test-cleanup";
 import type { RenewalContext } from "./oauth-renewal-cases";
 
 /** Provider-owned consent, real OTP session and isolated PostgreSQL. */
@@ -207,7 +208,7 @@ export function oauthConsentChecks(context: () => RenewalContext) {
         403,
       );
       expect((await POST(request(origin, ""))).status).toBe(401);
-      await connections.revoke(actor, headers, client.clientId);
+      await removeOAuthConnection(connections, actor, headers, client.clientId);
       await expect(
         connections.reviewPermissions(actor, headers, input),
       ).rejects.toMatchObject({ code: "OAUTH_CLIENT_UNAVAILABLE" });
@@ -279,7 +280,12 @@ export function oauthConsentChecks(context: () => RenewalContext) {
             snapshot.rows[0].user_agent,
           ],
         );
-        await connections.revoke(actor, headers, client.clientId);
+        await removeOAuthConnection(
+          connections,
+          actor,
+          headers,
+          client.clientId,
+        );
       }
     });
   });

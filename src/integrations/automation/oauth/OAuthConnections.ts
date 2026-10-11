@@ -28,6 +28,7 @@ import {
 import { replaceOAuthPermissions } from "./permission_store";
 import { connectionHistory, recentConnectionActivity } from "./activity";
 import { withOAuthGrantLock } from "./grant_lock";
+import { oauthAuthorizationCodeIds } from "./authorization_codes";
 
 export class OAuthConnections {
   constructor(
@@ -74,7 +75,7 @@ export class OAuthConnections {
     if (active.count >= 20)
       throw new DomainError(
         "OAUTH_CLIENT_LIMIT",
-        "Revoke an existing OAuth connection before creating another.",
+        "Remove an existing OAuth connection before creating another.",
         409,
       );
     const result = await auth.api.adminCreateOAuthClient({
@@ -176,13 +177,25 @@ export class OAuthConnections {
     });
   }
 
-  async revoke(actor: TrustedActor, headers: Headers, clientId: string) {
+  async revoke(
+    actor: TrustedActor,
+    _headers: Headers,
+    clientId: string,
+    expectedRevision: string,
+  ) {
+    this.authorization.requireRecent(actor);
     return withOAuthGrantLock(this.db, async (tx) => {
       const client = await this.ownedClient(actor, clientId);
-      await auth.api.deleteOAuthClient({
-        headers,
-        body: { client_id: clientId },
-      });
+      this.requireRevision(
+        client.metadata.permissionsRevision,
+        expectedRevision,
+      );
+      const revision = await replaceOAuthPermissions(
+        clientId,
+        client.record.scopes ?? [],
+        client.metadata,
+        tx,
+      );
       await this.audit(
         actor,
         client.metadata.organizationId,
@@ -190,7 +203,46 @@ export class OAuthConnections {
         clientId,
         tx,
       );
-      return { revoked: true };
+      return {
+        revoked: true,
+        reconnectRequired: true,
+        permissionsRevision: revision,
+      };
+    });
+  }
+
+  async remove(
+    actor: TrustedActor,
+    headers: Headers,
+    clientId: string,
+    expectedRevision: string,
+  ) {
+    this.authorization.requireRecent(actor);
+    return withOAuthGrantLock(this.db, async (tx) => {
+      const client = await this.ownedClient(actor, clientId);
+      this.requireRevision(
+        client.metadata.permissionsRevision,
+        expectedRevision,
+      );
+      const codeIds = await oauthAuthorizationCodeIds(tx, clientId);
+      const { adapter } = await auth.$context;
+      if (codeIds.length)
+        await adapter.deleteMany({
+          model: "verification",
+          where: [{ field: "id", operator: "in", value: codeIds }],
+        });
+      await auth.api.deleteOAuthClient({
+        headers,
+        body: { client_id: clientId },
+      });
+      await this.audit(
+        actor,
+        client.metadata.organizationId,
+        "automation.oauth.removed",
+        clientId,
+        tx,
+      );
+      return { removed: true };
     });
   }
 
@@ -233,10 +285,12 @@ export class OAuthConnections {
       const sourceOrigins = scopes.includes("sources:read")
         ? [...new Set(parsed.sourceOrigins)]
         : [];
-      const revision = await replaceOAuthPermissions(parsed.clientId, scopes, {
-        ...client.metadata,
-        sourceOrigins,
-      });
+      const revision = await replaceOAuthPermissions(
+        parsed.clientId,
+        scopes,
+        { ...client.metadata, sourceOrigins },
+        tx,
+      );
       await this.audit(
         actor,
         client.metadata.organizationId,
@@ -507,6 +561,15 @@ export class OAuthConnections {
         403,
       );
     return { record, metadata: metadata.data };
+  }
+
+  private requireRevision(current: string | undefined, expected: string) {
+    if ((current ?? "initial") !== z.string().min(1).max(100).parse(expected))
+      throw new DomainError(
+        "OAUTH_PERMISSIONS_CHANGED",
+        "Permissions changed in another tab. Reload this connection before trying again.",
+        409,
+      );
   }
 
   private async checkScopes(actor: TrustedActor, scopes: string[]) {
