@@ -34,9 +34,10 @@
       "website_locale_create",
       "website_settings_save",
       "website_publish",
-      "website_settings_publish"
+      "website_settings_publish",
+      "website_archive"
     ],
-    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance; dependencies and images never publish automatically. Timed publication, deleting, template installation and executable code require staff workflows."
+    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance; dependencies and images never publish automatically. Archiving one ordinary single-language club page requires website:manage plus website:publish, explicit removal intent, a current revision and no draft/published homepage/menu/Events references; history is retained, with no direct unarchive. Multilingual/shared/event archival, hard deletion, timed publication, template installation and executable code require staff workflows."
   },
   "features/events": {
     "operations": [

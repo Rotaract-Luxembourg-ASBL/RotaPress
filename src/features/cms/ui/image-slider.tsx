@@ -13,28 +13,39 @@ export function ImageSliderBlock(props: BlockProps<"ImageSlider">) {
   const active = Math.max(0, Math.min(index, count - 1));
   const current = props.items[active];
   if (!current) return null;
+  const isStrip =
+    props.visibleImages === "three" || props.visibleImages === "four";
+  const ordered = props.items.map((item, position) => ({ item, position }));
+  const visible = isStrip
+    ? [...ordered.slice(active), ...ordered.slice(0, active)]
+    : [{ item: current, position: active }];
   function move(direction: number) {
     setIndex((active + direction + count) % count);
   }
   return (
     <section
       className={`cms-block cms-image-slider cms-image-ratio-${props.aspectRatio ?? "landscape"}`}
+      data-visible-images={props.visibleImages ?? "one"}
       aria-roledescription="carousel"
       aria-label="Image slider"
     >
-      <figure
-        id={slideId}
-        aria-roledescription="slide"
-        aria-label={`${active + 1} of ${count}`}
-      >
-        <CmsImage
-          id={current.assetId}
-          alt={current.alt}
-          focalX={current.focalX}
-          focalY={current.focalY}
-        />
-        {current.caption && <figcaption>{current.caption}</figcaption>}
-      </figure>
+      <div id={slideId} className="cms-image-slider-track">
+        {visible.map(({ item, position }) => (
+          <figure
+            key={`${item.assetId}-${position}`}
+            aria-roledescription="slide"
+            aria-label={`${position + 1} of ${count}`}
+          >
+            <CmsImage
+              id={item.assetId}
+              alt={item.alt}
+              focalX={item.focalX}
+              focalY={item.focalY}
+            />
+            {item.caption && <figcaption>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
       {count > 1 && (
         <div className="cms-slider-controls">
           <button
@@ -79,7 +90,7 @@ export function ImageSliderBlock(props: BlockProps<"ImageSlider">) {
             aria-live="polite"
             aria-atomic="true"
           >
-            Image {active + 1} of {count}
+            {isStrip ? "Starting at image" : "Image"} {active + 1} of {count}
           </span>
         </div>
       )}

@@ -48,6 +48,22 @@ export const sectionBlockConfig: Pick<
       version,
       label: { type: "text", label: "Carousel label" },
       position: { ...sideField, label: "Text panel position" },
+      height: {
+        type: "select",
+        label: "Hero height",
+        options: [
+          { label: "Standard", value: "standard" },
+          { label: "Tall", value: "tall" },
+        ],
+      },
+      presentation: {
+        type: "select",
+        label: "Text presentation",
+        options: [
+          { label: "Text panel", value: "panel" },
+          { label: "Over the photograph", value: "overlay" },
+        ],
+      },
       items: {
         type: "array",
         label: "Slides",
@@ -87,6 +103,8 @@ export const sectionBlockConfig: Pick<
       version: 1,
       label: "Featured stories",
       position: "left",
+      height: "standard",
+      presentation: "panel",
       items: [
         {
           title: "People. Purpose. Possibility.",
@@ -104,6 +122,14 @@ export const sectionBlockConfig: Pick<
     label: "Image & benefits",
     fields: {
       version,
+      layout: {
+        type: "radio",
+        label: "Photo layout",
+        options: [
+          { label: "Beside the story", value: "split" },
+          { label: "Behind story and benefits", value: "background" },
+        ],
+      },
       eyebrow: { type: "text", label: "Eyebrow" },
       title: { type: "text", label: "Heading" },
       body: { type: "textarea", label: "Introduction" },
@@ -127,6 +153,7 @@ export const sectionBlockConfig: Pick<
     },
     defaultProps: {
       version: 1,
+      layout: "split",
       eyebrow: "Get involved",
       title: "Make a difference together",
       body: "Share what your community offers.",
@@ -136,6 +163,14 @@ export const sectionBlockConfig: Pick<
       items: [],
       buttonLabel: "",
       buttonHref: "",
+    },
+    resolveFields: (data, { fields }) => {
+      const resolved = { ...fields };
+      if (data.props.layout === "background") {
+        resolved.imagePosition = { ...fields.imagePosition, visible: false };
+        resolved.assetId = { ...assetField, label: "Background image" };
+      }
+      return resolved;
     },
     render: (props) => <FeatureSectionBlock {...props} />,
   },

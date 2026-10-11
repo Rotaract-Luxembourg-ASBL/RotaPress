@@ -16,6 +16,7 @@ import {
 import type { AutomationPrincipal } from "../../src/integrations/automation/AutomationAccess";
 import { WebsiteManagementService } from "../../src/integrations/automation/WebsiteManagementService";
 import { websiteRevisionOutput } from "../../src/integrations/automation/website_management_schemas";
+import { automationWebsiteArchiveChecks } from "./automation-website-archive-cases";
 
 type Context = {
   db: Database;
@@ -41,6 +42,7 @@ const save = (page: CmsDetail, title: string) => ({
 });
 
 export function automationWebsiteChecks(context: () => Context) {
+  automationWebsiteArchiveChecks(context);
   describe("C14 website draft management", () => {
     async function fixture() {
       const ctx = context();

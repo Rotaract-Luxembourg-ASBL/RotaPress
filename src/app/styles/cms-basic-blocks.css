@@ -104,7 +104,7 @@
   height: 100%;
   max-height: none;
   object-fit: cover;
-  opacity: 0.15;
+  opacity: var(--cms-cover-photo-opacity, 0.15);
   border-radius: 0;
 }
 
@@ -116,8 +116,19 @@
   margin-inline: auto;
 }
 
-.cms-cover-copy h2 {
+.cms-cover-copy :is(h1, h2) {
   font-size: clamp(30px, 4vw, 48px);
+}
+
+/* Optional page banners retain the cover's own spacing and image controls. */
+.cms-public .cms-cover[data-presentation="banner"] {
+  display: grid;
+  align-items: center;
+  min-height: clamp(18rem, 26cqw, 25rem);
+}
+
+.cms-public .cms-design[data-corners="square"] > .cms-cover {
+  border-radius: 0;
 }
 
 .cms-cover-copy > p {

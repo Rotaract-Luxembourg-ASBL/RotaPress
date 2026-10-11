@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { cmsContent, cmsVariant } from "../../../db/schema/cms";
+import { cmsContent, cmsSite, cmsVariant } from "../../../db/schema/cms";
 import type { Database } from "../../infrastructure/database/client";
 import {
   AuthorizationService,
@@ -29,6 +29,7 @@ import { FormService } from "../forms/FormService";
 import {
   isSitePart,
   emptyCmsData,
+  siteSettingsSchema,
   type CmsDetail,
   type CmsLocale,
   type PublicPage,
@@ -379,51 +380,115 @@ export class CmsService {
 
   async archive(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
     const parsed = expectedInput.parse(input);
-    await this.db.transaction(async (tx) => {
-      const { organizationId } = await this.scope.lock(
-        actor,
-        parsed.id,
-        "cms.publish",
-        tx,
-      );
-      const { content, variant } = await this.load(
-        organizationId,
-        parsed.id,
-        parsed.locale,
-        tx,
-      );
-      this.editable(content.archivedAt, variant, parsed.expectedRevisionId);
-      const variants = await this.repository.variants(
-        organizationId,
-        parsed.id,
-        tx,
-      );
-      for (const item of variants) {
-        await this.references.requireUnusedSection(
-          organizationId,
-          content,
-          item.locale,
-          tx,
-        );
-        await tx
-          .update(cmsVariant)
-          .set({ publishedRevisionId: null, publishedSlug: null })
-          .where(eq(cmsVariant.id, item.id));
-        await this.media.replaceUsage(
-          `cms:${item.id}`,
-          organizationId,
-          [],
-          tx,
-          true,
-        );
-      }
-      await tx
-        .update(cmsContent)
-        .set({ archivedAt: new Date() })
-        .where(eq(cmsContent.id, parsed.id));
-      await this.record(tx, actor, organizationId, "cms.archived", parsed.id);
-    });
+    await this.db.transaction((tx) => this.archiveContent(actor, parsed, tx));
     return this.detail(actor, parsed.id, parsed.locale);
+  }
+
+  /** Bounded delegated cleanup; the caller's organization lock shares this transaction. */
+  async archiveClubPage(actor: TrustedActor, input: unknown, tx: Transaction) {
+    await this.archiveContent(actor, expectedInput.parse(input), tx, true);
+  }
+
+  private async archiveContent(
+    actor: TrustedActor,
+    parsed: z.infer<typeof expectedInput>,
+    tx: Transaction,
+    clubPageOnly = false,
+  ) {
+    const { organizationId } = await this.scope.lock(
+      actor,
+      parsed.id,
+      "cms.publish",
+      tx,
+    );
+    const { content, variant, revision } = await this.load(
+      organizationId,
+      parsed.id,
+      parsed.locale,
+      tx,
+    );
+    this.editable(content.archivedAt, variant, parsed.expectedRevisionId);
+    const variants = await this.repository.variants(
+      organizationId,
+      parsed.id,
+      tx,
+    );
+    if (clubPageOnly) {
+      if (content.kind !== "page" || content.eventId)
+        throw new DomainError(
+          "AUTOMATION_ARCHIVE_PAGE_ONLY",
+          "Only ordinary club pages can be archived by automation.",
+          422,
+        );
+      if (variants.length !== 1)
+        throw new DomainError(
+          "AUTOMATION_ARCHIVE_MULTILINGUAL",
+          "This page has several languages. Review its removal in Website administration.",
+          409,
+        );
+      const sites = await tx
+        .select()
+        .from(cmsSite)
+        .where(eq(cmsSite.organizationId, organizationId));
+      const references = sites
+        .flatMap((site) => [site.draft, site.published])
+        .filter((settings) => settings !== null)
+        .map((settings) => siteSettingsSchema.parse(settings));
+      const site = sites.find((item) => item.locale === parsed.locale);
+      const published = variant.publishedRevisionId
+        ? await this.repository.revision(
+            variant.id,
+            variant.publishedRevisionId,
+            tx,
+          )
+        : null;
+      const draftHome =
+        !site || !siteSettingsSchema.parse(site.draft).homePageId;
+      const publishedHome =
+        !site?.published ||
+        !siteSettingsSchema.parse(site.published).homePageId;
+      if (
+        references.some(
+          (settings) =>
+            settings.homePageId === parsed.id ||
+            settings.eventsPageId === parsed.id ||
+            settings.navigation.some(
+              (item) => "pageId" in item && item.pageId === parsed.id,
+            ),
+        ) ||
+        (draftHome && revision.slug === "home") ||
+        (publishedHome && published?.slug === "home")
+      )
+        throw new DomainError(
+          "AUTOMATION_ARCHIVE_PAGE_IN_USE",
+          "Remove this page from draft and published homepage, menu and Events selections before archiving it.",
+          409,
+        );
+    }
+    for (const item of variants) {
+      await this.references.requireUnusedSection(
+        organizationId,
+        content,
+        item.locale,
+        tx,
+      );
+      await tx
+        .update(cmsVariant)
+        .set({ publishedRevisionId: null, publishedSlug: null })
+        .where(eq(cmsVariant.id, item.id));
+      await this.media.replaceUsage(
+        `cms:${item.id}`,
+        organizationId,
+        [],
+        tx,
+        true,
+      );
+    }
+    await tx
+      .update(cmsContent)
+      .set({ archivedAt: new Date() })
+      .where(eq(cmsContent.id, parsed.id));
+    await this.record(tx, actor, organizationId, "cms.archived", parsed.id);
   }
 
   async restore(actor: TrustedActor, input: unknown): Promise<CmsDetail> {

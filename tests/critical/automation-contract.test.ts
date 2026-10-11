@@ -6,6 +6,7 @@ import { operations } from "../../src/integrations/automation/catalogue";
 import { openApiDocument } from "../../src/integrations/automation/openapi";
 import {
   operation,
+  operationScopes,
   type AutomationContext,
 } from "../../src/integrations/automation/operation";
 import { createMcpServer } from "../../src/integrations/automation/mcp_server";
@@ -142,6 +143,63 @@ describe("C14 documented contracts and failure privacy", () => {
       ).toBe(false);
       expect(openAiApprovalPolicy.always.tool_names).toContain(op.name);
       expect(openAiApprovalPolicy.never.tool_names).not.toContain(op.name);
+    }
+  });
+  it("exposes the same bounded page archive through REST and MCP only with both grants", async () => {
+    const archive = operations.find((op) => op.name === "website_archive");
+    expect(archive).toBeDefined();
+    if (!archive) throw new Error("Missing website archive contract.");
+    expect([...operationScopes(archive)].sort()).toEqual([
+      "website:manage",
+      "website:publish",
+    ]);
+    expect(archive.readOnly).toBe(false);
+    const spec = openApiDocument();
+    expect(
+      spec.paths["/api/v1/website/content/{id}/archive"].patch,
+    ).toMatchObject({ operationId: "website_archive" });
+    expect(
+      archive.input.safeParse({ ...archive.example, unrelated: true }).success,
+    ).toBe(false);
+    for (const scopes of [
+      ["website:manage"],
+      ["website:publish"],
+      ["website:manage", "website:publish"],
+    ]) {
+      const server = createMcpServer({
+        principal: { scopes },
+      } as unknown as AutomationContext);
+      const client = new Client({
+        name: "archive-contract-fixture",
+        version: "1",
+      });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+      try {
+        await server.connect(serverTransport);
+        await client.connect(clientTransport);
+        const tool = (await client.listTools()).tools.find(
+          (item) => item.name === "website_archive",
+        );
+        expect(Boolean(tool)).toBe(scopes.length === 2);
+        if (tool) {
+          expect(tool.annotations).toMatchObject({
+            readOnlyHint: false,
+            destructiveHint: true,
+          });
+          expect(tool.inputSchema.required).toEqual(
+            expect.arrayContaining([
+              "id",
+              "locale",
+              "expectedRevisionId",
+              "confirmed",
+            ]),
+          );
+        }
+      } finally {
+        await client.close();
+        await server.close();
+      }
     }
   });
   it("returns a generic MCP resource error rather than internal provider/database text", async () => {

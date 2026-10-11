@@ -106,11 +106,26 @@ export const basicBlockConfig: Pick<
     label: "Cover section",
     fields: {
       version: { type: "custom", visible: false, render: () => <></> },
+      presentation: {
+        type: "radio",
+        label: "Cover layout",
+        options: [
+          { label: "Content section", value: "section" },
+          { label: "Page banner", value: "banner" },
+        ],
+      },
       title: { type: "text", label: "Cover heading", contentEditable: true },
       body: { type: "textarea", label: "Cover text", contentEditable: true },
       buttonLabel: { type: "text", label: "Button text" },
       buttonHref: { type: "text", label: "Button link" },
       assetId: optionalAssetField,
+      imageOpacity: {
+        type: "number",
+        label: "Photo visibility (%)",
+        min: 0,
+        max: 100,
+        step: 1,
+      },
       tone: {
         type: "radio",
         label: "Background tone",
@@ -140,6 +155,8 @@ export const basicBlockConfig: Pick<
     },
     defaultProps: {
       version: 1,
+      presentation: "section",
+      imageOpacity: 15,
       title: "A shared purpose",
       body: "Make room for your club’s next chapter.",
       buttonLabel: "",
@@ -149,6 +166,15 @@ export const basicBlockConfig: Pick<
       padding: "medium",
       alignment: "left",
     },
+    resolveFields: (data, { fields }) => {
+      const resolved = { ...fields };
+      if (resolved.imageOpacity)
+        resolved.imageOpacity = {
+          ...resolved.imageOpacity,
+          visible: Boolean(data.props.assetId),
+        };
+      return resolved;
+    },
     render: (props) => <CoverBlock {...props} />,
   },
   ImageSlider: {
@@ -156,6 +182,15 @@ export const basicBlockConfig: Pick<
     fields: {
       version: { type: "custom", visible: false, render: () => <></> },
       aspectRatio: aspectRatioField,
+      visibleImages: {
+        type: "select",
+        label: "Photos on desktop (one on phone)",
+        options: [
+          { label: "One photo", value: "one" },
+          { label: "Three photos", value: "three" },
+          { label: "Four photos", value: "four" },
+        ],
+      },
       items: {
         type: "custom",
         label: "Slides",
@@ -164,7 +199,12 @@ export const basicBlockConfig: Pick<
         ),
       },
     },
-    defaultProps: { version: 1, items: [], aspectRatio: "landscape" },
+    defaultProps: {
+      version: 1,
+      items: [],
+      aspectRatio: "landscape",
+      visibleImages: "one",
+    },
     render: (props) => <ImageSliderBlock {...props} />,
   },
 };

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { CmsImage, SafeLink, type BlockProps } from "./block-renderers";
 
 export function HeadingBlock(
@@ -40,16 +40,26 @@ export function CoverBlock(
     body: ReactNode;
   },
 ) {
+  const banner = props.presentation === "banner";
+  const Heading = banner ? "h1" : "h2";
+  const imageStyle: CSSProperties | undefined =
+    props.imageOpacity === undefined
+      ? undefined
+      : ({
+          "--cms-cover-photo-opacity": props.imageOpacity / 100,
+        } as CSSProperties);
   return (
     <section
       className={`cms-block cms-cover cms-cover-tone-${props.tone} cms-cover-padding-${props.padding} cms-cover-align-${props.alignment}`}
+      data-presentation={props.presentation}
+      style={imageStyle}
     >
       {props.assetId && (
         <CmsImage id={props.assetId} alt="" className="cms-cover-background" />
       )}
       <div className="cms-cover-copy">
-        <h2>{props.title}</h2>
-        <p>{props.body}</p>
+        {(!banner || props.title) && <Heading>{props.title}</Heading>}
+        {(!banner || props.body) && <p>{props.body}</p>}
         {props.buttonLabel && (
           <SafeLink href={props.buttonHref} className="button button-accent">
             {props.buttonLabel}

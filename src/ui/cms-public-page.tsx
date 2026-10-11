@@ -98,6 +98,9 @@ export function CmsPublicPage({
               item.type === "Hero" ||
               item.type === "EventHero" ||
               item.type === "HeroSlider" ||
+              (item.type === "Cover" &&
+                item.props.presentation === "banner" &&
+                Boolean(item.props.title.trim())) ||
               item.type === "PageIntro",
           ) && <h1 className="cms-page-title">{page.title}</h1>}
         <RenderContent

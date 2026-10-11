@@ -21,6 +21,7 @@ import {
   websiteSettingsInput,
   websitePublishInput,
   websiteSettingsPublishInput,
+  websiteArchiveInput,
 } from "./website_management_schemas";
 
 /** Uses existing CMS writers and explicit grants for draft and publication actions. */
@@ -261,6 +262,30 @@ export class WebsiteManagementService {
       );
       requireNonExecutableContent(source.revision.data);
       await this.cms.publishRevision(principal.actor, parsed, tx);
+    });
+    return this.cms.detail(principal.actor, parsed.id, parsed.locale);
+  }
+
+  async archive(principal: AutomationPrincipal, input: unknown) {
+    this.requireGrant(principal, "website:manage");
+    this.requireGrant(principal, "website:publish");
+    const parsed = websiteArchiveInput.parse(input);
+    await this.db.transaction(async (tx) => {
+      const { organizationId } = await this.authorization.lock(
+        principal.actor,
+        "cms.publish",
+        tx,
+      );
+      this.requireOrganization(principal, organizationId);
+      await this.cms.archiveClubPage(
+        principal.actor,
+        {
+          id: parsed.id,
+          locale: parsed.locale,
+          expectedRevisionId: parsed.expectedRevisionId,
+        },
+        tx,
+      );
     });
     return this.cms.detail(principal.actor, parsed.id, parsed.locale);
   }

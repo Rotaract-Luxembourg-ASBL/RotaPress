@@ -39,6 +39,9 @@
 @import "./styles/event-workflow.css";
 @import "./styles/website-kits.css";
 @import "./styles/website-chrome.css";
+@import "./styles/cms-native-sections.css";
+@import "./styles/cms-feature-background.css";
+@import "./styles/website-footer-tone.css";
 @import "./styles/website-connected.css";
 @import "./styles/contacts-inbox.css";
 @import "./styles/kit-catalogue.css";

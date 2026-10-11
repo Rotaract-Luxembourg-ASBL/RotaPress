@@ -80,6 +80,14 @@ menu links use two columns, and the layout stacks on smaller screens. These shar
 styles apply to the template website. Header/footer content and navigation remain
 editable through their CMS and menu controls.
 
+Saved blocks can extend these starting layouts: **Website width** follows the
+website or editor canvas, a **Hero slider** can use a tall photo and overlaid panel,
+and **Feature section** supports a photo background with a story panel and benefit
+tiles. **Image slider** can show three or four photos on a wider screen, with one
+on a phone. Existing saved blocks retain their earlier presentation unless these
+choices are selected. A dark first footer row carries its tone across the footer
+background. All copy, images, links and benefit items remain native editable blocks.
+
 The template contains editable starting copy and illustrative garden photographs,
 not claimed club achievements. Replace these with the club's own content. Empty
 event/partner selections collapse; templates do not fabricate sponsors, bookings

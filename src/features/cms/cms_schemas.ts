@@ -102,6 +102,8 @@ const leafBlockSchemas = [
   block("Divider", { width: z.enum(["full", "narrow"]) }),
   block("Spacer", { size: z.enum(["small", "medium", "large"]) }),
   block("Cover", {
+    presentation: z.enum(["section", "banner"]).optional(),
+    imageOpacity: z.number().int().min(0).max(100).optional(),
     title: shortText,
     body: text,
     buttonLabel: shortText,
@@ -141,6 +143,7 @@ const leafBlockSchemas = [
     aspectRatio: aspectRatio.optional(),
   }),
   block("ImageSlider", {
+    visibleImages: z.enum(["one", "three", "four"]).optional(),
     items: z
       .array(
         z.strictObject({

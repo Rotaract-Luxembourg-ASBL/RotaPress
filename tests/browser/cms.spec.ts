@@ -24,6 +24,7 @@ import { clubContentJourney } from "./club-content-journey";
 import { websitePublicationJourney } from "./website-publication-journey";
 import { eventDirectoryJourney } from "./event-directory-journey";
 import { calendarJourney } from "./calendar-journey";
+import { nativeCarouselJourney } from "./native-carousel-journey";
 import { emailJourney } from "./email-journey";
 import { formEmailJourney } from "./email-scope-journey";
 import {
@@ -653,21 +654,26 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     assetId,
     origin,
   });
+  // This accelerated journey spans several real editing sessions. Advance only
+  // this synthetic owner's limiter window in the guarded disposable test DB.
+  const cmsOwner = await database.query<{ id: string }>(
+    'SELECT id FROM club."user" WHERE email=$1',
+    [ownerEmail],
+  );
+  const cmsWriteKey = `app:cms-write:${createHash("sha256").update(cmsOwner.rows[0].id).digest("hex")}`;
+  await database.query(
+    "UPDATE club.rate_limit SET last_request=$1 WHERE key=$2",
+    [Date.now() - 61_000, cmsWriteKey],
+  );
+  await nativeCarouselJourney(page, publicPage, origin, assetId);
   await formsJourney({ page, publicPage, browser, cmsPageId: home.id, origin });
   await publicationJourney(page, publicPage, database, origin);
   await partnersJourney(page, publicPage, origin);
   await communityJourney(page, publicPage, origin, assetId);
   await clubFeaturesJourney(page, publicPage);
-  // This accelerated journey spans several real editing sessions. Advance only
-  // this synthetic owner's limiter window in the guarded disposable test DB.
-  const kitOwner = await database.query<{ id: string }>(
-    'SELECT id FROM club."user" WHERE email=$1',
-    [ownerEmail],
-  );
-  const kitWriteKey = `app:cms-write:${createHash("sha256").update(kitOwner.rows[0].id).digest("hex")}`;
   await database.query(
     "UPDATE club.rate_limit SET last_request=$1 WHERE key=$2",
-    [Date.now() - 61_000, kitWriteKey],
+    [Date.now() - 61_000, cmsWriteKey],
   );
   await kitJourney(page, publicPage, origin, assetId);
   await brandingJourney(page, publicPage, assetId);

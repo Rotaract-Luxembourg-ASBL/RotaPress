@@ -15,6 +15,8 @@ export function HeroSliderBlock(props: BlockProps<"HeroSlider">) {
   return (
     <section
       className={`cms-block cms-hero-slider cms-hero-panel-${props.position}`}
+      data-height={props.height}
+      data-presentation={props.presentation}
       aria-label={props.label || "Featured stories"}
       aria-roledescription="carousel"
     >
@@ -35,8 +37,8 @@ export function HeroSliderBlock(props: BlockProps<"HeroSlider">) {
           />
         )}
         <div className="cms-hero-panel">
-          <h1>{slide.title}</h1>
-          <p>{slide.body}</p>
+          {slide.title && <h1>{slide.title}</h1>}
+          {slide.body && <p>{slide.body}</p>}
           {slide.buttonLabel && (
             <SafeLink className="button button-accent" href={slide.buttonHref}>
               {slide.buttonLabel}

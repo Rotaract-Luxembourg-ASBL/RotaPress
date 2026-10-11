@@ -59,7 +59,11 @@ details, activities and page design have separate publication operations. No too
 publishes dependencies or changes media visibility automatically. Calendar audiences
 and normal subscriber notifications remain in force; publishing a form can make
 it accept responses. Publishing event details does not publish its pages/forms or
-enable registration. No unpublish or delete operation is added.
+enable registration. Explicit page removal uses the bounded `website_archive`
+operation with management and publication grants. It accepts only ordinary
+single-language club pages outside draft/published homepage, menu and Events
+selections, preserves history and has no direct unarchive. General unpublication
+and hard deletion remain administration workflows.
 
 Keep consequential settings as typed review proposals where the underlying
 feature has no draft model. Only the authenticated administration workflow may

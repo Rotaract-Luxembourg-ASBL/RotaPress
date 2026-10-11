@@ -106,6 +106,34 @@ configure a provider, publish its source, or make private records public. A sour
 card describes the content available to the block; it is not a live-provider
 connection test.
 
+## Photograph sections
+
+Block **Content width** offers **Website width** for a background that reaches the
+website edges. It follows the actual page or editor canvas, including phone previews.
+Use the normal section or reading widths for copy inside columns.
+
+**Story hero** keeps its existing photo and copy panel by default. Choose a tall
+photo area or an overlaid panel when the story needs a larger background. Each
+slide still has editable text, image, alternative text, link and focal point.
+
+For a page introduction over a photograph, choose **Cover layout → Page banner**.
+Its heading replaces the automatic page title and its responsive minimum height
+keeps the photograph visible on phone screens. **Content section** keeps the
+existing section heading and layout. **Photo visibility (%)** controls how strongly
+the photo shows through the selected background tone; existing covers keep their
+subtle photo treatment until changed. Cover **Inner spacing** applies at website
+width, and **Section corners → Square** also squares the cover itself.
+
+**Image & benefits** offers **Behind story and benefits**: its story and button appear in a
+white panel, with the editable benefits beside them. On a phone, the story comes
+before the benefits. **Image slider** can show one, three or four photographs;
+phone layouts show one. Manual arrows and labelled controls preserve the saved
+photo order, without autoplay.
+
+In a shared footer, setting the first row's tone to **Dark** also makes the outer
+footer dark. These presentation choices use normal saved blocks and publication
+rules; selecting a private photograph still requires separate image review.
+
 ## Languages and reusable sections
 
 English, French and Luxembourgish content variants are authored and published

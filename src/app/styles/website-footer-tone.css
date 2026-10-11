@@ -1,0 +1,32 @@
+/* An explicitly dark first row carries its saved tone across the shared footer. */
+.cms-public .site-footer:has(> .cms-design:first-child[data-tone="dark"] > .site-row) {
+  background: var(--ink);
+  color: #fff;
+  border-top-color: var(--ink);
+
+  & > .cms-design {
+    margin-block: 0;
+  }
+
+  & .site-row {
+    border-bottom-color: #ffffff30;
+  }
+
+  & .site-column :is(h2, h3) {
+    font-size: 1rem;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  & .button-outline {
+    background: transparent;
+    border-color: #ffffff70;
+    color: inherit;
+  }
+
+  & .button-outline:hover {
+    background: #fff;
+    color: var(--ink);
+    border-color: #fff;
+  }
+}

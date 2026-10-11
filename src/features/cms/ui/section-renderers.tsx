@@ -2,36 +2,45 @@ import { CmsImage, SafeLink, type BlockProps } from "./block-renderers";
 import { FeatureIcon } from "./feature-icon";
 
 export function FeatureSectionBlock(props: BlockProps<"FeatureSection">) {
+  const background = props.layout === "background";
+  const benefits = (
+    <ul className="cms-feature-list">
+      {props.items.map((item, index) => (
+        <li key={index}>
+          <FeatureIcon name={item.icon} />
+          <div>
+            {item.title && <h3>{item.title}</h3>}
+            {item.text && <p>{item.text}</p>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
   return (
     <section
-      className={`cms-block cms-feature-section cms-feature-image-${props.imagePosition}`}
+      className={`cms-block cms-feature-section ${background ? `cms-feature-background${props.items.length ? "" : " cms-feature-background-story-only"}` : `cms-feature-image-${props.imagePosition}`}`}
     >
       {props.assetId && (
-        <div className="cms-feature-media">
+        <div
+          className={
+            background ? "cms-feature-background-media" : "cms-feature-media"
+          }
+        >
           <CmsImage id={props.assetId} alt={props.alt} />
         </div>
       )}
       <div className="cms-section-copy">
         {props.eyebrow && <p className="cms-eyebrow">{props.eyebrow}</p>}
-        <h2>{props.title}</h2>
+        {props.title && <h2>{props.title}</h2>}
         {props.body && <p>{props.body}</p>}
-        <ul className="cms-feature-list">
-          {props.items.map((item, index) => (
-            <li key={index}>
-              <FeatureIcon name={item.icon} />
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {!background && benefits}
         {props.buttonLabel && (
           <SafeLink className="button button-accent" href={props.buttonHref}>
             {props.buttonLabel}
           </SafeLink>
         )}
       </div>
+      {background && props.items.length > 0 && benefits}
     </section>
   );
 }

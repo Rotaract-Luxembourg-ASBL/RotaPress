@@ -88,6 +88,7 @@ registry that handles requests. Use them for every field, enum and required valu
 | `/website/content/{id}/preview`                           | POST       | `website:preview` and `website:read`           |
 | `/website/content/{id}/revisions/{revisionId}`            | GET        | `website:read`                                 |
 | `/website/content/{id}/restore`                           | PATCH      | `website:manage`                               |
+| `/website/content/{id}/archive`                           | PATCH      | `website:publish` and `website:manage`        |
 | `/website/content/{id}/copies`                            | POST       | `website:manage`                               |
 | `/website/content/{id}/languages`                         | POST       | `website:manage`                               |
 | `/website/settings`                                       | PATCH      | `website:settings`                             |

@@ -4,7 +4,7 @@ import { z } from "zod";
 export const blockDesignSchema = z.strictObject({
   tone: z.enum(["paper", "soft", "dark"]).optional(),
   spacing: z.enum(["compact", "comfortable", "spacious"]).optional(),
-  width: z.enum(["full", "reading"]).optional(),
+  width: z.enum(["full", "reading", "viewport"]).optional(),
   alignment: z.enum(["left", "center", "right"]).optional(),
   corners: z.enum(["square", "soft"]).optional(),
   columns: z.enum(["two", "three", "four"]).optional(),
@@ -25,7 +25,11 @@ export const designOptions = {
   },
   width: {
     label: "Content width",
-    choices: { full: "Full section", reading: "Reading width" },
+    choices: {
+      full: "Full section",
+      reading: "Reading width",
+      viewport: "Website width",
+    },
   },
   alignment: {
     label: "Text alignment",

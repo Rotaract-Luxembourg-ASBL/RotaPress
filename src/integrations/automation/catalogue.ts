@@ -81,7 +81,7 @@ export const operations: readonly Operation[] = [
   ...contentPublicationOperations,
   ...projectOperations,
 ];
-export const contractVersion = "1.9.0";
+export const contractVersion = "1.10.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => operationAllowed(o, scopes))
