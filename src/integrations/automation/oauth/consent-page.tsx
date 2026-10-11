@@ -61,13 +61,15 @@ export async function OAuthConsentPage({
         <section className="oauth-consent-card oauth-consent-unavailable">
           <p className="eyebrow">Connection unavailable</p>
           <h1>Review your AI connection</h1>
-          <Notice>
-            This request expired or your account cannot authorize it. Start the
-            connection again from your AI client.
+          <Notice kind={!actor && signedQuery ? "info" : undefined}>
+            {!actor && signedQuery
+              ? "Sign in to review this AI connection request."
+              : "This request expired or your account cannot authorize it. Start the connection again from your AI client."}
           </Notice>
           <p>
-            Your connection settings and saved club content have not changed.
-            Return to the app and open a new connection request.
+            {!actor && signedQuery
+              ? "Use the account that created this connection. You will review its requested actions after signing in."
+              : "Your connection settings and saved club content have not changed. Return to the app and open a new connection request."}
           </p>
           {!actor && signedQuery && (
             <Link

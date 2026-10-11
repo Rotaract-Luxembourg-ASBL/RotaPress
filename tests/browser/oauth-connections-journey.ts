@@ -1,25 +1,109 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, type Route } from "@playwright/test";
 import { capture } from "./integration-credentials-journey";
 
+async function revokeSignInRecovery(owner: Page, dialog: Locator) {
+  const endpoint = "/api/admin/integrations/automation/oauth";
+  const before = (await (await owner.request.get(endpoint)).json()) as unknown;
+  const message =
+    "Confirm your identity by signing in again to make sensitive changes for another 12 hours. You do not need to sign out.";
+  let rejected = false;
+  const denied = async (route: Route) => {
+    if (route.request().method() !== "DELETE" || rejected)
+      return route.fallback();
+    rejected = true;
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ error: message }),
+    });
+  };
+  await owner.route(`**${endpoint}`, denied);
+  try {
+    await dialog
+      .getByRole("button", { name: "Revoke access", exact: true })
+      .click();
+    await expect(dialog.getByRole("alert")).toContainText(message);
+    expect(rejected).toBe(true);
+    const signIn = dialog.getByRole("link", {
+      name: "Sign in again in a new tab, then retry",
+      exact: true,
+    });
+    await expect(signIn).toHaveAttribute(
+      "href",
+      "/sign-in?reauth=1&next=%2Fadmin%2Fintegrations%2Fmcp",
+    );
+    await expect(signIn).toHaveAttribute("target", "_blank");
+    await expect(signIn).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(
+      dialog.getByRole("button", { name: "Revoke access", exact: true }),
+    ).toBeEnabled();
+    expect(await (await owner.request.get(endpoint)).json()).toEqual(before);
+  } finally {
+    await owner.unroute(`**${endpoint}`, denied);
+  }
+}
+
 export async function revokeOAuthConnection(owner: Page, name: string) {
+  await changeOAuthConnection(owner, name, "revoke");
+}
+
+export async function removeOAuthConnection(owner: Page, name: string) {
+  await changeOAuthConnection(owner, name, "remove");
+}
+
+async function changeOAuthConnection(
+  owner: Page,
+  name: string,
+  action: "revoke" | "remove",
+) {
   await owner
     .getByRole("tab", { name: "Existing connections", exact: true })
     .click();
   await owner.getByLabel(`More options for ${name}`, { exact: true }).click();
   await owner
-    .getByRole("button", { name: `Revoke OAuth ${name}`, exact: true })
+    .getByRole("button", {
+      name:
+        action === "revoke" ? `Revoke access for ${name}` : `Remove ${name}`,
+      exact: true,
+    })
     .click();
   const dialog = owner.getByRole("dialog", {
-    name: `Revoke ${name}?`,
+    name: `${action === "revoke" ? "Revoke access for" : "Remove"} ${name}?`,
     exact: true,
   });
   await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText(
+    action === "revoke"
+      ? "Its client ID, secret and callback stay the same."
+      : "Its client ID and secret will no longer work.",
+  );
+  if (action === "revoke") await revokeSignInRecovery(owner, dialog);
+  const changed = owner.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/admin/integrations/automation/oauth") &&
+      response.request().method() === "DELETE",
+  );
   await dialog
-    .getByRole("button", { name: "Confirm revoke", exact: true })
+    .getByRole("button", {
+      name: action === "revoke" ? "Revoke access" : "Remove connection",
+      exact: true,
+    })
     .click();
+  expect((await changed).status()).toBe(200);
+  await expect(dialog).toHaveCount(0);
   await expect(
-    owner.getByText(`Revoked ${name}.`, { exact: true }),
+    owner.getByText(
+      action === "revoke"
+        ? `Access revoked for ${name}. Reconnect from your AI app to review access again.`
+        : `Removed ${name}. Create a new connection to use this app again.`,
+      { exact: true },
+    ),
   ).toBeVisible();
+  const rowAction = owner.getByLabel(`More options for ${name}`, {
+    exact: true,
+  });
+  if (action === "revoke") await expect(rowAction).toBeVisible();
+  else await expect(rowAction).toHaveCount(0);
 }
 
 /** Actual registered OAuth client, consent and tool history from the principal journey. */

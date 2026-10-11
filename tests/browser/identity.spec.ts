@@ -56,14 +56,20 @@ async function mailboxCode(
   return code;
 }
 
-async function signIn(page: Page, email: string, next: string) {
+async function signIn(
+  page: Page,
+  email: string,
+  next: string,
+  preserveNavigation = false,
+) {
   const mailbox = (await (
     await fetch("http://127.0.0.1:18025/api/v1/messages")
   ).json()) as { messages: MessageSummary[] };
   const priorMessageIds = new Set(
     mailbox.messages.map((message) => message.ID),
   );
-  await page.goto(`/sign-in?next=${next}`);
+  if (!preserveNavigation)
+    await page.goto(`/sign-in?${new URLSearchParams({ next })}`);
   await expect(page.getByLabel("Your name", { exact: true })).toHaveCount(0);
   await page.getByLabel("Email address").fill(email);
   async function sendCode() {
@@ -281,7 +287,7 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
   );
   expect(method.rows[0]?.auth_method).toBe("email-otp");
   await googleAuthJourney(page, browser, database);
-  await automationJourney(page, browser, database);
+  await automationJourney(page, browser, database, { ownerEmail, signIn });
   await adminHeaderJourney(page);
 
   const applicantContext = await browser.newContext();

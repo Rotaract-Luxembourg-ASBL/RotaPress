@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { capture } from "./integration-credentials-journey";
-import { revokeOAuthConnection } from "./oauth-connections-journey";
+import { removeOAuthConnection } from "./oauth-connections-journey";
 
 /** Registers local clients only. No browser is sent to a real provider callback. */
 export async function oauthPresetsJourney(owner: Page) {
@@ -100,7 +100,7 @@ export async function oauthPresetsJourney(owner: Page) {
         scopes: ["website:read"],
       },
     );
-    await revokeOAuthConnection(owner, name);
+    await removeOAuthConnection(owner, name);
     await owner.getByRole("tab", { name: "Connections", exact: true }).click();
   }
   await app.selectOption("chatgpt");

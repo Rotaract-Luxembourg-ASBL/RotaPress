@@ -11,6 +11,7 @@ export function signInDestination(next: string | null): string {
     "/admin/integrations/mcp",
     "/admin/integrations/automation/docs",
     "/admin/integrations/automation/authorize",
+    "/oauth/continue",
     "/membership",
     "/recovery",
     "/guest",

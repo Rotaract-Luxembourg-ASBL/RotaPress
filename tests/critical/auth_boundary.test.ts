@@ -164,6 +164,7 @@ describe("Authentication transport and provider policy", () => {
       "/guest",
       "/registrations",
       "/admin/calendar",
+      "/oauth/continue",
       "/calendar",
       "/calendar?tab=subscriptions",
       `/forms/${id}`,
@@ -181,6 +182,7 @@ describe("Authentication transport and provider policy", () => {
       "//untrusted.example",
       "https://untrusted.example",
       "/guest?next=//untrusted.example",
+      "/oauth/continue?next=//untrusted.example",
       "/calendar?tab=subscriptions&next=//untrusted.example",
       "/calendar?tab=//untrusted.example",
       "/guest/../admin",
@@ -205,6 +207,7 @@ describe("Authentication transport and provider policy", () => {
     for (const returnTo of [
       "/setup",
       "/admin/integrations/mcp",
+      "/oauth/continue",
       "/calendar?tab=subscriptions",
       `/forms/${id}`,
       `/events/${id}/fr/registration`,

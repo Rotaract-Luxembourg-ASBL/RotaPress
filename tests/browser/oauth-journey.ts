@@ -7,10 +7,12 @@ import { oauthPresetsJourney } from "./oauth-presets-journey";
 import { oauthWebsiteRecreationJourney } from "./oauth-website-recreation-journey";
 import { openOAuthFromAssistant } from "./oauth-navigation-journey";
 import { oauthManagementJourney } from "./oauth-management-journey";
+import { oauthConnectionsJourney } from "./oauth-connections-journey";
 import {
-  oauthConnectionsJourney,
-  revokeOAuthConnection,
-} from "./oauth-connections-journey";
+  oauthReconnectJourney,
+  oauthSignInReturnJourney,
+  type OAuthLoginFixture,
+} from "./oauth-reconnect-journey";
 
 async function captureConsent(page: Page, path: string) {
   await page.evaluate(() => {
@@ -28,6 +30,7 @@ export async function oauthJourney(
   browser: Browser,
   database: Pool,
   pageId: string,
+  login: OAuthLoginFixture,
 ) {
   const remote = await browser.newContext();
   const endpoint = "/api/admin/integrations/automation/oauth";
@@ -157,11 +160,7 @@ export async function oauthJourney(
     );
     const authorizeUrl = `${smokeOrigin}/api/auth/oauth2/authorize?${params}`;
     const signedOut = await remote.newPage();
-    await openOAuthFromAssistant(signedOut, authorizeUrl);
-    await expect(signedOut).toHaveURL(
-      `${smokeOrigin}/sign-in?reauth=1&next=/admin/integrations/automation/authorize`,
-    );
-    await expect(signedOut.getByLabel("Email address")).toBeVisible();
+    await oauthSignInReturnJourney(signedOut, authorizeUrl, login);
     await signedOut.close();
     await openOAuthFromAssistant(owner, authorizeUrl);
     await expect(
@@ -175,9 +174,9 @@ export async function oauthJourney(
     const signedQuery = new URL(owner.url()).search;
     await owner.goto(`/api/automation/oauth/sign-in${signedQuery}`);
     await expect(owner).toHaveURL(
-      `${smokeOrigin}/sign-in?reauth=1&next=/admin/integrations/automation/authorize`,
+      `${smokeOrigin}/sign-in?reauth=1&next=/oauth/continue`,
     );
-    await owner.goto("/admin/integrations/automation/authorize");
+    await owner.goto("/oauth/continue");
     await expect(
       owner.getByRole("heading", {
         name: "Allow Synthetic OAuth assistant to help your club?",
@@ -527,14 +526,14 @@ export async function oauthJourney(
       owner.getByRole("region", { name: "Test response" }).getByRole("status"),
     ).toHaveText("Request succeeded · HTTP 200");
     await oauthConnectionsJourney(owner, rotated.access_token);
-    await revokeOAuthConnection(owner, "Synthetic OAuth assistant");
-    expect(
-      (
-        await remote.request.get("/api/mcp", {
-          headers: { authorization: `Bearer ${rotated.access_token}` },
-        })
-      ).status(),
-    ).toBe(401);
+    await oauthReconnectJourney(
+      owner,
+      remote,
+      issued,
+      params,
+      signedQuery,
+      rotated.access_token,
+    );
   } finally {
     await owner.unroute(`${callback}**`);
     if (viewport) await owner.setViewportSize(viewport);

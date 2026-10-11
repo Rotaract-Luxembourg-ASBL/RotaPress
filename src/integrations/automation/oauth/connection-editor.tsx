@@ -273,7 +273,7 @@ export function ConnectionEditor({
                 )}
                 {reauth && (
                   <Link
-                    href="/sign-in?reauth=1&next=%2Fadmin%2Fintegrations%2Fmcp%3Ftab%3Dexisting"
+                    href="/sign-in?reauth=1&next=%2Fadmin%2Fintegrations%2Fmcp"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

@@ -15,12 +15,14 @@ import {
 } from "./automation-availability-journey";
 import { integrationCredentialsJourney } from "./integration-credentials-journey";
 import { oauthJourney } from "./oauth-journey";
+import type { OAuthLoginFixture } from "./oauth-reconnect-journey";
 
 /** Real Better Auth OTP session and scoped key; all source/page text is synthetic. */
 export async function automationJourney(
   owner: Page,
   browser: Browser,
   database: Pool,
+  login: OAuthLoginFixture,
 ) {
   const endpoint = "/api/admin/integrations/automation";
   const anonymous = await browser.newContext();
@@ -305,7 +307,7 @@ export async function automationJourney(
     await automationAvailabilityIsolation(owner, api, key, mcp.key);
     await automationMediaJourney(owner, api, key);
     await automationEventJourney(owner, api);
-    await oauthJourney(owner, browser, database, pageId);
+    await oauthJourney(owner, browser, database, pageId, login);
     await automationDocsJourney(owner, key, mcp.key);
     await automationSecurityJourney(owner, api, database, key, mcp.key);
     await database.query(

@@ -70,7 +70,7 @@ export function SignInForm({
   const copy = signInContext(target, reauth, appearance);
   const optionsLoading = !setup && !me && !loadError;
   const hasDestinationAccess =
-    !target.startsWith("/admin") ||
+    (!target.startsWith("/admin") && target !== "/oauth/continue") ||
     Boolean(me?.capabilities.includes("admin.access"));
 
   function accountPanel(children: ReactNode) {
@@ -223,7 +223,7 @@ export function SignInForm({
             Continue setup <Arrow />
           </Link>
           <div className="setup-footnote">
-            <SignOutButton />
+            <SignOutButton signInReturnTo="/setup" />
           </div>
         </section>
       </SetupFrame>
@@ -243,6 +243,7 @@ export function SignInForm({
               : "You're signed in. Club staff must be approved before opening the workspace."}
           </p>
         </header>
+        {error && <Notice>{error}</Notice>}
         {!hasDestinationAccess && (
           <Notice kind="info">
             Contact your club owner for staff access. Sign out to use another
@@ -263,7 +264,7 @@ export function SignInForm({
             {hasDestinationAccess ? copy.continueLabel : "Open member account"}{" "}
             <Arrow />
           </Link>
-          <SignOutButton />
+          <SignOutButton signInReturnTo={target} reauth={reauth} />
         </div>
       </section>,
     );
@@ -297,6 +298,7 @@ export function SignInForm({
         <Notice kind="info">
           Confirm your identity to continue with a security change. Use the same
           account: {me.actor.email}.
+          <SignOutButton signInReturnTo={target} reauth={reauth} />
         </Notice>
       )}
       {combinedError && (

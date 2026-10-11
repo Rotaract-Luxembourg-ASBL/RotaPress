@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Pool } from "pg";
 import { describe, expect, it, vi } from "vitest";
+import { removeOAuthConnection } from "./oauth-test-cleanup";
 import type { TrustedActor } from "../../src/core/authorization/AuthorizationService";
 import type { OAuthAccess } from "../../src/integrations/automation/oauth/OAuthAccess";
 import type { OAuthConnections } from "../../src/integrations/automation/oauth/OAuthConnections";
@@ -193,7 +194,12 @@ export function oauthRenewalChecks(context: () => RenewalContext) {
           actor.sessionId,
           session.rows[0].created_at,
         ]);
-        await connections.revoke(actor, headers, client.clientId);
+        await removeOAuthConnection(
+          connections,
+          actor,
+          headers,
+          client.clientId,
+        );
       }
     });
 
@@ -266,7 +272,12 @@ export function oauthRenewalChecks(context: () => RenewalContext) {
           actor.sessionId,
           session.rows[0].created_at,
         ]);
-        await connections.revoke(actor, headers, client.clientId);
+        await removeOAuthConnection(
+          connections,
+          actor,
+          headers,
+          client.clientId,
+        );
       }
     });
   });
