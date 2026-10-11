@@ -100,3 +100,11 @@ again before pixels are released. Revocation during rendering discards the resul
 Missing Chromium or an unsupported runtime returns `503`; a busy renderer returns
 `429`. Retry with backoff after addressing the reported cause. Do not disable
 isolation controls to make a hosted preview work.
+
+An unavailable preview returns a fixed message asking the operator to check the
+application runtime and installed Chromium. Internal exception messages stay
+private. Runtime logs record `automation_preview_failed` with a fixed failure stage
+and diagnostic code, such as document delivery or image rendering, without page
+IDs, URLs, capabilities or credentials. Use these diagnostics to locate the failed
+stage before changing the hosting configuration; a failed capture is not visual
+verification of the saved draft.
