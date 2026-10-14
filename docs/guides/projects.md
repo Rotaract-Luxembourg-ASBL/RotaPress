@@ -19,8 +19,9 @@ New projects are private. A summary is required before publication. Use the
 optional outcomes field for results you can substantiate; RotaPress does not
 calculate or invent volunteer hours, beneficiary counts or donations.
 
-Uploaded images start private. Before publishing a project with a cover, make
-that image public deliberately in **Media**. Publication explains missing
+Administration image uploads default to public; you can choose Private.
+Automation uploads and existing private images need to be made public in
+**Media** before publishing a project with that cover. Publication explains missing
 requirements and keeps your saved draft intact.
 
 ## Keep stories up to date

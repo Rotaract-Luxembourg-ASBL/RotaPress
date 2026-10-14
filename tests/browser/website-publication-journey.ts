@@ -19,6 +19,7 @@ export async function websitePublicationJourney(
     headers: { origin },
     multipart: {
       title: "Synthetic private favicon",
+      visibility: "private",
       file: {
         name: "synthetic-favicon.png",
         mimeType: "image/png",

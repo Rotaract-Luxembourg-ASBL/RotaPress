@@ -185,28 +185,90 @@ different records; embedding a block does not copy or authorize them.
 
 ## Media
 
-Upload or select images through Media or a block's central image picker. Uploads
-start **Private**. Save metadata and visibility separately from the page draft.
+Upload or select images through **Media** or a block's central image picker.
+New administration uploads default to **Public** without another publication
+prompt. Choose **Private** before uploading when access should be limited to
+authorized staff. Existing private images keep their visibility. REST/MCP uploads
+and source imports still start private under their separate connection grants;
+see [automation images](automation-media.md).
 
-Choose **Upload image**, browse or drop one file, review its thumbnail, title and
-alternative text, then upload. In the image picker, **Media library** shows searchable
-thumbnails and the selected image; **Edit image details** opens optional metadata
-controls. **Insert image** or **Replace image** confirms the selection. Switching
-between library and upload preserves an unfinished upload; leaving unsaved edits
-requires a deliberate discard. Caption, collection, tags and usage details stay
-available without crowding the common fields.
+Choose **Upload image**, then browse or drop up to 100 files into the queue.
+Review their previews, choose their visibility and optional collection, then
+upload. The queue reports each file's result and retains unsuccessful files for
+**Retry failed uploads**; successful files are not uploaded again. Choose **Done**
+to return to the library. Bulk upload titles start from filenames; edit individual
+details afterward. Save image metadata and visibility separately from the page draft.
+
+The library offers grid and list views, search, visibility, collection and date
+filters, sorting and paged results. Searches cover the library rather than only
+its first page. Open a thumbnail or its **Edit** action to review the larger image,
+title, alternative text, caption, tags, collection, file details and usage. Save
+changes before moving to another image or closing the dialog. **Previous image**
+and **Next image**, or the arrow keys outside text fields, move through the current
+page of results. **Copy URL** and **Download image** make the saved file easy to
+reuse. Unsaved edits are preserved until you deliberately discard them.
+
+Use image checkboxes to select several images, or **Select all shown** for the
+current page. Shift-click selects a range on that page. **Clear selection** starts
+again. Selection remains visible while you change filters or pages. Choose
+**Make public**, **Make private**, **Edit selected** to replace tags or collection,
+or **Delete permanently** for unreferenced images. A batch includes at most
+**250 images**. The server checks every image's current saved state and permissions
+before committing any
+change. A changed, unavailable or protected image rejects the entire batch; keep
+the selection, use **Refresh selected images** and resolve the reported issue
+before retrying.
+
+In the image picker, **Media library** shows searchable thumbnails and the selected
+image with its attachment details. **Insert image** or **Replace image** confirms
+the selection. Switching between library and upload preserves an unfinished upload.
+
+### Create or edit a gallery
+
+In a **Gallery** block, choose **Create gallery** or **Edit gallery**. Select
+multiple images in **Media library**, using search, filters and pages to find
+them. **Select all shown** adds the current results while space remains. A gallery
+contains up to **30 images**; existing image order, captions and alternative text
+remain saved until you update them.
+
+Use **Upload images** to add new photographs, or open **Edit gallery** to arrange
+your selection. Drag the handles, or use each image's up and down arrow controls.
+Edit its caption and alternative text, or remove it from this gallery.
+These text changes belong to the block and do not overwrite the library metadata.
+Event managers choose from their event-approved image collection; club media
+managers maintain the uploads.
+
+**Insert gallery** or **Update gallery** applies the selection to the current
+block. **Save draft** keeps the page changes; page publication remains separate.
+Canceling can discard unfinished gallery changes. Images already uploaded remain
+in the Media library, including uploads beyond the gallery's 30-image limit.
+
+### Edit a photograph
+
+Open image details and choose **Edit image**. Drag over the original preview to
+crop, or enter exact crop coordinates. Rotate, flip and reduce the image width;
+the edited preview shows the result before saving. **Undo image edit**,
+**Redo image edit** and **Reset edits** work on the unfinished changes.
+
+**Save edited copy** creates a separate image in the library with the source's
+metadata and visibility. The original image and its existing placements remain
+available. Select the new copy wherever you want to use it. Cancel or return to
+details to keep using the original. File edits do not replace photographs on
+published pages automatically.
 
 Accepted files are single-frame PNG, JPEG or WebP, up to 5 MiB and 20 million pixels.
 The server checks signatures, decodes and reencodes images as WebP, and strips
 unnecessary metadata. SVG, GIF, HTML, archives and PDF are not accepted uploads.
 
-A private image can appear in an authorized draft preview. Before publication,
-choose **Public** only if anyone should be able to retrieve its media URL, including
-when no current page places it. Publication never changes visibility automatically.
+A private image can appear in an authorized draft preview. A public image's media
+URL is accessible to anyone, including when no current page places it. Making an
+image private cannot recall copies already downloaded. Publishing page content
+never changes an image's visibility automatically.
 
 Published references prevent making a live image private. References in any retained
 revision prevent deletion, preserving restoration. Remove public placements and
-republish before changing visibility. Only an unreferenced image can be deleted.
+republish before changing visibility. Only an unreferenced image can be deleted;
+**Delete permanently** has no trash or undo.
 
 ## Storage and recovery
 

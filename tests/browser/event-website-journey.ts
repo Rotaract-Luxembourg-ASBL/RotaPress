@@ -163,6 +163,7 @@ export async function eventWebsiteJourney(
     headers: { origin },
     multipart: {
       title: "Synthetic event image",
+      visibility: "private",
       alt: "Synthetic green sample",
       file: { name: "event-sample.png", mimeType: "image/png", buffer: image },
     },

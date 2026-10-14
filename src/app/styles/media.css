@@ -4,7 +4,8 @@
   align-items: end;
   gap: 12px;
 }
-.media-filters label {
+.media-filters label,
+.media-filters .media-description-field {
   display: grid;
   gap: 6px;
   min-width: 0;

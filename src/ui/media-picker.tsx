@@ -36,13 +36,21 @@ export function MediaPicker({
     <div className={`media-picker${value ? " has-image" : ""}`}>
       {source && (
         <div className="media-picker-preview">
-          <Image
-            src={source}
-            alt={selected?.alt ?? bundled?.alt ?? "Selected image"}
-            width={360}
-            height={240}
-            unoptimized
-          />
+          <button
+            type="button"
+            className="media-picker-preview-open"
+            aria-label="Replace current image"
+            aria-haspopup="dialog"
+            onClick={() => setOpen(true)}
+          >
+            <Image
+              src={source}
+              alt={selected?.alt ?? bundled?.alt ?? "Selected image"}
+              width={360}
+              height={240}
+              unoptimized
+            />
+          </button>
           <span>
             {selected?.title ||
               (bundled ? `${bundled.title} · Template image` : "Current image")}
@@ -54,6 +62,8 @@ export function MediaPicker({
           ref={trigger}
           type="button"
           className="button button-outline button-small"
+          aria-haspopup="dialog"
+          aria-expanded={open}
           onClick={() => setOpen(true)}
         >
           {value ? "Replace image" : label}

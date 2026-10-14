@@ -56,6 +56,13 @@ export async function mediaPickerJourney(page: Page) {
   await expect(upload).toBeFocused();
   await expect(title).toHaveValue("Keep my selected upload");
   await expect(file).toHaveValue(/picker-draft\.png$/);
+  await expect
+    .poll(() =>
+      picker
+        .getByRole("img", { name: "Selected upload preview" })
+        .evaluate((image) => (image as HTMLImageElement).naturalWidth),
+    )
+    .toBe(120);
   await picker.screenshot({ path: ".local/media-picker-upload-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(picker).toBeVisible();

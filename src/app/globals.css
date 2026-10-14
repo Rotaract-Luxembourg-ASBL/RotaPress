@@ -11,6 +11,8 @@
 @import "./styles/responsive.css";
 @import "./styles/cms.css";
 @import "./styles/media.css";
+@import "./styles/media-management.css";
+@import "./styles/media-gallery.css";
 @import "./styles/forms.css";
 @import "./styles/cms-images.css";
 @import "./styles/cms-basic-blocks.css";

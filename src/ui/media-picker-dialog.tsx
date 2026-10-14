@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
 import { useResource } from "./api";
+import { useMediaResource } from "./media-resource";
 import { Loading, Notice } from "./primitives";
 import { Icon } from "./icon";
 import { useMediaPickerEvent } from "./media-picker-scope";
@@ -34,12 +35,31 @@ export function MediaPickerDialog({
   const insertAfterUpload = useRef(false);
   const eventId = useMediaPickerEvent();
   const prefix = useId();
-  const { data, error, refresh } = useResource<{ assets: MediaAssetDto[] }>(
-    eventId ? `/api/admin/events/${eventId}/media` : "/api/admin/media",
-  );
+  const [page, setPage] = useState(1);
   const [tab, setTab] = useState<"library" | "upload">("library");
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: "48",
+    search: query,
+    visibility,
+  });
+  const { data, error, loading, refresh } = useMediaResource<{
+    assets: MediaAssetDto[];
+    total?: number;
+    pageSize?: number;
+    page?: number;
+  }>(
+    eventId
+      ? `/api/admin/events/${eventId}/media`
+      : `/api/admin/media?${params}`,
+  );
+  const linked = useResource<{ asset: MediaAssetDto }>(
+    !eventId && currentId
+      ? `/api/admin/media/${encodeURIComponent(currentId)}`
+      : null,
+  );
   const [selectedId, setSelectedId] = useState(currentId);
   const [updatedAsset, setUpdatedAsset] = useState<MediaAssetDto>();
   const [editorId, setEditorId] = useState<string>();
@@ -53,7 +73,8 @@ export function MediaPickerDialog({
   const selected =
     updatedAsset?.id === selectedId
       ? updatedAsset
-      : data?.assets.find((asset) => asset.id === selectedId);
+      : (data?.assets.find((asset) => asset.id === selectedId) ??
+        (linked.data?.asset.id === selectedId ? linked.data.asset : undefined));
   const assets =
     data?.assets.map((asset) =>
       asset.id === updatedAsset?.id ? updatedAsset : asset,
@@ -61,6 +82,7 @@ export function MediaPickerDialog({
   if (updatedAsset && !assets.some((asset) => asset.id === updatedAsset.id))
     assets.unshift(updatedAsset);
   const filtered = filterAssets(assets, query, visibility);
+  const currentPage = data?.page ?? page;
 
   useEffect(() => {
     const element = dialog.current;
@@ -88,7 +110,8 @@ export function MediaPickerDialog({
   }
 
   function choose(asset: MediaAssetDto) {
-    if (busy || asset.id === selectedId || !canDiscard(detailsDirty)) return;
+    if (busy || loading || asset.id === selectedId || !canDiscard(detailsDirty))
+      return;
     setSelectedId(asset.id);
     setUpdatedAsset(asset);
     setDetailsDirty(false);
@@ -208,16 +231,24 @@ export function MediaPickerDialog({
               <MediaFilters
                 query={query}
                 visibility={visibility}
-                onQuery={setQuery}
-                onVisibility={setVisibility}
+                onQuery={(value) => {
+                  setQuery(value);
+                  setPage(1);
+                }}
+                onVisibility={(value) => {
+                  setVisibility(value);
+                  setPage(1);
+                }}
               />
               <div className="media-results-heading">
                 <p className="media-result-count" role="status">
-                  {data
-                    ? `${filtered.length} ${filtered.length === 1 ? "image" : "images"}`
-                    : error
-                      ? "Library unavailable"
-                      : "Loading your library…"}
+                  {loading
+                    ? "Loading your library…"
+                    : data
+                      ? `${filtered.length} shown${data.total !== undefined ? ` of ${data.total} matching images` : " images"}`
+                      : error
+                        ? "Library unavailable"
+                        : "Loading your library…"}
                 </p>
                 {(query || visibility !== "all") && (
                   <button
@@ -226,6 +257,7 @@ export function MediaPickerDialog({
                     onClick={() => {
                       setQuery("");
                       setVisibility("all");
+                      setPage(1);
                     }}
                   >
                     Clear filters
@@ -237,6 +269,7 @@ export function MediaPickerDialog({
                   assets={filtered}
                   onSelect={choose}
                   selectedId={selectedId}
+                  disabled={busy || loading || Boolean(error)}
                   emptyMessage={
                     query || visibility !== "all"
                       ? "Clear the filters or try a different search."
@@ -247,6 +280,29 @@ export function MediaPickerDialog({
                 />
               ) : (
                 !error && <Loading />
+              )}
+              {!eventId && data?.total !== undefined && data.total > 48 && (
+                <div className="media-pagination">
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    disabled={busy || loading || currentPage === 1}
+                    onClick={() => setPage(currentPage - 1)}
+                  >
+                    Previous page
+                  </button>
+                  <span>
+                    Page {currentPage} of {Math.ceil(data.total / 48)}
+                  </span>
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    disabled={busy || loading || currentPage * 48 >= data.total}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Next page
+                  </button>
+                </div>
               )}
             </section>
             {selected && (
@@ -329,6 +385,8 @@ export function MediaPickerDialog({
                   onDirty={setDetailsDirty}
                   onBusy={setDetailsBusy}
                   onChanged={(asset) => {
+                    setSelectedId(asset.id);
+                    setEditorId(asset.id);
                     setUpdatedAsset(asset);
                     refresh();
                   }}
@@ -364,8 +422,9 @@ export function MediaPickerDialog({
                   setTab("library");
                   setQuery("");
                   setVisibility("all");
+                  setPage(1);
                   setMessage(
-                    "Image uploaded privately. Select Insert image to use it.",
+                    `Image uploaded ${asset.visibility === "public" ? "publicly" : "privately"}. Select Insert image to use it.`,
                   );
                   refresh();
                 }}
@@ -384,7 +443,7 @@ export function MediaPickerDialog({
             </strong>
             <span>
               {tab === "upload"
-                ? "Uploads stay private until you change their visibility."
+                ? "New uploads are public by default. Choose Private when needed."
                 : detailsDirty
                   ? "Save the image details to continue."
                   : selected

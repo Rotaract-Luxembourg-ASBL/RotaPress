@@ -24,6 +24,7 @@ import { LocalStorageDriver } from "../../src/infrastructure/storage/LocalStorag
 import { mediaPublicationOperations } from "../../src/integrations/automation/media_publication_operations";
 import type { AutomationContext } from "../../src/integrations/automation/operation";
 import { sourceImageChecks } from "./source-image-cases";
+import { mediaAdministrationChecks } from "./media-admin-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -139,6 +140,8 @@ sourceImageChecks(() => ({
   imageBytes,
   installedClub,
 }));
+
+mediaAdministrationChecks(() => ({ db, media, authorization, imageBytes, installedClub }));
 
 describe("C04 media authorization, safe decoding and private local storage", () => {
   it("C14 requires a separate current publication grant and exact batch confirmation", async () => {
