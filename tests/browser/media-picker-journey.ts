@@ -1,8 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 import sharp from "sharp";
+import { mediaPickerManagementJourney } from "./media-picker-management-journey";
 
 /** B02 opens its existing image picker before continuing normal insertion. */
-export async function mediaPickerJourney(page: Page) {
+export async function mediaPickerJourney(page: Page, visitor: Page) {
   const viewport = page.viewportSize();
   const picker = page.getByRole("dialog", {
     name: "Choose an image",
@@ -23,6 +24,7 @@ export async function mediaPickerJourney(page: Page) {
   await expect(back).toBeFocused();
   await back.click();
   await expect(edit).toBeFocused();
+  await mediaPickerManagementJourney(page, visitor);
 
   const upload = picker.getByRole("tab", { name: "Upload image", exact: true });
   const library = picker.getByRole("tab", {
@@ -56,6 +58,13 @@ export async function mediaPickerJourney(page: Page) {
   await expect(upload).toBeFocused();
   await expect(title).toHaveValue("Keep my selected upload");
   await expect(file).toHaveValue(/picker-draft\.png$/);
+  await expect
+    .poll(() =>
+      picker
+        .getByRole("img", { name: "Selected upload preview" })
+        .evaluate((image) => (image as HTMLImageElement).naturalWidth),
+    )
+    .toBe(120);
   await picker.screenshot({ path: ".local/media-picker-upload-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(picker).toBeVisible();

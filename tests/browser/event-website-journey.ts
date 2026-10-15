@@ -163,6 +163,7 @@ export async function eventWebsiteJourney(
     headers: { origin },
     multipart: {
       title: "Synthetic event image",
+      visibility: "private",
       alt: "Synthetic green sample",
       file: { name: "event-sample.png", mimeType: "image/png", buffer: image },
     },
@@ -218,6 +219,12 @@ export async function eventWebsiteJourney(
   });
   await expect(
     picker.getByRole("tab", { name: "Upload image", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    picker.getByRole("button", { name: "Bulk select", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    picker.getByRole("button", { name: "Make public", exact: true }),
   ).toHaveCount(0);
   await picker.getByRole("button", { name: /Synthetic event image/ }).click();
   await picker

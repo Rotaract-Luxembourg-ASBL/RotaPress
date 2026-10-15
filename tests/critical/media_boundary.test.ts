@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/composition/services", () => ({ services: {
   authorization: { require: mocks.authorize },
   limiter: { consume: mocks.limit },
-  media: { upload: mocks.upload },
+  media: { uploadFromAdministration: mocks.upload },
 } }));
 vi.mock("@/core/auth/actor", () => ({ getActor: mocks.actor }));
 vi.mock("@/core/config", () => ({ config: { APP_URL: "http://127.0.0.1:3000" } }));
@@ -26,6 +26,21 @@ beforeEach(() => {
 });
 
 describe("C04 upload HTTP boundary", () => {
+  it("defaults staff uploads to public while accepting an explicit private choice", async () => {
+    mocks.actor.mockResolvedValue({ userId: "synthetic-id", email: "synthetic@example.test", emailVerified: true,
+      sessionId: "synthetic-session", authenticatedAt: new Date(), authMethod: "email-otp" });
+    mocks.upload.mockResolvedValue({ id: "synthetic-asset", visibility: "public", title: "", alt: "", caption: "", tags: [], collection: "" });
+    for (const visibility of [undefined, "private", "public"]) {
+      const form = new FormData();
+      form.append("file", new File(["synthetic"], "fixture.png", { type: "image/png" }));
+      if (visibility) form.append("visibility", visibility);
+      const response = await POST(new Request(`${origin}/api/admin/media`, { method: "POST", headers: { origin }, body: form }));
+      expect(response.status).toBe(201);
+      expect(mocks.upload).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ visibility: visibility ?? "public" }));
+      expect(await response.json()).toHaveProperty("metadataRevision", expect.stringMatching(/^[a-f0-9]{64}$/));
+    }
+  });
+
   it("rejects unauthenticated/origin-invalid requests before reading, enforces actual bytes, and refuses duplicate multipart fields", async () => {
     const anonymous = new Request(`${origin}/api/admin/media`, {
       method: "POST", headers: { origin, "content-type": "multipart/form-data; boundary=fixture" }, body: "synthetic",

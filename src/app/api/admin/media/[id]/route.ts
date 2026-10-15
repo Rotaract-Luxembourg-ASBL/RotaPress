@@ -2,6 +2,7 @@ import { services } from "@/composition/services";
 import { getActor } from "@/core/auth/actor";
 import { handle, HttpError, json, readMutation, requireMutationOrigin } from "@/core/http";
 import { z } from "zod";
+import { adminMediaAssetDto } from "@/features/media/media_admin";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -9,7 +10,8 @@ export async function GET(request: Request, context: Context) {
   return handle(async () => {
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in to manage media.");
-    return json(await services.media.usage(actor, (await context.params).id));
+    const usage = await services.media.usage(actor, (await context.params).id);
+    return json({ ...usage, asset: adminMediaAssetDto(usage.asset) });
   });
 }
 
@@ -20,7 +22,7 @@ export async function PATCH(request: Request, context: Context) {
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in to manage media.");
     const { id } = await context.params;
-    return json(await services.media.update(actor, { ...body, id }));
+    return json(adminMediaAssetDto(await services.media.update(actor, { ...body, id })));
   });
 }
 

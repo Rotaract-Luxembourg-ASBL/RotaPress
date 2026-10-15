@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useId } from "react";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
 import { Icon } from "./icon";
 export type VisibilityFilter = "all" | "private" | "public";
+export type MediaSort = "newest" | "oldest" | "title";
 
 export function filterAssets(
   assets: MediaAssetDto[],
@@ -39,6 +41,7 @@ export function MediaFilters({
   onQuery: (value: string) => void;
   onVisibility: (value: VisibilityFilter) => void;
 }) {
+  const prefix = useId();
   return (
     <div className="media-filters">
       <label className="media-search">
@@ -50,19 +53,20 @@ export function MediaFilters({
           onChange={(event) => onQuery(event.target.value)}
         />
       </label>
-      <label>
-        Visibility
+      <div className="media-description-field">
+        <label htmlFor={`${prefix}-visibility`}>Visibility</label>
         <select
+          id={`${prefix}-visibility`}
           value={visibility}
           onChange={(event) =>
             onVisibility(event.target.value as VisibilityFilter)
           }
         >
           <option value="all">All images</option>
-          <option value="private">Private</option>
           <option value="public">Public</option>
+          <option value="private">Private</option>
         </select>
-      </label>
+      </div>
     </div>
   );
 }
@@ -71,51 +75,102 @@ export function AssetGrid({
   assets,
   onSelect,
   selectedId,
+  selectedIds,
+  onToggle,
+  onEdit,
+  disabled,
+  view = "grid",
   emptyMessage = "No images yet. Upload the first image for your club.",
 }: {
   assets: MediaAssetDto[];
   onSelect: (asset: MediaAssetDto) => void;
   selectedId?: string;
+  selectedIds?: ReadonlySet<string>;
+  onToggle?: (asset: MediaAssetDto, range: boolean) => void;
+  onEdit?: (asset: MediaAssetDto) => void;
+  disabled?: boolean;
+  view?: "grid" | "list";
   emptyMessage?: string;
 }) {
   return assets.length ? (
-    <div className="media-grid">
-      {assets.map((asset) => (
-        <button
-          key={asset.id}
-          type="button"
-          className={`media-tile${selectedId === asset.id ? " is-selected" : ""}`}
-          onClick={() => onSelect(asset)}
-          aria-label={`Select ${asset.title || asset.originalName}`}
-          aria-pressed={selectedId === asset.id}
-        >
-          <span className="media-tile-image">
-            <Image
-              src={`/media/${asset.id}`}
-              alt=""
-              width={240}
-              height={180}
-              unoptimized
-            />
-            {selectedId === asset.id && (
-              <span className="media-selection-check" aria-hidden="true">
-                <Icon name="check" />
-              </span>
+    <div className={`media-grid${view === "list" ? " media-list" : ""}`}>
+      {assets.map((asset) => {
+        const title = asset.title || asset.originalName;
+        const checked = selectedIds?.has(asset.id) ?? selectedId === asset.id;
+        return (
+          <article
+            key={asset.id}
+            className={`media-tile${checked ? " is-selected" : ""}`}
+          >
+            {onToggle && (
+              <label className="media-tile-checkbox" title={`Select ${title}`}>
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${title}`}
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onToggle(
+                      asset,
+                      event.nativeEvent instanceof MouseEvent &&
+                        event.nativeEvent.shiftKey,
+                    )
+                  }
+                />
+              </label>
             )}
-          </span>
-          <span className="media-tile-title">
-            {asset.title || asset.originalName}
-          </span>
-          <span className="media-tile-meta">
-            <span className={`media-badge media-badge-${asset.visibility}`}>
-              {asset.visibility}
-            </span>
-            <span>
-              {asset.width} × {asset.height}
-            </span>
-          </span>
-        </button>
-      ))}
+            <button
+              type="button"
+              className="media-tile-open"
+              disabled={disabled}
+              onClick={() => onSelect(asset)}
+              aria-label={`${onEdit ? "Open" : "Select"} ${title}`}
+              aria-pressed={onToggle ? undefined : checked}
+            >
+              <span className="media-tile-image">
+                <Image
+                  src={`/media/${asset.id}?variant=thumbnail`}
+                  alt=""
+                  width={240}
+                  height={180}
+                  unoptimized
+                />
+                {!onToggle && checked && (
+                  <span className="media-selection-check" aria-hidden="true">
+                    <Icon name="check" />
+                  </span>
+                )}
+              </span>
+              <span className="media-tile-title">{title}</span>
+              <span className="media-tile-meta">
+                <span className={`media-badge media-badge-${asset.visibility}`}>
+                  {asset.visibility}
+                </span>
+                <span>
+                  {asset.width} × {asset.height}
+                </span>
+              </span>
+              {view === "list" && (
+                <span className="media-list-facts">
+                  {asset.collection || "No collection"} ·{" "}
+                  {Math.ceil(asset.size / 1024)} KB
+                </span>
+              )}
+            </button>
+            {onEdit && (
+              <button
+                type="button"
+                className="media-tile-edit inline-button"
+                disabled={disabled}
+                onClick={() => onEdit(asset)}
+                aria-label={`Edit ${title}`}
+              >
+                <Icon name="edit" /> Edit
+              </button>
+            )}
+          </article>
+        );
+      })}
     </div>
   ) : (
     <div className="media-empty">

@@ -4,6 +4,8 @@ import { parseEnv } from "node:util";
 import { test, expect, type Page } from "@playwright/test";
 import { adminCollectionsJourney } from "./admin-collections-journey";
 import { mediaPickerJourney } from "./media-picker-journey";
+import { mediaLibraryJourney } from "./media-library-journey";
+import { mediaGalleryJourney } from "./media-gallery-journey";
 import { formStudioJourney } from "./form-studio-journey";
 import { projectsJourney } from "./projects-journey";
 import { editorWorkflowJourney } from "./editor-workflow-journey";
@@ -297,21 +299,35 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     mimeType: "image/png",
     buffer: png,
   });
+  // This fixture exercises private delivery; normal administration uploads now
+  // default public and are covered separately by mediaLibraryJourney.
+  await page.getByLabel("Visibility", { exact: true }).selectOption("private");
+  await page
+    .getByRole("dialog", { name: "Upload images", exact: true })
+    .screenshot({ path: ".local/media-upload-dialog-desktop.png" });
+  await page
+    .getByRole("button", { name: "Upload 1 image", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Upload images", exact: true })
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Upload images", exact: true }),
+  ).toHaveCount(0);
+  const assets = (await page.request
+    .get("/api/admin/media")
+    .then((response) => response.json())) as { assets: Array<{ id: string }> };
+  const assetId = assets.assets[0].id;
+  await page.getByRole("button", { name: /^Open synthetic-club/ }).click();
   await page.getByLabel("Title", { exact: true }).fill("Synthetic club image");
   await page
     .getByLabel("Alternative text", { exact: true })
     .fill("A terracotta synthetic test image");
   await page
-    .getByRole("dialog", { name: "Upload an image", exact: true })
-    .screenshot({ path: ".local/media-upload-dialog-desktop.png" });
-  await page.getByRole("button", { name: "Upload private image" }).click();
-  await expect(
-    page.getByText("Image uploaded privately.", { exact: false }),
-  ).toBeVisible();
-  const assets = (await page.request
-    .get("/api/admin/media")
-    .then((response) => response.json())) as { assets: Array<{ id: string }> };
-  const assetId = assets.assets[0].id;
+    .getByRole("button", { name: "Save image details", exact: true })
+    .click();
+  await expect(page.getByText("Image details saved.")).toBeVisible();
   expect(
     (await publicPage.request.get(`/api/admin/media/${assetId}`)).status(),
   ).toBe(401);
@@ -323,7 +339,9 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   expect(privateImage.headers()["cache-control"]).toContain("no-store");
   expect(privateImage.headers()["content-type"]).toBe("image/webp");
   await page.getByRole("button", { name: "Close dialog" }).click();
-  await page.getByRole("button", { name: /Synthetic club image/ }).click();
+  await page
+    .getByRole("button", { name: "Open Synthetic club image", exact: true })
+    .click();
   await page
     .getByRole("combobox", { name: /Visibility/ })
     .last()
@@ -343,7 +361,7 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     name: "Choose an image",
     exact: true,
   });
-  await mediaPickerJourney(page);
+  await mediaPickerJourney(page, publicPage);
   await picker.getByRole("button", { name: /Synthetic club image/ }).click();
   await picker.screenshot({ path: ".local/media-picker-library-desktop.png" });
   await picker
@@ -687,5 +705,7 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await clubContentJourney(page, publicPage);
   await projectsJourney(page, publicPage);
   await editorWorkflowJourney(page, publicPage, origin);
+  await mediaLibraryJourney(page, publicPage, assetId);
+  await mediaGalleryJourney(page, publicPage, origin);
   await anonymousContext.close();
 });

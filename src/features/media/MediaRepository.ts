@@ -13,7 +13,7 @@ import type {
 import type { Database } from "../../infrastructure/database/client";
 import type { MediaAssetDto, MediaMetadata } from "./media_schemas";
 
-const projection = {
+export const mediaProjection = {
   id: mediaAsset.id,
   visibility: mediaAsset.visibility,
   originalName: mediaAsset.originalName,
@@ -28,7 +28,7 @@ const projection = {
   createdAt: mediaAsset.createdAt,
 };
 
-function dto(
+export function mediaAssetDto(
   row: Omit<MediaAssetDto, "createdAt" | "mimeType"> & { createdAt: Date },
 ): MediaAssetDto {
   return {
@@ -46,7 +46,7 @@ export class MediaRepository {
     publicOnly = false,
   ): Promise<MediaAssetDto[]> {
     const rows = await this.db
-      .select(projection)
+      .select(mediaProjection)
       .from(mediaAsset)
       .where(
         and(
@@ -56,7 +56,7 @@ export class MediaRepository {
       )
       .orderBy(desc(mediaAsset.createdAt))
       .limit(250);
-    return rows.map(dto);
+    return rows.map(mediaAssetDto);
   }
 
   async asset(
@@ -65,7 +65,7 @@ export class MediaRepository {
     executor: DatabaseExecutor = this.db,
   ) {
     const [row] = await executor
-      .select({ ...projection, storageKey: mediaAsset.storageKey })
+      .select({ ...mediaProjection, storageKey: mediaAsset.storageKey })
       .from(mediaAsset)
       .where(
         and(
@@ -102,8 +102,8 @@ export class MediaRepository {
     const [created] = await tx
       .insert(mediaAsset)
       .values(input)
-      .returning(projection);
-    return dto(created);
+      .returning(mediaProjection);
+    return mediaAssetDto(created);
   }
 
   async uploadReceipt(
@@ -137,7 +137,7 @@ export class MediaRepository {
     executor: DatabaseExecutor = this.db,
   ): Promise<MediaAssetDto | null> {
     const [row] = await executor
-      .select(projection)
+      .select(mediaProjection)
       .from(mediaAsset)
       .where(
         and(
@@ -146,7 +146,7 @@ export class MediaRepository {
         ),
       )
       .limit(1);
-    return row ? dto(row) : null;
+    return row ? mediaAssetDto(row) : null;
   }
 
   async update(
@@ -164,8 +164,40 @@ export class MediaRepository {
           eq(mediaAsset.organizationId, organizationId),
         ),
       )
-      .returning(projection);
-    return dto(updated);
+      .returning(mediaProjection);
+    return mediaAssetDto(updated);
+  }
+
+  async batchAssets(ids: string[], organizationId: string, tx: Transaction) {
+    const rows = await tx.select({ ...mediaProjection, storageKey: mediaAsset.storageKey })
+      .from(mediaAsset).where(and(
+        eq(mediaAsset.organizationId, organizationId), inArray(mediaAsset.id, ids),
+      ));
+    return rows.map((row) => ({ ...mediaAssetDto(row), storageKey: row.storageKey }));
+  }
+
+  async usedAssetIds(ids: string[], organizationId: string, tx: Transaction, publishedOnly = false) {
+    const rows = await tx.selectDistinct({ id: mediaUsage.assetId }).from(mediaUsage)
+      .where(and(eq(mediaUsage.organizationId, organizationId), inArray(mediaUsage.assetId, ids),
+        publishedOnly ? eq(mediaUsage.published, true) : undefined));
+    return new Set(rows.map((row) => row.id));
+  }
+
+  async updateSelection(
+    ids: string[], organizationId: string,
+    values: Partial<MediaMetadata> & { visibility?: "private" | "public" }, tx: Transaction,
+  ) {
+    if (!ids.length) return [];
+    const rows = await tx.update(mediaAsset).set({ ...values, updatedAt: new Date() })
+      .where(and(eq(mediaAsset.organizationId, organizationId), inArray(mediaAsset.id, ids)))
+      .returning(mediaProjection);
+    return rows.map(mediaAssetDto);
+  }
+
+  async deleteSelection(ids: string[], organizationId: string, tx: Transaction) {
+    await tx.delete(mediaAsset).where(and(
+      eq(mediaAsset.organizationId, organizationId), inArray(mediaAsset.id, ids),
+    ));
   }
 
   async delete(

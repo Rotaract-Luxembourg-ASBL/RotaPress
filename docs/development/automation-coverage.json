@@ -95,7 +95,7 @@
       "media_metadata_save",
       "media_publish"
     ],
-    "manual": "New uploads are private. Image pixels need an explicit inspection scope. Publishing 1-50 exact reviewed images requires media:publish, explicit intent, confirmed=true and current metadata fingerprints; the atomic batch changes visibility only and never publishes dependencies. Hiding images, deletion, file replacement and public-image metadata edits remain manual."
+    "manual": "REST/MCP uploads and source imports stay private; administration uploads default public with an explicit private option. Image pixels need an explicit inspection scope. Publishing 1-50 exact reviewed images requires media:publish, explicit intent, confirmed=true and current metadata fingerprints; the atomic batch changes visibility only and never publishes dependencies. Administration bulk hiding/deletion, collection/tag replacements, image transformations and public-image metadata edits remain manual because existing write/publication grants do not authorize those effects."
   },
   "features/members": {
     "operations": [],

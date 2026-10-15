@@ -17,8 +17,8 @@ test external provider connections. See [website editing](../guides/cms-and-medi
 Native photograph sections support canvas-bounded website width, taller hero
 photos and overlaid copy panels, photo-background feature sections, and manually
 controlled multi-photo strips. Older saved blocks keep their existing layout.
-These use the shared editor, media references and publication checks; they do not
-make uploaded images public automatically.
+These use the shared editor, media references and publication checks; selecting an
+image in a block never changes its saved visibility.
 
 Projects provides a simple showcase for volunteer actions and community
 initiatives, with private drafts, reviewed publication, reversible archival,
@@ -36,9 +36,20 @@ See [website/media](../guides/cms-and-media.md) and
 
 Administration uses compact collection summaries and an action-focused Overview
 with review queues, recent drafts and upcoming events. Branding has focused editing
-tabs with visible save state, media uses thumbnail selection and previewed uploads,
-and Response center keeps secondary filters collapsed. These workflows reuse current
-authorization, private-media and deliberate-publication boundaries. See
+tabs with visible save state, and Response center keeps secondary filters collapsed.
+Media provides grid/list browsing, server-filtered pages, multiple-file uploads,
+attachment details and exact selected batches for visibility, tags, collections
+and protected deletion. Bounded thumbnails reduce library downloads; photograph
+editing can crop, rotate, flip and downscale into a separate saved copy with
+unfinished-edit undo/redo. Native Gallery blocks have a shared multi-image composer
+with ordering, captions and alternative text, preserving existing block fields.
+Single-image and gallery popups also expose selected library-management batches
+with preserved insertion/composition state and recoverable stale edits.
+Event-scoped pickers retain their approved public collection without management
+actions. Administration uploads default public with an explicit private choice;
+existing images keep their saved visibility. Automation uploads
+remain private and require the existing separate reviewed-publication grant.
+These workflows reuse current authorization and retained-reference protection. See
 [administration workspaces](admin-workspaces.md) for count scope and interaction rules.
 
 The repository supplies local setup and a portable Docker hosting assistant with

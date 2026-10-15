@@ -18,6 +18,7 @@ import {
   TeamBlock,
 } from "./block-renderers";
 import { RichTextEditorPreview } from "./rich-text-preview";
+import { galleryItemsField } from "./gallery-field";
 import {
   aspectRatioField,
   assetField,
@@ -305,18 +306,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
           ],
         },
         aspectRatio: aspectRatioField,
-        items: {
-          type: "array",
-          label: "Images",
-          max: 30,
-          arrayFields: {
-            assetId: assetField,
-            alt: { type: "text", label: "Alternative text" },
-            caption: { type: "text", label: "Caption" },
-          },
-          defaultItemProps: { assetId: "", alt: "" },
-          getItemSummary: (item) => item.alt || "Image",
-        },
+        items: galleryItemsField,
       },
       defaultProps: {
         version,

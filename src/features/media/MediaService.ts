@@ -13,7 +13,10 @@ import type { Database } from "../../infrastructure/database/client";
 import type { StorageDriver } from "../../infrastructure/storage/LocalStorageDriver";
 import { prepareImage } from "./image_processing";
 import { MediaRepository } from "./MediaRepository";
+import { MediaAdminRepository } from "./MediaAdminRepository";
+import { MediaBatchService } from "./MediaBatchService";
 import {
+  mediaAdminListSchema,
   mediaMetadataSchema,
   mediaUpdateSchema,
   type MediaAssetDto,
@@ -55,10 +58,16 @@ const referencesSchema = z
   .array(z.uuid())
   .max(500)
   .transform((ids) => [...new Set(ids)]);
+const sourceReviewSchema = z.strictObject({
+  id: z.uuid(), expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+});
+type MediaSourceReview = z.infer<typeof sourceReviewSchema>;
 
 export class MediaService {
   private readonly repository: MediaRepository;
   private readonly audit = new AuditRepository();
+  private readonly administration: MediaAdminRepository;
+  private readonly batches: MediaBatchService;
 
   constructor(
     private readonly db: Database,
@@ -66,6 +75,21 @@ export class MediaService {
     private readonly storage: StorageDriver,
   ) {
     this.repository = new MediaRepository(db);
+    this.administration = new MediaAdminRepository(db);
+    this.batches = new MediaBatchService(db, authorization, this.repository, this.audit, storage);
+  }
+
+  async adminList(actor: TrustedActor, input: unknown) {
+    const scope = await this.authorization.require(actor, "media.manage");
+    return this.administration.list(scope.organizationId, mediaAdminListSchema.parse(input));
+  }
+
+  async updateBatch(actor: TrustedActor, input: unknown) {
+    return this.batches.update(actor, input);
+  }
+
+  async deleteBatch(actor: TrustedActor, input: unknown) {
+    return this.batches.delete(actor, input);
   }
 
   async list(actor: TrustedActor): Promise<MediaAssetDto[]> {
@@ -104,6 +128,31 @@ export class MediaService {
     input: unknown,
     reauthorize?: () => Promise<void>,
   ): Promise<MediaAssetDto> {
+    return this.uploadPrepared(actor, input, "private", reauthorize);
+  }
+
+  /** Staff uploads are public by default; delegated draft uploads keep their separate private boundary. */
+  async uploadFromAdministration(
+    actor: TrustedActor,
+    input: unknown,
+    reauthorize?: () => Promise<void>,
+    sourceReview?: MediaSourceReview,
+  ): Promise<MediaAssetDto> {
+    await this.authorization.require(actor, "media.manage");
+    const { visibility, ...values } = uploadSchema.extend({
+      visibility: z.enum(["private", "public"]).default("public"),
+    }).strict().parse(input);
+    return this.uploadPrepared(actor, values, visibility, reauthorize,
+      sourceReview ? sourceReviewSchema.parse(sourceReview) : undefined);
+  }
+
+  private async uploadPrepared(
+    actor: TrustedActor,
+    input: unknown,
+    visibility: "private" | "public",
+    reauthorize?: () => Promise<void>,
+    sourceReview?: MediaSourceReview,
+  ): Promise<MediaAssetDto> {
     await this.authorization.require(actor, "media.manage");
     const { bytes, filename, requestId, sourceFingerprint, ...metadata } =
       uploadSchema.parse(input);
@@ -112,6 +161,8 @@ export class MediaService {
         JSON.stringify({
           filename,
           ...metadata,
+          ...(visibility === "public" ? { visibility } : {}),
+          ...(sourceReview ? { sourceReview } : {}),
           ...(sourceFingerprint ? { sourceFingerprint } : {}),
         }),
       )
@@ -124,6 +175,14 @@ export class MediaService {
       const result = await this.db.transaction(async (tx) => {
         // Reload authority after expensive decoding; a concurrent suspension wins.
         const scope = await this.authorization.lock(actor, "media.manage", tx);
+        if (sourceReview) {
+          const source = await this.repository.details(sourceReview.id, scope.organizationId, tx);
+          if (!source) throw this.unavailable();
+          if (mediaMetadataRevision(source) !== sourceReview.expectedRevision) {
+            throw new DomainError("MEDIA_METADATA_CHANGED",
+              "The original image changed. Refresh the gallery and review it before creating an edited copy.", 409);
+          }
+        }
         if (requestId) {
           const previous = await this.repository.uploadReceipt(
             scope.organizationId,
@@ -160,7 +219,7 @@ export class MediaService {
             size: image.bytes.length,
             width: image.width,
             height: image.height,
-            visibility: "private",
+            visibility,
           },
           tx,
         );
@@ -249,11 +308,15 @@ export class MediaService {
   }
 
   async update(actor: TrustedActor, input: unknown): Promise<MediaAssetDto> {
-    const { id, ...values } = mediaUpdateSchema.parse(input);
+    const { id, expectedRevision, ...values } = mediaUpdateSchema.parse(input);
     return this.db.transaction(async (tx) => {
       const scope = await this.authorization.lock(actor, "media.manage", tx);
       const asset = await this.repository.asset(id, scope.organizationId, tx);
       if (!asset) throw this.unavailable();
+      if (expectedRevision && mediaMetadataRevision(asset) !== expectedRevision) {
+        throw new DomainError("MEDIA_METADATA_CHANGED",
+          "This image changed. Refresh the gallery and review it before saving.", 409);
+      }
       if (
         values.visibility === "private" &&
         (await this.repository.used(id, scope.organizationId, tx, true))

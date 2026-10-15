@@ -49,7 +49,7 @@ underlying collection. Counts must follow the same authorization as the records.
 | Community directory | Counts follow the selected category. Published profiles can be selected in blocks. Placement counts describe existing published placements. Unpublished changes are saved edits to a published profile. |
 | Members             | Approved, pending and inactive memberships are separate from staff roles. Access changes retain the existing authorized review.                                                                         |
 | Website             | Counts follow the selected collection and language. Published includes pages with unpublished edits.                                                                                                    |
-| Media               | Public/private counts reflect asset visibility; uploading still starts private.                                                                                                                         |
+| Media               | Public/private counts reflect visibility; administration uploads default to public.                                                                                                                         |
 | Response center     | Counts cover all matching result pages, including form, status, search and date filters. People are grouped only from the current result page.                                                          |
 | Integrations        | Enabled/disabled counts describe built-in features, not successful provider delivery or live-provider verification.                                                                                     |
 

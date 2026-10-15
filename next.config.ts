@@ -30,6 +30,16 @@ const config: NextConfig = {
           },
         ],
       },
+      // File selection previews use browser-local object URLs in administration.
+      {
+        source: "/admin/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: `${policy.replace("img-src 'self' data:", "img-src 'self' data: blob:")}; frame-ancestors 'none'`,
+          },
+        ],
+      },
       // Only authorized preview documents may appear inside the same-origin editor.
       // Session, current scope and expiry checks still run on every preview request.
       {

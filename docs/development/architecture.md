@@ -119,8 +119,10 @@ revision creates a draft; it does not republish. Public readers project publishe
 fields only, while private previews require current authorization and avoid shared
 caching. Event pages reuse the CMS schema, renderer and revision services.
 
-Uploaded images start private, are validated and normalized, and live outside
-the web root. Publication checks ownership and deliberate public visibility.
+Images uploaded through the administration library default to public, with an
+explicit Private option. Automation uploads remain private under their existing
+write grant. Images are validated, normalized and stored outside the web root.
+Publication checks ownership and public visibility.
 Automation can publish 1–50 exact reviewed images through a separate grant,
 confirmation and current metadata fingerprints in one authorized transaction.
 Content publication never changes its dependencies' visibility automatically.
