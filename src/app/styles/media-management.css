@@ -129,6 +129,17 @@
   color: var(--muted);
   font-size: 13px;
 }
+.media-bulk-workspace > .notice {
+  margin: 12px;
+}
+.media-bulk-explanation {
+  padding: 10px 12px;
+  margin: 0;
+}
+.media-browser > .media-bulk-workspace,
+.media-gallery-library > .media-bulk-workspace {
+  margin-bottom: 16px;
+}
 .media-bulk-toolbar .inline-button {
   min-height: 36px;
 }

@@ -208,20 +208,41 @@ and **Next image**, or the arrow keys outside text fields, move through the curr
 page of results. **Copy URL** and **Download image** make the saved file easy to
 reuse. Unsaved edits are preserved until you deliberately discard them.
 
-Use image checkboxes to select several images, or **Select all shown** for the
-current page. Shift-click selects a range on that page. **Clear selection** starts
+In **Media library**, choose **Bulk select**, then click photo thumbnails or their
+checkboxes to select several images. **Select all shown** selects the current
+page. Shift-click a checkbox to select a range on that page. **Clear selection** starts
 again. Selection remains visible while you change filters or pages. Choose
 **Make public**, **Make private**, **Edit selected** to replace tags or collection,
 or **Delete permanently** for unreferenced images. A batch includes at most
 **250 images**. The server checks every image's current saved state and permissions
-before committing any
-change. A changed, unavailable or protected image rejects the entire batch; keep
+before committing any change. A changed, unavailable or protected image rejects the entire batch; keep
 the selection, use **Refresh selected images** and resolve the reported issue
 before retrying.
+Successful batches return the main library to browsing; **Edit** still opens an
+individual image's details. **Done selecting** leaves bulk selection without
+changing the library images.
 
 In the image picker, **Media library** shows searchable thumbnails and the selected
 image with its attachment details. **Insert image** or **Replace image** confirms
 the selection. Switching between library and upload preserves an unfinished upload.
+
+Use **Bulk select** inside the picker to manage several library images without
+leaving the page editor. Choose images with their checkboxes, then use **Make
+public**, **Make private**, **Edit selected** or **Delete permanently**. Search and
+page changes keep the selected batch. These actions save library changes
+immediately; they do not insert several images into a single-image field or save
+the page draft. **Done selecting** returns to image insertion and retains the
+image you were choosing before entering bulk selection.
+
+In image and gallery popups, changing tabs also ends bulk selection and clears
+its selected batch. Saved library changes and the image or gallery draft you
+were preparing are kept. This applies to mouse and keyboard tab changes.
+
+If another editor changes a selected image, the entire batch is rejected and your
+selection is kept. In **Edit selected images**, **Refresh selected images** loads
+the current saved versions while preserving the collection and tags you entered.
+Review the selection and retry. Event-scoped pickers show their approved public
+image collection; they do not offer uploads or library-management actions.
 
 ### Create or edit a gallery
 
@@ -237,6 +258,11 @@ Edit its caption and alternative text, or remove it from this gallery.
 These text changes belong to the block and do not overwrite the library metadata.
 Event managers choose from their event-approved image collection; club media
 managers maintain the uploads.
+
+The gallery's **Media library** also has **Bulk select** for managing library
+visibility, tags, collections and deletion. This management selection is separate
+from the photographs included in your gallery. **Done selecting** returns to
+gallery composition, preserving its order, captions and alternative text.
 
 **Insert gallery** or **Update gallery** applies the selection to the current
 block. **Save draft** keeps the page changes; page publication remains separate.

@@ -16,6 +16,7 @@ import {
 import { MediaUpload, canDiscard } from "./media-editors";
 import { MediaGalleryItems, type GalleryDraft } from "./media-gallery-items";
 import { useMediaResource } from "./media-resource";
+import { MediaBulkActions, useMediaBulkActions } from "./media-bulk-actions";
 import { useMediaPickerEvent } from "./media-picker-scope";
 import { Loading, Notice } from "./primitives";
 import { Icon } from "./icon";
@@ -56,7 +57,9 @@ export function MediaGalleryDialog({
   const [page, setPage] = useState(1);
   const [dirty, setDirty] = useState(false);
   const [uploadDirty, setUploadDirty] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [removedIds, setRemovedIds] = useState(new Set<string>());
   const [message, setMessage] = useState("");
   const [uploadedIds, setUploadedIds] = useState(new Set<string>());
   const params = new URLSearchParams({
@@ -71,7 +74,41 @@ export function MediaGalleryDialog({
       ? `/api/admin/events/${eventId}/media`
       : `/api/admin/media?${params}`,
   );
-  const filtered = filterAssets(data?.assets ?? [], query, visibility);
+  const bulk = useMediaBulkActions({
+    enabled: !eventId,
+    onUpdated: (assets) => {
+      const updates = new Map(assets.map((asset) => [asset.id, asset]));
+      setDraft((current) =>
+        current.map((item) => {
+          const asset = updates.get(item.assetId);
+          return asset
+            ? {
+                ...item,
+                title: asset.title || asset.originalName,
+                visibility: asset.visibility,
+              }
+            : item;
+        }),
+      );
+    },
+    onDeleted: (ids) => {
+      setRemovedIds((current) => new Set([...current, ...ids]));
+      if (draft.some((item) => ids.includes(item.assetId))) setDirty(true);
+      setDraft((current) =>
+        current.filter((item) => !ids.includes(item.assetId)),
+      );
+      setUploadedIds(
+        (current) => new Set([...current].filter((id) => !ids.includes(id))),
+      );
+    },
+    onRefresh: refresh,
+  });
+  const busy = uploadBusy || bulk.busy;
+  const filtered = filterAssets(
+    (data?.assets ?? []).filter((asset) => !removedIds.has(asset.id)),
+    query,
+    visibility,
+  );
   const currentPage = data?.page ?? page;
   const selectedIds = new Set(draft.map((item) => item.assetId));
   const selectedUploads = [...uploadedIds].filter((id) =>
@@ -145,7 +182,12 @@ export function MediaGalleryDialog({
       setMessage(`Gallery limit reached: ${MAX_GALLERY_IMAGES} images.`);
   }
   function changeTab(next: GalleryTab) {
-    if (!busy) setTab(next);
+    if (busy) return;
+    if (next !== tab && bulkMode) {
+      bulk.clear();
+      setBulkMode(false);
+    }
+    setTab(next);
   }
   function tabsKey(event: KeyboardEvent<HTMLButtonElement>) {
     if (busy || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
@@ -159,7 +201,7 @@ export function MediaGalleryDialog({
           ? tabs.length - 1
           : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) %
             tabs.length;
-    setTab(tabs[next].id);
+    changeTab(tabs[next].id);
     event.currentTarget.parentElement
       ?.querySelector<HTMLButtonElement>(
         `[data-gallery-tab="${tabs[next].id}"]`,
@@ -184,6 +226,7 @@ export function MediaGalleryDialog({
       className="media-dialog media-gallery-dialog"
       aria-labelledby={`${prefix}-title`}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         dismiss();
       }}
@@ -249,6 +292,22 @@ export function MediaGalleryDialog({
               </Notice>
             )}
             {message && <Notice>{message}</Notice>}
+            {!eventId && (
+              <MediaBulkActions
+                bulk={bulk}
+                assets={filtered}
+                mode={bulkMode}
+                onMode={(next) => {
+                  if (!busy) {
+                    if (!next) bulk.clear();
+                    setBulkMode(next);
+                  }
+                }}
+                disabled={uploadBusy || loading || Boolean(error)}
+                description="Bulk selection manages library images. Your gallery order, captions and alternative text are kept."
+                active={tab === "library"}
+              />
+            )}
             <MediaFilters
               query={query}
               visibility={visibility}
@@ -287,19 +346,21 @@ export function MediaGalleryDialog({
                   ? "Loading images…"
                   : `${filtered.length} shown${data?.total !== undefined ? ` of ${data.total} matching images` : " images"}`}
               </p>
-              <button
-                type="button"
-                className="button button-outline button-small"
-                disabled={
-                  busy ||
-                  loading ||
-                  !filtered.length ||
-                  draft.length >= MAX_GALLERY_IMAGES
-                }
-                onClick={selectShown}
-              >
-                Select all shown
-              </button>
+              {!bulkMode && (
+                <button
+                  type="button"
+                  className="button button-outline button-small"
+                  disabled={
+                    busy ||
+                    loading ||
+                    !filtered.length ||
+                    draft.length >= MAX_GALLERY_IMAGES
+                  }
+                  onClick={selectShown}
+                >
+                  Select all shown
+                </button>
+              )}
             </div>
             {(query || visibility !== "all" || collection) && (
               <button
@@ -318,9 +379,15 @@ export function MediaGalleryDialog({
             {data ? (
               <AssetGrid
                 assets={filtered}
-                onSelect={choose}
-                onToggle={(asset) => choose(asset)}
-                selectedIds={selectedIds}
+                onSelect={
+                  bulkMode ? (asset) => bulk.toggle(asset, filtered) : choose
+                }
+                onToggle={
+                  bulkMode
+                    ? (asset, range) => bulk.toggle(asset, filtered, range)
+                    : (asset) => choose(asset)
+                }
+                selectedIds={bulkMode ? bulk.selectedIds : selectedIds}
                 disabled={busy || loading}
                 emptyMessage={
                   eventId
@@ -370,7 +437,7 @@ export function MediaGalleryDialog({
               </p>
               <MediaUpload
                 multiple
-                onBusy={setBusy}
+                onBusy={setUploadBusy}
                 onDirty={setUploadDirty}
                 onUploaded={(asset) => {
                   setUploadedIds((current) => new Set([...current, asset.id]));
@@ -428,6 +495,9 @@ export function MediaGalleryDialog({
               {draft.length} of {MAX_GALLERY_IMAGES} images selected
             </strong>
             <span>
+              {bulkMode
+                ? "Choose Done selecting to return to gallery insertion. "
+                : ""}
               {dirty
                 ? "Unsaved gallery changes."
                 : "Your existing gallery is kept until you update it."}{" "}
@@ -450,7 +520,7 @@ export function MediaGalleryDialog({
             <button
               type="button"
               className="button button-accent"
-              disabled={busy || (!draft.length && !items.length)}
+              disabled={busy || bulkMode || (!draft.length && !items.length)}
               onClick={insert}
             >
               {items.length ? "Update gallery" : "Insert gallery"}

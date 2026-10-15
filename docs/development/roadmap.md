@@ -43,8 +43,11 @@ and protected deletion. Bounded thumbnails reduce library downloads; photograph
 editing can crop, rotate, flip and downscale into a separate saved copy with
 unfinished-edit undo/redo. Native Gallery blocks have a shared multi-image composer
 with ordering, captions and alternative text, preserving existing block fields.
-Administration uploads default public with an explicit
-private choice; existing images keep their saved visibility. Automation uploads
+Single-image and gallery popups also expose selected library-management batches
+with preserved insertion/composition state and recoverable stale edits.
+Event-scoped pickers retain their approved public collection without management
+actions. Administration uploads default public with an explicit private choice;
+existing images keep their saved visibility. Automation uploads
 remain private and require the existing separate reviewed-publication grant.
 These workflows reuse current authorization and retained-reference protection. See
 [administration workspaces](admin-workspaces.md) for count scope and interaction rules.

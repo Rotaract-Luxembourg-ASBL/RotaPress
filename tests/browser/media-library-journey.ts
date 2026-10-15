@@ -35,6 +35,11 @@ export async function mediaLibraryJourney(
     return ((await response.json()) as { assets: AdminMediaAssetDto[] }).assets;
   }
   async function selectShown() {
+    const start = page.getByRole("button", {
+      name: "Bulk select",
+      exact: true,
+    });
+    if (await start.isVisible()) await start.click();
     const clear = page.getByRole("button", {
       name: "Clear selection",
       exact: true,
@@ -140,13 +145,17 @@ export async function mediaLibraryJourney(
   await page.getByRole("button", { name: "Grid view", exact: true }).click();
   await expect(page.locator(".media-list")).toHaveCount(0);
 
-  // Selection includes exactly the chosen files while filters change around it.
+  // Bulk select changes thumbnail clicks into selection, while Edit stays explicit.
+  await page.getByRole("button", { name: "Bulk select", exact: true }).click();
   for (const color of ["red", "green", "blue"]) {
     await search.fill(`bulk-${color}`);
     await page
-      .getByRole("checkbox", { name: `Select bulk-${color}`, exact: true })
-      .check();
+      .getByRole("button", { name: `Open bulk-${color}`, exact: true })
+      .click();
   }
+  await expect(
+    page.getByRole("dialog", { name: "Image details", exact: true }),
+  ).toHaveCount(0);
   await search.fill("bulk-");
   for (const color of ["red", "green", "blue"])
     await expect(
@@ -168,9 +177,26 @@ export async function mediaLibraryJourney(
     fullPage: true,
     mask: [page.locator(".admin-account")],
   });
+  await page.setViewportSize({ width: 320, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Make public", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: ".local/media-library-bulk-phone-320.png",
+    fullPage: true,
+    mask: [page.locator(".admin-account")],
+  });
   if (viewport) await page.setViewportSize(viewport);
   await page.getByRole("button", { name: "Make private", exact: true }).click();
   await expectVisibility("private");
+  await expect(
+    page.getByRole("button", { name: "Bulk select", exact: true }),
+  ).toBeFocused();
   for (const asset of uploaded)
     expect((await publicPage.request.get(`/media/${asset.id}`)).status()).toBe(
       404,
@@ -318,6 +344,7 @@ export async function mediaLibraryJourney(
 
   // A live/retained image is protected for the whole chosen batch.
   await search.fill("Synthetic club image");
+  await page.getByRole("button", { name: "Bulk select", exact: true }).click();
   await page
     .getByRole("checkbox", { name: "Select Synthetic club image", exact: true })
     .check();

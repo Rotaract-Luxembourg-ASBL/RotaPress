@@ -240,7 +240,7 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
       .locator("header")
       .getByRole("link", { name: "About our club", exact: true }),
   ).toBeVisible();
-  await expect(draftPreview.locator("footer")).toContainText(
+  await expect(draftPreview.getByRole("contentinfo")).toContainText(
     "Synthetic complete website footer",
   );
   await draftPreview.close();
@@ -310,7 +310,7 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
       .locator("header")
       .getByRole("link", { name: "About our club", exact: true }),
   ).toBeVisible();
-  await expect(visitor.locator("footer")).toContainText(
+  await expect(visitor.getByRole("contentinfo")).toContainText(
     "Synthetic complete website footer",
   );
   const published = await workspace();

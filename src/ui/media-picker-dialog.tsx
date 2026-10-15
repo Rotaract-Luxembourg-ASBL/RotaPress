@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
 import { useResource } from "./api";
 import { useMediaResource } from "./media-resource";
+import { MediaBulkActions, useMediaBulkActions } from "./media-bulk-actions";
 import { Loading, Notice } from "./primitives";
 import { Icon } from "./icon";
 import { useMediaPickerEvent } from "./media-picker-scope";
@@ -69,20 +70,51 @@ export function MediaPickerDialog({
   const [detailsBusy, setDetailsBusy] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const busy = detailsBusy || uploadBusy;
+  const [bulkMode, setBulkMode] = useState(false);
+  const [removedIds, setRemovedIds] = useState(new Set<string>());
+  const bulk = useMediaBulkActions({
+    enabled: !eventId,
+    onUpdated: (assets) => {
+      const updated = assets.find((asset) => asset.id === selectedId);
+      if (updated) setUpdatedAsset(updated);
+    },
+    onDeleted: (ids) => {
+      setRemovedIds((current) => new Set([...current, ...ids]));
+      ids.forEach(onRemoved);
+      if (ids.includes(selectedId)) {
+        setSelectedId("");
+        setUpdatedAsset(undefined);
+        setEditorId(undefined);
+        setEditing(false);
+        setDetailsDirty(false);
+      }
+    },
+    onRefresh: refresh,
+  });
+  const busy = detailsBusy || uploadBusy || bulk.busy;
   const selected =
     updatedAsset?.id === selectedId
       ? updatedAsset
       : (data?.assets.find((asset) => asset.id === selectedId) ??
         (linked.data?.asset.id === selectedId ? linked.data.asset : undefined));
   const assets =
-    data?.assets.map((asset) =>
-      asset.id === updatedAsset?.id ? updatedAsset : asset,
-    ) ?? [];
+    data?.assets
+      .filter((asset) => !removedIds.has(asset.id))
+      .map((asset) => (asset.id === updatedAsset?.id ? updatedAsset : asset)) ??
+    [];
   if (updatedAsset && !assets.some((asset) => asset.id === updatedAsset.id))
     assets.unshift(updatedAsset);
   const filtered = filterAssets(assets, query, visibility);
   const currentPage = data?.page ?? page;
+  function changeBulkMode(next: boolean) {
+    if (busy || (next && !canDiscard(detailsDirty))) return;
+    if (next) {
+      setDetailsDirty(false);
+      setEditorId(undefined);
+      setEditing(false);
+    } else bulk.clear();
+    setBulkMode(next);
+  }
 
   useEffect(() => {
     const element = dialog.current;
@@ -121,6 +153,10 @@ export function MediaPickerDialog({
 
   function changeTab(next: "library" | "upload") {
     if (busy || (next === "upload" && !canDiscard(detailsDirty))) return false;
+    if (next !== tab && bulkMode) {
+      bulk.clear();
+      setBulkMode(false);
+    }
     if (next === "upload") {
       setDetailsDirty(false);
       setEditorId(undefined);
@@ -157,6 +193,7 @@ export function MediaPickerDialog({
       className="media-dialog"
       aria-labelledby={`${prefix}-title`}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         dismiss();
       }}
@@ -204,7 +241,7 @@ export function MediaPickerDialog({
         </div>
         <div className="media-dialog-content">
           <div
-            className={`media-dialog-body${selected && !editing ? " has-selection" : ""}`}
+            className={`media-dialog-body${selected && !editing && !bulkMode ? " has-selection" : ""}`}
             role="tabpanel"
             id={`${prefix}-library-panel`}
             aria-labelledby={`${prefix}-library-tab`}
@@ -228,6 +265,19 @@ export function MediaPickerDialog({
                 </Notice>
               )}
               {message && <Notice kind="success">{message}</Notice>}
+              {!eventId && (
+                <MediaBulkActions
+                  bulk={bulk}
+                  assets={filtered}
+                  mode={bulkMode}
+                  onMode={changeBulkMode}
+                  disabled={
+                    detailsBusy || uploadBusy || loading || Boolean(error)
+                  }
+                  description="Bulk selection manages library images. Your image chosen for insertion is kept."
+                  active={tab === "library"}
+                />
+              )}
               <MediaFilters
                 query={query}
                 visibility={visibility}
@@ -267,8 +317,16 @@ export function MediaPickerDialog({
               {data ? (
                 <AssetGrid
                   assets={filtered}
-                  onSelect={choose}
-                  selectedId={selectedId}
+                  onSelect={
+                    bulkMode ? (asset) => bulk.toggle(asset, filtered) : choose
+                  }
+                  selectedId={bulkMode ? undefined : selectedId}
+                  selectedIds={bulkMode ? bulk.selectedIds : undefined}
+                  onToggle={
+                    bulkMode
+                      ? (asset, range) => bulk.toggle(asset, filtered, range)
+                      : undefined
+                  }
                   disabled={busy || loading || Boolean(error)}
                   emptyMessage={
                     query || visibility !== "all"
@@ -309,7 +367,7 @@ export function MediaPickerDialog({
               <aside
                 className="media-inspector"
                 aria-label="Selected image"
-                hidden={editing}
+                hidden={editing || bulkMode}
               >
                 <Image
                   className="media-selected-image"
@@ -385,12 +443,17 @@ export function MediaPickerDialog({
                   onDirty={setDetailsDirty}
                   onBusy={setDetailsBusy}
                   onChanged={(asset) => {
+                    bulk.sync([asset]);
                     setSelectedId(asset.id);
                     setEditorId(asset.id);
                     setUpdatedAsset(asset);
                     refresh();
                   }}
                   onDeleted={() => {
+                    bulk.forget([selected.id]);
+                    setRemovedIds(
+                      (current) => new Set([...current, selected.id]),
+                    );
                     onRemoved(selected.id);
                     setSelectedId("");
                     setUpdatedAsset(undefined);
@@ -444,11 +507,13 @@ export function MediaPickerDialog({
             <span>
               {tab === "upload"
                 ? "New uploads are public by default. Choose Private when needed."
-                : detailsDirty
-                  ? "Save the image details to continue."
-                  : selected
-                    ? "Insert adds this image to your current draft."
-                    : "Choose an image to use in your draft."}
+                : bulkMode
+                  ? "Choose Done selecting to return to image insertion."
+                  : detailsDirty
+                    ? "Save the image details to continue."
+                    : selected
+                      ? "Insert adds this image to your current draft."
+                      : "Choose an image to use in your draft."}
             </span>
           </div>
           <div className="media-footer-actions">
@@ -465,7 +530,7 @@ export function MediaPickerDialog({
                 ref={insertButton}
                 type="button"
                 className="button button-accent button-small"
-                disabled={!selected || detailsDirty || busy}
+                disabled={!selected || detailsDirty || busy || bulkMode}
                 onClick={() => {
                   if (!selected || !canDiscard(uploadDirty)) return;
                   dialog.current?.close();

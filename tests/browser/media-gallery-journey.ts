@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import type { CmsDetail } from "../../src/features/cms/cms_schemas";
+import { mediaGalleryManagementJourney } from "./media-gallery-management-journey";
 
 /** B02: native multi-photo gallery composition retains order and captions after saving. */
 export async function mediaGalleryJourney(
@@ -68,6 +69,7 @@ export async function mediaGalleryJourney(
   await expect(
     gallery.getByLabel("Caption for image 1", { exact: true }),
   ).toHaveValue("Private photo caption");
+  await mediaGalleryManagementJourney(page, visitor, gallery);
   await gallery.screenshot({
     path: ".local/media-gallery-composer-desktop.png",
   });

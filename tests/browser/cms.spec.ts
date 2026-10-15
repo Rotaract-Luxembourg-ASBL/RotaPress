@@ -361,7 +361,7 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     name: "Choose an image",
     exact: true,
   });
-  await mediaPickerJourney(page);
+  await mediaPickerJourney(page, publicPage);
   await picker.getByRole("button", { name: /Synthetic club image/ }).click();
   await picker.screenshot({ path: ".local/media-picker-library-desktop.png" });
   await picker
