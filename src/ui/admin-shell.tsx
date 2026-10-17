@@ -11,10 +11,13 @@ import {
 } from "react";
 import { en } from "@/locales/en";
 import { type CurrentUser, useResource } from "./api";
-import { Icon, type IconName } from "./icon";
+import { Icon } from "./icon";
 import { Arrow, Brand, Loading, Notice } from "./primitives";
 import { AdminAccountMenu } from "./admin-account-menu";
 import { Dialog } from "./dialog";
+import { adminCommands, adminDestinations } from "./admin-navigation";
+import { AdminCommandLauncher } from "./admin-command-launcher";
+import { useCollectionPosition } from "./collection-position";
 import {
   featureCatalogue,
   type FeatureKey,
@@ -37,6 +40,7 @@ export function AdminShell({
   brand: ReactNode;
 }) {
   const pathname = usePathname();
+  useCollectionPosition();
   const router = useRouter();
   const { data: me, error, refresh } = useResource<CurrentUser>("/api/me");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,85 +100,8 @@ export function AdminShell({
   if (pathname === "/admin/integrations/automation/authorize")
     return <UserContext.Provider value={me}>{children}</UserContext.Provider>;
 
-  const links = [
-    {
-      href: "/admin",
-      label: en.admin.overview,
-      icon: "overview",
-      visible: true,
-    },
-    {
-      href: "/admin/website",
-      label: "Website",
-      icon: "website",
-      visible: me.capabilities.includes("cms.edit"),
-    },
-    {
-      href: "/admin/media",
-      label: "Media",
-      icon: "image",
-      visible: me.capabilities.includes("media.manage"),
-    },
-    {
-      href: "/admin/events",
-      label: "Events",
-      icon: "calendar",
-      visible: me.capabilities.includes("events.access"),
-    },
-    {
-      href: "/admin/projects",
-      label: "Projects",
-      icon: "outline",
-      visible: me.capabilities.includes("cms.edit"),
-    },
-    {
-      href: "/admin/forms",
-      label: "Forms",
-      icon: "forms",
-      visible: me.capabilities.includes("forms.edit"),
-    },
-    {
-      href: "/admin/calendar",
-      label: "Calendar",
-      icon: "calendar",
-      visible: me.capabilities.includes("calendar.manage"),
-    },
-    {
-      href: "/admin/partners",
-      label: "Community directory",
-      icon: "members",
-      visible: me.capabilities.includes("cms.edit"),
-    },
-    {
-      href: "/admin/inbox",
-      label: "Response center",
-      icon: "members",
-      visible:
-        me.features.forms &&
-        (me.capabilities.includes("submissions.read") ||
-          me.capabilities.includes("events.responses.access")),
-    },
-    {
-      href: "/admin/members",
-      label: en.admin.members,
-      icon: "members",
-      visible:
-        me.capabilities.includes("members.review") ||
-        me.capabilities.includes("members.manage"),
-    },
-    {
-      href: "/admin/integrations",
-      label: "Integrations",
-      icon: "settings",
-      visible: me.capabilities.includes("integrations.manage"),
-    },
-    {
-      href: "/admin/settings",
-      label: en.admin.settings,
-      icon: "controls",
-      visible: me.capabilities.includes("settings.manage"),
-    },
-  ].filter((link) => link.visible);
+  const links = adminDestinations(me);
+  const commands = adminCommands(me);
   const active = (href: string) =>
     pathname === href || (href !== "/admin" && pathname.startsWith(`${href}/`));
 
@@ -192,6 +119,7 @@ export function AdminShell({
         ) : (
           <main id="main-content" className="admin-editor-root">
             {children}
+            <AdminCommandLauncher destinations={commands} floating />
           </main>
         )}
       </UserContext.Provider>
@@ -222,27 +150,39 @@ export function AdminShell({
             </section>
           </main>
         ) : (
-          children
+          <div className="admin-workspace-root">
+            {children}
+            <AdminCommandLauncher destinations={commands} floating />
+          </div>
         )}
       </UserContext.Provider>
     );
   }
   const navigation = (
     <>
-      <p className="admin-nav-label">Workspace</p>
       <nav className="admin-navigation" aria-label="Administration">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={active(link.href) ? "active" : ""}
-            aria-current={active(link.href) ? "page" : undefined}
-            onClick={() => setMenuOpen(false)}
-          >
-            <Icon name={link.icon as IconName} />
-            {link.label}
-          </Link>
-        ))}
+        {["", "Website", "Activities", "Community", "Administration"].map(
+          (group) => {
+            const items = links.filter((link) => link.group === group);
+            return items.length ? (
+              <div className="admin-navigation-group" key={group || "overview"}>
+                {group && <p className="admin-nav-label">{group}</p>}
+                {items.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={active(link.href) ? "active" : ""}
+                    aria-current={active(link.href) ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Icon name={link.icon} />
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            ) : null;
+          },
+        )}
       </nav>
       <div className="sidebar-footer">
         <Link href="/membership" className="text-link">
@@ -274,6 +214,7 @@ export function AdminShell({
               : "Event team"}
           </span>
           <div className="admin-header-actions">
+            <AdminCommandLauncher destinations={commands} />
             <Link href="/" className="admin-website-link">
               Club website <Icon name="external" width={15} height={15} />
             </Link>

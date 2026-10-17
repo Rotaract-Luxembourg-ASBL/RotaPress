@@ -43,15 +43,17 @@ import { automationProjectChecks } from "./automation-project-cases";
 import { calendarSourceChecks } from "./calendar-source-cases";
 import { emailChecks } from "./email-cases";
 import { emailScopeChecks } from "./email-scope-cases";
-import { automationProposalChecks } from "./automation-proposal-cases";
 import { automationContentPublicationChecks } from "./automation-content-publication-cases";
+import { operationalCollectionChecks } from "./operational-collection-cases";
+import { automationRuntimeChecks } from "./automation-runtime-cases";
 
 let runtime: Pool;
 let migration: Pool;
 let db: Database;
 let authorization: AuthorizationService;
 let events: EventService;
-automationProposalChecks(() => ({ db, authorization, events, actor, club }));
+operationalCollectionChecks(() => ({ db, authorization, events, actor, club }));
+automationRuntimeChecks(() => ({ db, authorization, events, actor, club }));
 automationContentPublicationChecks(() => ({
   db,
   authorization,
@@ -194,7 +196,11 @@ describe("C06 event drafting and current event scope", () => {
     });
     expect(await authorization.optional(editor)).toBeNull();
     expect(await events.hasAccess(editor)).toBe(false);
-    await expect(events.list(editor)).rejects.toMatchObject({
+    await expect(
+      events
+        .query(editor, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).rejects.toMatchObject({
       code: "EVENT_ACCESS_DENIED",
     });
     let event = await events.create(owner, {
@@ -241,9 +247,13 @@ describe("C06 event drafting and current event scope", () => {
     expect((await events.detail(editor, event.id)).capabilities).toEqual([
       "events.edit",
     ]);
-    expect((await events.list(editor)).map((item) => item.id)).toEqual([
-      event.id,
-    ]);
+    expect(
+      (
+        await events
+          .query(editor, { status: "all", pageSize: 100 })
+          .then((result) => result.events)
+      ).map((item) => item.id),
+    ).toEqual([event.id]);
     expect(await events.hasAccess(editor)).toBe(true);
     expect((await events.team(editor, event.id)).candidates).toEqual([]);
     expect((await events.team(manager, event.id)).members).toHaveLength(2);
@@ -302,7 +312,11 @@ describe("C06 event drafting and current event scope", () => {
       operation: "revoke",
     });
     expect(await events.hasAccess(editor)).toBe(false);
-    await expect(events.list(editor)).rejects.toMatchObject({
+    await expect(
+      events
+        .query(editor, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).rejects.toMatchObject({
       code: "EVENT_ACCESS_DENIED",
     });
     await expect(events.detail(editor, event.id)).rejects.toMatchObject({
@@ -355,9 +369,13 @@ describe("C06 event drafting and current event scope", () => {
       title: "Event B",
       managerUserId: owner.userId,
     });
-    expect((await events.list(manager)).map((event) => event.id)).toEqual([
-      eventA.id,
-    ]);
+    expect(
+      (
+        await events
+          .query(manager, { status: "all", pageSize: 100 })
+          .then((result) => result.events)
+      ).map((event) => event.id),
+    ).toEqual([eventA.id]);
     expect(await events.hasAccess(manager)).toBe(true);
     await expect(events.detail(manager, eventB.id)).rejects.toMatchObject({
       code: "EVENT_NOT_FOUND",
@@ -545,7 +563,13 @@ describe("C06 event drafting and current event scope", () => {
       version: 3,
     });
     expect(await events.hasAccess(manager)).toBe(true);
-    expect((await events.list(manager))[0].archived).toBe(true);
+    expect(
+      (
+        await events
+          .query(manager, { status: "all", pageSize: 100 })
+          .then((result) => result.events)
+      )[0].archived,
+    ).toBe(true);
     await expect(events.save(owner, save(archived))).rejects.toMatchObject({
       code: "EVENT_ARCHIVED",
     });

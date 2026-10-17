@@ -17,12 +17,12 @@ replace an independent security assessment.
 | Identity            | Library-managed API key or OAuth token bound to a genuine session; reload identity, membership, Google policy and current capabilities on requests                                                                                                                                           |
 | Browser/host        | Canonical Host/Origin checks, cross-site API denial and same-origin admin mutations. Only top-level GET navigation to OAuth authorization and its signed sign-in handoff may enter cross-site; route validation and human consent still apply. Cookies alone do not authenticate automation. |
 | Resource authority  | Shared domain services validate organization, event access, feature state and record ownership; input IDs never grant access                                                                                                                                                                 |
-| Draft writes        | Native private drafts, private images and typed review proposals; no visibility changes, operational settings application, direct notification sending or participant operations; optimistic revisions and atomic retry receipts                                                             |
+| Draft writes        | Native private drafts and images remain separate from new opt-in operational/private-data grants; exact versions and atomic retry receipts guard direct requested actions                                                             |
 | Publication         | Separate publication grant, current identity/domain capability, strict `confirmed: true`, exact current saved revision/version and existing readiness/private-media checks; named target only, no automatic dependency publication; calendar audiences and notification rules retained       |
 | Source fetching     | Explicit origin grants, HTTPS, all DNS answers checked, public IPv4 pinning, no redirects/proxies/cookies, robots policy, byte/time limits, no script execution                                                                                                                              |
 | Image inputs        | Scoped PNG/JPEG/WebP uploads; bounded bytes/pixels, real decoding, one frame, reencoding and metadata stripping; private storage, actor-bound retries and current authorization after processing                                                                                             |
 | Image outputs       | Separate private-pixel scope; bounded metadata-free inspection; saved-page previews use exact revisions, isolated local rendering, no scripts/network or browser credentials, and reauthorization before releasing pixels                                                                    |
-| Event preparation   | Existing event services and current scope; stable preparation IDs, private drafts, projected readiness and immutable operational proposals requiring administration review; no copied participants or provider state                                                                         |
+| Event preparation   | Existing event services and current scope; stable preparation IDs, private drafts, projected readiness; direct requested operations need new explicit grants; no copied participants or provider state                                                                         |
 | Responses           | Closed schemas validated before REST/MCP output; explicit form/event projections; no unexpected service fields or internal exception details                                                                                                                                                 |
 | MCP protocol        | Official SDK, stateless POSTs, one JSON-RPC message per bounded request, validated inputs and output schemas; authorization is separate from annotations                                                                                                                                     |
 | Tester              | Same-instance endpoints, bearer credentials in page memory, no cookie authority, redirects refused, text-only rendering, no external documentation scripts                                                                                                                                   |
@@ -51,8 +51,10 @@ replace an independent security assessment.
   and validates all targets before committing visibility changes and audits in one
   transaction. Missing/stale targets fail the entire batch. Uploads, metadata saves
   and content publication cannot widen visibility. Public image URLs are retrievable
-  without a published placement; hiding/deletion and public metadata edits remain
-  manual. An authoring preset or server upgrade cannot expand existing credentials.
+  without a published placement. Hiding/deletion and public metadata edits require
+  separate media:manage or files:manage grants, exact fingerprints and retained-reference
+  checks; deletion also requires recent authentication. An authoring preset or server
+  upgrade cannot expand existing credentials.
 - Ordered source outlines and same-origin image candidates remain untrusted HTML
   evidence. No CSS, JavaScript, screenshots or image bytes are fetched. Candidate
   URLs do not grant network access or prove reuse rights. Visual similarity requires
@@ -105,7 +107,7 @@ refresh/replay handling, current Google/membership/session policy, revocation an
 disabled-MCP refusal. `oauth-policy.test.ts` covers strict callbacks, metadata and
 pending authorization bounds. `automation-media-boundary.test.ts`, the PostgreSQL
 media cases and `automation-preview.test.ts` cover image limits, private bytes,
-retry boundaries and renderer isolation. Event cases cover scoped proposals and
+retry boundaries and renderer isolation. Event cases cover scoped operational receipts and
 event-owned private media. These are focused regressions, not exhaustive proof.
 
 `media.test.ts` also checks separate publication grants and confirmation, bounded
@@ -146,7 +148,7 @@ B01 uses a real Better Auth OTP session, issued keys and a loopback OAuth client
 Its automation helpers exercise REST/MCP/stdio, current-session and capability revocation, scope denial,
 Google-only policy, malformed/oversized requests, custom-code rejection, private
 draft writes, output projections, separate enable/disable controls, private images,
-page previews, event preparation/proposal review, and the desktop/phone tester and
+page previews, event preparation/direct operational receipts, and the desktop/phone tester and
 OAuth consent screen. Fixture changes stay in the dedicated browser database;
 external Google and AI-provider callbacks require separate integration checks.
 

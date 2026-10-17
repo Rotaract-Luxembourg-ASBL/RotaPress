@@ -183,7 +183,12 @@ export async function apiSecurityJourney(
     await denied(
       await member.request.patch("/api/admin/members", {
         headers,
-        data: { membershipId: randomUUID(), status: "approved", role: "owner" },
+        data: {
+          membershipId: randomUUID(),
+          status: "approved",
+          role: "owner",
+          expectedVersion: 1,
+        },
       }),
       403,
     );

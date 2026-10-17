@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Icon } from "./icon";
 
 /** Native modal focus containment, Escape handling and focus return. */
@@ -9,11 +15,13 @@ export function Dialog({
   children,
   onClose,
   canClose = () => true,
+  initialFocusRef,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   canClose?: () => boolean;
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -21,12 +29,13 @@ export function Dialog({
     const trigger = document.activeElement;
     const dialog = ref.current;
     dialog?.showModal();
+    initialFocusRef?.current?.focus();
     return () => {
       dialog?.close();
       if (trigger instanceof HTMLElement && trigger.isConnected)
         trigger.focus();
     };
-  }, []);
+  }, [initialFocusRef]);
   function dismiss() {
     if (canClose()) onClose();
   }

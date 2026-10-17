@@ -8,9 +8,12 @@ import {
   GuestEvent,
   GuestInvitations,
 } from "@/features/guests/ui/guest-portal";
-import type { MembershipStatus } from "./api";
+import { useResource, type MembershipStatus } from "./api";
 import { Icon } from "./icon";
-import { Loading } from "./primitives";
+import { Loading, Notice } from "./primitives";
+import { useCollectionLocation } from "./collection-location";
+import { CollectionPagination } from "./collection-pagination";
+import type { CollectionPage } from "@/core/collections";
 
 export function membershipLabel(status?: MembershipStatus) {
   return status
@@ -33,7 +36,19 @@ export function MemberResponses({
   error?: string;
   preview?: boolean;
 }) {
-  const rows = preview ? account?.responses.slice(0, 3) : account?.responses;
+  const { params, change } = useCollectionLocation();
+  const page = Number(params.get("responsesPage")) || 1;
+  const search = params.get("responsesSearch") ?? "";
+  const history = useResource<
+    CollectionPage & { items: AccountWorkspace["responses"] }
+  >(
+    preview
+      ? null
+      : `/api/account/responses?${new URLSearchParams({ page: String(page), search })}`,
+  );
+  const rows = preview ? account?.responses.slice(0, 3) : history.data?.items;
+  const loaded = preview ? Boolean(account) : Boolean(history.data);
+  const failure = preview ? error : history.error;
   return (
     <section
       className={`member-card${preview ? " member-response-preview" : ""}`}
@@ -50,13 +65,36 @@ export function MemberResponses({
           </Link>
         )}
       </header>
-      {!account && !error && <Loading />}
-      {!account && error && (
+      {!preview && (
+        <label>
+          Find a response
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              change(
+                { responsesSearch: event.target.value, responsesPage: 1 },
+                false,
+              )
+            }
+          />
+        </label>
+      )}
+      {!loaded && !failure && <Loading />}
+      {!loaded && failure && (
         <p className="muted">
           Your responses could not be loaded. Try again above.
         </p>
       )}
-      {account && !rows?.length && (
+      {!preview && history.error && (
+        <Notice>
+          {history.error}{" "}
+          <button className="inline-button" onClick={history.refresh}>
+            Try again
+          </button>
+        </Notice>
+      )}
+      {loaded && !rows?.length && (
         <div className="member-empty">
           <Icon name="forms" />
           <h3>No responses yet</h3>
@@ -94,8 +132,12 @@ export function MemberResponses({
           ))}
         </ul>
       )}
-      {!preview && account?.responses.length === 50 && (
-        <p className="field-help">Showing your 50 most recent responses.</p>
+      {!preview && history.data && (
+        <CollectionPagination
+          {...history.data}
+          noun="responses"
+          onPage={(next) => change({ responsesPage: next }, false)}
+        />
       )}
     </section>
   );

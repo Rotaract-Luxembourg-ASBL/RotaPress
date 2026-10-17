@@ -4,6 +4,11 @@ Calendar brings schedules and published events together. Manage it in
 **Administration → Calendar** (`/admin/calendar`). Visitors and signed-in people
 use `/calendar`; approved members also see calendars intended for members.
 
+The activity list searches and paginates saved schedules on the server, with
+exact totals for the selected calendar. Search, status, page and workspace tab
+are retained in the URL. Repeating activities count once in the saved collection;
+the combined public calendar expands occurrences within its selected date range.
+
 ## Start with a calendar
 
 1. Choose **New calendar**. In **Details**, give it a clear name, optional description

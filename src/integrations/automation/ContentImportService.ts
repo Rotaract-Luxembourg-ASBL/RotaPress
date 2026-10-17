@@ -7,6 +7,7 @@ import type { Database } from "@/infrastructure/database/client";
 import {
   DomainError,
   type AuthorizationService,
+  type Transaction,
 } from "@/core/authorization/AuthorizationService";
 import { AuditRepository } from "@/core/audit/AuditRepository";
 import type { CmsService } from "@/features/cms/CmsService";
@@ -36,7 +37,11 @@ export class ContentImportService {
     private readonly cms: CmsService,
   ) {}
 
-  async create(principal: AutomationPrincipal, input: unknown) {
+  async create(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     const parsed = importPagesInput.parse(input);
     for (const page of parsed.pages) {
       if (
@@ -52,7 +57,7 @@ export class ContentImportService {
     const inputHash = createHash("sha256")
       .update(JSON.stringify(parsed))
       .digest("hex");
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.auth.lock(
         principal.actor,
         "cms.edit",
@@ -181,7 +186,8 @@ export class ContentImportService {
         targetId: parsed.requestId,
       });
       return receipt;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async receipt(principal: AutomationPrincipal, requestId: string) {

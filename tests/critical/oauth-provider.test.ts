@@ -16,6 +16,7 @@ import { oauthConnectionChecks } from "./oauth-connection-cases";
 import { oauthConsentChecks } from "./oauth-consent-cases";
 import { removeOAuthConnection } from "./oauth-test-cleanup";
 import { oauthLifecycleChecks } from "./oauth-lifecycle-cases";
+import { oauthExportDownloadChecks } from "./oauth-export-download-cases";
 
 const delivery = vi.hoisted(() => ({ code: "" }));
 vi.mock("@/composition/email", async (original) => ({
@@ -253,6 +254,19 @@ async function exchange(input: Record<string, string>) {
   );
 }
 
+oauthExportDownloadChecks(() => ({
+  pool: migrationPool,
+  connections,
+  access,
+  actor,
+  headers,
+  origin,
+  resource,
+  protocol,
+  authorize,
+  exchange,
+}));
+
 oauthRenewalChecks(() => ({
   pool: migrationPool,
   connections,
@@ -316,7 +330,7 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
       authentication: "client_secret_post",
     });
     expect(Boolean(issued.clientSecret)).toBe(true);
-    const listed = await connections.list(actor);
+    const { clients: listed } = await connections.list(actor);
     expect(listed.some((item) => item.clientId === issued.clientId)).toBe(true);
     expect(JSON.stringify(listed).includes(issued.clientSecret!)).toBe(false);
     const flow = await authorize(issued.clientId, callback);
@@ -553,7 +567,7 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
         }
         // New global actions and a narrowed consent do not change the client's ceiling.
         expect(
-          (await connections.list(actor)).find(
+          (await connections.list(actor)).clients.find(
             (entry) => entry.clientId === client.clientId,
           )?.scopes,
         ).toEqual(selected);
@@ -670,10 +684,12 @@ describe("C14 Better Auth OAuth with a real OTP session and PostgreSQL", () => {
         code: "AUTOMATION_CREDENTIAL_TRANSPORT",
         status: 401,
       });
-      const restList = await automationAccess.list(actor, headers, "rest");
-      const mcpList = await automationAccess.list(actor, headers, "mcp");
-      expect(restList.some((key) => key.id === mcp.id)).toBe(false);
-      expect(mcpList.some((key) => key.id === rest.id)).toBe(false);
+      const restList = await automationAccess.list(actor, {
+        transport: "rest",
+      });
+      const mcpList = await automationAccess.list(actor, { transport: "mcp" });
+      expect(restList.connections.some((key) => key.id === mcp.id)).toBe(false);
+      expect(mcpList.connections.some((key) => key.id === rest.id)).toBe(false);
       expect(JSON.stringify([restList, mcpList]).includes(rest.key)).toBe(
         false,
       );

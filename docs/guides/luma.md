@@ -46,6 +46,12 @@ Link each selected source to a checked API event identity. Review source-scoped
 reconciliation explicitly. Imports retain provider identities and private guest
 projections; public event copy and CMS publication remain independent.
 
+The private provider record list shows an exact retained total and paginated
+results. Use **Previous page** and **Next page** to reach every retained record.
+The selected booking source and page stay in the address when you reload;
+switching sources starts at their first page. A failed read offers **Try again**
+without changing provider records.
+
 A failed page is a failed run, not an empty participant list. Complete validated
 results commit together. Replay keys, expected configuration, organization/event
 scope and current authority prevent one source from replacing another's records.

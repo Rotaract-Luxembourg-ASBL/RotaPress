@@ -81,13 +81,20 @@ Anonymous attachments are not supported.
 
 The builder's **View responses** link opens Response center with that form selected.
 Use the compact status buttons, search and source-form selector above the responses.
+**Find another form** searches form and event titles across every permitted source,
+with exact totals and paginated choices. Archived forms remain available for reviewing
+their preserved responses. The selected form stays visible when it is outside the
+current source-search page.
 Open **More filters** for purpose and received dates; selected criteria remain
 visible when the controls are collapsed. Changing the source form keeps the other
 applied filters. **View all forms** removes just that form's scope, while **Clear
 filters** removes all criteria. Counts cover all matching results; the inbox displays
 pages of 100 records. On a phone, opening a response shows its detail; **Back to
 responses** returns to the list and selected item. The existing per-form submission
-list also remains available. CSV export preserves question labels and versions,
+list also remains available. Search, filters, result page, People/Responses view and
+the selected response are stored in the URL and survive reloads. **Full response &
+delivery** returns to the same view and selection.
+CSV export preserves question labels and versions,
 neutralizes spreadsheet formulas and supports at most 5,000 responses per export.
 
 Submission detail displays the preserved labels, help and consent wording,

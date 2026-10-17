@@ -1,6 +1,13 @@
 ﻿"use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Dialog } from "@/ui/dialog";
 import { Notice } from "@/ui/primitives";
 import { TimeZonePicker, timeZoneLabel } from "@/ui/time-zone-picker";
@@ -53,7 +60,14 @@ export function CalendarDialog({
   const [dirty, setDirty] = useState(false);
   const form = useRef<HTMLFormElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const focusStep = useRef(false);
   const id = useId();
+  useLayoutEffect(() => {
+    if (focusStep.current) {
+      heading.current?.focus();
+      focusStep.current = false;
+    }
+  }, [step]);
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -72,10 +86,11 @@ export function CalendarDialog({
       onClose();
   }
   function changeStep(next: number) {
+    if (next === step) return;
     if (next > step && !form.current?.reportValidity()) return;
+    focusStep.current = true;
     setStep(next);
     setError("");
-    requestAnimationFrame(() => heading.current?.focus());
   }
   async function save(event: FormEvent) {
     event.preventDefault();

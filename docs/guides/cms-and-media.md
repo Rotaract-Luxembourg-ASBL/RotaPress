@@ -1,19 +1,36 @@
 # Website and media
 
 Use **Website** to manage pages, menus, shared parts and appearance, and **Media**
-to manage images. These operations require current staff capabilities. Pending,
+to manage photographs, albums and files. These operations require current staff capabilities. Pending,
 suspended and ordinary member accounts cannot edit or publish content.
 
 ## Pages and publication
 
-Start with a [website template](website-kits.md) or create a page with a title,
-language and readable URL slug. Templates create private editable content;
+Start with a [website template](website-kits.md) or create a page with a title
+and language. A readable address is generated automatically; choose **Custom page
+address** when you need a specific slug. Templates create private editable content;
 previewing a catalogue example does not create records or publish anything.
+
+Pages has server-side search, publication filters, sorting and pagination. Every
+row has a selection checkbox; **Select all shown** selects the current page.
+Selection can span pages, up to 100 items. Review the selection before bulk
+publishing, unpublishing, archiving or restoring. A stale or invalid item rejects
+the whole action and keeps your selection available to review.
+
+**Quick edit** changes the title, address, parent page and display order. Parents
+organize the library independently of public URLs and menus. Archiving a parent
+moves its children to the top level; it does not archive them. Use the **Archived**
+filter and **Restore from archive** to return selected items to private drafts.
 
 Open a page in the Puck editor. The block library, List view and inspector let you
 add, reorder and edit content. Use **Page settings** for title, URL and search/share
 metadata. Headings in the page are separate content fields. Desktop, tablet and
-phone preview widths help review the result.
+phone widths render inside a real responsive canvas. See the
+[editor workspace guide](page-editor.md) for recovery, multiple-block actions,
+saved sections and responsive controls.
+List view includes **Group** and **Ungroup** for adjacent blocks. Saved sections
+has searchable, paginated results; its search and position survive reopening the
+block library.
 
 The library groups blocks into **Content**, **Layout** and **Connected**. Search
 by what you need, such as an image, form or calendar; connected blocks identify
@@ -36,9 +53,13 @@ to switch inspector tabs.
 
 Saving does not change the public snapshot. A private preview URL does not grant
 another person access. Concurrent saves reject stale versions and preserve entered
-content for review. Unsaved editor input is not a durable draft; save before leaving.
+content for review. The editor automatically keeps a private recovery copy for
+your account after a short pause. Watch the recovery status before leaving; a
+failed recovery save keeps your open input and offers retry. **Save draft** still
+creates the canonical version that colleagues can review and publish.
 
-Revision history restores an earlier version into a new private draft. Unpublish
+Revision history compares an earlier version with the current editor and restores
+it into a new private draft. Unpublish
 removes public access while retaining content; Archive removes all languages from
 normal editing and public access. Retained revisions remain immutable.
 [Scheduled publication](scheduled-publication.md) targets one saved revision.
@@ -49,7 +70,8 @@ published pages without publishing other saved page or branding edits.
 
 ## Blocks
 
-The library includes text, heroes, images, galleries, cards, buttons, FAQ, team,
+The library includes text, heroes, images, galleries, PDF downloads, audio, video,
+cards, buttons, FAQ, team,
 partners, programme sections, forms, published events and calendar content.
 The **Projects** block shows published volunteer stories and community initiatives
 automatically, with an optional progress filter. Manage those stories in
@@ -58,6 +80,12 @@ Use domain-backed blocks for real forms, events, calendars and directory profile
 manual presentation copy cannot create bookings, memberships or payment rights.
 
 Design controls use approved spacing, width, colors, corners and alignment.
+Choose a screen size to add tablet or phone overrides; phone inherits tablet,
+then the default design, and the controls identify the inherited source.
+New overrides affect only the block you edit. File, audio and
+video blocks select compatible media; audio/video use manual playback controls
+and offer transcript text. Video supports a poster image and timed captions.
+Files and posters must be public before the page can be published.
 Images support alternative text, captions, aspect ratio, fitting, focal position
 and sizing. Presentation edits do not rewrite the stored image. Sliders use manual
 controls rather than automatic movement.
@@ -185,38 +213,44 @@ different records; embedding a block does not copy or authorize them.
 
 ## Media
 
-Upload or select images through **Media** or a block's central image picker.
+Upload or select photographs, documents, audio and video through **Media** or a
+block's central media picker. Each picker offers the file type its block supports.
 New administration uploads default to **Public** without another publication
 prompt. Choose **Private** before uploading when access should be limited to
 authorized staff. Existing private images keep their visibility. REST/MCP uploads
 and source imports still start private under their separate connection grants;
 see [automation images](automation-media.md).
 
-Choose **Upload image**, then browse or drop up to 100 files into the queue.
+Choose **Upload files**, then browse or drop up to 100 files into the queue.
 Review their previews, choose their visibility and optional collection, then
 upload. The queue reports each file's result and retains unsuccessful files for
 **Retry failed uploads**; successful files are not uploaded again. Choose **Done**
 to return to the library. Bulk upload titles start from filenames; edit individual
 details afterward. Save image metadata and visibility separately from the page draft.
 
-The library offers grid and list views, search, visibility, collection and date
+The library offers grid and list views, search, file type, visibility, collection and date
 filters, sorting and paged results. Searches cover the library rather than only
 its first page. Open a thumbnail or its **Edit** action to review the larger image,
-title, alternative text, caption, tags, collection, file details and usage. Save
-changes before moving to another image or closing the dialog. **Previous image**
-and **Next image**, or the arrow keys outside text fields, move through the current
-page of results. **Copy URL** and **Download image** make the saved file easy to
+title, alternative text, caption, tags, collection, file details and usage. The
+preview stays visible beside an independently scrolling inspector. **Details**
+contains metadata and visibility; **Organize** contains collection and tags;
+**Usage** lists retained/public references and paginated links to content you can
+open. Previous/Next reaches every available destination; its exact total counts
+destinations, while the separate reference totals include all retained revisions.
+Save changes before moving to another image or closing the dialog. **Previous image**
+and **Next image**, or arrow keys outside editing controls, cross filtered result
+pages. Filters, view and page are kept in the URL. **Copy URL** and **Download image** make the saved file easy to
 reuse. Unsaved edits are preserved until you deliberately discard them.
 
 In **Media library**, choose **Bulk select**, then click photo thumbnails or their
-checkboxes to select several images. **Select all shown** selects the current
+checkboxes to select several files. **Select all shown** selects the current
 page. Shift-click a checkbox to select a range on that page. **Clear selection** starts
 again. Selection remains visible while you change filters or pages. Choose
 **Make public**, **Make private**, **Edit selected** to replace tags or collection,
-or **Delete permanently** for unreferenced images. A batch includes at most
-**250 images**. The server checks every image's current saved state and permissions
-before committing any change. A changed, unavailable or protected image rejects the entire batch; keep
-the selection, use **Refresh selected images** and resolve the reported issue
+or **Delete permanently** for unreferenced files. A batch includes at most
+**250 files**. The server checks every file's current saved state and permissions
+before committing any change. A changed, unavailable or protected file rejects the entire batch; keep
+the selection, use **Refresh selected files** and resolve the reported issue
 before retrying.
 Successful batches return the main library to browsing; **Edit** still opens an
 individual image's details. **Done selecting** leaves bulk selection without
@@ -239,7 +273,7 @@ its selected batch. Saved library changes and the image or gallery draft you
 were preparing are kept. This applies to mouse and keyboard tab changes.
 
 If another editor changes a selected image, the entire batch is rejected and your
-selection is kept. In **Edit selected images**, **Refresh selected images** loads
+selection is kept. In **Edit selected files**, **Refresh selected files** loads
 the current saved versions while preserving the collection and tags you entered.
 Review the selection and retry. Event-scoped pickers show their approved public
 image collection; they do not offer uploads or library-management actions.
@@ -253,10 +287,11 @@ contains up to **30 images**; existing image order, captions and alternative tex
 remain saved until you update them.
 
 Use **Upload images** to add new photographs, or open **Edit gallery** to arrange
-your selection. Drag the handles, or use each image's up and down arrow controls.
-Edit its caption and alternative text, or remove it from this gallery.
+your selection. Drag thumbnails, or use each image's up and down arrow controls.
+Select a thumbnail to edit its caption and alternative text in the inspector, or
+remove it from this gallery.
 These text changes belong to the block and do not overwrite the library metadata.
-Event managers choose from their event-approved image collection; club media
+Event managers choose from the public image library; club media
 managers maintain the uploads.
 
 The gallery's **Media library** also has **Bulk select** for managing library
@@ -269,10 +304,17 @@ block. **Save draft** keeps the page changes; page publication remains separate.
 Canceling can discard unfinished gallery changes. Images already uploaded remain
 in the Media library, including uploads beyond the gallery's 30-image limit.
 
+Choose grid, masonry or manual slider presentation, image fit and optional lightbox controls in
+the Gallery block. Lightboxes support keyboard navigation, focus return and touch
+swipes. Existing galleries keep their previous layout until changed. For a gallery
+that is reused and updated across pages, create a [photo album](photo-albums.md).
+
 ### Edit a photograph
 
-Open image details and choose **Edit image**. Drag over the original preview to
-crop, or enter exact crop coordinates. Rotate, flip and reduce the image width;
+Open image details and choose **Edit image**. Resize the crop with its corner
+handles, drag the selection to move it, or enter exact crop coordinates. Arrow
+keys adjust a focused handle or selection one pixel; Shift adjusts ten pixels.
+Choose an aspect ratio to lock the crop or zoom the preview for detail. Rotate, flip and reduce the image width;
 the edited preview shows the result before saving. **Undo image edit**,
 **Redo image edit** and **Reset edits** work on the unfinished changes.
 
@@ -282,9 +324,10 @@ available. Select the new copy wherever you want to use it. Cancel or return to
 details to keep using the original. File edits do not replace photographs on
 published pages automatically.
 
-Accepted files are single-frame PNG, JPEG or WebP, up to 5 MiB and 20 million pixels.
-The server checks signatures, decodes and reencodes images as WebP, and strips
-unnecessary metadata. SVG, GIF, HTML, archives and PDF are not accepted uploads.
+Image fields accept single-frame PNG, JPEG or WebP, up to 5 MiB and 20 million
+pixels. The library also supports PDF, MP3/M4A and MP4/WebM with resumable uploads.
+See [files, uploads and recovery](media-files.md) for exact formats, limits,
+pause/resume behavior and delivery. SVG, GIF, HTML and archives are not accepted.
 
 A private image can appear in an authorized draft preview. A public image's media
 URL is accessible to anyone, including when no current page places it. Making an
@@ -298,7 +341,7 @@ republish before changing visibility. Only an unreferenced image can be deleted;
 
 ## Storage and recovery
 
-Image bytes live outside the public web root in `.data/uploads`; PostgreSQL holds
+Uploaded files live outside the public web root in `.data/uploads`; PostgreSQL holds
 metadata and references. The Docker hosting recipe keeps that directory on a
 persistent volume. Storage keys are opaque, and path or symlink escapes are
 rejected. The normalized image is retained, not a second copy of the original upload.

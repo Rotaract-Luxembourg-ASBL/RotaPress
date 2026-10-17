@@ -13,7 +13,13 @@ import {
   SummaryStats,
 } from "@/ui/collection";
 import { PartnerEditor } from "./partner-editor";
-import type { PartnerDto, PartnerProfile } from "../partner_schemas";
+import type { PartnerDto } from "../partner_schemas";
+import {
+  partnerCollectionSchema,
+  type PartnerCollection,
+} from "../partner_collection";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 
 const categories = [
   { value: "all", label: "All profiles" },
@@ -23,35 +29,21 @@ const categories = [
 ] as const;
 
 export function PartnerLibrary() {
-  const [category, setCategory] = useState<"all" | PartnerProfile["category"]>(
-    "all",
-  );
-  const { data, error, refresh } = useResource<{ items: PartnerDto[] }>(
-    "/api/admin/partners",
+  const { params, page, change } = useCollectionLocation();
+  const category = partnerCollectionSchema.shape.category
+    .catch("all")
+    .parse(params.get("category") ?? "all");
+  const query = params.get("search") ?? "";
+  const status = params.get("status") ?? "all";
+  const setCategory = (value: string) => change({ category: value });
+  const setStatus = (value: string) => change({ status: value });
+  const { data, error, refresh } = useResource<PartnerCollection>(
+    `/api/admin/partners?${new URLSearchParams({ page: String(page), search: query, category, status })}`,
   );
   const [editing, setEditing] = useState<PartnerDto | null | undefined>();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const profiles = data?.items ?? [];
-  const categoryProfiles = profiles.filter(
-    (item) => category === "all" || item.draft.category === category,
-  );
-  const items = categoryProfiles.filter(
-    (item) =>
-      (status === "all" ||
-        (status === "draft"
-          ? !item.published
-          : status === "published"
-            ? Boolean(item.published)
-            : Boolean(item.published) && item.changed)) &&
-      `${item.draft.name} ${item.draft.category} ${item.draft.role ?? ""}`
-        .toLocaleLowerCase()
-        .includes(query.trim().toLocaleLowerCase()),
-  );
+  const items = data?.items ?? [];
   function clear() {
-    setQuery("");
-    setStatus("all");
-    setCategory("all");
+    change({ search: undefined, status: "all", category: "all" });
   }
   return (
     <>
@@ -81,7 +73,7 @@ export function PartnerLibrary() {
           items={[
             {
               label: "Profiles",
-              value: categoryProfiles.length,
+              value: data.counts.all,
               hint: "In the selected category",
               icon: "members",
               onClick: () => setStatus("all"),
@@ -89,7 +81,7 @@ export function PartnerLibrary() {
             },
             {
               label: "Published",
-              value: categoryProfiles.filter((item) => item.published).length,
+              value: data.counts.published,
               hint: "Available to use in blocks",
               icon: "check",
               onClick: () => setStatus("published"),
@@ -97,7 +89,7 @@ export function PartnerLibrary() {
             },
             {
               label: "Drafts",
-              value: categoryProfiles.filter((item) => !item.published).length,
+              value: data.counts.draft,
               hint: "Not published yet",
               icon: "edit",
               onClick: () => setStatus("draft"),
@@ -105,9 +97,7 @@ export function PartnerLibrary() {
             },
             {
               label: "Unpublished changes",
-              value: categoryProfiles.filter(
-                (item) => item.published && item.changed,
-              ).length,
+              value: data.counts.changes,
               hint: "Published profiles with saved edits",
               icon: "edit",
               onClick: () => setStatus("changes"),
@@ -128,19 +118,13 @@ export function PartnerLibrary() {
               onChange={setCategory}
               options={categories.map((item) => ({
                 ...item,
-                count: data
-                  ? profiles.filter(
-                      (profile) =>
-                        item.value === "all" ||
-                        profile.draft.category === item.value,
-                    ).length
-                  : undefined,
+                count: data?.categories[item.value],
               }))}
             />
             <CollectionToolbar
               searchLabel="Search profiles"
               query={query}
-              onQuery={setQuery}
+              onQuery={(search) => change({ search })}
             >
               <select
                 aria-label="Profile status"
@@ -161,8 +145,13 @@ export function PartnerLibrary() {
           </>
         }
         footer={
-          data &&
-          `${items.length} of ${profiles.length} profiles shown · Publishing a profile updates its selected placements.`
+          data && (
+            <CollectionPagination
+              {...data}
+              noun="profiles"
+              onPage={(next) => change({ page: next }, false)}
+            />
+          )
         }
       >
         {!data && !error && <Loading />}
@@ -220,17 +209,17 @@ export function PartnerLibrary() {
               <CollectionEmpty
                 icon="members"
                 title={
-                  profiles.length
+                  data.categories.all
                     ? "No matching profiles"
                     : "Your shared library starts here"
                 }
                 description={
-                  profiles.length
+                  data.categories.all
                     ? "Try another category, status or search."
                     : "Add a partner, sponsor or team member. Publish the profile to make it available in website and event blocks."
                 }
               >
-                {profiles.length ? (
+                {data.categories.all ? (
                   <button className="button button-outline" onClick={clear}>
                     Clear filters
                   </button>

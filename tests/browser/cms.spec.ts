@@ -5,10 +5,13 @@ import { test, expect, type Page } from "@playwright/test";
 import { adminCollectionsJourney } from "./admin-collections-journey";
 import { mediaPickerJourney } from "./media-picker-journey";
 import { mediaLibraryJourney } from "./media-library-journey";
+import { mediaFilesJourney } from "./media-files-journey";
+import { captureKitPreviews } from "./kit-preview-capture";
 import { mediaGalleryJourney } from "./media-gallery-journey";
 import { formStudioJourney } from "./form-studio-journey";
 import { projectsJourney } from "./projects-journey";
 import { editorWorkflowJourney } from "./editor-workflow-journey";
+import { cmsWorkspaceJourney } from "./cms-workspace-journey";
 import { Pool } from "pg";
 import sharp from "sharp";
 import type { CmsDetail, CmsSummary } from "../../src/features/cms/cms_schemas";
@@ -130,7 +133,9 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await newPage
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Home");
-  await newPage.getByRole("textbox", { name: /^URL slug/ }).fill("home");
+  await expect(newPage.getByRole("textbox", { name: /^URL slug/ })).toHaveCount(
+    0,
+  );
   await newPage
     .getByRole("combobox", { name: /^Page layout/ })
     .selectOption("home");
@@ -157,14 +162,15 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     "Home",
   );
   await page
-    .locator(".cms-puck")
+    .frameLocator(".editor-canvas iframe")
     .getByRole("heading", { name: "Good people. Shared purpose." })
     .click();
   await expect(
     page.getByRole("tab", { name: "Block", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await page
-    .locator(".editor-canvas h1 [contenteditable='plaintext-only']")
+    .frameLocator(".editor-canvas iframe")
+    .locator("h1 [contenteditable='plaintext-only']")
     .fill("Our published welcome");
   await page.getByRole("textbox", { name: "Heading", exact: true }).click();
   await expect(
@@ -197,9 +203,9 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await expect(
     page.getByText("Draft saved. Your public page has not changed."),
   ).toBeVisible();
-  await expect(page.locator(".editor-canvas .cms-hero h1")).toHaveText(
-    "Our published welcome",
-  );
+  await expect(
+    page.frameLocator(".editor-canvas iframe").locator(".cms-hero h1"),
+  ).toHaveText("Our published welcome");
   expect((await publicPage.request.get("/pages/en/home")).status()).toBe(404);
   await page
     .getByRole("button", { name: "Publish saved draft", exact: true })
@@ -223,7 +229,7 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await pageSettingsJourney(page, publicPage, home.id);
 
   await page
-    .locator(".cms-puck")
+    .frameLocator(".editor-canvas iframe")
     .getByRole("heading", { name: "Our published welcome" })
     .click();
   await page
@@ -288,13 +294,13 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   expect((await publicPage.request.get("/")).status()).toBe(404);
 
   await page.goto("/admin/media");
-  await page.getByRole("button", { name: "Upload image", exact: true }).click();
+  await page.getByRole("button", { name: "Upload files", exact: true }).click();
   const png = await sharp({
     create: { width: 80, height: 60, channels: 3, background: "#a84432" },
   })
     .png()
     .toBuffer();
-  await page.getByLabel("Image file").setInputFiles({
+  await page.getByLabel("Media file").setInputFiles({
     name: "synthetic-club.png",
     mimeType: "image/png",
     buffer: png,
@@ -303,17 +309,17 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   // default public and are covered separately by mediaLibraryJourney.
   await page.getByLabel("Visibility", { exact: true }).selectOption("private");
   await page
-    .getByRole("dialog", { name: "Upload images", exact: true })
+    .getByRole("dialog", { name: "Upload files", exact: true })
     .screenshot({ path: ".local/media-upload-dialog-desktop.png" });
   await page
-    .getByRole("button", { name: "Upload 1 image", exact: true })
+    .getByRole("button", { name: "Upload 1 file", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Upload images", exact: true })
+    .getByRole("dialog", { name: "Upload files", exact: true })
     .getByRole("button", { name: "Done", exact: true })
     .click();
   await expect(
-    page.getByRole("dialog", { name: "Upload images", exact: true }),
+    page.getByRole("dialog", { name: "Upload files", exact: true }),
   ).toHaveCount(0);
   const assets = (await page.request
     .get("/api/admin/media")
@@ -368,8 +374,12 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
     .getByRole("button", { name: "Insert image", exact: true })
     .click();
   // Insert exactly between the existing Hero and Rich Text blocks.
-  await page.locator(".editor-canvas .cms-hero h1").click();
   await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-hero h1")
+    .click();
+  await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block after Hero", exact: true })
     .click();
   await page
@@ -401,16 +411,24 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await page
     .getByRole("button", { name: "Duplicate block", exact: true })
     .click();
-  await expect(page.locator(".editor-canvas img")).toHaveCount(2);
+  await expect(
+    page.frameLocator(".editor-canvas iframe").locator("img"),
+  ).toHaveCount(2);
   await page
     .getByRole("button", { name: "Undo block edit", exact: true })
     .click();
-  await expect(page.locator(".editor-canvas img")).toHaveCount(1);
-  const imageBlock = page.locator(".editor-canvas .cms-image-block");
-  const resize = page.getByRole("button", {
-    name: "Resize image width",
-    exact: true,
-  });
+  await expect(
+    page.frameLocator(".editor-canvas iframe").locator("img"),
+  ).toHaveCount(1);
+  const imageBlock = page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-image-block");
+  const resize = page
+    .frameLocator(".editor-canvas iframe")
+    .getByRole("button", {
+      name: "Resize image width",
+      exact: true,
+    });
   await resize.scrollIntoViewIfNeeded();
   const originalWidth = await imageBlock.evaluate(
     (element) => element.getBoundingClientRect().width,
@@ -551,18 +569,24 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   // Basic blocks insert at the requested position; the slider is fully edited
   // through the same central picker and remains manual after publication.
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator(".editor-canvas .cms-hero h1").click();
   await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-hero h1")
+    .click();
+  await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block before Hero", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Add Heading block", exact: true })
     .click();
   await page
-    .locator(".editor-canvas .cms-heading h2 [contenteditable]")
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-heading h2 [contenteditable]")
     .hover();
   await page
-    .locator(".editor-canvas .cms-heading [contenteditable='plaintext-only']")
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-heading [contenteditable='plaintext-only']")
     .fill("Our club in pictures");
   await page
     .getByRole("textbox", { name: "Heading text", exact: true })
@@ -570,8 +594,12 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await expect(
     page.getByRole("textbox", { name: "Heading text", exact: true }),
   ).toHaveValue("Our club in pictures");
-  await page.locator(".editor-canvas .cms-image-block img").click();
   await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-image-block img")
+    .click();
+  await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block after Image", exact: true })
     .click();
   await page
@@ -707,5 +735,14 @@ test("B02: Puck editing, private media, reusable forms and submissions", async (
   await editorWorkflowJourney(page, publicPage, origin);
   await mediaLibraryJourney(page, publicPage, assetId);
   await mediaGalleryJourney(page, publicPage, origin);
+  // The next authoring workflow represents a new editing session, not 60 writes
+  // in one real minute. Keep production rate limits intact.
+  await database.query(
+    "UPDATE club.rate_limit SET last_request=$1 WHERE key=$2",
+    [Date.now() - 61_000, cmsWriteKey],
+  );
+  await cmsWorkspaceJourney(page, publicPage, origin);
+  await mediaFilesJourney(page, publicPage);
+  await captureKitPreviews(page);
   await anonymousContext.close();
 });

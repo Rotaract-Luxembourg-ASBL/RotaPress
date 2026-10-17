@@ -149,7 +149,7 @@ export function clubFeatureChecks(get: () => Context) {
       expectedRevision: application.draftRevision,
     });
     await s.features.configure(s.owner, change("forms", false));
-    await expect(s.forms.list(s.owner)).rejects.toMatchObject({
+    await expect(s.forms.collection.list(s.owner, {})).rejects.toMatchObject({
       code: "FEATURE_DISABLED",
     });
     await expect(s.forms.publicForm(draft.id)).rejects.toMatchObject({
@@ -167,7 +167,7 @@ export function clubFeatureChecks(get: () => Context) {
     await expect(s.forms.publishedMembershipForm()).rejects.toMatchObject({
       code: "APPLICATIONS_PAUSED",
     });
-    await expect(s.members.list(s.owner)).resolves.toBeDefined();
+    await expect(s.members.query(s.owner, {})).resolves.toBeDefined();
     await s.features.configure(s.owner, change("forms", true, 1));
     expect(await s.forms.detail(s.owner, draft.id)).toEqual(before);
     expect(await s.db.select().from(formSubmission)).toEqual(rows);
@@ -293,7 +293,9 @@ export function clubFeatureChecks(get: () => Context) {
       modules: await modules.states(s.scope.organizationId, event.id),
       site: await cms.getSite(s.owner, "en"),
       page: await cms.detail(s.owner, page.id, "en"),
-      registrations: await registrations.mine(guest),
+      registrations: await registrations
+        .queryMine(guest, { pageSize: 100 })
+        .then((result) => result.items),
     };
     await s.features.configure(s.owner, change("forms", false));
     expect(await website.publicPage(event.id, "en", "website")).not.toBeNull();
@@ -332,7 +334,11 @@ export function clubFeatureChecks(get: () => Context) {
     );
     expect(await cms.getSite(s.owner, "en")).toEqual(snapshot.site);
     expect(await cms.detail(s.owner, page.id, "en")).toEqual(snapshot.page);
-    expect(await registrations.mine(guest)).toEqual(snapshot.registrations);
+    expect(
+      await registrations
+        .queryMine(guest, { pageSize: 100 })
+        .then((result) => result.items),
+    ).toEqual(snapshot.registrations);
     expect((await cms.publicSite("en")).navigation).toEqual([
       { label: "Events", href: "/events?locale=en" },
     ]);

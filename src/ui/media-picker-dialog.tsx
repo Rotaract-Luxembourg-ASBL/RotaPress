@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
 import { useResource } from "./api";
-import { useMediaResource } from "./media-resource";
+import { useRequestResource } from "./request-resource";
 import { MediaBulkActions, useMediaBulkActions } from "./media-bulk-actions";
 import { Loading, Notice } from "./primitives";
 import { Icon } from "./icon";
+import { MediaAssetThumbnail, mediaAssetSize } from "./media-asset-preview";
 import { useMediaPickerEvent } from "./media-picker-scope";
 import { AssetDetails, MediaUpload, canDiscard } from "./media-editors";
 import {
@@ -22,11 +22,13 @@ export function MediaPickerDialog({
   onInsert,
   onDismiss,
   onRemoved,
+  kind = "image",
 }: {
   currentId: string;
   onInsert: (asset: MediaAssetDto) => void;
   onDismiss: () => void;
   onRemoved: (id: string) => void;
+  kind?: MediaAssetDto["kind"];
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const editorBack = useRef<HTMLButtonElement>(null);
@@ -44,23 +46,30 @@ export function MediaPickerDialog({
     page: String(page),
     pageSize: "48",
     search: query,
-    visibility,
+    visibility: eventId ? "public" : visibility,
+    kind,
   });
-  const { data, error, loading, refresh } = useMediaResource<{
+  const { data, error, loading, refresh } = useRequestResource<{
     assets: MediaAssetDto[];
     total?: number;
     pageSize?: number;
     page?: number;
   }>(
     eventId
-      ? `/api/admin/events/${eventId}/media`
+      ? `/api/admin/events/${eventId}/media?${params}`
       : `/api/admin/media?${params}`,
   );
-  const linked = useResource<{ asset: MediaAssetDto }>(
-    !eventId && currentId
-      ? `/api/admin/media/${encodeURIComponent(currentId)}`
+  const linked = useResource<{
+    asset?: MediaAssetDto;
+    assets?: MediaAssetDto[];
+  }>(
+    currentId
+      ? eventId
+        ? `/api/admin/events/${eventId}/media?id=${encodeURIComponent(currentId)}`
+        : `/api/admin/media/${encodeURIComponent(currentId)}`
       : null,
   );
+  const linkedAsset = linked.data?.asset ?? linked.data?.assets?.[0];
   const [selectedId, setSelectedId] = useState(currentId);
   const [updatedAsset, setUpdatedAsset] = useState<MediaAssetDto>();
   const [editorId, setEditorId] = useState<string>();
@@ -92,19 +101,22 @@ export function MediaPickerDialog({
     onRefresh: refresh,
   });
   const busy = detailsBusy || uploadBusy || bulk.busy;
-  const selected =
+  const selectedCandidate =
     updatedAsset?.id === selectedId
       ? updatedAsset
       : (data?.assets.find((asset) => asset.id === selectedId) ??
-        (linked.data?.asset.id === selectedId ? linked.data.asset : undefined));
+        (linkedAsset?.id === selectedId ? linkedAsset : undefined));
+  const selected =
+    selectedCandidate?.kind === kind ? selectedCandidate : undefined;
+  const noun = kind === "image" ? "image" : "file";
   const assets =
     data?.assets
-      .filter((asset) => !removedIds.has(asset.id))
+      .filter((asset) => asset.kind === kind && !removedIds.has(asset.id))
       .map((asset) => (asset.id === updatedAsset?.id ? updatedAsset : asset)) ??
     [];
   if (updatedAsset && !assets.some((asset) => asset.id === updatedAsset.id))
     assets.unshift(updatedAsset);
-  const filtered = filterAssets(assets, query, visibility);
+  const filtered = filterAssets(assets, query, eventId ? "public" : visibility);
   const currentPage = data?.page ?? page;
   function changeBulkMode(next: boolean) {
     if (busy || (next && !canDiscard(detailsDirty))) return;
@@ -201,7 +213,11 @@ export function MediaPickerDialog({
       <div className="media-dialog-shell">
         <header className="media-dialog-header">
           <h2 id={`${prefix}-title`}>
-            {currentId ? "Replace image" : "Choose an image"}
+            {currentId
+              ? `Replace ${noun}`
+              : kind === "image"
+                ? "Choose an image"
+                : `Choose ${kind === "audio" ? "audio" : kind === "video" ? "a video" : "a PDF document"}`}
           </h2>
           <button
             type="button"
@@ -213,7 +229,7 @@ export function MediaPickerDialog({
             <Icon name="close" />
           </button>
         </header>
-        <div className="media-tabs" role="tablist" aria-label="Image source">
+        <div className="media-tabs" role="tablist" aria-label="Media source">
           {(eventId
             ? (["library"] as const)
             : (["library", "upload"] as const)
@@ -225,14 +241,14 @@ export function MediaPickerDialog({
               data-media-tab={item}
               id={`${prefix}-${item}-tab`}
               aria-selected={tab === item}
-              aria-label={item === "upload" ? "Upload image" : undefined}
+              aria-label={item === "upload" ? `Upload ${noun}` : undefined}
               aria-controls={`${prefix}-${item}-panel`}
               tabIndex={tab === item ? 0 : -1}
               onKeyDown={tabsKey}
               onClick={() => changeTab(item)}
               disabled={busy}
             >
-              {item === "library" ? "Media library" : "Upload image"}
+              {item === "library" ? "Media library" : `Upload ${noun}`}
               {item === "upload" && uploadDirty && (
                 <span className="media-draft-mark">Unsaved</span>
               )}
@@ -249,7 +265,7 @@ export function MediaPickerDialog({
           >
             <section
               className="media-browser"
-              aria-label="Browse images"
+              aria-label={`Browse ${noun}s`}
               hidden={editing}
             >
               {error && (
@@ -274,11 +290,13 @@ export function MediaPickerDialog({
                   disabled={
                     detailsBusy || uploadBusy || loading || Boolean(error)
                   }
-                  description="Bulk selection manages library images. Your image chosen for insertion is kept."
+                  description="Bulk selection manages library files. Your chosen file for insertion is kept."
                   active={tab === "library"}
                 />
               )}
               <MediaFilters
+                kind={kind}
+                publicOnly={Boolean(eventId)}
                 query={query}
                 visibility={visibility}
                 onQuery={(value) => {
@@ -295,7 +313,7 @@ export function MediaPickerDialog({
                   {loading
                     ? "Loading your library…"
                     : data
-                      ? `${filtered.length} shown${data.total !== undefined ? ` of ${data.total} matching images` : " images"}`
+                      ? `${filtered.length} shown${data.total !== undefined ? ` of ${data.total} matching ${noun}s` : ` ${noun}s`}`
                       : error
                         ? "Library unavailable"
                         : "Loading your library…"}
@@ -316,6 +334,9 @@ export function MediaPickerDialog({
               </div>
               {data ? (
                 <AssetGrid
+                  emptyTitle={
+                    kind === "image" ? "No images to show" : "No files to show"
+                  }
                   assets={filtered}
                   onSelect={
                     bulkMode ? (asset) => bulk.toggle(asset, filtered) : choose
@@ -333,13 +354,13 @@ export function MediaPickerDialog({
                       ? "Clear the filters or try a different search."
                       : eventId
                         ? "A club media manager can add public images to this collection."
-                        : "Open Upload image to add your first image."
+                        : `Open Upload ${noun} to add your first ${noun}.`
                   }
                 />
               ) : (
                 !error && <Loading />
               )}
-              {!eventId && data?.total !== undefined && data.total > 48 && (
+              {data?.total !== undefined && data.total > 48 && (
                 <div className="media-pagination">
                   <button
                     type="button"
@@ -366,22 +387,19 @@ export function MediaPickerDialog({
             {selected && (
               <aside
                 className="media-inspector"
-                aria-label="Selected image"
+                aria-label={`Selected ${noun}`}
                 hidden={editing || bulkMode}
               >
-                <Image
-                  className="media-selected-image"
-                  src={`/media/${selected.id}`}
-                  alt={selected.alt}
-                  width={selected.width}
-                  height={selected.height}
-                  unoptimized
-                />
+                <div className="media-selected-image">
+                  <MediaAssetThumbnail asset={selected} />
+                </div>
                 <div className="media-selected-copy">
                   <h3>{selected.title || selected.originalName}</h3>
                   <p className="media-file-facts">
-                    {selected.width} × {selected.height} ·{" "}
-                    {Math.ceil(selected.size / 1024)} KB
+                    {selected.width
+                      ? `${selected.width} × ${selected.height} · `
+                      : ""}
+                    {mediaAssetSize(selected.size)}
                   </p>
                   <span
                     className={`media-badge media-badge-${selected.visibility}`}
@@ -391,7 +409,7 @@ export function MediaPickerDialog({
                   <p className="field-help">
                     {selected.visibility === "private"
                       ? "Available in private drafts. Make it public before publishing content that uses it."
-                      : "Anyone with the image URL can view this file."}
+                      : "Anyone with the file URL can view this file."}
                   </p>
                   {eventId ? (
                     <p className="field-help">
@@ -409,7 +427,7 @@ export function MediaPickerDialog({
                       disabled={busy}
                     >
                       <Icon name="edit" />
-                      Edit image details
+                      Edit {noun} details
                     </button>
                   )}
                 </div>
@@ -417,7 +435,7 @@ export function MediaPickerDialog({
             )}
             <section
               className="media-selected-editor"
-              aria-label="Edit selected image"
+              aria-label={`Edit selected ${noun}`}
               hidden={!editing}
             >
               <div className="media-editor-heading">
@@ -432,9 +450,9 @@ export function MediaPickerDialog({
                   disabled={busy}
                 >
                   <Icon name="back" />
-                  Back to images
+                  Back to {noun}s
                 </button>
-                <h3>Image details</h3>
+                <h3>{kind === "image" ? "Image" : "File"} details</h3>
               </div>
               {selected && editorId === selected.id && !eventId && (
                 <AssetDetails
@@ -460,7 +478,7 @@ export function MediaPickerDialog({
                     setDetailsDirty(false);
                     setEditing(false);
                     setEditorId(undefined);
-                    setMessage("Image deleted.");
+                    setMessage("File deleted.");
                     refresh();
                   }}
                 />
@@ -476,6 +494,7 @@ export function MediaPickerDialog({
               hidden={tab !== "upload"}
             >
               <MediaUpload
+                kinds={[kind]}
                 onDirty={setUploadDirty}
                 onBusy={setUploadBusy}
                 onUploaded={(asset) => {
@@ -487,7 +506,7 @@ export function MediaPickerDialog({
                   setVisibility("all");
                   setPage(1);
                   setMessage(
-                    `Image uploaded ${asset.visibility === "public" ? "publicly" : "privately"}. Select Insert image to use it.`,
+                    `File uploaded ${asset.visibility === "public" ? "publicly" : "privately"}. Select Insert ${noun} to use it.`,
                   );
                   refresh();
                 }}
@@ -502,18 +521,18 @@ export function MediaPickerDialog({
                 ? "Add to your media library"
                 : selected?.title ||
                   selected?.originalName ||
-                  "No image selected"}
+                  `No ${noun} selected`}
             </strong>
             <span>
               {tab === "upload"
                 ? "New uploads are public by default. Choose Private when needed."
                 : bulkMode
-                  ? "Choose Done selecting to return to image insertion."
+                  ? "Choose Done selecting to return to insertion."
                   : detailsDirty
-                    ? "Save the image details to continue."
+                    ? `Save the ${noun} details to continue.`
                     : selected
-                      ? "Insert adds this image to your current draft."
-                      : "Choose an image to use in your draft."}
+                      ? `Insert adds this ${noun} to your current draft.`
+                      : `Choose ${kind === "image" ? "an image" : "a file"} to use in your draft.`}
             </span>
           </div>
           <div className="media-footer-actions">
@@ -537,7 +556,7 @@ export function MediaPickerDialog({
                   onInsert(selected);
                 }}
               >
-                {currentId ? "Replace image" : "Insert image"}
+                {currentId ? `Replace ${noun}` : `Insert ${noun}`}
               </button>
             )}
           </div>

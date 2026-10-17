@@ -7,6 +7,7 @@ import { Icon as EditorIcon } from "@/ui/icon";
 import { isSitePart, sitePartBlockTypes, type CmsKind } from "../cms_schemas";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { PatternPicker } from "../kits/ui/pattern-picker";
+import { SavedSectionPatterns } from "./saved-section-patterns";
 import { eventOnlyBlockTypes } from "../../events/event_content";
 import {
   getBlockMetadata,
@@ -227,6 +228,15 @@ export function BlockLibrary({
       {zone === rootZone && !search && group === "all" && (
         <PatternPicker
           kind={kind}
+          index={destination}
+          disabled={disabled}
+          onInsert={onInsert}
+        />
+      )}
+      {!isSitePart(kind) && !search && group === "all" && (
+        <SavedSectionPatterns
+          kind={kind}
+          zone={zone}
           index={destination}
           disabled={disabled}
           onInsert={onInsert}

@@ -47,9 +47,21 @@ export async function GET(request: Request, context: Context) {
     if (path.length === 2 && path[1] === "readiness")
       return json(await services.eventReadiness.read(current, path[0]));
     if (path.length === 2 && path[1] === "history")
-      return json(await services.eventEditorial.history(current, path[0]));
+      return json(
+        await services.eventEditorial.history(
+          current,
+          path[0],
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
+      );
     if (path.length === 2 && path[1] === "guests")
-      return json(await services.guests.workspace(current, path[0]));
+      return json(
+        await services.guests.workspace(
+          current,
+          path[0],
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
+      );
     if (path.length === 1 && path[0] === "catalogue")
       return json({
         items: await services.eventWebsite.catalogue(
@@ -63,6 +75,11 @@ export async function GET(request: Request, context: Context) {
           current,
           path[0],
           new URL(request.url).searchParams.get("sourceId") ?? undefined,
+          {
+            page: new URL(request.url).searchParams.get("page") ?? undefined,
+            pageSize:
+              new URL(request.url).searchParams.get("pageSize") ?? undefined,
+          },
         )),
         jobs: await services.lumaJobs.history(
           current,
@@ -73,7 +90,12 @@ export async function GET(request: Request, context: Context) {
     if (path.length === 2 && path[1] === "luma")
       return json(await services.lumaLinks.workspace(current, path[0]));
     if (!path.length)
-      return json({ events: await services.events.list(current) });
+      return json(
+        await services.events.query(
+          current,
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
+      );
     if (path.length === 1 && path[0] === "managers")
       return json({ managers: await services.events.managers(current) });
     if (path.length === 2 && path[1] === "cancellation")
@@ -82,19 +104,34 @@ export async function GET(request: Request, context: Context) {
       return json(await services.registrations.workspace(current, path[0]));
     if (path.length === 2 && path[1] === "registration-preview")
       return json(await services.registrations.editorPreview(current, path[0]));
-    if (path.length === 2 && path[1] === "registrations")
-      return json({
-        registrations: await services.registrations.list(current, path[0]),
-      });
+    if (path.length === 2 && path[1] === "registrations") {
+      const result = await services.registrations.query(
+        current,
+        path[0],
+        Object.fromEntries(new URL(request.url).searchParams),
+      );
+      return json({ ...result, registrations: result.items });
+    }
     if (path.length === 2 && path[1] === "forms")
-      return json({ forms: await services.forms.eventForms(current, path[0]) });
+      return json(
+        await services.forms.collection.list(
+          current,
+          Object.fromEntries(new URL(request.url).searchParams),
+          path[0],
+        ),
+      );
     if (path.length === 2 && path[1] === "team")
       return json(await services.events.team(current, path[0]));
     if (path.length === 2 && path[1] === "website")
       return json(await services.eventWebsite.workspace(current, path[0]));
     if (path.length === 2 && path[1] === "media") {
       await services.events.detail(current, path[0]);
-      return json({ assets: await services.media.publicLibrary(current) });
+      return json(
+        await services.media.publicLibrary(
+          current,
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
+      );
     }
     if (path.length === 1)
       return json(await services.events.detail(current, path[0]));

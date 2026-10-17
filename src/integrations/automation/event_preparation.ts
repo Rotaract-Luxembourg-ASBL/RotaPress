@@ -6,6 +6,7 @@ import { scopeDefinitions } from "./scopes";
 import type { EventTemplateSelection } from "@/features/events/event_templates";
 import { eventPresets } from "@/features/events/event_templates";
 import { eventPageEditorHref } from "@/features/events/event_routes";
+import type { Transaction } from "@/core/authorization/AuthorizationService";
 
 export function requireScopes(
   context: AutomationContext,
@@ -22,6 +23,7 @@ export function requireScopes(
 export async function requirePreparationScopes(
   context: AutomationContext,
   template: EventTemplateSelection,
+  executor?: Transaction,
 ) {
   const scopes: AutomationScope[] = [
     "events:write",
@@ -42,6 +44,7 @@ export async function requirePreparationScopes(
     const current = await context.services.authorization.require(
       context.principal.actor,
       capability,
+      executor,
     );
     if (current.organizationId !== context.principal.organizationId)
       throw new DomainError(
@@ -51,15 +54,25 @@ export async function requirePreparationScopes(
       );
   }
 }
-export async function preparedEvent(context: AutomationContext, id: string) {
+export async function preparedEvent(
+  context: AutomationContext,
+  id: string,
+  executor?: Transaction,
+) {
   const { services: s, principal: p } = context;
-  const event = await s.events.detail(p.actor, id);
+  const event = await s.events.detail(p.actor, id, executor);
   const pages = p.scopes.includes("website:read")
-    ? await s.cms.eventPages(p.actor, id)
+    ? await s.cms.eventPages(p.actor, id, executor)
     : [];
-  const forms = p.scopes.includes("forms:read")
-    ? await s.forms.eventForms(p.actor, id)
-    : [];
+  const formPage = p.scopes.includes("forms:read")
+    ? await s.forms.collection.list(
+        p.actor,
+        { pageSize: 100, status: "all" },
+        id,
+        executor,
+      )
+    : { forms: [], total: 0 };
+  const forms = formPage.forms;
   return {
     event: {
       ...eventFields(event),
@@ -78,6 +91,10 @@ export async function preparedEvent(context: AutomationContext, id: string) {
       moduleKey: page.moduleKey ?? null,
       reviewUrl: eventPageEditorHref(event.id, page.id, page.locale),
     })),
+    formsPage: {
+      total: formPage.total,
+      nextOffset: formPage.total > forms.length ? forms.length : null,
+    },
     forms: forms.map((form) => ({
       id: form.id,
       title: form.draft.title,

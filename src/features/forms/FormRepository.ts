@@ -1,17 +1,7 @@
 import "server-only";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  count,
-  sql,
-} from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { installation, organization } from "../../../db/schema/club";
-import { form, formVersion, formSubmission } from "../../../db/schema/forms";
+import { form, formVersion } from "../../../db/schema/forms";
 import {
   DomainError,
   type DatabaseExecutor,
@@ -23,27 +13,6 @@ import type { FormDto, PublicFormDto } from "./form_types";
 
 export class FormRepository {
   constructor(private readonly db: Database) {}
-
-  async responseCounts(organizationId: string) {
-    return this.db
-      .select({
-        formId: form.id,
-        total: count(formSubmission.id),
-        new: sql<number>`count(${formSubmission.id}) filter (where ${formSubmission.status} = 'new')`.mapWith(
-          Number,
-        ),
-      })
-      .from(form)
-      .leftJoin(
-        formSubmission,
-        and(
-          eq(formSubmission.formId, form.id),
-          eq(formSubmission.organizationId, organizationId),
-        ),
-      )
-      .where(and(eq(form.organizationId, organizationId), isNull(form.eventId)))
-      .groupBy(form.id);
-  }
 
   async installedOrganization(
     executor: DatabaseExecutor = this.db,
@@ -118,6 +87,13 @@ export class FormRepository {
           executor,
         )
       : null;
+    return this.dtoWithVersion(row, version);
+  }
+
+  dtoWithVersion(
+    row: typeof form.$inferSelect,
+    version: Pick<typeof formVersion.$inferSelect, "id" | "number"> | null,
+  ): FormDto {
     return {
       id: row.id,
       kind: row.kind,
@@ -128,21 +104,6 @@ export class FormRepository {
       publishedVersionNumber: version?.number ?? null,
       updatedAt: row.updatedAt.toISOString(),
     };
-  }
-
-  async list(organizationId: string, eventId?: string): Promise<FormDto[]> {
-    const rows = await this.db
-      .select()
-      .from(form)
-      .where(
-        and(
-          eq(form.organizationId, organizationId),
-          eventId ? eq(form.eventId, eventId) : isNull(form.eventId),
-        ),
-      )
-      .orderBy(desc(form.updatedAt))
-      .limit(200);
-    return Promise.all(rows.map((row) => this.dto(row)));
   }
 
   async publicForm(

@@ -29,8 +29,9 @@ automatic database setup and migrations. Review the
   Configure the initial email sender before the first owner signs in.
 - **Work with AI:** independently enable REST API or MCP in Integrations. Scoped
   connections can prepare private pages, events and images, inspect native page
-  previews, and leave event settings for staff approval. Separate grants let an
-  assistant publish specific saved content when you explicitly request it.
+  previews, and execute requested operational actions within explicitly chosen
+  permissions. Separate grants cover publication, private records and management;
+  durable receipts let interrupted actions resume safely.
 
 External integrations require provider configuration and verification on your
 installation. Native paid checkout, check-in and production draw activation are

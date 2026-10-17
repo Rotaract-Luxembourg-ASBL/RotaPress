@@ -8,6 +8,22 @@ async function main() {
   const { services } = await import("../src/composition/services");
   const { pool } = await import("../src/infrastructure/database/client");
   try {
+    const exports = await services.automationRuntime.expireExports();
+    console.log(
+      JSON.stringify({
+        event: "automation_exports_expired",
+        processed: exports.expired,
+        ...exports,
+      }),
+    );
+    const mediaUploads = await services.mediaUploads.expire();
+    console.log(
+      JSON.stringify({
+        event: "media_uploads_expired",
+        processed: mediaUploads.expired,
+        ...mediaUploads,
+      }),
+    );
     const result = await services.notifications.runBatch();
     const calendarSync = await services.calendarSources.runBatch();
     console.log(

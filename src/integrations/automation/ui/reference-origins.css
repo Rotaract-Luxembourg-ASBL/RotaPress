@@ -23,8 +23,7 @@
   margin: 0;
   padding: 0;
 }
-.reference-coverage li,
-.automation-workspace .automation-connections .reference-coverage li {
+.reference-coverage li {
   display: grid;
   gap: 3px;
   min-width: 0;

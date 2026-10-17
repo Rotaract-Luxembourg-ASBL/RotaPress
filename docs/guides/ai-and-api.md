@@ -1,12 +1,14 @@
 # AI content, REST API and MCP
 
-Give an AI client scoped access to prepare website, project, calendar and event content.
-A reference website supplies an ordered content outline and image candidates;
-RotaPress supplies the installed theme and native blocks. Automation prepares **private drafts**, private images and
-settings proposals for review. With a separate publication grant, an assistant can
-publish the exact saved content you explicitly ask it to publish. Applying
-operational settings stays in administration. This integration does not include a model or autonomous crawler:
-your MCP client runs its model and calls the available tools.
+Give an AI client explicitly scoped access to content and club operations. Website,
+image and file saves stay private drafts; administration uploads default public.
+New opt-in grants cover member decisions, roles, private responses, exports,
+registrations, guest access and supported notifications. Requested actions execute
+directly within those grants, with current authority and exact version checks.
+Existing connections gain no new authority automatically. Read the
+[whole-platform workflow](automation-platform.md) for permissions and recovery.
+Your MCP client runs its model and calls the tools; RotaPress does not include a
+model or autonomous crawler.
 
 ## Connect an assistant
 
@@ -52,8 +54,9 @@ than their parent session. Sign-out, expired
 sessions, suspended membership or an incompatible Google-only policy stops access.
 Revoke a key from the same screen. Keys cannot grant new permissions, enable
 features or create keys. Issuance is rate limited and asks you to revoke an existing
-connection when 20 are active. The list shows the latest 100 connections; Better
-Auth cleans up expired keys.
+connection when 20 are active. Search tokens or keys by name or identifier and
+page through all matching credentials for that transport, with an accurate total.
+Search and page survive reloading. Better Auth cleans up expired keys.
 
 OAuth access tokens last five minutes. **Keep connected** is selected by default
 on the consent screen so the client can renew them without asking you again.
@@ -231,9 +234,9 @@ Use `plan_native_website`, `prepare_event` and `review_page_design` MCP prompts,
 or their `automation_website_prompt`, `automation_event_prompt` and
 `automation_review_prompt` tool equivalents. Event preparation discovers blueprints,
 previews the intended result and creates an event with its private pages/forms.
-The assistant can edit packages and prizes, return readiness blockers, and submit
-typed registration or feature proposals. Staff review and apply those proposals
-in RotaPress; the assistant cannot activate registration. Publishing event details
+The assistant can edit packages and prizes and return readiness blockers.
+With the new events:operate grant, specifically requested registration and feature
+changes execute directly after current-version and domain checks. Publishing event details
 requires a separate grant and request; its page and forms publish separately.
 
 ## Prepare project stories
@@ -271,7 +274,8 @@ actions have separate grants:
 | `calendar:write`   | Create and edit calendar and activity drafts; archive or restore unpublished calendars and activities                  |
 | `calendar:design`  | Edit the built-in calendar page's draft title, introduction, view, time zone and calendar selection                    |
 
-`website_get` lists revision IDs; `website_revision_get` reads the chosen version.
+`website_get` includes recent revision IDs; `website_revisions_list` pages through
+all retained history with exact totals. `website_revision_get` reads the chosen version.
 Restoration leaves the published revision unchanged. Page copies use a stable
 `requestId` and the exact source `expectedRevisionId`; identical retries return
 the original receipt. Language creation starts an empty draft or a native shared-part
@@ -333,7 +337,7 @@ Published calendars retain their chosen audience, and calendar/activity/page des
 publish separately. Publishing an activity can trigger normal subscriber updates.
 Publishing a form can make it accept responses under its existing rules. Publishing
 event details does not activate registration, publish its page or apply settings
-proposals. Editorial prize publication requires recent sign-in; it does not issue
+changes. Editorial prize publication requires recent sign-in; it does not issue
 entries or run draws. Packages remain in administration because publication can
 affect checkout. Media must already be public where required. With `media:publish`,
 explicitly request `media_publish` for 1–50 exact reviewed images before publishing
@@ -414,12 +418,12 @@ and 240 authentication attempts/address/minute. Image processing, preview and OA
 have additional bounded quotas described in their guides. Trusted proxy addressing
 must follow the hosting guide.
 
-Timed publication, unpublishing, deletion, hiding media, public-image metadata edits, CustomCode writes,
-provider credentials, member approvals, submissions, guests, payments, draws and
-direct email sending are unavailable. Calendar publication can still enqueue its
-normal notifications. Form reads omit answers/counts; event reads omit staff and
-participants. Website/media scopes still grant private content, so choose your
-AI client and its grants accordingly.
+The [platform action matrix](automation-platform.md) defines private-data and
+operational authority separately from content grants. Website/form/event content
+reads still exclude answers and participant identities. Hiding media, public-image
+metadata editing, executable code, provider credentials, authentication settings,
+arbitrary email, payments and draws remain outside tools. Calendar publication
+retains native notification behavior. Choose private-data grants deliberately.
 
 RotaPress needs no AI-model key for this integration; the chosen client manages
 its model connection. Follow [hosting](hosting.md) for installation and updates,

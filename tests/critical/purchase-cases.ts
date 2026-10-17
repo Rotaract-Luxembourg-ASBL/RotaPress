@@ -201,7 +201,11 @@ export function purchaseChecks(get: () => Context) {
       await expect(
         s.purchases.mine(s.first, s.event.id, s.firstGuest.id),
       ).rejects.toThrow();
-      expect(await s.guests.mine(s.first)).toEqual([]);
+      expect(
+        await s.guests
+          .queryMine(s.first, { pageSize: 100 })
+          .then((result) => result.invitations),
+      ).toEqual([]);
       const firstGrant = await s.claim();
       const secondGrant = await s.claim(s.second, s.secondGuest);
       const own = await s.purchases.mine(s.first, s.event.id, firstGrant);

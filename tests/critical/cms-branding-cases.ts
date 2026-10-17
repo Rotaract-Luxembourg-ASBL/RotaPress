@@ -98,6 +98,18 @@ export function brandingChecks(get: () => Context) {
       asset: { ...logo, visibility: "public" },
       savedReferences: 1,
       publishedReferences: 0,
+      destinations: [
+        {
+          href: "/admin/website?locale=en&tab=appearance",
+          kind: "website",
+          published: false,
+          retained: true,
+          title: "Website appearance (en)",
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
     });
     await media.update(owner, { id: icon.id, visibility: "public" });
     site = await cms.publishSite(owner, {
@@ -163,6 +175,16 @@ export function brandingChecks(get: () => Context) {
       asset: { ...logo, visibility: "public" },
       savedReferences: 2,
       publishedReferences: 2,
+      destinations: ["en", "fr"].map((locale) => ({
+        href: `/admin/website?locale=${locale}&tab=appearance`,
+        kind: "website",
+        published: true,
+        retained: true,
+        title: `Website appearance (${locale})`,
+      })),
+      total: 2,
+      page: 1,
+      pageSize: 20,
     });
     for (const locale of ["en", "fr"] as const) {
       let site = await cms.getSite(owner, locale);
@@ -182,6 +204,18 @@ export function brandingChecks(get: () => Context) {
           asset: { ...logo, visibility: "public" },
           savedReferences: 1,
           publishedReferences: 1,
+          destinations: [
+            {
+              href: "/admin/website?locale=fr&tab=appearance",
+              kind: "website",
+              published: true,
+              retained: true,
+              title: "Website appearance (fr)",
+            },
+          ],
+          total: 1,
+          page: 1,
+          pageSize: 20,
         });
       }
     }
@@ -189,6 +223,10 @@ export function brandingChecks(get: () => Context) {
       asset: { ...logo, visibility: "public" },
       savedReferences: 0,
       publishedReferences: 0,
+      destinations: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
     });
     await media.update(owner, { id: logo.id, visibility: "private" });
     await media.delete(owner, logo.id);

@@ -63,6 +63,7 @@ export type SubmissionSummary = {
   };
 };
 export type SubmissionDto = SubmissionSummary & {
+  version: number;
   versionId: string;
   definition: FormDefinition;
   answers: FormAnswers;
@@ -81,6 +82,9 @@ export type SubmissionDto = SubmissionSummary & {
 export type SubmissionList = {
   submissions: SubmissionSummary[];
   hasMore: boolean;
+  total: number;
+  page: number;
+  pageSize: number;
 };
 export type RetentionPreview = {
   formId: string;

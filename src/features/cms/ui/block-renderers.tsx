@@ -4,6 +4,7 @@ import { isSafeLink, type Block } from "../cms_schemas";
 import { FeatureIcon } from "./feature-icon";
 import { cmsImageSource } from "../kits/template_images";
 import { PublicAccountLink } from "@/ui/public-account-link";
+import { GalleryPresentation } from "./gallery-presentation";
 
 export type BlockProps<T extends Block["type"]> = Extract<
   Block,
@@ -141,18 +142,7 @@ export function ImageBlock(
 }
 
 export function GalleryBlock(props: BlockProps<"Gallery">) {
-  return (
-    <section
-      className={`cms-block cms-gallery${props.columns ? ` cms-gallery-columns-${props.columns}` : ""}${props.aspectRatio ? ` cms-image-ratio-${props.aspectRatio}` : ""}`}
-    >
-      {props.items.map((item, index) => (
-        <figure key={`${item.assetId}-${index}`}>
-          <CmsImage id={item.assetId} alt={item.alt} />
-          {item.caption && <figcaption>{item.caption}</figcaption>}
-        </figure>
-      ))}
-    </section>
-  );
+  return <GalleryPresentation {...props} />;
 }
 
 export function CardsBlock(props: BlockProps<"Cards">) {

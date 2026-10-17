@@ -9,6 +9,7 @@ import {
   AuthorizationService,
   DomainError,
   type DatabaseExecutor,
+  type Transaction,
   type TrustedActor,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
@@ -96,10 +97,11 @@ export class SubmissionService {
     actor: TrustedActor,
     id: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<SubmissionDto> {
     z.uuid().parse(id);
     const values = submissionStatusSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       await this.forms.lockInstalled(tx);
       const scope = await this.submissionScope(
         actor,
@@ -107,10 +109,20 @@ export class SubmissionService {
         "submissions.manage",
         tx,
       );
-      await this.repository.owned(id, scope.organizationId, tx);
+      const current = await this.repository.owned(id, scope.organizationId, tx);
+      if (current.version !== values.expectedVersion)
+        throw new DomainError(
+          "SUBMISSION_CHANGED",
+          "This response changed. Reload its current status before trying again.",
+          409,
+        );
       await tx
         .update(formSubmission)
-        .set({ status: values.status, updatedAt: new Date() })
+        .set({
+          status: values.status,
+          version: current.version + 1,
+          updatedAt: new Date(),
+        })
         .where(
           and(
             eq(formSubmission.id, id),
@@ -124,17 +136,19 @@ export class SubmissionService {
         targetId: id,
       });
       return this.repository.detail(id, scope.organizationId, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async exportCsv(
     actor: TrustedActor,
     formId: string,
     input: unknown = {},
+    executor?: Transaction,
   ): Promise<string> {
     z.uuid().parse(formId);
     const filter = submissionFilterSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(
         actor,
         formId,
@@ -211,13 +225,19 @@ export class SubmissionService {
         targetId: formId,
       });
       return `\uFEFF${lines.join("\r\n")}\r\n`;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
-  async delete(actor: TrustedActor, id: string, input: unknown): Promise<void> {
+  async delete(
+    actor: TrustedActor,
+    id: string,
+    input: unknown,
+    executor?: Transaction,
+  ): Promise<void> {
     z.uuid().parse(id);
     submissionDeleteSchema.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       await this.forms.lockInstalled(tx);
       const scope = await this.submissionScope(
         actor,
@@ -246,15 +266,17 @@ export class SubmissionService {
         action: "submission.deleted",
         targetId: id,
       });
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async retryNotification(
     actor: TrustedActor,
     id: string,
+    executor?: Transaction,
   ): Promise<SubmissionDto> {
     z.uuid().parse(id);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       await this.forms.lockInstalled(tx);
       const scope = await this.submissionScope(
         actor,
@@ -305,7 +327,8 @@ export class SubmissionService {
         targetId: id,
       });
       return this.repository.detail(id, scope.organizationId, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async retentionPreview(
@@ -348,10 +371,11 @@ export class SubmissionService {
     actor: TrustedActor,
     formId: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<{ deleted: number }> {
     z.uuid().parse(formId);
     const values = retentionDeleteSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(
         actor,
         formId,
@@ -412,7 +436,8 @@ export class SubmissionService {
         targetId: formId,
       });
       return { deleted: ids.length };
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   private async retainedIds(

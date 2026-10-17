@@ -23,6 +23,12 @@ profile. Club membership and staff permissions remain separate.
 5. Open or edit a record with its visible action. Related tasks, such as Responses
    or Design page, remain beside it. Lifecycle actions use the labeled three-dot menu.
 
+Returning from a record keeps its collection filters and position in the current
+tab. The shared administration shell waits for the row to load before restoring
+its position; scrolling or using the keyboard cancels a pending restoration.
+Changing a search or filter never restores an older position. Media details stay
+over the library, and Photo albums keeps an explicit return to the filtered library.
+
 Event removal is called **Archive event** throughout. Its review explains that
 records are retained and event restoration is not currently supported. Forms and
 Calendar activities have their own archive and restoration rules.
@@ -61,10 +67,10 @@ drafts. Calendar schedules are not presented as individual upcoming occurrences.
 
 Every section uses existing authorized workspace results and disappears when its
 feature or capability is unavailable. Failed reads offer retry instead of a zero.
-Member/form summaries follow their existing list limits (500 memberships and 200
-recently updated forms); **About these counts** explains that scope. Website counts
-include language versions; response totals cover all matching pages. An empty
-attention list is not a claim that every record in a larger installation was reviewed.
+Member, form and response totals cover all matching authorized records. Website
+counts cover the selected language. Recent-draft cards use the current bounded
+result page; they are shortcuts, not a complete content audit. An empty attention
+list is not a claim that every record in a larger installation was reviewed.
 
 Response center has a compact status/search/form toolbar. Purpose and date filters
 open under **More filters**; their active values remain visible when collapsed.

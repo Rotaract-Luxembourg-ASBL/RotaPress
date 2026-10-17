@@ -141,6 +141,37 @@ afterAll(async () => {
 });
 
 describe("C03 Projects publication and current authority", () => {
+  it("paginates all project drafts with exact totals, stable offsets and literal search", async () => {
+    const { owner, scope } = await club();
+    await db
+      .insert(project)
+      .values(
+        Array.from({ length: 105 }, (_, index) => ({
+          organizationId: scope.organizationId,
+          slug: `project-${index}`,
+          draft: projectContentSchema.parse({
+            title: `Project ${String(index).padStart(3, "0")}`,
+          }),
+        })),
+      );
+    const result = await projects.query(owner, {
+      page: 4,
+      pageSize: 30,
+      sort: "title",
+    });
+    expect(result).toMatchObject({
+      total: 105,
+      counts: { active: 105, draft: 105, published: 0 },
+    });
+    expect(result.items).toHaveLength(15);
+    expect(
+      (
+        await projects.query(owner, { offset: 3, pageSize: 2, sort: "title" })
+      ).items.map((row) => row.draft.title),
+    ).toEqual(["Project 003", "Project 004"]);
+    expect((await projects.query(owner, { search: "%" })).total).toBe(0);
+  });
+
   it("keeps drafts private, generates stable distinct links and publishes only saved content", async () => {
     const { owner } = await club();
     let row = await projects.create(owner, content);
@@ -214,7 +245,11 @@ describe("C03 Projects publication and current authority", () => {
       role: "member",
       status: "approved",
     });
-    await expect(projects.list(member)).rejects.toMatchObject({
+    await expect(
+      projects
+        .query(member, { status: "all", pageSize: 100 })
+        .then((result) => result.items),
+    ).rejects.toMatchObject({
       code: "ACCESS_DENIED",
     });
     await expect(projects.detail(member, row.id)).rejects.toMatchObject({
@@ -289,7 +324,11 @@ describe("C03 Projects publication and current authority", () => {
     });
     expect(await reader.publicList()).toEqual([]);
     expect(await reader.publicBySlug(row.slug)).toBeNull();
-    await expect(projects.list(owner)).rejects.toMatchObject({
+    await expect(
+      projects
+        .query(owner, { status: "all", pageSize: 100 })
+        .then((result) => result.items),
+    ).rejects.toMatchObject({
       code: "FEATURE_DISABLED",
     });
     await expect(projects.detail(owner, row.id)).rejects.toMatchObject({

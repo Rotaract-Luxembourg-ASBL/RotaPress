@@ -6,6 +6,7 @@ export const grantGuestSchema = z
   .object({
     source: z.enum(["native", "luma"]),
     sourceId: z.uuid(),
+    expectedEmail: z.email().optional(),
     confirmed: z.literal(true),
   })
   .strict();
@@ -30,6 +31,7 @@ export type GuestWorkspace = {
     name: string;
     email: string;
     status: string;
+    validEmail: boolean;
   }[];
   grants: {
     id: string;
@@ -43,6 +45,8 @@ export type GuestWorkspace = {
     version: number;
   }[];
   limited: boolean;
+  candidatePagination: { total: number; page: number; pageSize: number };
+  pagination: { total: number; page: number; pageSize: number };
 };
 export type GuestInvitation = {
   id: string;

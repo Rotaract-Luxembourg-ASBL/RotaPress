@@ -174,6 +174,7 @@ export async function automationJourney(
       ).status(),
     ).toBe(403);
     const edit = {
+      requestId: randomUUID(),
       locale: "en",
       expectedRevisionId: draft.draft.id,
       title: "Reviewed draft",
@@ -220,7 +221,7 @@ export async function automationJourney(
       (
         await api.patch(`/api/v1/website/content/${pageId}`, {
           headers: bearer,
-          data: edit,
+          data: { ...edit, requestId: randomUUID() },
         })
       ).status(),
     ).toBe(409);
@@ -242,8 +243,8 @@ export async function automationJourney(
       name: "content_import",
       arguments: input,
     });
-    expect(retry.isError).toBe(false);
-    expect(retry.structuredContent).toEqual({ data: receipt });
+    expect(retry.isError).toBe(true);
+    expect(JSON.stringify(retry.content)).toContain("another connection");
     expect(
       (await client.callTool({ name: "forms_list", arguments: {} })).isError,
     ).toBe(true);

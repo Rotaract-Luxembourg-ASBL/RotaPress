@@ -114,8 +114,6 @@ registry that handles requests. Use them for every field, enum and required valu
 | `/events/{eventId}/packages`                              | PATCH      | `events:prepare`                               |
 | `/events/{id}/prizes`                                     | GET        | `events:read`                                  |
 | `/events/{eventId}/prizes`                                | PATCH      | `events:prepare`                               |
-| `/events/proposals`                                       | POST       | `events:prepare`                               |
-| `/events/{id}/proposals`                                  | GET        | `events:read`                                  |
 | `/directory`                                              | GET, POST  | `directory:read`, `directory:write`            |
 | `/directory/{id}`                                         | PATCH      | `directory:write`                              |
 | `/projects`                                               | GET, POST  | `projects:read`, `projects:write`              |
@@ -150,6 +148,73 @@ definitions support recurrence, skipped dates and cancellation drafts. Archive a
 restore operations accept only unpublished records. Editing a published item's
 draft preserves its public snapshot. Page design uses a separate grant. On an
 uncertain create response, list and inspect existing records before retrying.
+
+## Platform operations (version 2)
+
+These routes share the MCP operations and their closed schemas. New scopes are
+opt-in; requested changes execute directly within current domain authority.
+See [platform permissions, recovery and exports](automation-platform.md).
+Paths below are relative to `/api/v1`.
+
+| Path | Method | Required grants |
+| --- | --- | --- |
+| `/website/content/{id}/composition` | POST | `website:preview` + `website:read` |
+| `/website/content/{id}/composition-preview` | POST | `website:preview` + `website:read` |
+| `/prompts/platform_task` | POST | Authenticated discovery |
+| `/members` | GET | `members:read` |
+| `/members/{membershipId}/decision` | POST | `members:decide` |
+| `/members/{membershipId}/role` | POST | `access:roles` |
+| `/forms/{formId}/responses` | GET | `responses:read` |
+| `/responses/{id}` | GET | `responses:read` |
+| `/responses/{id}/status` | POST | `responses:write` |
+| `/responses/{id}/delete` | POST | `responses:delete` |
+| `/forms/{formId}/retention` | GET | `responses:delete` |
+| `/forms/{formId}/retention/delete` | POST | `responses:delete` |
+| `/forms/{formId}/exports` | POST | `responses:export` |
+| `/response-exports/{id}` | GET | `responses:export` |
+| `/response-exports/{id}/download` | GET / HEAD | `responses:export` |
+| `/files` | GET | `files:read` |
+| `/files/{id}` | GET | `files:read` |
+| `/files/{id}/bytes` | GET | `files:download` |
+| `/files/uploads` | POST | `files:write` |
+| `/files/uploads/{id}` | GET | `files:write` |
+| `/files/uploads/{id}/chunks` | POST | `files:write` |
+| `/files/uploads/{id}/finish` | POST | `files:write` |
+| `/files/uploads/{id}/cancel` | POST | `files:write` |
+| `/files/publish` | POST | `files:publish` |
+| `/albums` | GET | `albums:read` |
+| `/albums/{id}` | GET | `albums:read` |
+| `/albums` | POST | `albums:write` |
+| `/albums/{id}` | PATCH | `albums:write` |
+| `/albums/{id}/publish` | POST | `albums:publish` |
+| `/albums/{id}/unpublish` | POST | `albums:manage` |
+| `/albums/{id}/delete` | POST | `albums:manage` |
+| `/events/{eventId}/registrations` | GET | `registrations:read` |
+| `/events/{eventId}/registrations/{id}/cancel` | POST | `registrations:manage` |
+| `/events/{eventId}/registration` | GET | `events:operate` |
+| `/events/{eventId}/registration` | POST | `events:operate` |
+| `/events/{id}/features` | POST | `events:operate` |
+| `/events/{eventId}/cancellation` | GET | `events:manage` |
+| `/events/{id}/cancel` | POST | `events:manage` |
+| `/events/{id}/archive` | POST | `events:manage` |
+| `/events/{eventId}/guests` | GET | `guests:read` |
+| `/events/{eventId}/guests` | POST | `guests:access` |
+| `/events/{eventId}/guests/{id}/revoke` | POST | `guests:access` |
+| `/events/{id}/team` | POST | `access:roles` |
+| `/events/{id}/manager` | POST | `access:roles` |
+| `/forms/{id}/settings` | GET | `forms:settings` |
+| `/forms/{id}/settings` | POST | `forms:settings` |
+| `/forms/{id}/archive` | POST | `forms:manage` |
+| `/forms/{id}/deletion` | GET | `forms:delete` + `responses:delete` |
+| `/forms/{id}/delete` | POST | `forms:delete` + `responses:delete` |
+| `/communications/templates` | GET | `communications:templates` |
+| `/communications/templates/{key}/draft` | POST | `communications:templates` |
+| `/communications/templates/{key}/publish` | POST | `communications:publish` |
+| `/responses/{id}/retry-alert` | POST | `communications:send` |
+| `/tasks/{taskId}/receipts` | GET | Authenticated discovery |
+| `/website/pages` | GET | `website:read` |
+| `/website/pages/{id}/placement` | POST | `website:organize` + `website:write` |
+| `/website/patterns` | POST | `website:organize` + `website:write` |
 
 ## Requested publication
 
@@ -274,9 +339,9 @@ runtime requirements, limits and manual checks.
 4. Read `events_workspace` to find page/form IDs, configuration versions, readiness
    blockers and staff review links. Edit native page, form, package and prize
    drafts through their versioned operations; package checkout remains disabled.
-5. Use `events_propose_settings` for a registration or event-feature change. Return
-   the proposal's review URL to the staff member and inspect its status with
-   `events_proposals`.
+5. For explicitly requested registration or feature changes, opt into
+   `events:operate`, read current versions and use `events_registration_set` or
+   `events_module_set` with a stable request ID. These execute directly.
 
 Preparation needs `events:prepare`, `events:write`, `website:read` and
 `website:write`. A preset using forms or an event copy also needs `forms:read`
@@ -284,15 +349,11 @@ and `forms:write`; a copy additionally needs `events:read`. Current domain
 capabilities, enabled features and source-event access are checked separately.
 The workspace only includes page/form summaries when their read grants are present.
 
-Creating a proposal saves an immutable suggestion and changes no event settings.
-Applying it requires a recently authenticated staff member with current
-integration and event permissions in the administration review screen. That
-manual action applies the exact settings immediately; enabling registration or
-disabling a feature can affect an already-published event. Content publication is
-unchanged. Changed versions leave a proposal pending for a fresh review.
-Rejecting it leaves settings unchanged. The administration apply/reject endpoint
-is deliberately absent from REST automation and MCP; `confirmed: true` in a model
-request is not human approval.
+V2 retires the proposal/review workflow. Existing `events:prepare` grants do not
+become operational authority. New actions use exact current target versions,
+recent identity where required, and receipts committed with the native mutation.
+See [whole-platform actions and recovery](automation-platform.md) for the full
+permission matrix, files, private exports and task receipts.
 
 Preparation never copies participants, purchases, credentials or provider state.
 It does not send invitations, process payments, run draws or activate a real event
@@ -307,7 +368,8 @@ Pagination uses offsets rather than database cursors and is intended for club-si
 collections.
 `/openapi.json` returns the OpenAPI document itself without the data envelope.
 
-Page results include the draft, published revision ID and revision history. Form
+Page results include the draft, published revision ID and recent revisions. Use
+`website_revisions_list` for complete paginated history and exact totals. Form
 results include the definition and draft revision, without responses or delivery
 settings. Event results exclude staff identities and participant records. Directory
 results distinguish draft and published profiles. Output validation fails closed
@@ -328,13 +390,13 @@ and `automation_project_prompt` tool describe this workflow.
 | Form                                | `expectedRevision` from `draftRevision`        |
 | Event/profile/project/package/prize | `expectedVersion` from `version`               |
 | Private media metadata              | `expectedRevision` from `metadataRevision`     |
-| Event settings proposal             | Target event or registration `expectedVersion` |
+| Event operational action            | Target event or registration `expectedVersion` plus request receipt |
 
 For new page batches, prefer `content_import`: one UUID request ID, 1–10 pages,
 each containing 1–12 plain-text sections. The transaction creates all drafts or
 none. Repeating the same parsed payload and UUID returns the receipt; changing
 the payload under that UUID returns 409. Existing slugs are never overwritten.
-Image uploads, source-image imports, event preparation and event-setting proposals
+Image uploads, source-image imports, event preparation and receipt-backed operational actions
 also support stable `requestId` retries. Keep the exact source URL, bytes/metadata
 or reviewed payload and token.
 Receipts remain bound to the creating actor and organization; a changed payload

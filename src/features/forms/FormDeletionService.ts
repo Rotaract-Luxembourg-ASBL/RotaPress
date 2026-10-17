@@ -8,6 +8,7 @@ import {
   DomainError,
   type DatabaseExecutor,
   type TrustedActor,
+  type Transaction,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import { FormRepository } from "./FormRepository";
@@ -43,10 +44,15 @@ export class FormDeletionService {
     });
   }
 
-  async delete(actor: TrustedActor, id: string, input: unknown): Promise<void> {
+  async delete(
+    actor: TrustedActor,
+    id: string,
+    input: unknown,
+    executor?: Transaction,
+  ): Promise<void> {
     z.uuid().parse(id);
     const values = deletionSchema.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       await this.repository.lockInstalled(tx);
       const review = await this.reviewWith(actor, id, tx);
       if (review.blockedReason)
@@ -80,7 +86,8 @@ export class FormDeletionService {
         action: "form.deleted",
         targetId: id,
       });
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   private async reviewWith(

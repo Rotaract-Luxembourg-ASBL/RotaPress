@@ -7,6 +7,8 @@ import { submissionStatuses, type SubmissionFilter } from "../form_schemas";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { errorMessage, useResource } from "@/ui/api";
 import { Loading, Notice, PageHeading } from "@/ui/primitives";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 
 export function notificationSummary(value: SubmissionSummary["notifications"]) {
   const parts = [
@@ -22,9 +24,11 @@ export function notificationSummary(value: SubmissionSummary["notifications"]) {
 function SubmissionResults({
   formId,
   query,
+  onPage,
 }: {
   formId: string;
   query: string;
+  onPage: (page: number) => void;
 }) {
   const { data, error } = useResource<SubmissionList>(
     `/api/admin/forms/${formId}/submissions${query}`,
@@ -36,7 +40,9 @@ function SubmissionResults({
       <ul className="forms-submission-list">
         {data.submissions.map((submission) => (
           <li key={submission.id}>
-            <Link href={`/admin/forms/${formId}/submissions/${submission.id}`}>
+            <Link
+              href={`/admin/forms/${formId}/submissions/${submission.id}?returnTo=${encodeURIComponent(`/admin/forms/${formId}/submissions${query}`)}`}
+            >
               <strong>
                 {new Date(submission.receivedAt).toLocaleString()}
               </strong>
@@ -52,25 +58,41 @@ function SubmissionResults({
           <li>No submissions match these filters.</li>
         )}
       </ul>
-      {data.hasMore && (
-        <p className="field-help">
-          Showing the most recent 100 matching submissions. Narrow the dates or
-          export the filtered results.
-        </p>
-      )}
+      <CollectionPagination
+        page={data.page}
+        pageSize={data.pageSize}
+        total={data.total}
+        noun="responses"
+        onPage={onPage}
+      />
     </>
   );
 }
 
 export function SubmissionsList({ formId }: { formId: string }) {
   const user = useCurrentUser();
+  const location = useCollectionLocation();
   const { data: form, error: formError } = useResource<FormDto>(
     `/api/admin/forms/${formId}`,
   );
-  const [status, setStatus] = useState<SubmissionFilter["status"] | "">("");
-  const [after, setAfter] = useState("");
-  const [before, setBefore] = useState("");
-  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<SubmissionFilter["status"] | "">(
+    submissionStatuses.find(
+      (value) => value === location.params.get("status"),
+    ) ?? "",
+  );
+  const [after, setAfter] = useState(
+    (location.params.get("after") ?? "").slice(0, 10),
+  );
+  const [before, setBefore] = useState(
+    (location.params.get("before") ?? "").slice(0, 10),
+  );
+  const queryParams = new URLSearchParams();
+  for (const key of ["status", "after", "before"]) {
+    const value = location.params.get(key);
+    if (value) queryParams.set(key, value);
+  }
+  queryParams.set("page", String(location.page));
+  const query = `?${queryParams}`;
   const [error, setError] = useState<string>();
   const [exporting, setExporting] = useState(false);
 
@@ -81,20 +103,27 @@ export function SubmissionsList({ formId }: { formId: string }) {
       setError("The start date must come before the end date.");
       return;
     }
-    const params = new URLSearchParams();
-    if (status) params.set("status", status);
-    if (after) params.set("after", new Date(`${after}T00:00:00`).toISOString());
-    if (before)
-      params.set("before", new Date(`${before}T23:59:59.999`).toISOString());
-    setQuery(params.size ? `?${params}` : "");
+    location.change({
+      status,
+      after: after ? new Date(`${after}T00:00:00`).toISOString() : "",
+      before: before ? new Date(`${before}T23:59:59.999`).toISOString() : "",
+    });
   }
 
   async function download() {
     setExporting(true);
     setError(undefined);
     try {
+      // History updates immediately; React may still be rendering the previous
+      // collection when someone exports directly after applying filters.
+      const current = new URLSearchParams(window.location.search);
+      const exportQuery = new URLSearchParams();
+      for (const key of ["status", "after", "before"]) {
+        const value = current.get(key);
+        if (value) exportQuery.set(key, value);
+      }
       const response = await fetch(
-        `/api/admin/forms/${formId}/submissions/export${query}`,
+        `/api/admin/forms/${formId}/submissions/export?${exportQuery}`,
         { cache: "no-store" },
       );
       if (!response.ok) {
@@ -189,7 +218,12 @@ export function SubmissionsList({ formId }: { formId: string }) {
             </button>
           )}
         </form>
-        <SubmissionResults key={query} formId={formId} query={query} />
+        <SubmissionResults
+          key={query}
+          formId={formId}
+          query={query}
+          onPage={(page) => location.change({ page }, false)}
+        />
       </section>
     </>
   );

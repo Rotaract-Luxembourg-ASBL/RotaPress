@@ -6,6 +6,8 @@ import {
 } from "@/features/cms/cms_commands";
 import { cmsLocaleSchema } from "@/features/cms/cms_schemas";
 import { operation, page, pagination } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { requireReceiptEvent } from "./receipt_authority";
 import { referenceUrlSchema } from "./reference_content";
 import { importPagesInput, importReceiptSchema } from "./import_schemas";
 import {
@@ -21,6 +23,7 @@ export const websiteOperations = [
   operation(
     {
       name: "website_context",
+      effect: "read",
       output: websiteContextOutput,
       example: { locale: "en" },
       method: "GET",
@@ -38,6 +41,7 @@ export const websiteOperations = [
   operation(
     {
       name: "website_list",
+      effect: "read",
       output: pageOutput(websiteSummaryOutput),
       example: { limit: 20, offset: 0 },
       method: "GET",
@@ -53,6 +57,7 @@ export const websiteOperations = [
   operation(
     {
       name: "website_get",
+      effect: "read",
       output: websiteDetailOutput,
       example: { id: exampleId, locale: "en" },
       method: "GET",
@@ -65,9 +70,10 @@ export const websiteOperations = [
     async ({ services: s, principal: p }, i) =>
       s.cms.detail(p.actor, i.id, i.locale),
   ),
-  operation(
+  receiptOperation(
     {
       name: "website_create",
+      effect: "draft",
       output: websiteDetailOutput,
       example: {
         kind: "page",
@@ -79,15 +85,26 @@ export const websiteOperations = [
       method: "POST",
       path: "/website/content",
       scope: "website:write",
-      description:
-        "Create a private draft from a native page template. For retry-safe multi-page creation use content_import.",
+      description: "Create a private draft from a native page template.",
       input: createInput,
     },
-    async ({ services: s, principal: p }, i) => s.cms.create(p.actor, i),
+    (context, i, tx) =>
+      i.event
+        ? requireReceiptEvent(context, i.event.id, "events.edit", tx)
+        : context.services.authorization.require(
+            context.principal.actor,
+            "cms.edit",
+            tx,
+          ),
+    async ({ services: s, principal: p }, i, tx) => {
+      const id = await s.cms.createDraft(p.actor, i, tx);
+      return s.cms.detail(p.actor, id, i.locale, tx);
+    },
   ),
-  operation(
+  receiptOperation(
     {
       name: "website_save",
+      effect: "draft",
       output: websiteDetailOutput,
       example: { id: exampleId, expectedRevisionId: exampleId, ...pageExample },
       method: "PATCH",
@@ -97,14 +114,18 @@ export const websiteOperations = [
         "Save a draft using its current expectedRevisionId. Conflicts require rereading. Executable CustomCode is unavailable to automation; edit it manually.",
       input: saveInput,
     },
-    async ({ services: s, principal: p }, i) => {
+    ({ services: s, principal: p }, i, tx) =>
+      s.cms.requireMutation(p.actor, i.id, "cms.edit", tx),
+    async ({ services: s, principal: p }, i, tx) => {
       requireNonExecutableContent(i.data);
-      return s.cms.save(p.actor, i);
+      await s.cms.drafts.save(p.actor, i, tx);
+      return s.cms.detail(p.actor, i.id, i.locale, tx);
     },
   ),
   operation(
     {
       name: "source_read",
+      effect: "read",
       output: referenceOutput,
       example: { url: "https://www.rotary.org/" },
       readOnly: true,
@@ -120,9 +141,10 @@ export const websiteOperations = [
       return sources.inspect(i.url, principal.sourceOrigins);
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "content_import",
+      effect: "draft",
       output: importReceiptSchema,
       example: importExample,
       method: "POST",
@@ -132,11 +154,14 @@ export const websiteOperations = [
         "Atomically create up to ten private text starter drafts with source attribution. This creates Heading/RichText content, not a finished visual recreation: follow with website_save and native design recipes for images, heroes, columns and galleries. Use a stable requestId for retries. Existing slugs are never overwritten; nothing is published.",
       input: importPagesInput,
     },
-    async ({ imports, principal }, i) => imports.create(principal, i),
+    ({ services, principal }, _i, tx) =>
+      services.authorization.require(principal.actor, "cms.edit", tx),
+    async ({ imports, principal }, i, tx) => imports.create(principal, i, tx),
   ),
   operation(
     {
       name: "import_get",
+      effect: "read",
       output: importReceiptSchema,
       example: { requestId: exampleId },
       method: "GET",

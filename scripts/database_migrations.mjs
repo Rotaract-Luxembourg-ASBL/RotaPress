@@ -39,6 +39,12 @@ export async function applyDatabaseMigrations(connection) {
       "REVOKE UPDATE, DELETE, TRUNCATE ON club.cms_revision FROM rotapress_app",
     );
     await client.query(
+      "REVOKE UPDATE, DELETE, TRUNCATE ON club.media_album_revision FROM rotapress_app",
+    );
+    await client.query(
+      "REVOKE UPDATE, DELETE, TRUNCATE ON club.content_generation FROM rotapress_app",
+    );
+    await client.query(
       "REVOKE UPDATE, DELETE, TRUNCATE ON club.event_revision FROM rotapress_app",
     );
     await client.query(

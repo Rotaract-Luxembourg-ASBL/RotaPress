@@ -26,7 +26,8 @@ import {
   validOAuthRedirect,
 } from "./policy";
 import { replaceOAuthPermissions } from "./permission_store";
-import { connectionHistory, recentConnectionActivity } from "./activity";
+import { recentConnectionActivity } from "./activity";
+import { listOAuthConnections } from "./connection_list";
 import { withOAuthGrantLock } from "./grant_lock";
 import { oauthAuthorizationCodeIds } from "./authorization_codes";
 
@@ -114,67 +115,8 @@ export class OAuthConnections {
     };
   }
 
-  async list(actor: TrustedActor) {
-    const access = await this.authorization.require(
-      actor,
-      "integrations.manage",
-    );
-    const clients = await this.db
-      .select({
-        clientId: oauthClient.clientId,
-        name: oauthClient.name,
-        disabled: oauthClient.disabled,
-        redirectUris: oauthClient.redirectUris,
-        scopes: oauthClient.scopes,
-        createdAt: oauthClient.createdAt,
-        metadata: oauthClient.metadata,
-        authentication: oauthClient.tokenEndpointAuthMethod,
-      })
-      .from(oauthClient)
-      .where(eq(oauthClient.userId, actor.userId))
-      .orderBy(desc(oauthClient.createdAt))
-      .limit(100);
-    const history = await connectionHistory(
-      this.db,
-      access.organizationId,
-      actor.userId,
-      clients.map((client) => client.clientId),
-    );
-    return clients.flatMap((client) => {
-      const metadata = oauthClientMetadata.safeParse(client.metadata);
-      if (
-        !metadata.success ||
-        metadata.data.organizationId !== access.organizationId
-      )
-        return [];
-      const consent = history.consents.find(
-        (item) => item.clientId === client.clientId,
-      );
-      const lastUsedAt =
-        history.latest.find(
-          (item) => item.targetId === `oauth:${client.clientId}`,
-        )?.at ?? null;
-      return [
-        {
-          clientId: client.clientId,
-          name: client.name,
-          disabled: Boolean(client.disabled),
-          redirectUris: client.redirectUris,
-          scopes: (client.scopes ?? []).filter(
-            (scope) => automationScopeSchema.safeParse(scope).success,
-          ),
-          sourceOrigins: metadata.data.sourceOrigins,
-          createdAt: client.createdAt,
-          authentication: client.authentication,
-          permissionsRevision: metadata.data.permissionsRevision ?? "initial",
-          approvedScopes: (consent?.scopes ?? []).filter(
-            (scope) => automationScopeSchema.safeParse(scope).success,
-          ),
-          consentedAt: consent?.at ?? null,
-          lastUsedAt,
-        },
-      ];
-    });
+  async list(actor: TrustedActor, input: unknown = {}) {
+    return listOAuthConnections(this.db, this.authorization, actor, input);
   }
 
   async revoke(

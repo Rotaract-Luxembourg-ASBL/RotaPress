@@ -20,6 +20,12 @@ current area in a labeled menu with Escape dismissal and focus return.
 Calendar and booking destinations follow current feature availability. The administration link appears only for
 accounts with current staff capabilities.
 
+Bookings, invitations and sent responses have searchable, paginated histories.
+Their totals cover the account's accessible records, including older entries.
+Filters and page positions stay in the URL. Home retains a small recent preview;
+open the corresponding area for the complete history. Sign-in links preserve the
+intended account area or guest event when a session has expired.
+
 The portal shares the published website header, footer, logo, colors, typography
 and theme with the public membership page. Account navigation sits below the page
 heading, with sign-out and permitted administration access nearby. Changing the

@@ -20,6 +20,46 @@ export async function mediaImageEditingJourney(
     name: "Image details",
     exact: true,
   });
+  const preview = dialog.getByRole("region", {
+    name: "Image preview",
+    exact: true,
+  });
+  const inspector = dialog.getByRole("complementary", {
+    name: "Image information",
+    exact: true,
+  });
+  const geometry = await dialog.evaluate((element) => {
+    const preview = element
+      .querySelector(".media-preview-canvas")!
+      .getBoundingClientRect();
+    const image = element
+      .querySelector(".media-preview-canvas img")!
+      .getBoundingClientRect();
+    const footer = element
+      .querySelector(".media-detail-actions")!
+      .getBoundingClientRect();
+    const modal = element.getBoundingClientRect();
+    return {
+      previewTop: preview.top,
+      imageTop: image.top,
+      imageBottom: image.bottom,
+      previewBottom: preview.bottom,
+      footerBottom: footer.bottom,
+      modalBottom: modal.bottom,
+    };
+  });
+  expect(geometry.imageTop).toBeGreaterThanOrEqual(geometry.previewTop - 1);
+  expect(geometry.imageBottom).toBeLessThanOrEqual(geometry.previewBottom + 1);
+  expect(geometry.footerBottom).toBeLessThanOrEqual(geometry.modalBottom);
+  await expect(preview).toBeVisible();
+  await inspector.getByRole("tab", { name: "Organize", exact: true }).click();
+  await expect(
+    inspector.getByLabel("Collection", { exact: true }),
+  ).toBeVisible();
+  await inspector.getByRole("tab", { name: "Usage", exact: true }).click();
+  await expect(inspector.getByLabel("File URL", { exact: true })).toBeVisible();
+  await inspector.getByRole("tab", { name: "Details", exact: true }).click();
+  await dialog.screenshot({ path: ".local/media-workbench-desktop.png" });
   await dialog.getByRole("button", { name: "Edit image", exact: true }).click();
   const editor = dialog.getByRole("region", {
     name: "Image editor",
@@ -30,7 +70,7 @@ export async function mediaImageEditingJourney(
   ).toBeFocused();
   // A tall SVG viewport letterboxes this landscape image. Crop coordinates
   // must follow the visible pixels rather than the viewport's empty margins.
-  const cropCanvas = editor.getByRole("img", {
+  const cropCanvas = editor.getByRole("group", {
     name: "Original image crop area",
     exact: true,
   });
@@ -39,14 +79,21 @@ export async function mediaImageEditingJourney(
     svg.style.height = "300px";
     svg.style.width = "120px";
     const matrix = svg.getScreenCTM()!;
-    const start = new DOMPoint(10, 10).matrixTransform(matrix);
-    const end = new DOMPoint(70, 50).matrixTransform(matrix);
+    const start = new DOMPoint(119, 79).matrixTransform(matrix);
+    const end = new DOMPoint(59, 39).matrixTransform(matrix);
     return { start: { x: start.x, y: start.y }, end: { x: end.x, y: end.y } };
   });
   await page.mouse.move(cropPoints.start.x, cropPoints.start.y);
   await page.mouse.down();
   await page.mouse.move(cropPoints.end.x, cropPoints.end.y, { steps: 4 });
   await page.mouse.up();
+  const selection = editor.getByRole("button", {
+    name: "Move crop selection with arrow keys",
+    exact: true,
+  });
+  await selection.focus();
+  await selection.press("Shift+ArrowRight");
+  await selection.press("Shift+ArrowDown");
   await expect(editor.getByLabel("Crop left", { exact: true })).toHaveValue(
     "10",
   );
@@ -63,6 +110,15 @@ export async function mediaImageEditingJourney(
     (element as SVGSVGElement).style.removeProperty("width");
     (element as SVGSVGElement).style.removeProperty("height");
   });
+  await editor.getByLabel("Crop ratio", { exact: true }).selectOption("1");
+  await expect(editor.getByLabel("Crop width", { exact: true })).toHaveValue(
+    "60",
+  );
+  await expect(editor.getByLabel("Crop height", { exact: true })).toHaveValue(
+    "60",
+  );
+  await editor.getByLabel("Preview zoom", { exact: true }).selectOption("150");
+  await expect(cropCanvas).toHaveAttribute("style", /width: 150%/);
   await editor
     .getByRole("button", { name: "Reset edits", exact: true })
     .click();
@@ -90,6 +146,19 @@ export async function mediaImageEditingJourney(
   await editor.getByLabel("Crop height", { exact: true }).fill("30");
   await editor.getByLabel("Resize width (pixels)", { exact: true }).fill("15");
   await expect(editor.getByRole("status")).toContainText("15 × 20 pixels");
+  const expectActionsVisible = async () => {
+    const bounds = await editor.evaluate((element) => ({
+      editor: element.getBoundingClientRect().bottom,
+      actions: element
+        .querySelector(".media-image-editor-actions")!
+        .getBoundingClientRect().bottom,
+    }));
+    expect(bounds.actions).toBeLessThanOrEqual(bounds.editor + 1);
+    await expect(
+      editor.getByRole("button", { name: "Save edited copy", exact: true }),
+    ).toBeInViewport();
+  };
+  await expectActionsVisible();
   await dialog.screenshot({ path: ".local/media-image-editor-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -97,6 +166,7 @@ export async function mediaImageEditingJourney(
       (element) => element.scrollWidth <= element.clientWidth + 1,
     ),
   ).toBe(true);
+  await expectActionsVisible();
   await dialog.screenshot({ path: ".local/media-image-editor-phone.png" });
   await editor
     .getByRole("button", { name: "Save edited copy", exact: true })

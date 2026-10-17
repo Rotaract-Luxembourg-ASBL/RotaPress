@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { config } from "./config";
 import { permittedBrowserOrigin } from "./origin-policy";
 import { DomainError } from "./DomainError";
+import { requireContentGeneration } from "./content/request_generation";
 
 export class HttpError extends Error {
   constructor(
@@ -52,6 +53,7 @@ export async function readMutation(
   maxBytes = 16_384,
 ): Promise<unknown> {
   requireMutationOrigin(request);
+  await requireContentGeneration(request);
   if (!request.headers.get("content-type")?.startsWith("application/json")) {
     throw new HttpError(415, "Use a JSON request.");
   }

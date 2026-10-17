@@ -27,6 +27,8 @@ import {
 import { MembershipService } from "../../src/features/members/MembershipService";
 import type { Database } from "../../src/infrastructure/database/client";
 import { formDeletionCases } from "./form-deletion-cases";
+import { formCollectionCases } from "./form-collection-cases";
+import { automationExportCases } from "./automation-export-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -161,11 +163,14 @@ describe("C05 forms versions, private responses and durable notifications", () =
       retentionDays: null,
     });
     expect(
-      (await forms.list(owner)).find((item) => item.id === current.id)
-        ?.responses,
+      (await forms.collection.list(owner, {})).forms.find(
+        (item) => item.id === current.id,
+      )?.responses,
     ).toEqual({ total: 1, new: 1 });
     expect(
-      (await forms.list(owner)).find((item) => item.id === copy.id)?.responses,
+      (await forms.collection.list(owner, {})).forms.find(
+        (item) => item.id === copy.id,
+      )?.responses,
     ).toEqual({ total: 0, new: 0 });
     await expect(forms.publicForm(copy.id)).rejects.toMatchObject({
       code: "FORM_NOT_FOUND",
@@ -174,16 +179,16 @@ describe("C05 forms versions, private responses and durable notifications", () =
       forms.duplicate(owner, current.id, { expectedRevision: 999 }),
     ).rejects.toMatchObject({ code: "FORM_REVISION_CONFLICT" });
     const editor = await actor("studio-editor");
-    await db
-      .insert(membership)
-      .values({
-        organizationId: scope.organizationId,
-        userId: editor.userId,
-        status: "approved",
-        role: "editor",
-      });
+    await db.insert(membership).values({
+      organizationId: scope.organizationId,
+      userId: editor.userId,
+      status: "approved",
+      role: "editor",
+    });
     expect(
-      (await forms.list(editor)).every((item) => item.responses === undefined),
+      (await forms.collection.list(editor, {})).forms.every(
+        (item) => item.responses === undefined,
+      ),
     ).toBe(true);
     const stranger = await actor("studio-stranger");
     await expect(
@@ -191,7 +196,7 @@ describe("C05 forms versions, private responses and durable notifications", () =
         expectedRevision: current.draftRevision,
       }),
     ).rejects.toThrow();
-    await expect(forms.list(stranger)).rejects.toThrow();
+    await expect(forms.collection.list(stranger, {})).rejects.toThrow();
   });
   formDeletionCases(() => ({
     db,
@@ -201,6 +206,8 @@ describe("C05 forms versions, private responses and durable notifications", () =
     actor,
     installedClub,
   }));
+  formCollectionCases(() => ({ db, forms, actor, installedClub }));
+  automationExportCases(() => ({ db, forms, submissions, authorization, installedClub }));
   it("isolates drafts, rejects unsafe fields and retains immutable scoped response definitions", async () => {
     const { owner } = await installedClub();
     let draft = await forms.create(owner, { kind: "contact" });
@@ -498,7 +505,20 @@ describe("C05 forms versions, private responses and durable notifications", () =
     expect(csv).toContain('"\'=SUM(1,2)"');
     expect(csv).toContain('"\'@malicious"');
     expect(csvCell("\t=SUM(1,2)")).toBe('"\'\t=SUM(1,2)"');
-    await submissions.updateStatus(owner, receipt.id, { status: "closed" });
+    await submissions.updateStatus(owner, receipt.id, {
+      status: "closed",
+      expectedVersion: 1,
+    });
+    await expect(
+      submissions.updateStatus(owner, receipt.id, {
+        status: "reviewing",
+        expectedVersion: 1,
+      }),
+    ).rejects.toMatchObject({ code: "SUBMISSION_CHANGED" });
+    expect(await submissions.detail(owner, receipt.id)).toMatchObject({
+      status: "closed",
+      version: 2,
+    });
     expect(
       (await submissions.list(owner, published.id, { status: "new" }))
         .submissions,

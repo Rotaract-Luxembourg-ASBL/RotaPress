@@ -182,15 +182,6 @@
   color: var(--muted);
   margin-top: 0.35rem;
 }
-.automation-workspace .automation-connections > li > div {
-  min-width: 0;
-}
-.automation-workspace .automation-connections details li {
-  display: list-item;
-  border: 0;
-  padding: 0.2rem 0;
-  margin: 0;
-}
 .automation-workspace details summary {
   cursor: pointer;
 }
@@ -276,4 +267,49 @@
   .scope-picker-toolbar .button {
     flex: 1 1 auto;
   }
+}
+.automation-input-fields {
+  display: grid;
+  gap: 0.875rem;
+}
+.automation-input-fields > label {
+  display: grid;
+  gap: 0.35rem;
+}
+.automation-input-fields > details > label {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.automation-result {
+  display: grid;
+  gap: 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  min-width: 0;
+}
+.automation-result-success {
+  color: #176449;
+  font-weight: 600;
+}
+.automation-result-error {
+  color: #a32624;
+  font-weight: 600;
+}
+.automation-result-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 36rem;
+  object-fit: contain;
+  object-position: top;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--paper);
+}
+.automation-result-items {
+  max-height: 20rem;
+  overflow-y: auto;
 }

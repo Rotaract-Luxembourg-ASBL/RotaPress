@@ -57,6 +57,10 @@ export const preparedEventOutput = z.strictObject({
       reviewUrl: z.string(),
     }),
   ),
+  formsPage: z.strictObject({
+    total: z.int().nonnegative(),
+    nextOffset: z.int().nonnegative().nullable(),
+  }),
   forms: z.array(
     z.strictObject({
       id: z.uuid(),

@@ -52,10 +52,8 @@ export function OverviewMetrics({ data }: { data: OverviewData }) {
       show: data.access.members,
       title: "Members",
       label: "Approved members",
-      value: data.members.data?.members.filter(
-        (item) => item.status === "approved",
-      ).length,
-      hint: "In the current member list",
+      value: data.members.data?.counts.approved,
+      hint: "Across all club memberships",
       icon: "members" as const,
       href: "/admin/members",
       source: data.members,
@@ -64,8 +62,8 @@ export function OverviewMetrics({ data }: { data: OverviewData }) {
       show: data.access.website,
       title: "Website",
       label: "Published pages",
-      value: data.pages.filter((item) => item.publishedRevisionId).length,
-      hint: "Includes each language version",
+      value: data.website.data?.counts.published,
+      hint: "English website pages",
       icon: "website" as const,
       href: "/admin/website?tab=pages",
       source: data.website,
@@ -74,8 +72,8 @@ export function OverviewMetrics({ data }: { data: OverviewData }) {
       show: data.access.events,
       title: "Events",
       label: "Upcoming events",
-      value: data.upcoming.length,
-      hint: "Current and future · includes drafts",
+      value: data.events.data?.counts.upcoming,
+      hint: "Future start dates · includes drafts",
       icon: "calendar" as const,
       href: "/admin/events",
       source: data.events,
@@ -160,7 +158,7 @@ export function OverviewAttention({ data }: { data: OverviewData }) {
       show: data.access.members,
       title: "Review membership applications",
       hint: "Approval is a separate decision",
-      count: data.pendingMembers.length,
+      count: data.members.data?.counts.pending ?? 0,
       href: "/admin/members?status=pending",
       icon: "members",
       source: data.members,
@@ -168,8 +166,10 @@ export function OverviewAttention({ data }: { data: OverviewData }) {
     {
       show: data.access.website,
       title: "Review website drafts",
-      hint: "New pages and saved edits, by language",
-      count: data.pageDrafts.length,
+      hint: "English pages and saved edits",
+      count:
+        (data.website.data?.counts.draft ?? 0) +
+        (data.website.data?.counts.changes ?? 0),
       href: "/admin/website?tab=pages",
       icon: "website",
       source: data.website,
@@ -178,7 +178,7 @@ export function OverviewAttention({ data }: { data: OverviewData }) {
       show: data.access.forms,
       title: "Finish form drafts",
       hint: "New forms and changes awaiting publication",
-      count: data.formDrafts.length,
+      count: data.forms.data?.counts.changes ?? 0,
       href: "/admin/forms",
       icon: "forms",
       source: data.forms,
@@ -187,7 +187,7 @@ export function OverviewAttention({ data }: { data: OverviewData }) {
       show: data.access.events,
       title: "Review event drafts",
       hint: "Unpublished details in your event workspaces",
-      count: data.activeEvents.filter((item) => !item.published).length,
+      count: data.events.data?.counts.draft ?? 0,
       href: "/admin/events",
       icon: "calendar",
       source: data.events,
@@ -196,19 +196,10 @@ export function OverviewAttention({ data }: { data: OverviewData }) {
       show: data.access.calendar,
       title: "Finish activity drafts",
       hint: "Each saved schedule counts once",
-      count:
-        data.calendar.data?.schedules.filter(
-          (item) =>
-            !item.archived &&
-            !item.published &&
-            data.calendar.data?.calendars.some(
-              (calendar) =>
-                calendar.id === item.calendarId && !calendar.archived,
-            ),
-        ).length ?? 0,
+      count: data.activities.data?.counts.draft ?? 0,
       href: "/admin/calendar",
       icon: "calendar",
-      source: data.calendar,
+      source: data.activities,
     },
   ];
   const allowedTasks = tasks.filter((item) => item.show);
@@ -371,7 +362,7 @@ export function OverviewSchedule({ data }: { data: OverviewData }) {
         title="Coming up"
         description={
           data.access.events
-            ? "Current and upcoming events you can access."
+            ? "Upcoming events you can access."
             : "Manage your scheduled activities."
         }
         href={data.access.events ? "/admin/events" : "/admin/calendar"}
@@ -470,16 +461,11 @@ export function OverviewForms({ data }: { data: OverviewData }) {
         <dl>
           <div>
             <dt>Published</dt>
-            <dd>
-              {
-                data.activeForms.filter((item) => item.publishedVersionId)
-                  .length
-              }
-            </dd>
+            <dd>{data.forms.data?.counts.published ?? 0}</dd>
           </div>
           <div>
             <dt>Drafts & changes</dt>
-            <dd>{data.formDrafts.length}</dd>
+            <dd>{data.forms.data?.counts.changes ?? 0}</dd>
           </div>
         </dl>
         <p className="dashboard-footnote">

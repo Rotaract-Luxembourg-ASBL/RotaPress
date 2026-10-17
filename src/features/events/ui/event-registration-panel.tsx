@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import type { FormDto } from "../../forms/form_types";
+import type { FormCollection } from "../../forms/form_collection";
 import type {
   RegistrationDto,
   RegistrationSettingsDto,
@@ -9,6 +10,9 @@ import type {
 import { errorMessage, request, useResource } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import { RegistrationFormPreparation } from "./event-participation-setup";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import type { CollectionPage } from "@/core/collections";
 
 type StaffRegistration = RegistrationDto & {
   name: string;
@@ -18,8 +22,6 @@ type StaffRegistration = RegistrationDto & {
 };
 export function EventRegistrationPanel({
   eventId,
-  forms,
-  formsLoaded,
   canConfigure,
   canCreate,
   onCreateForm,
@@ -30,8 +32,6 @@ export function EventRegistrationPanel({
   navigationDisabled,
 }: {
   eventId: string;
-  forms: FormDto[];
-  formsLoaded: boolean;
   canConfigure: boolean;
   canCreate: boolean;
   onCreateForm: () => void;
@@ -44,8 +44,34 @@ export function EventRegistrationPanel({
   const { data, error, refresh } = useResource<RegistrationSettingsDto>(
     `/api/admin/events/${eventId}/registration`,
   );
-  const records = useResource<{ registrations: StaffRegistration[] }>(
-    `/api/admin/events/${eventId}/registrations`,
+  const choices = useResource<FormCollection>(
+    formsEnabled
+      ? `/api/admin/events/${eventId}/forms?kind=registration&status=active&pageSize=10`
+      : null,
+  );
+  const configured = useResource<FormDto>(
+    formsEnabled && data?.formId ? `/api/admin/forms/${data.formId}` : null,
+  );
+  const forms = [
+    ...(choices.data?.forms ?? []),
+    ...(configured.data &&
+    !choices.data?.forms.some((form) => form.id === configured.data?.id)
+      ? [configured.data]
+      : []),
+  ];
+  const formsLoaded =
+    !formsEnabled ||
+    Boolean(
+      choices.data && (!data?.formId || configured.data || configured.error),
+    );
+  const { params, change } = useCollectionLocation();
+  const page = Number(params.get("registrationsPage")) || 1;
+  const search = params.get("registrationsSearch") ?? "";
+  const status = params.get("registrationsStatus") ?? "all";
+  const records = useResource<
+    CollectionPage & { registrations: StaffRegistration[] }
+  >(
+    `/api/admin/events/${eventId}/registrations?${new URLSearchParams({ page: String(page), search, status })}`,
   );
   const [problem, setProblem] = useState<string>();
   useEffect(() => {
@@ -79,13 +105,51 @@ export function EventRegistrationPanel({
   const registrationForms = forms.filter(
     (form) => form.kind === "registration" && !form.archived,
   );
-  const configuredForm = forms.find((form) => form.id === data?.formId);
+  const configuredForm =
+    configured.data ?? forms.find((form) => form.id === data?.formId);
   const preparedForm = data?.formId
     ? configuredForm
     : (registrationForms.find((form) => form.publishedVersionId) ??
       registrationForms[0]);
   const recordList = (
     <>
+      <div className="admin-actions">
+        <label>
+          Search registrations
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              change(
+                {
+                  registrationsSearch: event.target.value,
+                  registrationsPage: 1,
+                },
+                false,
+              )
+            }
+          />
+        </label>
+        <label>
+          Registration status
+          <select
+            value={status}
+            onChange={(event) =>
+              change(
+                {
+                  registrationsStatus: event.target.value,
+                  registrationsPage: 1,
+                },
+                false,
+              )
+            }
+          >
+            <option value="all">All statuses</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+      </div>
       {problem && <Notice>{problem}</Notice>}
       {records.error && <Notice>{records.error}</Notice>}
       <ul className="content-rows">
@@ -119,11 +183,12 @@ export function EventRegistrationPanel({
         records.data?.registrations.length === 0 && (
           <p className="small muted">No registrations yet.</p>
         )}
-      {records.data?.registrations.length === 500 && (
-        <p>
-          Showing the most recent 500 registrations. Use the form submission
-          filters and export for older responses.
-        </p>
+      {records.data && (
+        <CollectionPagination
+          {...records.data}
+          noun="registrations"
+          onPage={(next) => change({ registrationsPage: next }, false)}
+        />
       )}
     </>
   );
@@ -132,9 +197,7 @@ export function EventRegistrationPanel({
       <Notice>{error ?? records.error}</Notice>
     ) : records.data && records.data.registrations.length > 0 ? (
       <details>
-        <summary>
-          Saved registrations ({records.data.registrations.length})
-        </summary>
+        <summary>Saved registrations ({records.data.total})</summary>
         <p className="field-help">
           Registration is paused. Existing bookings remain available to your
           team.
@@ -175,6 +238,19 @@ export function EventRegistrationPanel({
               Forms must be enabled for this club and this event before using
               free registration. Existing bookings are kept.
             </p>
+          ) : choices.error || configured.error ? (
+            <Notice>
+              {choices.error ?? configured.error}{" "}
+              <button
+                className="inline-button"
+                onClick={() => {
+                  choices.refresh();
+                  configured.refresh();
+                }}
+              >
+                Reload forms
+              </button>
+            </Notice>
           ) : !formsLoaded ? (
             <Loading />
           ) : (
@@ -254,7 +330,21 @@ function Settings({
   const [open, setOpen] = useState(value.open);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const selectedForm = forms.find((form) => form.id === formId);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [picked, setPicked] = useState<FormDto>();
+  const choices = useResource<FormCollection>(
+    `/api/admin/events/${eventId}/forms?${new URLSearchParams({ kind: "registration", status: "active", search, page: String(page), pageSize: "10" })}`,
+  );
+  const selectedForm =
+    picked?.id === formId ? picked : forms.find((form) => form.id === formId);
+  const options = [
+    ...(choices.data?.forms ?? []),
+    ...(selectedForm &&
+    !choices.data?.forms.some((form) => form.id === selectedForm.id)
+      ? [selectedForm]
+      : []),
+  ];
   const publishedForm = Boolean(
     selectedForm?.publishedVersionId && !selectedForm.archived,
   );
@@ -295,6 +385,29 @@ function Settings({
         disabled={busy || disabled}
         className="form-stack forms-fieldset"
       >
+        <label>
+          Find a registration form
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        {choices.error && (
+          <Notice>
+            {choices.error}{" "}
+            <button
+              type="button"
+              className="inline-button"
+              onClick={choices.refresh}
+            >
+              Try again
+            </button>
+          </Notice>
+        )}
         <div className="event-fields-grid">
           <label>
             Registration form
@@ -302,8 +415,9 @@ function Settings({
               value={formId}
               onChange={(e) => {
                 setFormId(e.target.value);
+                setPicked(options.find((form) => form.id === e.target.value));
                 if (
-                  !forms.some(
+                  !options.some(
                     (form) =>
                       form.id === e.target.value &&
                       form.publishedVersionId &&
@@ -314,7 +428,7 @@ function Settings({
               }}
             >
               <option value="">Choose a registration form</option>
-              {forms
+              {options
                 .filter(
                   (f) =>
                     f.kind === "registration" &&
@@ -344,6 +458,13 @@ function Settings({
             />
           </label>
         </div>
+        {choices.data && (
+          <CollectionPagination
+            {...choices.data}
+            noun="registration forms"
+            onPage={setPage}
+          />
+        )}
         <p className="field-help">
           Leave capacity empty for unlimited places. Guests sign in to reserve a
           place.

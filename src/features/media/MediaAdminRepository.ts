@@ -14,6 +14,7 @@ export class MediaAdminRepository {
     const pattern = `%${input.search.replace(/[\\%_]/g, "\\$&")}%`;
     const filters = and(
       eq(mediaAsset.organizationId, organizationId),
+      input.kind === "all" ? undefined : eq(mediaAsset.kind, input.kind),
       input.visibility === "all" ? undefined : eq(mediaAsset.visibility, input.visibility),
       input.collection ? eq(mediaAsset.collection, input.collection) : undefined,
       input.search ? or(
@@ -30,7 +31,8 @@ export class MediaAdminRepository {
         all: count(),
         public: sql<number>`count(*) filter (where ${mediaAsset.visibility} = 'public')`.mapWith(Number),
         private: sql<number>`count(*) filter (where ${mediaAsset.visibility} = 'private')`.mapWith(Number),
-      }).from(mediaAsset).where(eq(mediaAsset.organizationId, organizationId));
+      }).from(mediaAsset).where(and(eq(mediaAsset.organizationId, organizationId),
+        input.kind === "all" ? undefined : eq(mediaAsset.kind, input.kind)));
       const [matched] = await tx.select({ total: count() }).from(mediaAsset).where(filters);
       const collections = await tx.selectDistinct({ collection: mediaAsset.collection })
         .from(mediaAsset).where(eq(mediaAsset.organizationId, organizationId))
@@ -41,7 +43,7 @@ export class MediaAdminRepository {
         : desc(mediaAsset.createdAt);
       const rows = await tx.select(mediaProjection).from(mediaAsset).where(filters)
         .orderBy(order, asc(mediaAsset.id)).limit(input.pageSize)
-        .offset((page - 1) * input.pageSize);
+        .offset(input.offset ?? (page - 1) * input.pageSize);
       return {
         assets: rows.map((row) => adminMediaAssetDto(mediaAssetDto(row))),
         total: matched.total, page, pageSize: input.pageSize,

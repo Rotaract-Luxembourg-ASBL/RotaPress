@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { en } from "@/locales/en";
 import type { FeatureFlags } from "@/core/features/feature_catalogue";
 import type { ClubProfile, StaffLogin } from "@/core/organization/club_profile";
+import {
+  contentGenerationHeader,
+  isContentMutationPath,
+} from "@/core/content/content_boundary";
 
 export type ClubSettings = {
   name: string;
@@ -37,7 +41,7 @@ export type CurrentUser = {
 
 export type Member = {
   id: string;
-  userId: string;
+  version: number;
   name: string;
   email: string;
   status: MembershipStatus;
@@ -59,10 +63,25 @@ export async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
+  if (
+    options?.method &&
+    !["GET", "HEAD"].includes(options.method.toUpperCase()) &&
+    isContentMutationPath(path.split("?")[0])
+  ) {
+    const generation =
+      typeof document === "undefined"
+        ? undefined
+        : document.body.dataset.contentGeneration;
+    if (generation && !headers.has(contentGenerationHeader))
+      headers.set(contentGenerationHeader, generation);
+  }
   const response = await fetch(path, {
     ...options,
     cache: "no-store",
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers,
   });
   let body: unknown;
   try {

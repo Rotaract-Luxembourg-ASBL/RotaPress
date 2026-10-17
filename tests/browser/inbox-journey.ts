@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import type { SubmissionDto } from "../../src/features/forms/form_types";
+import type { InboxFormPage } from "../../src/features/forms/inbox_schemas";
 
 /** Reuse B02's real synthetic form submission; inbox status shares its record. */
 export async function inboxJourney(
@@ -10,6 +11,9 @@ export async function inboxJourney(
   message: string,
 ) {
   expect((await visitor.request.get("/api/admin/inbox")).status()).toBe(401);
+  expect((await visitor.request.get("/api/admin/inbox/forms")).status()).toBe(
+    401,
+  );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.route(
     "**/api/admin/inbox?**",
@@ -41,9 +45,20 @@ export async function inboxJourney(
     .getByRole("textbox", { name: "Search contacts and messages", exact: true })
     .fill("synthetic-contact@example.test");
   await page.getByRole("button", { name: "Search", exact: true }).click();
+  const sourceResponse = await page.request.get(
+    `/api/admin/inbox/forms?id=${formId}`,
+  );
+  expect(sourceResponse.headers()["cache-control"]).toContain("no-store");
+  const source = (await sourceResponse.json()) as InboxFormPage;
+  await page.getByText("Find another form", { exact: true }).click();
+  await page
+    .getByRole("searchbox", { name: "Search source forms", exact: true })
+    .fill(source.forms[0].title);
+  await page.getByRole("button", { name: "Find forms", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Source form", exact: true })
     .selectOption(formId);
+  await page.getByText("Find another form", { exact: true }).click();
   await expect(
     page.getByRole("textbox", {
       name: "Search contacts and messages",
@@ -67,6 +82,23 @@ export async function inboxJourney(
     page.getByText("Purpose: Website enquiries", { exact: true }),
   ).toBeVisible();
   await expect(purpose).not.toBeVisible();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get("q") === "synthetic-contact@example.test" &&
+      url.searchParams.get("formId") === formId &&
+      url.searchParams.get("kind") === "contact" &&
+      url.searchParams.get("status") === "reviewing",
+  );
+  await page.reload();
+  await expect(
+    statusFilter.getByRole("button", { name: "In progress", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("combobox", { name: "Source form", exact: true }),
+  ).toHaveValue(formId);
+  await expect(
+    page.getByText("Purpose: Website enquiries", { exact: true }),
+  ).toBeVisible();
   await statusFilter.getByRole("button", { name: "New", exact: true }).click();
   await expect(
     page.getByRole("heading", {
@@ -91,6 +123,11 @@ export async function inboxJourney(
     name: "Selected response",
     exact: true,
   });
+  await expect(detail.getByText(message, { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("response") === submissionId,
+  );
+  await page.reload();
   await expect(detail.getByText(message, { exact: true })).toBeVisible();
   await expect(
     detail.getByText("Contact details supplied by the visitor", {
@@ -145,6 +182,11 @@ export async function inboxJourney(
     .getByRole("article")
     .filter({ hasText: "synthetic-contact@example.test" });
   await expect(contact).toContainText("1 response in this view");
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("view") === "people",
+  );
+  await page.reload();
+  await expect(contact).toContainText("1 response in this view");
   await contact
     .getByRole("button", { name: "Open response history", exact: true })
     .click();
@@ -153,10 +195,19 @@ export async function inboxJourney(
   await expect(
     detail.getByRole("combobox", { name: "Review status", exact: true }),
   ).toHaveValue("closed");
-  await expect(
-    detail.getByRole("link", { name: "Full response & delivery", exact: true }),
-  ).toHaveAttribute(
+  const fullResponse = detail.getByRole("link", {
+    name: "Full response & delivery",
+    exact: true,
+  });
+  const returnTo = new URL(page.url()).pathname + new URL(page.url()).search;
+  await expect(fullResponse).toHaveAttribute(
     "href",
-    `/admin/forms/${formId}/submissions/${submissionId}`,
+    `/admin/forms/${formId}/submissions/${submissionId}?returnTo=${encodeURIComponent(returnTo)}`,
   );
+  await fullResponse.click();
+  await page
+    .getByRole("link", { name: "Back to responses", exact: true })
+    .click();
+  await expect(page).toHaveURL((url) => url.pathname + url.search === returnTo);
+  await expect(detail.getByText(message, { exact: true })).toBeVisible();
 }

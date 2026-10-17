@@ -125,7 +125,7 @@ export async function mediaPickerManagementJourney(page: Page, visitor: Page) {
     .getByRole("button", { name: "Edit selected", exact: true })
     .click();
   const editor = page.getByRole("dialog", {
-    name: "Edit selected images",
+    name: "Edit selected files",
     exact: true,
   });
   await editor
@@ -159,7 +159,7 @@ export async function mediaPickerManagementJourney(page: Page, visitor: Page) {
   });
   expect(competing.status()).toBe(200);
   await editor
-    .getByRole("button", { name: "Update selected images", exact: true })
+    .getByRole("button", { name: "Update selected files", exact: true })
     .click();
   await expect(
     editor.getByRole("alert").filter({ hasText: "selected images changed" }),
@@ -176,7 +176,7 @@ export async function mediaPickerManagementJourney(page: Page, visitor: Page) {
     ),
   ).toBe(true);
   await editor
-    .getByRole("button", { name: "Refresh selected images", exact: true })
+    .getByRole("button", { name: "Refresh selected files", exact: true })
     .click();
   await expect(editor.getByLabel("Collection", { exact: true })).toHaveValue(
     "Popup verification",
@@ -185,10 +185,10 @@ export async function mediaPickerManagementJourney(page: Page, visitor: Page) {
     editor.getByLabel("Tags, separated by commas", { exact: true }),
   ).toHaveValue("popup, synthetic");
   await expect(
-    editor.getByRole("button", { name: "Update selected images", exact: true }),
+    editor.getByRole("button", { name: "Update selected files", exact: true }),
   ).toBeEnabled();
   await editor
-    .getByRole("button", { name: "Update selected images", exact: true })
+    .getByRole("button", { name: "Update selected files", exact: true })
     .click();
   await expect(editor).toHaveCount(0);
   await expect
@@ -222,7 +222,7 @@ export async function mediaPickerManagementJourney(page: Page, visitor: Page) {
       .getByRole("button", { name: "Delete permanently", exact: true })
       .click(),
   ]);
-  expect(confirmation.message()).toContain("2 selected images permanently");
+  expect(confirmation.message()).toContain("2 selected files permanently");
   await expect.poll(async () => (await readAssets()).length).toBe(0);
   for (const asset of assets)
     expect((await visitor.request.get(`/media/${asset.id}`)).status()).toBe(

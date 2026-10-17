@@ -335,6 +335,8 @@ export const formSubmitSchema = z
   .strict();
 export const submissionFilterSchema = z
   .object({
+    page: z.coerce.number().int().min(1).max(100000).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
     status: z.enum(submissionStatuses).optional(),
     after: z.iso.datetime().optional(),
     before: z.iso.datetime().optional(),
@@ -346,7 +348,10 @@ export const submissionFilterSchema = z
     "The date range is invalid.",
   );
 export const submissionStatusSchema = z
-  .object({ status: z.enum(submissionStatuses) })
+  .object({
+    status: z.enum(submissionStatuses),
+    expectedVersion: z.int().positive(),
+  })
   .strict();
 export const submissionDeleteSchema = z
   .object({ confirm: z.literal(true) })

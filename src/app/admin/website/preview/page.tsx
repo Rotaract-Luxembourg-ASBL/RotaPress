@@ -18,6 +18,8 @@ export default async function WebsitePreview({
     recipe?: string;
     locale?: string;
     pageId?: string;
+    layout?: string;
+    inline?: string;
   }>;
 }) {
   const actor = await getActor(await headers());
@@ -27,16 +29,21 @@ export default async function WebsitePreview({
   const template = query.template ? kitIdSchema.parse(query.template) : null;
   let preview;
   try {
-    preview = template
-      ? await services.websiteSetup.previewTemplate(actor, {
-          kitId: template,
+    preview = query.layout
+      ? await services.websiteSetup.previewLayout(actor, {
+          templateId: query.layout,
           locale,
-          recipe: query.recipe ?? "home",
         })
-      : await services.websiteSetup.preview(actor, {
-          locale,
-          ...(query.pageId ? { pageId: query.pageId } : {}),
-        });
+      : template
+        ? await services.websiteSetup.previewTemplate(actor, {
+            kitId: template,
+            locale,
+            recipe: query.recipe ?? "home",
+          })
+        : await services.websiteSetup.preview(actor, {
+            locale,
+            ...(query.pageId ? { pageId: query.pageId } : {}),
+          });
   } catch (cause) {
     if (!(cause instanceof DomainError)) throw cause;
     return (
@@ -50,30 +57,34 @@ export default async function WebsitePreview({
   const identity = await services.organization.publicIdentity();
   return (
     <>
-      <div className="kit-preview-tools">
-        <Link
-          href={
-            "/admin/website?tab=" +
-            (template ? "templates" : "overview") +
-            "&locale=" +
-            locale
-          }
-        >
-          ← Back to Website
-        </Link>
-        <strong>
-          {template
-            ? kits[template].name + " · Template preview"
-            : "Your website · Saved draft preview"}
-        </strong>
-        {!template && (
+      {query.inline !== "true" && (
+        <div className="kit-preview-tools">
           <Link
-            href={"/admin/website/" + preview.page.id + "?locale=" + locale}
+            href={
+              "/admin/website?tab=" +
+              (template ? "templates" : "overview") +
+              "&locale=" +
+              locale
+            }
           >
-            Edit this page
+            ← Back to Website
           </Link>
-        )}
-      </div>
+          <strong>
+            {query.layout
+              ? "Page layout preview"
+              : template
+                ? kits[template].name + " · Template preview"
+                : "Your website · Saved draft preview"}
+          </strong>
+          {!template && !query.layout && (
+            <Link
+              href={"/admin/website/" + preview.page.id + "?locale=" + locale}
+            >
+              Edit this page
+            </Link>
+          )}
+        </div>
+      )}
       <TemplateContactPreview formId={preview.contactFormPreviewId}>
         <CmsPublicPage
           page={preview.page}
@@ -82,9 +93,11 @@ export default async function WebsitePreview({
           preview
           previewCards={preview.cards}
           previewLabel={
-            template
-              ? "Template example. Nothing has been added to your website."
-              : "Private website preview. Visitors still see the published website."
+            query.inline === "true"
+              ? ""
+              : template || query.layout
+                ? "Template example. Nothing has been added to your website."
+                : "Private website preview. Visitors still see the published website."
           }
         />
       </TemplateContactPreview>

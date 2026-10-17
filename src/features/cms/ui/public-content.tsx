@@ -8,6 +8,7 @@ import { PageIntroBlock, PageCollectionBlock } from "./page-collection";
 import type { PageCard } from "../page_collection";
 import type { PublicEventCard } from "../../events/event_catalogue";
 import type { EventFields } from "../../events/event_schemas";
+import { FileBlock, AudioBlock, VideoBlock } from "./file-blocks";
 import {
   eventSectionAnchor,
   eventPageNavigation,
@@ -361,6 +362,12 @@ export async function RenderContent({
                 return <ImageBlock key={key} {...block.props} />;
               case "Gallery":
                 return <GalleryBlock key={key} {...block.props} />;
+              case "File":
+                return <FileBlock key={key} {...block.props} />;
+              case "Audio":
+                return <AudioBlock key={key} {...block.props} />;
+              case "Video":
+                return <VideoBlock key={key} {...block.props} />;
               case "Cards":
                 return <CardsBlock key={key} {...block.props} />;
               case "Statistics":

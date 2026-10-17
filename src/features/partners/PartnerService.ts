@@ -1,5 +1,14 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { partner } from "../../../db/schema/partners";
 import { AuditRepository } from "../../core/audit/AuditRepository";
@@ -7,12 +16,15 @@ import {
   AuthorizationService,
   DomainError,
   type DatabaseExecutor,
+  type Transaction,
   type TrustedActor,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import type { MediaService } from "../media";
 import { EventService } from "../events/EventService";
 import { PartnerReader } from "./PartnerReader";
+import { collectionPage, searchPattern } from "@/core/collections";
+import { partnerCollectionSchema } from "./partner_collection";
 import {
   partnerProfileSchema,
   partnerPublicationSchema,
@@ -42,22 +54,104 @@ export class PartnerService {
     private readonly events = new EventService(db, authorization),
   ) {}
 
-  async list(actor: TrustedActor) {
+  async query(actor: TrustedActor, raw: unknown = {}) {
+    const input = partnerCollectionSchema.parse(raw);
     const { organizationId } = await this.authorization.require(
       actor,
       "cms.edit",
     );
-    const rows = await this.db
-      .select()
-      .from(partner)
-      .where(eq(partner.organizationId, organizationId))
-      .orderBy(partner.updatedAt);
-    return Promise.all(rows.map((row) => this.dto(row, this.db, actor)));
+    return this.db.transaction(
+      async (tx) => {
+        const scope = eq(partner.organizationId, organizationId);
+        const category =
+          input.category === "all"
+            ? undefined
+            : eq(sql`${partner.draft}->>'category'`, input.category);
+        const predicates = {
+          all: undefined,
+          published: isNotNull(partner.published),
+          draft: isNull(partner.published),
+          changes: and(
+            isNotNull(partner.published),
+            sql`${partner.draft} is distinct from ${partner.published}`,
+          ),
+        };
+        const where = and(
+          scope,
+          category,
+          predicates[input.status],
+          input.search
+            ? ilike(
+                sql`concat_ws(' ', ${partner.draft}->>'name', ${partner.draft}->>'category', ${partner.draft}->>'role')`,
+                searchPattern(input.search),
+              )
+            : undefined,
+        );
+        const [matched] = await tx
+          .select({ total: count() })
+          .from(partner)
+          .where(where);
+        const [counts] = await tx
+          .select({
+            all: count(),
+            published:
+              sql<number>`count(*) filter (where ${predicates.published})`.mapWith(
+                Number,
+              ),
+            draft:
+              sql<number>`count(*) filter (where ${predicates.draft})`.mapWith(
+                Number,
+              ),
+            changes:
+              sql<number>`count(*) filter (where ${predicates.changes})`.mapWith(
+                Number,
+              ),
+          })
+          .from(partner)
+          .where(and(scope, category));
+        const [categories] = await tx
+          .select({
+            all: count(),
+            partner:
+              sql<number>`count(*) filter (where ${partner.draft}->>'category' = 'partner')`.mapWith(
+                Number,
+              ),
+            sponsor:
+              sql<number>`count(*) filter (where ${partner.draft}->>'category' = 'sponsor')`.mapWith(
+                Number,
+              ),
+            team: sql<number>`count(*) filter (where ${partner.draft}->>'category' = 'team')`.mapWith(
+              Number,
+            ),
+          })
+          .from(partner)
+          .where(scope);
+        const page = collectionPage(matched.total, input.page, input.pageSize);
+        const rows = await tx
+          .select()
+          .from(partner)
+          .where(where)
+          .orderBy(desc(partner.updatedAt), partner.id)
+          .limit(input.pageSize)
+          .offset(input.offset ?? (page - 1) * input.pageSize);
+        const items: PartnerDto[] = [];
+        for (const row of rows) items.push(await this.dto(row, tx, actor));
+        return {
+          items,
+          total: matched.total,
+          page,
+          pageSize: input.pageSize,
+          counts,
+          categories,
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
   }
 
-  async create(actor: TrustedActor, input: unknown) {
+  async create(actor: TrustedActor, input: unknown, executor?: Transaction) {
     const profile = partnerProfileSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         "cms.edit",
@@ -75,7 +169,8 @@ export class PartnerService {
       await this.retain(row, tx);
       await this.record(actor, row, "created", tx);
       return this.dto(row, tx, actor);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async change(
@@ -83,6 +178,7 @@ export class PartnerService {
     id: string,
     operation: "save" | "publish" | "unpublish" | "restore",
     input: unknown,
+    executor?: Transaction,
   ): Promise<PartnerDto> {
     z.uuid().parse(id);
     const values =
@@ -91,7 +187,7 @@ export class PartnerService {
         : operation === "restore"
           ? partnerVersionSchema.parse(input)
           : partnerPublicationSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         operation === "publish" || operation === "unpublish"
@@ -166,7 +262,8 @@ export class PartnerService {
       await this.retain(updated, tx);
       await this.record(actor, updated, operation, tx);
       return this.dto(updated, tx, actor);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   /** Only published profiles are selectable by scoped event editors. */
@@ -188,25 +285,27 @@ export class PartnerService {
       row.id,
       executor,
     );
-    const visible = await Promise.all(
-      placements.map(async (placement) => {
-        if (!placement.eventId) return placement;
-        try {
-          await this.events.detail(actor, placement.eventId, executor);
-          return placement;
-        } catch (error) {
-          if (!(error instanceof DomainError)) throw error;
-          // Retain the existence of shared usage without disclosing private event metadata.
-          return {
-            id: null,
-            title: "Restricted event page",
-            locale: null,
-            eventId: null,
-            ...(placement.dynamic ? { dynamic: true } : {}),
-          };
-        }
-      }),
-    );
+    const visible: PartnerPlacement[] = [];
+    for (const placement of placements) {
+      if (!placement.eventId) {
+        visible.push(placement);
+        continue;
+      }
+      try {
+        await this.events.detail(actor, placement.eventId, executor);
+        visible.push(placement);
+      } catch (error) {
+        if (!(error instanceof DomainError)) throw error;
+        // Retain the existence of shared usage without disclosing private event metadata.
+        visible.push({
+          id: null,
+          title: "Restricted event page",
+          locale: null,
+          eventId: null,
+          ...(placement.dynamic ? { dynamic: true } : {}),
+        });
+      }
+    }
     return {
       id: row.id,
       version: row.version,

@@ -158,6 +158,13 @@ export async function testMcpConnection(key: string) {
   if (!resources.ok) return resources;
   const prompts = await mcpRequest(key, "prompts/list", {}, 4);
   if (!prompts.ok) return prompts;
+  const capabilities = await mcpRequest(
+    key,
+    "tools/call",
+    { name: "automation_capabilities", arguments: {} },
+    5,
+  );
+  if (!capabilities.ok) return capabilities;
   return {
     status: 200,
     ok: true,
@@ -166,6 +173,7 @@ export async function testMcpConnection(key: string) {
       tools: tools.body,
       resources: resources.body,
       prompts: prompts.body,
+      capabilities: capabilities.body,
     },
   };
 }

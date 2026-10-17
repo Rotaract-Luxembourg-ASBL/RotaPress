@@ -1,6 +1,15 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { project } from "../../../db/schema/projects";
 import { AuditRepository } from "../../core/audit/AuditRepository";
@@ -13,6 +22,8 @@ import {
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import type { MediaService } from "../media/MediaService";
+import { collectionPage, searchPattern } from "@/core/collections";
+import { projectCollectionSchema } from "./project_collection";
 import {
   projectActionSchema,
   projectContentSchema,
@@ -32,18 +43,82 @@ export class ProjectService {
     private readonly media: MediaService,
   ) {}
 
-  async list(actor: TrustedActor): Promise<ProjectDto[]> {
+  async query(actor: TrustedActor, raw: unknown = {}) {
+    const input = projectCollectionSchema.parse(raw);
     const { organizationId } = await this.authorization.require(
       actor,
       "cms.edit",
     );
     await this.authorization.features.require(organizationId, "projects");
-    const rows = await this.db
-      .select()
-      .from(project)
-      .where(eq(project.organizationId, organizationId))
-      .orderBy(desc(project.updatedAt), project.id);
-    return rows.map((row) => this.dto(row));
+    return this.db.transaction(
+      async (tx) => {
+        const scope = eq(project.organizationId, organizationId);
+        const active = eq(project.archived, false);
+        const predicates = {
+          all: undefined,
+          active,
+          published: and(active, isNotNull(project.published)),
+          draft: and(active, isNull(project.published)),
+          archived: eq(project.archived, true),
+        };
+        const where = and(
+          scope,
+          predicates[input.status],
+          input.search
+            ? ilike(
+                sql`concat_ws(' ', ${project.draft}->>'title', ${project.draft}->>'summary', ${project.draft}->>'location')`,
+                searchPattern(input.search),
+              )
+            : undefined,
+        );
+        const [matched] = await tx
+          .select({ total: count() })
+          .from(project)
+          .where(where);
+        const [counts] = await tx
+          .select({
+            all: count(),
+            active: sql<number>`count(*) filter (where ${active})`.mapWith(
+              Number,
+            ),
+            published:
+              sql<number>`count(*) filter (where ${predicates.published})`.mapWith(
+                Number,
+              ),
+            draft:
+              sql<number>`count(*) filter (where ${predicates.draft})`.mapWith(
+                Number,
+              ),
+            archived:
+              sql<number>`count(*) filter (where ${predicates.archived})`.mapWith(
+                Number,
+              ),
+          })
+          .from(project)
+          .where(scope);
+        const page = collectionPage(matched.total, input.page, input.pageSize);
+        const rows = await tx
+          .select()
+          .from(project)
+          .where(where)
+          .orderBy(
+            input.sort === "title"
+              ? sql`${project.draft}->>'title'`
+              : desc(project.updatedAt),
+            project.id,
+          )
+          .limit(input.pageSize)
+          .offset(input.offset ?? (page - 1) * input.pageSize);
+        return {
+          items: rows.map((row) => this.dto(row)),
+          total: matched.total,
+          page,
+          pageSize: input.pageSize,
+          counts,
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
   }
 
   async detail(actor: TrustedActor, id: string): Promise<ProjectDto> {
@@ -56,9 +131,9 @@ export class ProjectService {
     return this.dto(await this.row(organizationId, id, this.db));
   }
 
-  async create(actor: TrustedActor, input: unknown): Promise<ProjectDto> {
+  async create(actor: TrustedActor, input: unknown, executor?: Transaction): Promise<ProjectDto> {
     const content = projectContentSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         "cms.edit",
@@ -84,7 +159,8 @@ export class ProjectService {
       await this.retain(created, tx);
       await this.record(actor, created, "created", tx);
       return this.dto(created);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async change(
@@ -92,13 +168,14 @@ export class ProjectService {
     id: string,
     operation: ProjectAction,
     input: unknown,
+    executor?: Transaction,
   ): Promise<ProjectDto> {
     z.uuid().parse(id);
     const values =
       operation === "save"
         ? projectSaveSchema.parse(input)
         : projectActionSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         operation === "publish" || operation === "unpublish"
@@ -171,7 +248,8 @@ export class ProjectService {
       await this.retain(updated, tx);
       await this.record(actor, updated, operation, tx);
       return this.dto(updated);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   private async row(

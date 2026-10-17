@@ -1,4 +1,7 @@
 import "server-only";
+import type { Database } from "@/infrastructure/database/client";
+import { AlbumReader } from "../media/AlbumReader";
+import { contentAlbums } from "./cms_albums";
 import { eq } from "drizzle-orm";
 import type { z } from "zod";
 import { cmsRevision, cmsVariant } from "../../../db/schema/cms";
@@ -12,7 +15,10 @@ import { contentAssets } from "./cms_validation";
 
 /** Immutable revision persistence and media retention shared by pages and site parts. */
 export class CmsRevisionWriter {
-  constructor(private readonly media: MediaService) {}
+  constructor(
+    private readonly media: MediaService,
+    private readonly db: Database,
+  ) {}
   async createVariant(
     tx: Transaction,
     actor: TrustedActor,
@@ -55,6 +61,12 @@ export class CmsRevisionWriter {
       `cms-revision:${revision.id}`,
       organizationId,
       contentAssets(draft.data, draft.socialImageId),
+      tx,
+    );
+    await new AlbumReader(this.db).replaceUsage(
+      `cms-revision:${revision.id}`,
+      organizationId,
+      contentAlbums(draft.data),
       tx,
     );
   }

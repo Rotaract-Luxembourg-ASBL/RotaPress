@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import type { CmsSummary } from "@/features/cms/cms_schemas";
-import type { FormDto } from "@/features/forms/form_types";
+import type { PageCollection } from "@/features/cms/cms_workspace_schemas";
+import type { FormCollection } from "@/features/forms/form_collection";
 import type { InboxPage } from "@/features/forms/inbox_schemas";
-import type { EventSummary } from "@/features/events/event_schemas";
+import type { EventCollection } from "@/features/events/event_collection";
 import type { CalendarWorkspace } from "@/features/calendar/calendar_schemas";
+import type { CalendarActivityCollection } from "@/features/calendar/calendar_collection";
 import { type Member, useResource } from "./api";
 import { useCurrentUser } from "./admin-shell";
 
@@ -26,22 +26,27 @@ export function useOverviewData() {
   const responses = useResource<InboxPage>(
     access.responses ? "/api/admin/inbox" : null,
   );
-  const members = useResource<{ members: Member[] }>(
-    access.members ? "/api/admin/members" : null,
+  const members = useResource<{
+    members: Member[];
+    counts: { approved: number; pending: number; all: number };
+  }>(access.members ? "/api/admin/members" : null);
+  const website = useResource<PageCollection>(
+    access.website ? "/api/admin/cms/pages?locale=en&collection=all" : null,
   );
-  const website = useResource<{ items: CmsSummary[] }>(
-    access.website ? "/api/admin/cms/content" : null,
-  );
-  const forms = useResource<{ forms: FormDto[] }>(
+  const forms = useResource<FormCollection>(
     access.forms ? "/api/admin/forms" : null,
   );
-  const events = useResource<{ events: EventSummary[] }>(
-    access.events ? "/api/admin/events" : null,
+  const events = useResource<EventCollection>(
+    access.events
+      ? "/api/admin/events?status=active&timing=upcoming&sort=starts&pageSize=4"
+      : null,
   );
   const calendar = useResource<CalendarWorkspace>(
-    access.calendar ? "/api/admin/calendar" : null,
+    access.calendar ? "/api/admin/calendar?summary=true" : null,
   );
-  const [openedAt] = useState(() => Date.now());
+  const activities = useResource<CalendarActivityCollection>(
+    access.calendar ? "/api/admin/calendar/schedules?pageSize=1" : null,
+  );
   const pages =
     (access.website ? website.data?.items : undefined)?.filter(
       (item) => item.kind === "page" && !item.archived,
@@ -58,15 +63,7 @@ export function useOverviewData() {
       item.publishedVersionNumber !== item.draftRevision &&
       (!item.event || item.event.canEdit),
   );
-  const activeEvents =
-    (access.events ? events.data?.events : undefined)?.filter(
-      (item) => !item.archived && !item.cancelled,
-    ) ?? [];
-  const upcoming = activeEvents
-    .filter(
-      (item) => new Date(item.endsAt ?? item.startsAt).getTime() >= openedAt,
-    )
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const upcoming = (access.events ? events.data?.events : undefined) ?? [];
   return {
     access,
     responses,
@@ -75,16 +72,10 @@ export function useOverviewData() {
     forms,
     events,
     calendar,
-    pages,
+    activities,
     pageDrafts,
-    activeForms,
     formDrafts,
-    activeEvents,
     upcoming,
-    pendingMembers:
-      (access.members ? members.data?.members : undefined)?.filter(
-        (item) => item.status === "pending",
-      ) ?? [],
   };
 }
 

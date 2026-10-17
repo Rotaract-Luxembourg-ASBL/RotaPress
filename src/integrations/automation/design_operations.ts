@@ -288,6 +288,7 @@ export const designOperations = [
   operation(
     {
       name: "website_design",
+      effect: "read",
       method: "GET",
       path: "/website/design",
       scope: "website:read",

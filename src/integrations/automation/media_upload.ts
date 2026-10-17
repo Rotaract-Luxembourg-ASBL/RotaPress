@@ -1,6 +1,8 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import type { z } from "zod";
 import { DomainError } from "@/core/DomainError";
+import type { Transaction } from "@/core/authorization/AuthorizationService";
 import { MAX_UPLOAD_BYTES } from "@/features/media/media_schemas";
 import {
   mediaMetadataRevision,
@@ -12,6 +14,7 @@ import {
   mediaUploadMetadata,
   type imageMimeSchema,
 } from "./media_schemas";
+import { executeReceipt } from "./receipt_service";
 
 type ImageMime = z.infer<typeof imageMimeSchema>;
 type MediaScope =
@@ -82,9 +85,52 @@ export async function uploadAutomationImage(
     Buffer | (() => Promise<Buffer | { bytes: Buffer; mimeType: ImageMime }>),
   mimeType?: ImageMime,
   sourceFingerprint?: string,
+  operationName: "media_upload" | "source_image_import" = "media_upload",
 ) {
   await requireMediaScope(context, "media:write");
-  const metadata = mediaUploadMetadata.parse(input);
+  const { taskId, expectedGeneration, ...metadata } =
+    mediaUploadMetadata.parse(input);
+  const receiptInput = (bytes?: Buffer, declaredMime?: ImageMime) => ({
+    ...metadata,
+    taskId,
+    expectedGeneration,
+    ...(sourceFingerprint
+      ? { sourceFingerprint }
+      : {
+          mimeType: declaredMime,
+          sha256: bytes
+            ? createHash("sha256").update(bytes).digest("hex")
+            : undefined,
+        }),
+  });
+  const authorize = (tx: Transaction) =>
+    context.services.authorization.require(
+      context.principal.actor,
+      "media.manage",
+      tx,
+    );
+  const recover = async (envelope: ReturnType<typeof receiptInput>) => {
+    const result = await context.services.automationRuntime.recover(
+      context,
+      operationName,
+      envelope,
+      mediaDetailOutput,
+      authorize,
+    );
+    if (!result.found) return null;
+    await context.services.media.detail(
+      context.principal.actor,
+      result.value.asset.id,
+    );
+    return result.value;
+  };
+  const knownInput = sourceFingerprint || Buffer.isBuffer(source);
+  if (knownInput) {
+    const recovered = await recover(
+      receiptInput(Buffer.isBuffer(source) ? source : undefined, mimeType),
+    );
+    if (recovered) return recovered;
+  }
   // Share the interactive upload budget; new connections cannot bypass it.
   await context.services.limiter.consume(
     "media-upload",
@@ -127,6 +173,11 @@ export async function uploadAutomationImage(
         422,
       );
     }
+    const envelope = receiptInput(bytes, declaredMime);
+    if (!knownInput) {
+      const recovered = await recover(envelope);
+      if (recovered) return recovered;
+    }
     const asset = await context.services.media.upload(
       context.principal.actor,
       {
@@ -135,6 +186,23 @@ export async function uploadAutomationImage(
         ...(sourceFingerprint ? { sourceFingerprint } : {}),
       },
       () => requireMediaScope(context, "media:write", true),
+      async (persist) => {
+        const receipt = await executeReceipt(
+          context,
+          operationName,
+          envelope,
+          mediaDetailOutput,
+          authorize,
+          async (tx) => {
+            const stored = await persist(tx);
+            return {
+              asset: stored,
+              metadataRevision: mediaMetadataRevision(stored),
+            };
+          },
+        );
+        return { ...receipt.asset, kind: "image" };
+      },
     );
     const output = mediaDetailOutput.safeParse({
       asset,

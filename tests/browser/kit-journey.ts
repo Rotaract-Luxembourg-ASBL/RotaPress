@@ -61,7 +61,10 @@ export async function kitJourney(
     };
     const id = result.items.find((item) => item.recipe === "projects")!.id;
     await page.goto(`/admin/website/${id}?locale=en`);
-    await page.locator(".cms-page-intro h1").click();
+    await page
+      .frameLocator(".editor-canvas iframe")
+      .locator(".cms-page-intro h1")
+      .click();
     await page
       .getByRole("textbox", { name: /^title$/i })
       .fill("Projects shaped by our community");

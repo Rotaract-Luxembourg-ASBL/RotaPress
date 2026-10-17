@@ -12,7 +12,7 @@ import { club, organization } from "./club";
 import { user } from "./auth";
 import { clubEvent } from "./events";
 
-/** Immutable typed proposals; only a cookie-authenticated human review may apply one. */
+/** Retired v1 proposal records, retained only for forward migration and content reset. No runtime handler consumes these records. */
 export const automationProposal = club.table(
   "automation_proposal",
   {

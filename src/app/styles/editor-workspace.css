@@ -1,7 +1,7 @@
 /* Authoring controls stay independent of the website's selected theme. */
 .editor-fullscreen.cms-puck {
-  --editor-blue: #265f50;
-  --editor-border: #dde5e1;
+  --editor-blue: var(--club-accent);
+  --editor-border: var(--line);
 }
 
 .editor-toolbar {
@@ -39,11 +39,11 @@
 }
 
 .editor-icon-button[aria-pressed="true"] {
-  background: #e8f1ed;
+  background: var(--admin-soft);
 }
 
 .editor-add-button[aria-pressed="true"] {
-  background: #24362c;
+  background: var(--editor-blue);
 }
 
 .editor-library {
@@ -97,9 +97,9 @@
 }
 
 .editor-library-filter[aria-pressed="true"] {
-  color: #214e41;
-  background: #eaf3ee;
-  border-color: #87ad9e;
+  color: var(--editor-blue);
+  background: var(--admin-soft);
+  border-color: var(--editor-blue);
   font-weight: 600;
 }
 
@@ -110,7 +110,7 @@
 .editor-insertion-context {
   margin-block: 16px;
   padding: 12px;
-  background: #f5f7f6;
+  background: var(--paper);
   border: 1px solid var(--editor-border);
   border-radius: 8px;
   font-size: 12px;
@@ -124,7 +124,7 @@
 .editor-insertion-context > summary {
   cursor: pointer;
   font-weight: 600;
-  color: #385847;
+  color: var(--ink);
   line-height: 1.5;
 }
 
@@ -138,7 +138,7 @@
 
 .editor-library-result-count {
   font-size: 12px;
-  color: #53645b;
+  color: var(--muted);
   margin-block: 14px 8px;
 }
 
@@ -146,7 +146,7 @@
   text-transform: none;
   letter-spacing: 0;
   font-size: 13px;
-  color: #364c40;
+  color: var(--ink);
 }
 
 .editor-block-list {
@@ -155,21 +155,21 @@
 
 .editor-block-list > button {
   padding: 12px;
-  border: 1px solid #e4e9e6;
+  border: 1px solid var(--editor-border);
   border-radius: 9px;
   gap: 10px;
   width: 100%;
 }
 
 .editor-block-list > button:hover {
-  background: #f3f8f5;
-  border-color: #82a795;
-  box-shadow: 0 2px 8px #243b2e0a;
+  background: var(--admin-hover);
+  border-color: var(--editor-blue);
+  box-shadow: 0 2px 8px #14213d0a;
 }
 
 .editor-block-symbol {
-  color: #395849;
-  background: #edf2ee;
+  color: var(--ink);
+  background: var(--admin-hover);
   border-radius: 7px;
 }
 
@@ -183,7 +183,7 @@
 
 .editor-block-list small {
   font-size: 12px;
-  color: #5e6b64;
+  color: var(--muted);
 }
 
 .editor-block-source {
@@ -191,8 +191,8 @@
   margin-top: 7px;
   padding: 3px 7px;
   border-radius: 5px;
-  background: #eaf3ee;
-  color: #2e604b;
+  background: var(--admin-soft);
+  color: var(--editor-blue);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -201,7 +201,7 @@
   padding: 26px 12px;
   text-align: center;
   font-size: 13px;
-  color: #5e6b64;
+  color: var(--muted);
 }
 
 .editor-library-empty p {
@@ -209,14 +209,14 @@
 }
 
 .editor-stage {
-  background: #eef2f0;
+  background: var(--admin-hover);
 }
 
 .editor-canvas-toolbar {
   gap: 12px;
   font-size: 12px;
-  color: #506159;
-  background: #f8faf9;
+  color: var(--muted);
+  background: var(--paper);
 }
 
 .editor-canvas-toolbar > span {
@@ -241,12 +241,12 @@
   border-radius: 6px;
   background: #fff;
   font-size: 12px;
-  color: #315344;
+  color: var(--ink);
   margin-right: 6px;
 }
 
 .editor-canvas {
-  box-shadow: 0 8px 30px #233b2d0d;
+  box-shadow: 0 8px 30px #14213d0d;
 }
 
 .cms-form-editor-block {
@@ -265,12 +265,12 @@
   gap: 5px;
   margin-bottom: 16px;
   font-size: 11px;
-  color: #52665a;
+  color: var(--muted);
 }
 
 .editor-selection-path button {
   padding: 2px;
-  color: #2e6550;
+  color: var(--editor-blue);
   text-decoration: underline;
   text-underline-offset: 3px;
   border: 0;
@@ -295,21 +295,21 @@
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: #edf4ef;
-  color: #39664f;
+  background: var(--admin-soft);
+  color: var(--editor-blue);
   flex-shrink: 0;
 }
 
 .editor-selected-kind {
   font-size: 12px;
-  color: #566b5e;
+  color: var(--muted);
 }
 
 .editor-selected-heading > p,
 .editor-section-heading p {
   font-size: 12px;
   line-height: 1.6;
-  color: #58685e;
+  color: var(--muted);
 }
 
 .editor-inspector-tabs > button[role="tab"] {

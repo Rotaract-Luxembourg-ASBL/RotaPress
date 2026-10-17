@@ -17,6 +17,7 @@ import {
   featureIcon,
 } from "./block_fields";
 import { sectionBlockSchemas } from "./section_schemas";
+import { captionLanguageSchema, videoCaptionCuesSchema } from "./video_captions";
 import { eventContentBlockSchemas } from "../events/event_content";
 import { websiteTemplateSetupSchema } from "./website_setup_schemas";
 import type { KitId } from "./kits/catalogue";
@@ -130,17 +131,42 @@ const leafBlockSchemas = [
     href: link.optional(),
   }),
   block("Gallery", {
+    albumId: z.uuid().optional(),
     items: z
       .array(
         z.strictObject({
           assetId,
           alt: shortText,
           caption: shortText.optional(),
+          focalX: z.number().int().min(0).max(100).optional(),
+          focalY: z.number().int().min(0).max(100).optional(),
         }),
       )
       .max(30),
     columns: z.enum(["two", "three", "four"]).optional(),
     aspectRatio: aspectRatio.optional(),
+    layout: z.enum(["grid", "masonry", "slider"]).optional(),
+    fit: z.enum(["cover", "contain"]).optional(),
+    lightbox: z.boolean().optional(),
+  }),
+  block("File", {
+    assetId: z.union([z.uuid(), z.literal("")]),
+    label: shortText,
+    description: shortText,
+  }),
+  block("Audio", {
+    assetId: z.union([z.uuid(), z.literal("")]),
+    title: shortText,
+    transcript: text,
+  }),
+  block("Video", {
+    assetId: z.union([z.uuid(), z.literal("")]),
+    title: shortText,
+    transcript: text,
+    posterAssetId: z.union([z.uuid(), z.literal("")]).optional(),
+    captionLanguage: captionLanguageSchema.optional(),
+    captionLabel: z.string().max(80).optional(),
+    captions: videoCaptionCuesSchema.optional(),
   }),
   block("ImageSlider", {
     visibleImages: z.enum(["one", "three", "four"]).optional(),
@@ -244,13 +270,13 @@ export const cmsLeafBlockSchema = z.discriminatedUnion(
 export const cmsBlockSchema = z.discriminatedUnion("type", [
   ...leafBlockSchemas,
   block("Columns", {
-    ratio: z.enum(["balanced", "wide-left", "wide-right"]),
+    ratio: z.enum(["balanced", "wide-left", "wide-right", "stacked"]),
     left: z.array(cmsLeafBlockSchema).max(12),
     right: z.array(cmsLeafBlockSchema).max(12),
   }),
   block("SiteRow", {
     sticky: z.boolean().optional(),
-    layout: z.enum(["balanced", "wide-left", "wide-center", "wide-right"]),
+    layout: z.enum(["balanced", "wide-left", "wide-center", "wide-right", "stacked"]),
     flow: z.enum(["row", "columns"]),
     spacing: z.enum(["compact", "comfortable"]),
     left: z.array(cmsLeafBlockSchema).max(12),

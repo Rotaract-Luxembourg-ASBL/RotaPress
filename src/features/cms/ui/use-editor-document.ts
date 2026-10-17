@@ -11,8 +11,10 @@ import { useRouter } from "next/navigation";
 import type { Data } from "@puckeditor/core";
 import { isSitePart, type CmsDetail } from "../cms_schemas";
 import type { PuckBlocks } from "./puck-config";
-import { request, errorMessage } from "@/ui/api";
+import { ApiError, request, errorMessage } from "@/ui/api";
 import { useEditorHistory } from "./use-editor-history";
+import { useEditorCheckpoint } from "./use-editor-checkpoint";
+import { observeEditorDocuments } from "./editor-documents";
 
 export type DocumentOperation = "publish" | "unpublish" | "archive" | "restore";
 
@@ -43,6 +45,7 @@ export function useEditorDocument(initial: CmsDetail) {
   const resetHistory = history.reset;
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
+  const [conflicted, setConflicted] = useState(false);
   const dirty =
     metadata.title !== detail.draft.title ||
     metadata.slug !== detail.draft.slug ||
@@ -52,6 +55,21 @@ export function useEditorDocument(initial: CmsDetail) {
       JSON.stringify(detail.draft.data.root) ||
     JSON.stringify(data.content) !== JSON.stringify(detail.draft.data.content);
   const base = `/api/admin/cms/content/${detail.id}`;
+  const checkpoint = useEditorCheckpoint({
+    base,
+    locale: detail.locale,
+    enabled: !busy && !readOnly,
+    dirty,
+    payload: {
+      locale: detail.locale,
+      expectedRevisionId: detail.draft.id,
+      title: metadata.title,
+      slug: metadata.slug,
+      description: metadata.description,
+      socialImageId: metadata.socialImageId,
+      data: { root: metadata.data.root, content: data.content },
+    },
+  });
 
   useEffect(() => {
     if (!dirty) return;
@@ -80,6 +98,7 @@ export function useEditorDocument(initial: CmsDetail) {
     setError(undefined);
     setMessage(undefined);
     try {
+      await checkpoint.settle();
       const next = await request<CmsDetail>(`${base}/save`, {
         method: "POST",
         body: JSON.stringify({
@@ -99,10 +118,18 @@ export function useEditorDocument(initial: CmsDetail) {
           JSON.stringify(data.content),
       );
       setMessage("Draft saved. Your public page has not changed.");
+      setConflicted(false);
+      try {
+        await checkpoint.discard();
+      } catch {
+        setMessage(
+          "Draft saved. Your earlier recovery copy could not be cleared; review it when reopening this page.",
+        );
+      }
     } catch (cause) {
-      setError(
-        `${errorMessage(cause)} Your entered content is still here. Copy anything you need before reloading.`,
-      );
+      if (cause instanceof ApiError && cause.status === 409)
+        setConflicted(true);
+      setError(`${errorMessage(cause)} Your entered content is still here.`);
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -115,6 +142,7 @@ export function useEditorDocument(initial: CmsDetail) {
     detail.draft.id,
     detail.locale,
     metadata,
+    checkpoint,
   ]);
 
   useEffect(() => {
@@ -134,8 +162,10 @@ export function useEditorDocument(initial: CmsDetail) {
         if (!document.querySelector("dialog[open]")) void save();
       }
     };
-    window.addEventListener("keydown", shortcut, true);
-    return () => window.removeEventListener("keydown", shortcut, true);
+    return observeEditorDocuments((surface) => {
+      surface.addEventListener("keydown", shortcut, true);
+      return () => surface.removeEventListener("keydown", shortcut, true);
+    });
   }, [readOnly, save]);
 
   async function operation(name: DocumentOperation, revisionId?: string) {
@@ -208,6 +238,7 @@ export function useEditorDocument(initial: CmsDetail) {
     setBusy(true);
     setError(undefined);
     try {
+      await checkpoint.settle();
       const next = await request<CmsDetail>(`${base}/${action}`, {
         method: "POST",
         body: JSON.stringify({
@@ -252,6 +283,63 @@ export function useEditorDocument(initial: CmsDetail) {
     save,
     operation,
     copy,
+    checkpoint,
+    conflicted,
+    recoverCheckpoint: () => {
+      const recovered = checkpoint.recover();
+      if (!recovered) return;
+      setMetadata({
+        ...recovered.document,
+        id: recovered.baseRevisionId,
+        createdAt: recovered.updatedAt,
+      });
+      setData({
+        root: { props: {} },
+        content: recovered.document.data.content,
+      });
+      setDetail((current) => ({
+        ...current,
+        draft: { ...current.draft, id: recovered.baseRevisionId },
+      }));
+      setEditorKey((key) => key + 1);
+      resetHistory();
+      setConflicted(recovered.stale);
+      setMessage(
+        "Your recovery copy is open. Review and save it as a draft before publishing.",
+      );
+    },
+    reviewLatest: async (keepEdits: boolean, expectedRevisionId: string) => {
+      if (inFlight.current) return false;
+      inFlight.current = true;
+      setBusy(true);
+      try {
+        await checkpoint.settle();
+        const latest = await request<CmsDetail>(
+          `${base}?locale=${detail.locale}`,
+        );
+        if (latest.draft.id !== expectedRevisionId)
+          throw new Error(
+            "The saved draft changed again. Refresh the comparison before choosing a version.",
+          );
+        if (keepEdits) setDetail(latest);
+        else apply(latest, true);
+        if (!keepEdits) await checkpoint.discard();
+        setConflicted(false);
+        setError(undefined);
+        setMessage(
+          keepEdits
+            ? "Your edits are ready to save over the latest draft. The public page is unchanged."
+            : "The latest saved draft is open.",
+        );
+        return true;
+      } catch (cause) {
+        setError(errorMessage(cause));
+        return false;
+      } finally {
+        inFlight.current = false;
+        setBusy(false);
+      }
+    },
   };
 }
 

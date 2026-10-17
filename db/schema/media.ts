@@ -30,11 +30,12 @@ export const mediaAsset = club.table(
     uploaderId: text("uploader_id")
       .notNull()
       .references(() => user.id),
-    mimeType: text("mime_type").notNull().default("image/webp"),
+    kind: text("kind", { enum: ["image", "document", "audio", "video"] }).notNull().default("image"),
+    mimeType: text("mime_type", { enum: ["image/webp", "application/pdf", "audio/mpeg", "audio/mp4", "video/mp4", "video/webm"] }).notNull().default("image/webp"),
     originalName: text("original_name").notNull(),
     size: integer("size").notNull(),
-    width: integer("width").notNull(),
-    height: integer("height").notNull(),
+    width: integer("width"),
+    height: integer("height"),
     title: text("title").notNull().default(""),
     alt: text("alt").notNull().default(""),
     caption: text("caption").notNull().default(""),
@@ -58,14 +59,14 @@ export const mediaAsset = club.table(
       sql`${table.visibility} in ('private', 'public')`,
     ),
     check("media_asset_driver", sql`${table.storageDriver} = 'local'`),
-    check("media_asset_mime", sql`${table.mimeType} = 'image/webp'`),
+    check("media_asset_mime", sql`(${table.kind} = 'image' and ${table.mimeType} = 'image/webp') or (${table.kind} = 'document' and ${table.mimeType} = 'application/pdf') or (${table.kind} = 'audio' and ${table.mimeType} in ('audio/mpeg', 'audio/mp4')) or (${table.kind} = 'video' and ${table.mimeType} in ('video/mp4', 'video/webm'))`),
     check(
       "media_asset_size",
-      sql`${table.size} > 0 and ${table.size} <= 5242880`,
+      sql`${table.size} > 0 and ${table.size} <= case ${table.kind} when 'image' then 5242880 when 'document' then 26214400 when 'audio' then 104857600 when 'video' then 524288000 else 0 end`,
     ),
     check(
       "media_asset_pixels",
-      sql`${table.width} > 0 and ${table.height} > 0 and ${table.width}::bigint * ${table.height} <= 20000000`,
+      sql`(${table.kind} in ('image', 'video') and ${table.width} is not null and ${table.height} is not null and ${table.width} > 0 and ${table.height} > 0 and ${table.width}::bigint * ${table.height} <= 20000000) or (${table.kind} in ('document', 'audio') and ${table.width} is null and ${table.height} is null)`,
     ),
   ],
 );

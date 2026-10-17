@@ -323,6 +323,20 @@
       "when": 1790443987457,
       "tag": "0045_outstanding_logan",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792096987678,
+      "tag": "0046_free_santa_claus",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1792097272504,
+      "tag": "0047_classy_iron_man",
+      "breakpoints": true
     }
   ]
 }

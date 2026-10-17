@@ -14,6 +14,7 @@ import {
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import { EventRepository } from "./EventRepository";
+import { eventCollectionSchema } from "./event_collection";
 import {
   createEventSchema,
   eventVersionSchema,
@@ -54,35 +55,46 @@ export class EventService {
     }
   }
 
-  async list(actor: TrustedActor) {
+  async query(actor: TrustedActor, input: unknown = {}) {
     const scope = await this.authorization.approved(actor);
     await this.authorization.features.require(scope.organizationId, "events");
+    const manager = scope.capabilities.includes("events.manage");
     if (
-      !scope.capabilities.includes("events.manage") &&
+      !manager &&
       !(await this.repository.hasAssignment(scope.organizationId, actor.userId))
     )
       throw new DomainError(
         "EVENT_ACCESS_DENIED",
         "You need an event team role to use event administration.",
       );
-    const events = await this.repository.list(
+    const result = await this.repository.query(
       scope.organizationId,
-      scope.capabilities.includes("events.manage") ? undefined : actor.userId,
+      eventCollectionSchema.parse(input),
+      manager ? undefined : actor.userId,
     );
-    return events.map((event) => ({
-      ...event,
-      canArchive:
-        scope.capabilities.includes("events.manage") ||
-        event.manager?.userId === actor.userId,
-    }));
+    return {
+      ...result,
+      events: result.events.map((event) => ({
+        ...event,
+        canArchive: manager || event.manager?.userId === actor.userId,
+      })),
+    };
   }
 
-  async responseEventIds(actor: TrustedActor): Promise<string[]> {
-    const scope = await this.authorization.approved(actor);
-    await this.authorization.features.require(scope.organizationId, "events");
+  async responseEventIds(
+    actor: TrustedActor,
+    executor: DatabaseExecutor = this.db,
+  ): Promise<string[]> {
+    const scope = await this.authorization.approved(actor, executor);
+    await this.authorization.features.require(
+      scope.organizationId,
+      "events",
+      executor,
+    );
     const rows = await this.repository.responseEventIds(
       scope.organizationId,
       scope.capabilities.includes("events.manage") ? undefined : actor.userId,
+      executor,
     );
     return rows.flatMap((row) =>
       typeof row === "string"
@@ -161,7 +173,11 @@ export class EventService {
     };
   }
 
-  async changeEditor(actor: TrustedActor, input: unknown) {
+  async changeEditor(
+    actor: TrustedActor,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.authorization.requireRecent(actor);
     const {
       id,
@@ -170,7 +186,7 @@ export class EventService {
       operation,
       role: requestedRole,
     } = eventEditorChangeSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.lockEvent(actor, id, tx);
       this.requireCapability(event, "events.team.manage");
       this.requireEditableVersion(event, expectedVersion);
@@ -226,14 +242,16 @@ export class EventService {
         targetId: id,
       });
       return this.detail(actor, id, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
-  async create(actor: TrustedActor, input: unknown) {
-    const id = await this.db.transaction((tx) =>
-      this.createDraft(actor, input, tx),
-    );
-    return this.detail(actor, id);
+  async create(actor: TrustedActor, input: unknown, executor?: Transaction) {
+    const apply = (tx: Transaction) => this.createDraft(actor, input, tx);
+    const id = executor
+      ? await apply(executor)
+      : await this.db.transaction(apply);
+    return this.detail(actor, id, executor ?? this.db);
   }
 
   /** Composes template initialization in the same transaction as event creation. */
@@ -290,29 +308,47 @@ export class EventService {
     return id;
   }
 
-  async save(actor: TrustedActor, input: unknown) {
+  async save(actor: TrustedActor, input: unknown, executor?: Transaction) {
     const { id, expectedVersion, ...fields } = saveEventSchema.parse(input);
-    return this.mutate(actor, id, expectedVersion, "event.draft_saved", {
-      ...fields,
-      startsAt: new Date(fields.startsAt),
-      endsAt: fields.endsAt ? new Date(fields.endsAt) : null,
-    });
+    return this.mutate(
+      actor,
+      id,
+      expectedVersion,
+      "event.draft_saved",
+      {
+        ...fields,
+        startsAt: new Date(fields.startsAt),
+        endsAt: fields.endsAt ? new Date(fields.endsAt) : null,
+      },
+      executor,
+    );
   }
 
-  async archive(actor: TrustedActor, input: unknown) {
+  async archive(actor: TrustedActor, input: unknown, executor?: Transaction) {
     this.authorization.requireRecent(actor);
     const { id, expectedVersion } = eventVersionSchema.parse(input);
-    return this.mutate(actor, id, expectedVersion, "event.archived", {
-      archivedAt: new Date(),
-      featured: false,
-    });
+    return this.mutate(
+      actor,
+      id,
+      expectedVersion,
+      "event.archived",
+      {
+        archivedAt: new Date(),
+        featured: false,
+      },
+      executor,
+    );
   }
 
-  async reassignManager(actor: TrustedActor, input: unknown) {
+  async reassignManager(
+    actor: TrustedActor,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.authorization.requireRecent(actor);
     const { id, expectedVersion, managerUserId } =
       eventManagerChangeSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         "events.manage",
@@ -353,7 +389,8 @@ export class EventService {
         targetId: id,
       });
       return this.detail(actor, id, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   requireEditableVersion(event: EventDraft, expectedVersion: number) {
@@ -408,8 +445,9 @@ export class EventService {
     expectedVersion: number,
     action: string,
     values: Parameters<EventRepository["update"]>[2],
+    executor?: Transaction,
   ) {
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.lockEvent(actor, id, tx);
       this.requireCapability(
         event,
@@ -438,6 +476,7 @@ export class EventService {
           "saved",
         );
       return this.detail(actor, id, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 }

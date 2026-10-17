@@ -2,7 +2,6 @@ import { z } from "zod";
 import { automationAccess } from "@/composition/automation";
 import { getActor } from "@/core/auth/actor";
 import { handle, HttpError, json, readMutation } from "@/core/http";
-import { automationTransport } from "@/integrations/automation/availability_schemas";
 
 async function actor(request: Request) {
   const current = await getActor(request.headers);
@@ -12,17 +11,12 @@ async function actor(request: Request) {
 }
 export function GET(request: Request) {
   return handle(async () =>
-    json({
-      connections: await automationAccess.list(
+    json(
+      await automationAccess.list(
         await actor(request),
-        request.headers,
-        automationTransport
-          .optional()
-          .parse(
-            new URL(request.url).searchParams.get("transport") ?? undefined,
-          ),
+        Object.fromEntries(new URL(request.url).searchParams),
       ),
-    }),
+    ),
   );
 }
 export function POST(request: Request) {

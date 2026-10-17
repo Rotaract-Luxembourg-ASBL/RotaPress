@@ -3,6 +3,11 @@ import type { ConnectionMode } from "./connection_schemas";
 import { lumaEventUrlSchema } from "./luma_schemas";
 import type { ReconciliationJobDto } from "./job_schemas";
 import type { PackageSource } from "../../features/events/package_schemas";
+import { collectionQuerySchema } from "../../core/collections";
+
+export const importedGuestsQuerySchema = collectionQuerySchema
+  .pick({ page: true, pageSize: true })
+  .strict();
 
 export const providerEventIdSchema = z
   .string()
@@ -103,6 +108,8 @@ export type LumaSyncDto = {
   mode: ConnectionMode;
   lastSuccessAt: string | null;
   count: number;
+  page: number;
+  pageSize: number;
   runs: SyncRunDto[];
   guests: (ImportedGuest & {
     id: string;

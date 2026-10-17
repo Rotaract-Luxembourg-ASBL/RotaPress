@@ -1,7 +1,11 @@
 ﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ApiError, errorMessage, request, useResource } from "@/ui/api";
+import { ApiError, errorMessage, request } from "@/ui/api";
+import { useRequestResource } from "@/ui/request-resource";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import type { OAuthConnectionCollection } from "./connection_collection";
 import { Loading, Notice } from "@/ui/primitives";
 import {
   Collection,
@@ -21,10 +25,13 @@ import {
 } from "./connection-types";
 
 export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
-  const { data, error, refresh } = useResource<{ clients: OAuthClient[] }>(
-    oauthEndpoint,
-  );
-  const [query, setQuery] = useState("");
+  const { params, change: changeLocation, page } = useCollectionLocation();
+  const query = (params.get("search") ?? "").slice(0, 160);
+  const setQuery = (search: string) => changeLocation({ search });
+  const { data, error, refresh } =
+    useRequestResource<OAuthConnectionCollection>(
+      `${oauthEndpoint}?${new URLSearchParams({ search: query, page: String(page) })}`,
+    );
   const [selected, setSelected] = useState<{
     client: OAuthClient;
     tab: "Permissions" | "Activity";
@@ -37,12 +44,7 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
   const [problem, setProblem] = useState<string>();
   const [problemStatus, setProblemStatus] = useState<number>();
   const [receipt, setReceipt] = useState<string>();
-  const clients =
-    data?.clients.filter((client) =>
-      `${client.name ?? "OAuth connection"} ${client.redirectUris.join(" ")}`
-        .toLowerCase()
-        .includes(query.toLowerCase().trim()),
-    ) ?? [];
+  const clients = data?.clients ?? [];
   async function applyChange() {
     if (!change || busy) return;
     setBusy(true);
@@ -88,140 +90,149 @@ export function ExistingConnections({ onCreate }: { onCreate: () => void }) {
         </button>
       </header>
       {receipt && <Notice kind="success">{receipt}</Notice>}
-      {error ? (
-        <Notice>
-          {error}{" "}
-          <button className="inline-button" onClick={refresh}>
-            Reload connections
-          </button>
-        </Notice>
-      ) : !data ? (
-        <Loading />
-      ) : (
-        <Collection
-          label="OAuth connections"
-          noun="Connection"
-          detailLabel="Last tool activity"
-          toolbar={
-            <CollectionToolbar
-              searchLabel="Search connections"
-              query={query}
-              onQuery={setQuery}
-            >
-              <button className="button button-outline" onClick={refresh}>
-                Refresh connections
+      <Collection
+        label="OAuth connections"
+        noun="Connection"
+        detailLabel="Last tool activity"
+        toolbar={
+          <CollectionToolbar
+            searchLabel="Search connections"
+            query={query}
+            onQuery={setQuery}
+          >
+            <button className="button button-outline" onClick={refresh}>
+              Refresh connections
+            </button>
+          </CollectionToolbar>
+        }
+        footer={
+          data &&
+          !error && (
+            <CollectionPagination
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              noun="connections registered by you"
+              onPage={(next) => changeLocation({ page: next }, false)}
+            />
+          )
+        }
+      >
+        {error ? (
+          <Notice>
+            {error}{" "}
+            <button className="inline-button" onClick={refresh}>
+              Reload connections
+            </button>
+          </Notice>
+        ) : !data ? (
+          <Loading />
+        ) : !clients.length ? (
+          <CollectionEmpty
+            icon="controls"
+            title={
+              query ? "No matching connections" : "No OAuth connections yet"
+            }
+            description={
+              query
+                ? "Try another name or callback website."
+                : "Create a connection, then approve access from your AI app."
+            }
+          >
+            {query && (
+              <button
+                className="button button-outline"
+                onClick={() => setQuery("")}
+              >
+                Clear search
               </button>
-            </CollectionToolbar>
-          }
-          footer={`${clients.length} of ${data.clients.length} connections shown · latest 100 registered by you`}
-        >
-          {!clients.length ? (
-            <CollectionEmpty
-              icon="controls"
-              title={
-                query ? "No matching connections" : "No OAuth connections yet"
-              }
-              description={
-                query
-                  ? "Try another name or callback website."
-                  : "Create a connection, then approve access from your AI app."
-              }
-            >
-              {query && (
-                <button
-                  className="button button-outline"
-                  onClick={() => setQuery("")}
-                >
-                  Clear search
-                </button>
-              )}
-            </CollectionEmpty>
-          ) : (
-            <ul className="admin-collection-rows">
-              {clients.map((client) => (
-                <CollectionRow
-                  key={client.clientId}
-                  title={client.name ?? "OAuth connection"}
-                  description={
-                    <>
-                      {client.scopes.length} allowed actions ·{" "}
-                      {client.approvedScopes.length} approved
-                      <br />
-                      <span>
-                        Created <ConnectionTime value={client.createdAt} />
-                      </span>
-                    </>
-                  }
-                  status={
-                    <StatusBadge
-                      tone={client.consentedAt ? "success" : "warning"}
+            )}
+          </CollectionEmpty>
+        ) : (
+          <ul className="admin-collection-rows">
+            {clients.map((client) => (
+              <CollectionRow
+                key={client.clientId}
+                title={client.name ?? "OAuth connection"}
+                description={
+                  <>
+                    {client.scopes.length} allowed actions ·{" "}
+                    {client.approvedScopes.length} approved
+                    <br />
+                    <span>
+                      Created <ConnectionTime value={client.createdAt} />
+                    </span>
+                  </>
+                }
+                status={
+                  <StatusBadge
+                    tone={client.consentedAt ? "success" : "warning"}
+                  >
+                    {connectionStatus(client)}
+                  </StatusBadge>
+                }
+                detail={{
+                  label: "Last tool activity",
+                  value: (
+                    <ConnectionTime
+                      value={client.lastUsedAt}
+                      empty="No activity recorded"
+                    />
+                  ),
+                }}
+                actions={
+                  <>
+                    <button
+                      className="button button-outline button-small"
+                      disabled={client.disabled}
+                      aria-label={`Permissions for ${client.name ?? "OAuth connection"}`}
+                      onClick={() =>
+                        setSelected({ client, tab: "Permissions" })
+                      }
                     >
-                      {connectionStatus(client)}
-                    </StatusBadge>
-                  }
-                  detail={{
-                    label: "Last tool activity",
-                    value: (
-                      <ConnectionTime
-                        value={client.lastUsedAt}
-                        empty="No activity recorded"
-                      />
-                    ),
-                  }}
-                  actions={
-                    <>
-                      <button
-                        className="button button-outline button-small"
-                        disabled={client.disabled}
-                        aria-label={`Permissions for ${client.name ?? "OAuth connection"}`}
-                        onClick={() =>
-                          setSelected({ client, tab: "Permissions" })
-                        }
+                      Permissions
+                    </button>
+                    <button
+                      className="button button-outline button-small"
+                      disabled={client.disabled}
+                      aria-label={`Activity for ${client.name ?? "OAuth connection"}`}
+                      onClick={() => setSelected({ client, tab: "Activity" })}
+                    >
+                      Activity
+                    </button>
+                    {!client.disabled && (
+                      <ActionsMenu
+                        label={`More options for ${client.name ?? "OAuth connection"}`}
                       >
-                        Permissions
-                      </button>
-                      <button
-                        className="button button-outline button-small"
-                        disabled={client.disabled}
-                        aria-label={`Activity for ${client.name ?? "OAuth connection"}`}
-                        onClick={() => setSelected({ client, tab: "Activity" })}
-                      >
-                        Activity
-                      </button>
-                      {!client.disabled && (
-                        <ActionsMenu
-                          label={`More options for ${client.name ?? "OAuth connection"}`}
+                        <button
+                          aria-label={`Revoke access for ${client.name ?? "OAuth connection"}`}
+                          onClick={() => {
+                            setProblem(undefined);
+                            setProblemStatus(undefined);
+                            setChange({ client, action: "revoke" });
+                          }}
                         >
-                          <button
-                            aria-label={`Revoke access for ${client.name ?? "OAuth connection"}`}
-                            onClick={() => {
-                              setProblem(undefined);
-                              setProblemStatus(undefined);
-                              setChange({ client, action: "revoke" });
-                            }}
-                          >
-                            Revoke access
-                          </button>
-                          <button
-                            aria-label={`Remove ${client.name ?? "OAuth connection"}`}
-                            onClick={() => {
-                              setProblem(undefined);
-                              setProblemStatus(undefined);
-                              setChange({ client, action: "remove" });
-                            }}
-                          >
-                            Remove connection
-                          </button>
-                        </ActionsMenu>
-                      )}
-                    </>
-                  }
-                />
-              ))}
-            </ul>
-          )}
-        </Collection>
-      )}
+                          Revoke access
+                        </button>
+                        <button
+                          aria-label={`Remove ${client.name ?? "OAuth connection"}`}
+                          onClick={() => {
+                            setProblem(undefined);
+                            setProblemStatus(undefined);
+                            setChange({ client, action: "remove" });
+                          }}
+                        >
+                          Remove connection
+                        </button>
+                      </ActionsMenu>
+                    )}
+                  </>
+                }
+              />
+            ))}
+          </ul>
+        )}
+      </Collection>
       <p className="small muted">
         Consent saved means you approved access. Actual access also requires MCP
         to be enabled and your sign-in and staff permissions to remain valid.

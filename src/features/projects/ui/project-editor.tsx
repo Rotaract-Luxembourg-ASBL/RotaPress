@@ -9,6 +9,7 @@ import { StatusBadge } from "@/ui/collection";
 import { Dialog } from "@/ui/dialog";
 import { Icon } from "@/ui/icon";
 import { Loading, Notice, PageHeading } from "@/ui/primitives";
+import { useCollectionReturn } from "@/ui/collection-return";
 import { websiteStyle, type Appearance } from "@/features/cms/appearance";
 import {
   projectContentSchema,
@@ -33,6 +34,7 @@ export function ProjectEditor({
   appearance: Appearance;
 }) {
   const { capabilities } = useCurrentUser();
+  const returnTo = useCollectionReturn("/admin/projects");
   const allowed = capabilities.includes("cms.edit");
   const { data, error, refresh } = useResource<ProjectDto>(
     allowed ? `/api/admin/projects/${id}` : null,
@@ -42,7 +44,7 @@ export function ProjectEditor({
   if (error)
     return (
       <div className="form-stack">
-        <Link href="/admin/projects" className="text-link">
+        <Link href={returnTo} className="text-link">
           Back to projects
         </Link>
         <Notice>
@@ -68,6 +70,7 @@ function Editor({
   appearance: Appearance;
 }) {
   const { capabilities, actor } = useCurrentUser();
+  const returnTo = useCollectionReturn("/admin/projects");
   const [recovered] = useState(() =>
     recoverProject(actor?.email ?? null, initial.id),
   );
@@ -223,7 +226,7 @@ function Editor({
   }
   return (
     <div className="project-editor">
-      <Link href="/admin/projects" className="text-link project-back">
+      <Link href={returnTo} className="text-link project-back">
         <Icon name="back" /> Back to projects
       </Link>
       <PageHeading

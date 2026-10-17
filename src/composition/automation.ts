@@ -39,6 +39,19 @@ export const contentImports = new ContentImportService(
   services.cms,
 );
 const sources = new ReferenceWebsiteClient();
+
+/** Only private export bytes accept the originating connection's transport.
+ * General REST operations still reject MCP credentials. Authentication verifies
+ * the token's stored transport, current grant, session and availability as usual.
+ */
+export function automationExportContext(request: Request) {
+  const bearer = request.headers.get("authorization") ?? "";
+  return automationContext(
+    request,
+    /^Bearer (?:rpo_|rp_mcp_)/u.test(bearer) ? "mcp" : "rest",
+  );
+}
+
 export async function automationContext(
   request: Request,
   transport: AutomationTransport,

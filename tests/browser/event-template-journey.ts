@@ -68,7 +68,16 @@ export async function eventTemplateJourney(
     await dialog.getByRole("button", { name: "Next", exact: true }).click();
     await dialog
       .getByRole("combobox", { name: "Starting setup", exact: true })
-      .selectOption(selection);
+      .selectOption(selection.startsWith("copy:") ? "copy:" : selection);
+    if (selection.startsWith("copy:")) {
+      const source = await owner.request
+        .get(`/api/admin/events/${selection.slice(5)}`)
+        .then((response) => response.json());
+      await dialog.getByLabel("Find an event to copy").fill(source.title);
+      await dialog
+        .getByRole("radio", { name: source.title, exact: true })
+        .check();
+    }
     if (screenshots) {
       await dialog.getByRole("button", { name: "Back", exact: true }).click();
       await expect(

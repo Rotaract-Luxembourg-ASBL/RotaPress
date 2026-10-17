@@ -4,7 +4,7 @@ An assistant can discover the native content structure, prepare website or event
 drafts, upload private images and inspect rendered previews. Staff review the
 result before publishing. They can publish in administration or explicitly request
 publication of the reviewed saved target through a separately granted tool.
-Applying operational settings stays in administration. The model
+Requested operational changes execute directly under separately chosen permissions. The model
 runs in the chosen client; RotaPress supplies scoped tools and does not store
 model-provider keys or run a background agent service.
 
@@ -22,7 +22,7 @@ model-provider keys or run a background agent service.
 | Requested publication   | Separate grants, exact saved targets and existing domain publication checks                      | Shared operation catalogue and owning domain services                    |
 | Media operations        | Private uploads/metadata, bounded inspection and separately requested reviewed image publication | `media_operations.ts`, `media_publication_operations.ts`, `MediaService` |
 | Visual review           | Exact saved revisions rendered with native components in an isolated browser                     | `WebsitePreviewService.ts`, `preview_*.ts`                               |
-| Settings proposals      | Typed immutable suggestions applied only through staff administration                            | `AutomationProposalService.ts`                                           |
+| Operational actions     | Requested typed domain changes with explicit opt-in scopes and atomic receipts                   | `receipt_service.ts`, `operational_event_operations.ts`                  |
 | Client prompts          | Instructions that compose existing tools into page, event and review workflows                   | `workflow_prompts.ts`, `workflow_operations.ts`                          |
 
 Unqualified file names are under `src/integrations/automation`; the event and media
@@ -39,8 +39,8 @@ provider, notification, payment or public event is operational.
 
 The server grants capabilities, not the prompt. Reload current identity,
 membership, Google session policy, organization and object scope. OAuth consent
-and manually issued connection keys delegate a real staff session; they cannot
-create membership, change staff permissions or authorize actions after revocation.
+and manually issued connection keys delegate a real staff session; they cannot authorize actions after revocation. Membership decisions and role changes
+require their dedicated opt-in grants, current authority and owner protections.
 
 Separate metadata from image pixels, read from draft write, and draft preparation
 from publication and operational activation. Extra scopes require explicit consent from authorized
@@ -62,20 +62,18 @@ it accept responses. Publishing event details does not publish its pages/forms o
 enable registration. Explicit page removal uses the bounded `website_archive`
 operation with management and publication grants. It accepts only ordinary
 single-language club pages outside draft/published homepage, menu and Events
-selections, preserves history and has no direct unarchive. General unpublication
-and hard deletion remain administration workflows.
+selections and preserves history. The separate website_pages_restore action restores
+archived pages as private drafts with exact revisions and current publication
+authority. General page unpublication and hard deletion remain administration workflows.
 
-Keep consequential settings as typed review proposals where the underlying
-feature has no draft model. Only the authenticated administration workflow may
-apply a proposal, after current authorization and expected-state checks. A model's
-`confirmed: true`, a prompt, or an MCP annotation is never human approval for
-applying operational proposals. Publication grants do not authorize proposal application.
-
-Participant identities, responses, member approvals, credentials, payments and
-draw decisions remain outside content preparation. Native paid checkout, guest
-invitation delivery and real paid draws are not implemented merely by adding MCP.
-Use the existing event/provider workspace for those supported operational actions;
-do not fabricate their completion in a tool receipt.
+Requested operational changes execute directly within explicitly chosen grants. New
+membership, role, private-response, export, registration, guest and communication
+permissions never flow from existing content grants. Current identity, domain
+scope and exact target versions remain mandatory. A requestId receipt commits
+with the mutation; retry rechecks authority before returning it. Task labels group
+receipts without creating a generic execution engine. Provider credentials,
+authentication policy, arbitrary email, payments and draws remain outside tools.
+See [whole-platform actions](../guides/automation-platform.md).
 
 ## Data flow
 
@@ -88,8 +86,8 @@ flowchart LR
   Drafts --> Preview[Isolated native preview]
   Preview --> Client
   Drafts --> Review[Staff review in RotaPress]
-  Registry --> Proposals[Typed configuration proposals]
-  Proposals --> Review
+  Registry --> Actions[Explicitly granted requested actions]
+  Actions --> Receipts[Atomic operation receipts]
   Review --> Public[Existing deliberate publication]
   Review --> Request[Explicit request and client approval]
   Request --> Registry
@@ -150,7 +148,9 @@ locks current authority, validates all organization-owned targets, then changes
 only their visibility and audits them in one transaction. A changed or unavailable
 asset rejects the whole batch. Anyone can retrieve the public image URL without a
 page placement. Uploads stay private; content publication cannot publish its
-images automatically. Hiding/deletion and public metadata edits remain manual.
+images automatically. Requested public metadata, organization, hiding, deletion and
+private edited copies require the separate media:manage grant. Exact fingerprints,
+current authority and retained-reference protections remain in force.
 
 The **Website recreation** preset selects website
 read/write/manage/settings/preview, media read/write/inspect and source reading,
@@ -181,8 +181,9 @@ Recreation prompts inventory the requested source and current target before edit
 reuse the intended homepage, replace only requested starter sections, route service
 stories to Projects and execute already-authorized steps without per-item
 confirmation. Final reports reconcile every mapped target's saved, published and
-desktop/phone-reviewed state; unavailable source visuals and combined draft-site
-review remain explicit limitations.
+desktop/phone-reviewed state; unavailable source visuals remain an explicit
+limitation. Composed previews pin draft pages, menus, appearance and shared parts
+to their exact reviewed versions.
 
 Preview tools accept a page ID, locale and expected revision, never an arbitrary
 URL. Render only already-authorized native content using an isolated browser with
@@ -206,9 +207,9 @@ participants, payment evidence, credentials or external provider state.
 
 Draft page, form, package and prize edits keep their owning service's revision
 checks. Readiness returns actionable content/configuration blockers and review
-links rather than participant records. Operational proposals bind their exact
-payload and expected state to the current organization/event and a real author;
-staff can apply, reject or resolve a stale proposal in the existing workspace.
+links rather than participant records. Operational actions bind their exact payload and expected state to the current
+organization/event, actor, connection and content generation. V2 retires the
+proposal/apply workflow; existing draft grants do not gain execution authority.
 
 ## Verification and growth
 

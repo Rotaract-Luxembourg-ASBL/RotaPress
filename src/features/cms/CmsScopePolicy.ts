@@ -107,9 +107,13 @@ export class CmsScopePolicy {
     return { organizationId };
   }
 
-  async context(actor: TrustedActor, content: Content) {
+  async context(
+    actor: TrustedActor,
+    content: Content,
+    executor: DatabaseExecutor = this.db,
+  ) {
     if (!content.eventId) return undefined;
-    const event = await this.events.detail(actor, content.eventId);
+    const event = await this.events.detail(actor, content.eventId, executor);
     let readOnlyReason = event.cancelled
       ? "This event is cancelled."
       : event.archived
@@ -122,6 +126,7 @@ export class CmsScopePolicy {
         content.organizationId,
         event.id,
         content.moduleKey!,
+        executor,
       );
     } catch (error) {
       if (!(error instanceof DomainError)) throw error;

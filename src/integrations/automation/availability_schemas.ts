@@ -23,7 +23,7 @@ export const transportDescriptions = {
   mcp: {
     name: "MCP",
     description:
-      "Add RotaPress to an AI client's MCP apps or plugins to prepare and review content.",
+      "Add RotaPress to an AI client's MCP apps or plugins to manage requested content and club operations within chosen permissions.",
     href: "/admin/integrations/mcp",
     settingsLabel: "Connections & setup guide",
   },

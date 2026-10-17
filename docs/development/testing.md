@@ -69,7 +69,7 @@ layer owning the behavior, with real PostgreSQL for constraints and scoped data.
 | C11   | Demonstration entry decisions, frozen draws, replay and public winner privacy                                                                                                                         |
 | C12   | Portable container startup, migration replay, restricted roles, claim expiry, HTTPS, database-plus-files restore and overwrite refusal; public deployment acceptance is separate                      |
 | C13   | Calendar audiences, time zones, recurrence, import safety and owned subscriptions                                                                                                                     |
-| C14   | API/MCP availability, scoped keys and OAuth, current-session revocation, safe source reads, private imports/media/previews, event preparation and staff proposals, closed outputs and contract parity |
+| C14   | API/MCP availability, scoped keys and OAuth, current-session revocation, safe source reads, private imports/media/previews, event preparation and direct scoped actions, closed outputs and contract parity |
 
 Fix a confirmed authorization bypass, exposure or corruption with a focused
 regression. Do not disable a security assertion to complete a slice.

@@ -229,13 +229,13 @@ export class EventTemplateService {
     });
   }
 
-  async create(actor: TrustedActor, input: unknown) {
+  async create(actor: TrustedActor, input: unknown, executor?: Transaction) {
     const values = eventTemplateCreateSchema.parse(input);
     const parsed = eventTemplateInputSchema.parse({
       event: values.event,
       template: values.template,
     });
-    const id = await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         actor,
         "events.create",
@@ -324,7 +324,8 @@ export class EventTemplateService {
         targetId: id,
       });
       return id;
-    });
-    return this.events.detail(actor, id);
+    };
+    const id = executor ? await apply(executor) : await this.db.transaction(apply);
+    return this.events.detail(actor, id, executor ?? this.db);
   }
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { operation } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { requireReceiptCapability } from "./receipt_authority";
 import { exampleId } from "./examples";
 import { publicationConfirmation } from "./publication_policy";
 
@@ -17,9 +18,10 @@ const changed = z.strictObject({
 });
 
 export const calendarPublicationOperations = [
-  operation(
+  receiptOperation(
     {
       name: "calendar_publish",
+      effect: "publish",
       method: "PATCH",
       path: "/calendar/calendars/{id}/publish",
       scope: "calendar:publish",
@@ -29,18 +31,25 @@ export const calendarPublicationOperations = [
       output: changed,
       example: { id: exampleId, expectedVersion: 1, confirmed: true },
     },
-    async ({ services, principal }, { id, expectedVersion }) => ({
-      ...(await services.calendar.calendar(principal.actor, {
-        id,
-        expectedVersion,
-        operation: "publish",
-      })),
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, { id, expectedVersion }, tx) => ({
+      ...(await services.calendar.calendar(
+        principal.actor,
+        {
+          id,
+          expectedVersion,
+          operation: "publish",
+        },
+        {},
+        tx,
+      )),
       reviewUrl,
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "calendar_schedule_publish",
+      effect: "publish",
       method: "PATCH",
       path: "/calendar/calendars/{calendarId}/schedules/{id}/publish",
       scope: "calendar:publish",
@@ -55,19 +64,30 @@ export const calendarPublicationOperations = [
         confirmed: true,
       },
     },
-    async ({ services, principal }, { id, calendarId, expectedVersion }) => ({
-      ...(await services.calendar.schedule(principal.actor, {
-        id,
-        calendarId,
-        expectedVersion,
-        operation: "publish",
-      })),
+    requireReceiptCapability("calendar.manage"),
+    async (
+      { services, principal },
+      { id, calendarId, expectedVersion },
+      tx,
+    ) => ({
+      ...(await services.calendar.schedule(
+        principal.actor,
+        {
+          id,
+          calendarId,
+          expectedVersion,
+          operation: "publish",
+        },
+        {},
+        tx,
+      )),
       reviewUrl,
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "calendar_page_publish",
+      effect: "publish",
       method: "PATCH",
       path: "/calendar/page/publish",
       scope: "calendar:publish",
@@ -81,11 +101,16 @@ export const calendarPublicationOperations = [
       }),
       example: { expectedVersion: 1, confirmed: true },
     },
-    async ({ services, principal }, { expectedVersion }) => ({
-      ...(await services.calendar.page(principal.actor, {
-        expectedVersion,
-        operation: "publish",
-      })),
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, { expectedVersion }, tx) => ({
+      ...(await services.calendar.page(
+        principal.actor,
+        {
+          expectedVersion,
+          operation: "publish",
+        },
+        tx,
+      )),
       reviewUrl,
     }),
   ),

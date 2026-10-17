@@ -5,9 +5,12 @@ import type { CmsLocale } from "../../cms/cms_schemas";
 import { request, useResource, errorMessage } from "@/ui/api";
 import { Notice, Loading } from "@/ui/primitives";
 import { useCurrentUser } from "@/ui/admin-shell";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import type { CollectionPage } from "@/core/collections";
 
 type PageRevision = { id: string; locale: CmsLocale; revisionId: string };
-type History = {
+type History = CollectionPage & {
   revisions: {
     id: string;
     title: string;
@@ -29,8 +32,10 @@ export function EventEditorialPanel({
   onSaved: (event: EventDraft) => void;
 }) {
   const { capabilities } = useCurrentUser();
+  const { params, change } = useCollectionLocation();
+  const page = Number(params.get("historyPage")) || 1;
   const { data, error, refresh } = useResource<History>(
-    `/api/admin/events/${event.id}/history`,
+    `/api/admin/events/${event.id}/history?page=${page}`,
   );
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
@@ -149,7 +154,7 @@ export function EventEditorialPanel({
                       });
                       if (pages.some((page) => !page.expectedRevisionId)) {
                         setProblem(
-                        "A recorded page is archived or unavailable. This revision cannot be restored as a whole; current drafts were not changed.",
+                          "A recorded page is archived or unavailable. This revision cannot be restored as a whole; current drafts were not changed.",
                         );
                         return;
                       }
@@ -170,6 +175,11 @@ export function EventEditorialPanel({
               </article>
             ))}
           </div>
+          <CollectionPagination
+            {...data}
+            noun="revisions"
+            onPage={(next) => change({ historyPage: next }, false)}
+          />
         </>
       )}
     </section>

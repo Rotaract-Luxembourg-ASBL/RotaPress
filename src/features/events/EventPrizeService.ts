@@ -119,10 +119,10 @@ export class EventPrizeService {
     );
   }
 
-  async save(actor: TrustedActor, eventId: string, input: unknown) {
+  async save(actor: TrustedActor, eventId: string, input: unknown, executor?: Transaction) {
     z.uuid().parse(eventId);
     const values = prizeSaveSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         eventId,
@@ -186,7 +186,8 @@ export class EventPrizeService {
         targetId: id,
       });
       return { ...(await this.workspace(actor, eventId, tx)), savedId: id };
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async publication(
@@ -194,12 +195,13 @@ export class EventPrizeService {
     eventId: string,
     prizeId: string,
     input: unknown,
+    executor?: Transaction,
   ) {
     z.uuid().parse(eventId);
     z.uuid().parse(prizeId);
     const values = prizePublicationSchema.parse(input);
     this.authorization.requireRecent(actor);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         eventId,
@@ -269,7 +271,8 @@ export class EventPrizeService {
         targetId: prizeId,
       });
       return this.workspace(actor, eventId, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async published(

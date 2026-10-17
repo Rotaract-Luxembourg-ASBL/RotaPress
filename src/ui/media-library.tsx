@@ -1,18 +1,20 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { AdminMediaAssetDto } from "@/features/media/media_schemas";
-import { useResource } from "./api";
+import { errorMessage, request, useResource } from "./api";
 import { Loading, Notice, PageHeading } from "./primitives";
 import { AssetDetails, MediaUpload, canDiscard } from "./media-editors";
-import {
-  AssetGrid,
-  type MediaSort,
-  type VisibilityFilter,
-} from "./media-browser";
+import { AssetGrid, type MediaSort } from "./media-browser";
 import { MediaAttachmentDialog } from "./media-attachment-dialog";
 import { MediaBulkActions, useMediaBulkActions } from "./media-bulk-actions";
-import { useMediaCollection } from "./media-resource";
+import { useMediaCollection, type MediaCollection } from "./media-resource";
+import {
+  useMediaLibraryLocation,
+  type MediaKindFilter,
+} from "./media-library-location";
 import { Icon } from "./icon";
 import { CollectionToolbar, FilterTabs } from "./collection";
 
@@ -21,6 +23,7 @@ export { MediaPicker } from "./media-picker";
 export { MediaUpload } from "./media-editors";
 
 export function MediaLibrary({ requestedId }: { requestedId?: string }) {
+  const location = useSearchParams();
   const prefix = useId();
   const [selection, setSelected] = useState<AdminMediaAssetDto>();
   const [requestedOpen, setRequestedOpen] = useState(Boolean(requestedId));
@@ -32,19 +35,32 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
   const selected =
     selection ?? (requestedOpen ? linked.data?.asset : undefined);
   const [uploading, setUploading] = useState(false);
-  const [query, setQuery] = useState("");
-  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
-  const [collection, setCollection] = useState("");
-  const [sort, setSort] = useState<MediaSort>("newest");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const {
+    query,
+    setQuery,
+    kind,
+    setKind,
+    visibility,
+    setVisibility,
+    collection,
+    setCollection,
+    sort,
+    setSort,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    page,
+    setPage,
+    view,
+    setView,
+  } = useMediaLibraryLocation();
   const [moreFilters, setMoreFilters] = useState(false);
-  const [page, setPage] = useState(1);
-  const [view, setView] = useState<"grid" | "list">("grid");
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [message, setMessage] = useState("");
+  const [navigationError, setNavigationError] = useState("");
   const params = new URLSearchParams({
     page: String(page),
     pageSize: "48",
@@ -52,6 +68,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
     visibility,
     collection,
     sort,
+    kind,
   });
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
@@ -76,7 +93,12 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
   const selectedIndex = assets.findIndex((asset) => asset.id === selected?.id);
   const selectedIds = bulk.selectedIds;
   const filtered = Boolean(
-    query || visibility !== "all" || collection || dateFrom || dateTo,
+    query ||
+    kind !== "all" ||
+    visibility !== "all" ||
+    collection ||
+    dateFrom ||
+    dateTo,
   );
 
   function close() {
@@ -84,12 +106,55 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
     setSelected(undefined);
     setUploading(false);
     setDirty(false);
+    const next = new URL(window.location.href);
+    next.searchParams.delete("asset");
+    window.history.replaceState(null, "", `${next.pathname}${next.search}`);
   }
   function navigate(asset: AdminMediaAssetDto) {
     if (busy || !canDiscard(dirty)) return;
     setSelected(asset);
     setRequestedOpen(false);
     setDirty(false);
+    setNavigationError("");
+    rememberAsset(asset.id);
+  }
+  function rememberAsset(id: string) {
+    const next = new URL(window.location.href);
+    next.searchParams.set("asset", id);
+    window.history.replaceState(null, "", `${next.pathname}${next.search}`);
+  }
+  async function adjacent(direction: -1 | 1) {
+    if (busy || loading || !canDiscard(dirty)) return;
+    const nextIndex = selectedIndex + direction;
+    if (assets[nextIndex]) {
+      setSelected(assets[nextIndex]);
+      rememberAsset(assets[nextIndex].id);
+      setDirty(false);
+      return;
+    }
+    setBusy(true);
+    setNavigationError("");
+    try {
+      const nextParams = new URLSearchParams(params);
+      nextParams.set("page", String(currentPage + direction));
+      const next = await request<MediaCollection>(
+        `/api/admin/media?${nextParams}`,
+      );
+      const asset = direction === 1 ? next.assets[0] : next.assets.at(-1);
+      if (!asset)
+        throw new Error(
+          "No more files match these filters. Close details to refresh the library.",
+        );
+      setPage(next.page);
+      setSelected(asset);
+      rememberAsset(asset.id);
+      setRequestedOpen(false);
+      setDirty(false);
+    } catch (cause) {
+      setNavigationError(errorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
   }
   function toggle(asset: AdminMediaAssetDto, range: boolean) {
     setBulkMode(true);
@@ -105,14 +170,20 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
     <>
       <PageHeading
         title="Media library"
-        description="Upload, organize and reuse your images. New uploads are public by default."
+        description="Upload, organize and reuse photos, documents, audio and video. New uploads are public by default."
       >
+        <Link
+          href={`/admin/media/albums?returnTo=${encodeURIComponent(`/admin/media?${location}`)}`}
+          className="button button-outline"
+        >
+          Photo albums
+        </Link>
         <button
           className="button button-accent"
           onClick={() => setUploading(true)}
         >
           <Icon name="plus" />
-          Upload image
+          Upload files
         </button>
       </PageHeading>
       {error && (
@@ -147,7 +218,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
               setPage(1);
             }}
             options={[
-              { value: "all", label: "All images", count: data?.counts.all },
+              { value: "all", label: "All files", count: data?.counts.all },
               { value: "public", label: "Public", count: data?.counts.public },
               {
                 value: "private",
@@ -164,7 +235,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
               setPage(1);
             }}
           >
-            <div className="media-view-toggle" aria-label="Display images">
+            <div className="media-view-toggle" aria-label="Display files">
               <button
                 type="button"
                 className="media-close"
@@ -187,6 +258,23 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
           </CollectionToolbar>
           <div className="media-library-filters">
             <div className="media-select-field">
+              <label htmlFor={`${prefix}-kind`}>File type</label>
+              <select
+                id={`${prefix}-kind`}
+                value={kind}
+                onChange={(event) => {
+                  setKind(event.target.value as MediaKindFilter);
+                  setPage(1);
+                }}
+              >
+                <option value="all">All files</option>
+                <option value="image">Images</option>
+                <option value="document">PDF documents</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+            <div className="media-select-field">
               <label htmlFor={`${prefix}-collection`}>Collection</label>
               <select
                 id={`${prefix}-collection`}
@@ -203,7 +291,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
               </select>
             </div>
             <div className="media-select-field">
-              <label htmlFor={`${prefix}-sort`}>Sort images</label>
+              <label htmlFor={`${prefix}-sort`}>Sort files</label>
               <select
                 id={`${prefix}-sort`}
                 value={sort}
@@ -231,6 +319,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
                 className="inline-button"
                 onClick={() => {
                   setQuery("");
+                  setKind("all");
                   setVisibility("all");
                   setCollection("");
                   setDateFrom("");
@@ -280,7 +369,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
         <div className="admin-collection-body">
           {loading && (
             <p className="media-result-count" role="status">
-              Loading images…
+              Loading files…
             </p>
           )}
           {data && (
@@ -289,10 +378,11 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
                 {assets.length
                   ? `${(currentPage - 1) * data.pageSize + 1}–${(currentPage - 1) * data.pageSize + assets.length}`
                   : "0"}{" "}
-                of {data.total} matching images · {data.counts.all} in your
+                of {data.total} matching files · {data.counts.all} in your
                 library
               </p>
               <AssetGrid
+                emptyTitle="No files to show"
                 assets={assets}
                 selectedIds={selectedIds}
                 onToggle={(asset, range) =>
@@ -309,7 +399,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
                 emptyMessage={
                   filtered
                     ? "Clear the filters or try a different search."
-                    : "Choose Upload image to add your first images."
+                    : "Choose Upload files to add your first media."
                 }
               />
               <div className="media-pagination">
@@ -340,26 +430,35 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
       </section>
       {(uploading || selected) && (
         <MediaAttachmentDialog
-          title={selected ? "Image details" : "Upload images"}
+          title={
+            selected
+              ? selected.kind === "image"
+                ? "Image details"
+                : "File details"
+              : "Upload files"
+          }
           onClose={close}
           canClose={() => !busy && canDiscard(dirty)}
           busy={busy}
           position={
             selected && selectedIndex >= 0
-              ? `${selectedIndex + 1} of ${assets.length} on this page`
+              ? `${(currentPage - 1) * (data?.pageSize ?? 48) + selectedIndex + 1} of ${data?.total ?? assets.length}`
               : undefined
           }
           onPrevious={
-            selectedIndex > 0
-              ? () => navigate(assets[selectedIndex - 1])
+            selectedIndex > 0 || (selectedIndex === 0 && currentPage > 1)
+              ? () => void adjacent(-1)
               : undefined
           }
           onNext={
-            selectedIndex >= 0 && selectedIndex < assets.length - 1
-              ? () => navigate(assets[selectedIndex + 1])
+            selectedIndex >= 0 &&
+            (selectedIndex < assets.length - 1 ||
+              currentPage * (data?.pageSize ?? 48) < (data?.total ?? 0))
+              ? () => void adjacent(1)
               : undefined
           }
         >
+          {navigationError && <Notice>{navigationError}</Notice>}
           {selected ? (
             <AssetDetails
               key={selected.id}
@@ -375,7 +474,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
                 bulk.forget([selected.id]);
                 close();
                 refresh();
-                setMessage("Image deleted.");
+                setMessage("File deleted.");
               }}
             />
           ) : (
@@ -388,7 +487,7 @@ export function MediaLibrary({ requestedId }: { requestedId?: string }) {
               }}
               onUploaded={() => {
                 refresh();
-                setMessage("Images added to your library.");
+                setMessage("Files added to your library.");
               }}
             />
           )}

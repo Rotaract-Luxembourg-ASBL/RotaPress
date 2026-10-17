@@ -15,7 +15,7 @@ import {
 } from "./media-browser";
 import { MediaUpload, canDiscard } from "./media-editors";
 import { MediaGalleryItems, type GalleryDraft } from "./media-gallery-items";
-import { useMediaResource } from "./media-resource";
+import { useRequestResource } from "./request-resource";
 import { MediaBulkActions, useMediaBulkActions } from "./media-bulk-actions";
 import { useMediaPickerEvent } from "./media-picker-scope";
 import { Loading, Notice } from "./primitives";
@@ -66,14 +66,16 @@ export function MediaGalleryDialog({
     page: String(page),
     pageSize: "48",
     search: query,
-    visibility,
+    visibility: eventId ? "public" : visibility,
     collection,
+    kind: "image",
   });
-  const { data, error, loading, refresh } = useMediaResource<GalleryCollection>(
-    eventId
-      ? `/api/admin/events/${eventId}/media`
-      : `/api/admin/media?${params}`,
-  );
+  const { data, error, loading, refresh } =
+    useRequestResource<GalleryCollection>(
+      eventId
+        ? `/api/admin/events/${eventId}/media?${params}`
+        : `/api/admin/media?${params}`,
+    );
   const bulk = useMediaBulkActions({
     enabled: !eventId,
     onUpdated: (assets) => {
@@ -105,9 +107,11 @@ export function MediaGalleryDialog({
   });
   const busy = uploadBusy || bulk.busy;
   const filtered = filterAssets(
-    (data?.assets ?? []).filter((asset) => !removedIds.has(asset.id)),
+    (data?.assets ?? []).filter(
+      (asset) => asset.kind === "image" && !removedIds.has(asset.id),
+    ),
     query,
-    visibility,
+    eventId ? "public" : visibility,
   );
   const currentPage = data?.page ?? page;
   const selectedIds = new Set(draft.map((item) => item.assetId));
@@ -212,10 +216,12 @@ export function MediaGalleryDialog({
     if (busy || !canDiscard(uploadDirty)) return;
     dialog.current?.close();
     onInsert(
-      draft.map(({ assetId, alt, caption }) => ({
+      draft.map(({ assetId, alt, caption, focalX, focalY }) => ({
         assetId,
         alt,
         ...(caption !== undefined ? { caption } : {}),
+        ...(focalX !== undefined ? { focalX } : {}),
+        ...(focalY !== undefined ? { focalY } : {}),
       })),
     );
   }
@@ -309,6 +315,7 @@ export function MediaGalleryDialog({
               />
             )}
             <MediaFilters
+              publicOnly={Boolean(eventId)}
               query={query}
               visibility={visibility}
               onQuery={(value) => {
@@ -398,7 +405,7 @@ export function MediaGalleryDialog({
             ) : (
               !error && <Loading />
             )}
-            {!eventId && data?.total !== undefined && data.total > 48 && (
+            {data?.total !== undefined && data.total > 48 && (
               <div className="media-pagination">
                 <button
                   type="button"
@@ -436,6 +443,7 @@ export function MediaGalleryDialog({
                 {MAX_GALLERY_IMAGES} images.
               </p>
               <MediaUpload
+                kinds={["image"]}
                 multiple
                 onBusy={setUploadBusy}
                 onDirty={setUploadDirty}

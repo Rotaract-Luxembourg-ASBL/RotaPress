@@ -1,20 +1,7 @@
-import type { AutomationScope } from "../scopes";
+import type { OAuthClient } from "./connection_collection";
+export type { OAuthClient } from "./connection_collection";
 
 export const oauthEndpoint = "/api/admin/integrations/automation/oauth";
-export type OAuthClient = {
-  clientId: string;
-  name: string | null;
-  disabled: boolean;
-  redirectUris: string[];
-  scopes: AutomationScope[];
-  sourceOrigins: string[];
-  authentication: string;
-  createdAt: string | null;
-  permissionsRevision: string;
-  approvedScopes: AutomationScope[];
-  consentedAt: string | null;
-  lastUsedAt: string | null;
-};
 export type OAuthActivity = { id: string; action: string; at: string };
 
 export function connectionStatus(client: OAuthClient) {

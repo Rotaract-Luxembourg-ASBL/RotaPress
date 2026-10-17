@@ -5,6 +5,210 @@ import type { RenewalContext } from "./oauth-renewal-cases";
 
 export function oauthConnectionChecks(context: () => RenewalContext) {
   describe("C14 existing OAuth connection management", () => {
+    it("pages transport-scoped access keys beyond 100 without exposing hashes or changing revocation", async () => {
+      const { pool, actor, headers, origin } = context();
+      const { automationAccess } =
+        await import("../../src/composition/automation");
+      const prefix = `tokens-${randomUUID()}`;
+      const organization = await pool.query<{ organization_id: string }>(
+        "SELECT organization_id FROM club.membership WHERE user_id=$1",
+        [actor.userId],
+      );
+      const metadata = {
+        purpose: "rotapress-automation-v1",
+        sessionId: actor.sessionId,
+        organizationId: organization.rows[0].organization_id,
+        sourceOrigins: [],
+      };
+      try {
+        await pool.query(
+          `INSERT INTO club.apikey
+          (id,reference_id,name,key,enabled,created_at,updated_at,expires_at,permissions,metadata)
+          SELECT $1 || '-' || n, $2, $1 || ' token ' || n, $1 || '-hash-' || n,
+            false, '2025-01-01'::timestamptz + n * interval '1 minute', now(), now() + interval '1 hour',
+            '{"automation":["website:read"]}',
+            CASE WHEN n % 2 = 0 THEN ($3::jsonb || '{"transport":"rest"}'::jsonb)::text ELSE $3::text END
+          FROM generate_series(1,105) AS n`,
+          [prefix, actor.userId, JSON.stringify(metadata)],
+        );
+        await pool.query(
+          `INSERT INTO club.apikey
+          (id,reference_id,name,key,enabled,created_at,updated_at,permissions,metadata)
+          VALUES ($1,$2,$1,$1,false,now(),now(),'{"automation":["website:read"]}',$3),
+            ($4,$2,$4,$4,false,now(),now(),'{"automation":["website:read"]}',$5),
+            ($6,$7,$6,$6,false,now(),now(),'{"automation":["website:read"]}',$8),
+            ($9,$2,$9,$9,false,now(),now(),'{"automation":["website:read"]}','invalid JSON')`,
+          [
+            `${prefix}-mcp`,
+            actor.userId,
+            JSON.stringify({ ...metadata, transport: "mcp" }),
+            `${prefix}-organization`,
+            JSON.stringify({ ...metadata, organizationId: randomUUID() }),
+            `${prefix}-outsider`,
+            randomUUID(),
+            JSON.stringify(metadata),
+            `${prefix}-malformed`,
+          ],
+        );
+        const ids: string[] = [];
+        for (let page = 1; page <= 5; page++) {
+          const result = await automationAccess.list(actor, {
+            search: prefix,
+            transport: "rest",
+            page,
+          });
+          expect(result).toMatchObject({ total: 105, page, pageSize: 25 });
+          ids.push(...result.connections.map((row) => row.id));
+          expect(JSON.stringify(result)).not.toContain(`${prefix}-hash-`);
+          expect(
+            result.connections.every(
+              (row) => row.currentSession && row.transport === "rest",
+            ),
+          ).toBe(true);
+        }
+        expect(new Set(ids).size).toBe(105);
+        expect(ids.at(-1)).toBe(`${prefix}-1`);
+        expect(
+          await automationAccess.list(actor, {
+            search: prefix,
+            transport: "mcp",
+          }),
+        ).toMatchObject({ total: 1, connections: [{ id: `${prefix}-mcp` }] });
+        const { GET } =
+          await import("../../src/app/api/admin/integrations/automation/route");
+        const response = await GET(
+          new Request(
+            `${origin}/api/admin/integrations/automation?transport=rest&search=${prefix}&page=5`,
+            { headers },
+          ),
+        );
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+          total: 105,
+          page: 5,
+          pageSize: 25,
+        });
+        await automationAccess.revoke(actor, headers, `${prefix}-1`);
+        expect(
+          await automationAccess.list(actor, {
+            search: prefix,
+            transport: "rest",
+            page: 99,
+          }),
+        ).toMatchObject({ total: 104, page: 5 });
+        await expect(
+          automationAccess.list(actor, { pageSize: 101 }),
+        ).rejects.toBeDefined();
+        await expect(
+          automationAccess.list({ ...actor, userId: randomUUID() }, {}),
+        ).rejects.toMatchObject({ status: 403 });
+      } finally {
+        await pool.query("DELETE FROM club.apikey WHERE id LIKE $1", [
+          `${prefix}%`,
+        ]);
+      }
+    });
+
+    it("pages beyond 100 owned registrations with exact scoped counts and legacy metadata", async () => {
+      const { pool, connections, actor, headers, origin } = context();
+      const prefix = `paged-${randomUUID()}`;
+      const otherUser = randomUUID();
+      const organization = await pool.query<{ organization_id: string }>(
+        "SELECT organization_id FROM club.membership WHERE user_id=$1",
+        [actor.userId],
+      );
+      const metadata = {
+        purpose: "rotapress-oauth-v1",
+        organizationId: organization.rows[0].organization_id,
+        sourceOrigins: [],
+      };
+      await pool.query(
+        "INSERT INTO club.user(id,name,email,email_verified,created_at,updated_at) VALUES($1,'Synthetic paging outsider',$2,true,now(),now())",
+        [otherUser, `${otherUser}@example.test`],
+      );
+      try {
+        await pool.query(
+          `INSERT INTO club.oauth_client
+          (id,client_id,user_id,name,disabled,redirect_uris,scopes,created_at,metadata)
+          SELECT $1 || '-' || n, $1 || '-' || n, $2, $1 || ' connection ' || n,
+            true, ARRAY['https://callbacks.example.org/' || $1 || '/' || n], ARRAY['website:read'],
+            '2025-01-01'::timestamptz + n * interval '1 minute',
+            CASE WHEN n % 2 = 0 THEN to_jsonb($3::text) ELSE $3::jsonb END
+          FROM generate_series(1,105) AS n`,
+          [prefix, actor.userId, JSON.stringify(metadata)],
+        );
+        await pool.query(
+          `INSERT INTO club.oauth_client
+          (id,client_id,user_id,name,disabled,redirect_uris,created_at,metadata)
+          VALUES ($1,$1,$2,$3,true,ARRAY['https://example.org/callback'],now(),$4::jsonb),
+            ($5,$5,$6,$3,true,ARRAY['https://example.org/callback'],now(),$7::jsonb),
+            ($8,$8,$6,$3,true,ARRAY['https://example.org/callback'],now(),$9::jsonb)`,
+          [
+            `${prefix}-outsider`,
+            otherUser,
+            prefix,
+            JSON.stringify(metadata),
+            `${prefix}-organization`,
+            actor.userId,
+            JSON.stringify({ ...metadata, organizationId: randomUUID() }),
+            `${prefix}-malformed`,
+            JSON.stringify("not JSON"),
+          ],
+        );
+        const ids: string[] = [];
+        for (let page = 1; page <= 5; page++) {
+          const result = await connections.list(actor, {
+            search: prefix,
+            page,
+          });
+          expect(result).toMatchObject({ total: 105, page, pageSize: 25 });
+          expect(result.clients).toHaveLength(page === 5 ? 5 : 25);
+          ids.push(...result.clients.map((client) => client.clientId));
+          expect(result.clients.every((client) => client.disabled)).toBe(true);
+          expect(JSON.stringify(result)).not.toContain("clientSecret");
+        }
+        expect(new Set(ids).size).toBe(105);
+        expect(ids.at(-1)).toBe(`${prefix}-1`);
+        expect(
+          await connections.list(actor, {
+            search: `${prefix}-1`,
+            page: 99,
+            pageSize: 100,
+          }),
+        ).toMatchObject({ total: 17, page: 1 });
+        const callback = await connections.list(actor, {
+          search: `/${prefix}/1`,
+        });
+        expect(callback.total).toBe(17);
+        const { GET } =
+          await import("../../src/app/api/admin/integrations/automation/oauth/route");
+        const response = await GET(
+          new Request(
+            `${origin}/api/admin/integrations/automation/oauth?search=${prefix}&page=5`,
+            { headers },
+          ),
+        );
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+          total: 105,
+          page: 5,
+          pageSize: 25,
+        });
+        await expect(
+          connections.list(actor, { search: prefix, pageSize: 101 }),
+        ).rejects.toBeDefined();
+        await expect(
+          connections.list({ ...actor, userId: otherUser }, { search: prefix }),
+        ).rejects.toMatchObject({ status: 403 });
+      } finally {
+        await pool.query(
+          "DELETE FROM club.oauth_client WHERE client_id LIKE $1",
+          [`${prefix}%`],
+        );
+        await pool.query("DELETE FROM club.user WHERE id=$1", [otherUser]);
+      }
+    });
+
     it("saves permissions on the same client, invalidates grants, requires new consent and keeps private activity scoped", async () => {
       const {
         pool,
@@ -70,7 +274,7 @@ export function oauthConnectionChecks(context: () => RenewalContext) {
           privatePayload: "NEVER RECORD INPUT",
         }),
       ).rejects.toMatchObject({ status: 403 });
-      const before = (await connections.list(actor)).find(
+      const before = (await connections.list(actor)).clients.find(
         (item) => item.clientId === client.clientId,
       )!;
       expect(before.approvedScopes).toEqual(
@@ -140,7 +344,10 @@ export function oauthConnectionChecks(context: () => RenewalContext) {
         userId: otherId,
         email: `${otherId}@example.test`,
       };
-      expect(await connections.list(other)).toEqual([]);
+      expect(await connections.list(other)).toMatchObject({
+        clients: [],
+        total: 0,
+      });
       await expect(
         connections.activity(other, client.clientId),
       ).rejects.toMatchObject({ status: 403 });
@@ -165,7 +372,7 @@ export function oauthConnectionChecks(context: () => RenewalContext) {
       await expect(
         connections.updatePermissions(actor, input),
       ).rejects.toMatchObject({ code: "OAUTH_PERMISSIONS_CHANGED" });
-      const after = (await connections.list(actor)).find(
+      const after = (await connections.list(actor)).clients.find(
         (item) => item.clientId === client.clientId,
       )!;
       expect(after).toMatchObject({

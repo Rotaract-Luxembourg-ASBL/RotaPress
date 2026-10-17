@@ -4,7 +4,7 @@ export const rotaractTemplateMetadata = {
   name: "Rotaract Template",
   family: "Rotaract",
   description:
-    "A welcoming website with cranberry accents, a community calendar, events, contact form and shared directory profiles.",
+    "An activity-led website with a welcoming split introduction, upcoming events, connected community content and a masonry photo gallery.",
   websiteRecipes: [
     "header",
     "footer",

@@ -19,12 +19,16 @@ import {
 } from "@/features/calendar/calendar_schemas";
 import { automationScopeSchema } from "./scopes";
 import { publicationPolicy } from "./publication_policy";
+import { operationEffectSchema } from "./operation_effects";
 
 const id = z.uuid();
 const instant = z.iso.datetime({ offset: true });
 export const pageOutput = <T extends z.ZodType>(item: T) =>
   z.strictObject({
     items: z.array(item),
+    total: z.int().nonnegative(),
+    offset: z.int().nonnegative(),
+    limit: z.int().positive(),
     nextOffset: z.int().nonnegative().nullable(),
   });
 export const websiteContextOutput = z.strictObject({
@@ -98,6 +102,7 @@ export const eventOutput = eventFieldsSchema.extend({
   published: z.boolean(),
 });
 export const mediaOutput = mediaMetadataSchema.extend({
+  kind: z.literal("image").optional(),
   id,
   visibility: z.enum(["private", "public"]),
   mimeType: z.literal("image/webp"),
@@ -123,6 +128,10 @@ export const directoryOutput = z.strictObject({
       eventId: id.nullable(),
     }),
   ),
+});
+// Placement names depend on current event assignments and must not enter durable receipts.
+export const directoryMutationOutput = directoryOutput.omit({
+  placements: true,
 });
 export const calendarOutput = z.strictObject({
   calendars: z.array(
@@ -161,6 +170,7 @@ export const operationDescriptionOutput = z.strictObject({
   path: z.string(),
   scope: automationScopeSchema.nullable(),
   requiredScopes: z.array(automationScopeSchema),
+  effect: operationEffectSchema,
   description: z.string(),
   readOnly: z.boolean(),
   inputSchema: jsonSchemaOutput,
@@ -169,6 +179,7 @@ export const operationDescriptionOutput = z.strictObject({
 });
 export const capabilitiesOutput = z.strictObject({
   version: z.string(),
+  contentGeneration: z.uuid(),
   grantedScopes: z.array(automationScopeSchema),
   accessMode: z.enum(["read-only", "read-write"]),
   permissions: z.array(

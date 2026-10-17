@@ -14,7 +14,7 @@ export async function GET(request: Request, context: Context) {
     const actor = await actorFor(request);
     const path = (await context.params).path ?? [];
     if (!path.length)
-      return json({ items: await services.partners.list(actor) });
+      return json(await services.partners.query(actor, Object.fromEntries(new URL(request.url).searchParams)));
     if (path.length === 1 && path[0] === "selection") {
       const eventId = new URL(request.url).searchParams.get("eventId");
       if (eventId) {

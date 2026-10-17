@@ -76,16 +76,21 @@ export class CmsSiteService {
         }
       : {
           version: 0,
-          draft: await this.defaults(),
+          draft: await this.defaults(executor),
           published: null,
           previousAppearance: null,
         };
   }
 
-  async save(actor: TrustedActor, input: unknown): Promise<SiteDraft> {
+  async save(
+    actor: TrustedActor,
+    input: unknown,
+    executor?: Transaction,
+  ): Promise<SiteDraft> {
     const parsed = siteSaveInput.parse(input);
-    await this.db.transaction((tx) => this.saveDraft(actor, parsed, tx));
-    return this.get(actor, parsed.locale);
+    if (executor) await this.saveDraft(actor, parsed, executor);
+    else await this.db.transaction((tx) => this.saveDraft(actor, parsed, tx));
+    return this.get(actor, parsed.locale, executor);
   }
 
   /** Allows a complete website setup to save content and settings atomically. */
@@ -188,12 +193,15 @@ export class CmsSiteService {
     actor: TrustedActor,
     input: unknown,
     scope: WebsitePublicationScope = "website",
+    executor?: Transaction,
   ): Promise<SiteDraft> {
     const parsed = siteVersionInput.parse(input);
-    await this.db.transaction((tx) =>
-      this.publishDraft(actor, parsed, tx, scope),
-    );
-    return this.get(actor, parsed.locale);
+    if (executor) await this.publishDraft(actor, parsed, executor, scope);
+    else
+      await this.db.transaction((tx) =>
+        this.publishDraft(actor, parsed, tx, scope),
+      );
+    return this.get(actor, parsed.locale, executor);
   }
 
   /** Shared by settings-only and reviewed whole-website publication. */
@@ -531,8 +539,8 @@ export class CmsSiteService {
     };
   }
 
-  private async defaults() {
-    const identity = await this.organization.publicIdentity();
+  private async defaults(executor: DatabaseExecutor = this.db) {
+    const identity = await this.organization.publicIdentity(executor);
     return {
       ...structuredClone(defaultSiteSettings),
       accentColor: identity?.accentColor ?? defaultSiteSettings.accentColor,

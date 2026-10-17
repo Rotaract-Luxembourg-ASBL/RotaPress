@@ -1,4 +1,5 @@
-import { operation } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { websiteManagementFor } from "./WebsiteManagementService";
 import { exampleId } from "./examples";
 import { websiteContextOutput, websiteDetailOutput } from "./response_schemas";
 import {
@@ -7,9 +8,10 @@ import {
 } from "./website_management_schemas";
 
 export const websitePublicationOperations = [
-  operation(
+  receiptOperation(
     {
       name: "website_publish",
+      effect: "publish",
       method: "PATCH",
       path: "/website/content/{id}/publish",
       scope: "website:publish",
@@ -24,15 +26,20 @@ export const websitePublicationOperations = [
         confirmed: true,
       },
     },
-    async ({ principal }, input) => {
-      const { websiteManagement } =
-        await import("./website_management_service");
-      return websiteManagement.publish(principal, input);
-    },
+    ({ services, principal }, input, tx) =>
+      services.cms.requireMutation(
+        principal.actor,
+        input.id,
+        "cms.publish",
+        tx,
+      ),
+    (context, input, tx) =>
+      websiteManagementFor(context).publish(context.principal, input, tx),
   ),
-  operation(
+  receiptOperation(
     {
       name: "website_settings_publish",
+      effect: "publish",
       method: "PATCH",
       path: "/website/settings/publish",
       scope: "website:publish",
@@ -47,10 +54,13 @@ export const websitePublicationOperations = [
         confirmed: true,
       },
     },
-    async ({ principal }, input) => {
-      const { websiteManagement } =
-        await import("./website_management_service");
-      return websiteManagement.publishSettings(principal, input);
-    },
+    ({ services, principal }, _input, tx) =>
+      services.authorization.require(principal.actor, "cms.publish", tx),
+    (context, input, tx) =>
+      websiteManagementFor(context).publishSettings(
+        context.principal,
+        input,
+        tx,
+      ),
   ),
 ];

@@ -121,6 +121,55 @@ export function eventRegistrationChecks(get: () => Context) {
     };
   }
 
+  it("C07 paginates account and staff registration history beyond former collection caps", async () => {
+    const s = await setup();
+    const person = await s.actor("history-owner");
+    const rows = Array.from({ length: 505 }, (_, index) => ({
+      id: randomUUID(),
+      organizationId: s.scope.organizationId,
+      formId: s.form.id,
+      versionId: s.form.publishedVersionId!,
+      requestId: randomUUID(),
+      payloadHash: "0".repeat(64),
+      answers: { name: "Synthetic history" },
+      submittedByUserId: person.userId,
+      createdAt: new Date(Date.UTC(2026, 0, 1, 0, index)),
+    }));
+    await s.db.insert(formSubmission).values(rows);
+    await s.db
+      .insert(eventRegistration)
+      .values(
+        rows.map((row) => ({
+          organizationId: s.scope.organizationId,
+          eventId: s.event.id,
+          formId: s.form.id,
+          submissionId: row.id,
+          userId: person.userId,
+          eventTitle: "Synthetic history event",
+          status: "cancelled" as const,
+          createdAt: row.createdAt,
+          cancelledAt: row.createdAt,
+        })),
+      );
+    const own = await s.registrations.queryMine(person, {
+      pageSize: 100,
+      page: 6,
+    });
+    expect(own).toMatchObject({ total: 505, page: 6 });
+    expect(own.items).toHaveLength(5);
+    expect(JSON.stringify(own.items)).not.toContain("submissionId");
+    const staff = await s.registrations.query(s.manager, s.event.id, {
+      pageSize: 100,
+      page: 6,
+    });
+    expect(staff.items).toHaveLength(5);
+    expect(staff.total).toBe(505);
+    expect(staff.items[0]).toHaveProperty("submissionId");
+    expect(
+      (await s.registrations.queryMine(await s.actor("history-other"))).total,
+    ).toBe(0);
+  });
+
   it("C07 serializes the final place, replays requests and preserves one registration authority", async () => {
     const s = await setup();
     const guests = await Promise.all([
@@ -255,9 +304,13 @@ export function eventRegistrationChecks(get: () => Context) {
     expect(
       (await s.registrations.workspace(s.manager, s.event.id)).confirmedCount,
     ).toBe(1);
-    expect((await s.registrations.mine(winner)).map((r) => r.status)).toEqual([
-      "cancelled",
-    ]);
+    expect(
+      (
+        await s.registrations
+          .queryMine(winner, { pageSize: 100 })
+          .then((result) => result.items)
+      ).map((r) => r.status),
+    ).toEqual(["cancelled"]);
     expect(await s.db.select().from(formSubmission)).toHaveLength(2);
   });
 
@@ -313,9 +366,11 @@ export function eventRegistrationChecks(get: () => Context) {
     form = await s.forms.publish(s.manager, form.id, {
       expectedRevision: form.draftRevision,
     });
-    expect((await s.forms.list(s.owner)).some((f) => f.id === form.id)).toBe(
-      false,
-    );
+    expect(
+      (await s.forms.collection.list(s.owner, {})).forms.some(
+        (f) => f.id === form.id,
+      ),
+    ).toBe(false);
     await expect(
       s.forms.assertOwnedForms(s.scope.organizationId, [form.id]),
     ).rejects.toMatchObject({ code: "FORM_SCOPE" });
@@ -356,11 +411,13 @@ export function eventRegistrationChecks(get: () => Context) {
       ...fields,
       managerUserId: s.owner.userId,
     });
-    await expect(s.forms.eventForms(reviewer, other.id)).rejects.toMatchObject({
+    await expect(
+      s.forms.collection.list(reviewer, {}, other.id),
+    ).rejects.toMatchObject({
       status: 404,
     });
     await expect(
-      s.registrations.list(reviewer, other.id),
+      s.registrations.query(reviewer, other.id),
     ).rejects.toMatchObject({ status: 404 });
     await expect(
       s.registrations.configure(
@@ -414,7 +471,13 @@ export function eventRegistrationChecks(get: () => Context) {
     ).rejects.toMatchObject({ status: 404 });
     expect((await runner.runBatch()).processed).toBe(0);
     expect(sendSubmissionNotification).not.toHaveBeenCalled();
-    expect((await s.registrations.mine(guest))[0].status).toBe("confirmed");
+    expect(
+      (
+        await s.registrations
+          .queryMine(guest, { pageSize: 100 })
+          .then((result) => result.items)
+      )[0].status,
+    ).toBe("confirmed");
     expect((await s.submissions.detail(s.manager, receipt.id)).id).toBe(
       receipt.id,
     );

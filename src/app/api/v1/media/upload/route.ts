@@ -10,6 +10,7 @@ import {
   uploadAutomationImage,
 } from "@/integrations/automation/media_upload";
 import { readMediaBody } from "@/integrations/automation/media_body";
+import { ContentGeneration } from "@/core/content/ContentGeneration";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,11 @@ export async function POST(request: Request) {
   return handle(async () => {
     requireAutomationOrigin(request);
     const context = await automationContext(request, "rest");
+    await ContentGeneration.assertCurrent(
+      context.principal.organizationId,
+      request.headers.get("x-rotapress-content-generation") ?? undefined,
+      context.services.automationRuntime.database,
+    );
     await requireMediaScope(context, "media:write");
     if (new URL(request.url).search)
       throw new HttpError(400, "Upload options belong in the metadata header.");
@@ -44,6 +50,9 @@ export async function POST(request: Request) {
       throw new HttpError(400, "Upload metadata is invalid JSON.");
     }
     const metadata = mediaUploadMetadata.parse(values);
+    metadata.expectedGeneration =
+      request.headers.get("x-rotapress-content-generation") ??
+      metadata.expectedGeneration;
     // Actual streamed bytes are bounded; Content-Length is never authoritative.
     return json({
       data: await uploadAutomationImage(

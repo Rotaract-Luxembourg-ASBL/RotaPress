@@ -9,5 +9,5 @@ export default async function MembersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  return <MembersPanel key={status ?? "approved"} initialView={status} />;
+  return <MembersPanel initialView={status} />;
 }

@@ -186,10 +186,12 @@ export async function partnersJourney(
     .getByRole("combobox", { name: "Section spacing", exact: true })
     .selectOption("comfortable");
   await page
-    .getByRole("combobox", { name: "Columns on desktop", exact: true })
+    .getByRole("combobox", { name: "Grid columns", exact: true })
     .selectOption("two");
   await expect(
-    page.locator(".editor-canvas .cms-design[data-tone='soft']"),
+    page
+      .frameLocator(".editor-canvas iframe")
+      .locator(".cms-design[data-tone='soft']"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(
@@ -200,10 +202,13 @@ export async function partnersJourney(
   expect(
     (await publicPage.request.get("/pages/en/community-connections")).status(),
   ).toBe(404);
-  await page.locator(".editor-canvas .cms-partners > h2").click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-partners > h2")
+    .click();
   await page.getByRole("tab", { name: "Design", exact: true }).click();
   await expect(
-    page.getByRole("combobox", { name: "Columns on desktop", exact: true }),
+    page.getByRole("combobox", { name: "Grid columns", exact: true }),
   ).toHaveValue("two");
   await page.screenshot({
     path: ".local/block-design-desktop.png",

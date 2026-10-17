@@ -365,6 +365,9 @@ export class WebsiteSetupService {
   previewTemplate(actor: TrustedActor, input: unknown) {
     return this.previews.template(actor, input);
   }
+  previewLayout(actor: TrustedActor, input: unknown) {
+    return this.previews.layout(actor, input);
+  }
 
   private async assertRecipes(
     organizationId: string,

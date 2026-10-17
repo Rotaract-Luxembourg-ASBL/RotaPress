@@ -1,4 +1,8 @@
 import "server-only";
+import { AlbumReader } from "../media/AlbumReader";
+import { contentAlbums } from "./cms_albums";
+import { contentAssetKinds } from "./cms_asset_kinds";
+import { detachPageChildren } from "./cms_hierarchy";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { cmsContent, cmsSite, cmsVariant } from "../../../db/schema/cms";
@@ -13,22 +17,21 @@ import {
 import { AuditRepository } from "../../core/audit/AuditRepository";
 import { MediaService } from "../media";
 import { CmsDraftService } from "./CmsDraftService";
+import { CmsWorkspaceService } from "./CmsWorkspaceService";
+import { CmsCheckpointService } from "./CmsCheckpointService";
 import { CmsRevisionWriter } from "./CmsRevisionWriter";
 import { CmsRepository } from "./CmsRepository";
 import { CmsScopePolicy } from "./CmsScopePolicy";
 import { EventService } from "../events/EventService";
 import { EventModuleService } from "../events/EventModuleService";
-import { withDefaultEventDesign } from "../events/event_design";
 import { CmsSiteService } from "./CmsSiteService";
 import { CmsReferencePolicy } from "./CmsReferencePolicy";
-import { sitePartStarter } from "./site_part_starter";
 import { CmsCreationService } from "./CmsCreationService";
 import { CmsPublicReader } from "./CmsPublicReader";
 import { CmsEventParticipationReader } from "./CmsEventParticipationReader";
 import { FormService } from "../forms/FormService";
 import {
   isSitePart,
-  emptyCmsData,
   siteSettingsSchema,
   type CmsDetail,
   type CmsLocale,
@@ -44,6 +47,7 @@ import {
   duplicateInput,
   restoreInput,
   revisionReadInput,
+  revisionListInput,
 } from "./cms_commands";
 type Variant = typeof cmsVariant.$inferSelect;
 
@@ -51,6 +55,8 @@ export class CmsService {
   private readonly repository: CmsRepository;
   private readonly revisions: CmsRevisionWriter;
   readonly drafts: CmsDraftService;
+  readonly workspace: CmsWorkspaceService;
+  readonly checkpoints: CmsCheckpointService;
   private readonly site: CmsSiteService;
   private readonly references: CmsReferencePolicy;
   private readonly publicReader: CmsPublicReader;
@@ -66,7 +72,7 @@ export class CmsService {
     modules = new EventModuleService(db, events),
   ) {
     this.repository = new CmsRepository(db);
-    this.revisions = new CmsRevisionWriter(media);
+    this.revisions = new CmsRevisionWriter(media, db);
     this.site = new CmsSiteService(db, authorization, this.repository, media);
     this.references = new CmsReferencePolicy(db, this.repository, forms);
     this.publicReader = new CmsPublicReader(db, this.repository, media);
@@ -85,6 +91,13 @@ export class CmsService {
       this.revisions,
       media,
     );
+    this.workspace = new CmsWorkspaceService(db, authorization, this);
+    this.checkpoints = new CmsCheckpointService(
+      db,
+      this.scope,
+      this.drafts,
+      media,
+    );
   }
 
   async list(actor: TrustedActor) {
@@ -99,34 +112,59 @@ export class CmsService {
     actor: TrustedActor,
     rawId: unknown,
     rawLocale: unknown,
+    executor: DatabaseExecutor = this.db,
   ): Promise<CmsDetail> {
     const { id, locale } = variantInput.parse({ id: rawId, locale: rawLocale });
-    const { organizationId } = await this.scope.read(actor, id);
+    const { organizationId } = await this.scope.read(actor, id, executor);
     const { content, variant, revision } = await this.load(
       organizationId,
       id,
       locale,
+      executor,
     );
     return {
       id,
       kind: content.kind,
-      event: await this.scope.context(actor, content),
+      event: await this.scope.context(actor, content, executor),
       locale,
       draft: revisionDto(revision, content.kind),
       publishedRevisionId: variant.publishedRevisionId,
       archived: content.archivedAt !== null,
-      revisions: await this.repository.revisions(variant.id),
+      revisions: (await this.repository.revisions(variant.id, executor))
+        .revisions,
       affectedPages:
         content.kind !== "page"
           ? await this.references.affectedPages(
               organizationId,
               id,
               locale,
-              this.db,
+              executor,
               content.kind,
             )
           : [],
     };
+  }
+
+  async revisionHistory(actor: TrustedActor, input: unknown) {
+    const parsed = revisionListInput.parse(input);
+    return this.db.transaction(
+      async (tx) => {
+        const { organizationId } = await this.scope.read(actor, parsed.id, tx);
+        const { variant } = await this.load(
+          organizationId,
+          parsed.id,
+          parsed.locale,
+          tx,
+        );
+        return this.repository.revisions(
+          variant.id,
+          tx,
+          parsed.page,
+          parsed.pageSize,
+        );
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
   }
 
   async create(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
@@ -182,62 +220,31 @@ export class CmsService {
     ).create(actor, input, tx);
   }
 
-  async addLocale(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
+  requireMutation(
+    actor: TrustedActor,
+    id: string,
+    capability: "cms.edit" | "cms.publish",
+    tx: Transaction,
+  ) {
+    return this.scope.lock(actor, id, capability, tx);
+  }
+
+  async addLocale(
+    actor: TrustedActor,
+    input: unknown,
+    executor?: Transaction,
+  ): Promise<CmsDetail> {
     const parsed = duplicateInput.parse(input);
-    await this.db.transaction(async (tx) => {
-      const { organizationId } = await this.scope.lock(
-        actor,
-        parsed.id,
-        "cms.edit",
-        tx,
-      );
-      const content = await this.repository.content(
-        organizationId,
-        parsed.id,
-        tx,
-      );
-      if (!content || content.archivedAt) this.notFound();
-      if (
-        await this.repository.variant(
-          organizationId,
-          parsed.id,
-          parsed.locale,
-          tx,
-        )
-      ) {
-        throw new DomainError(
-          "LOCALE_EXISTS",
-          "This language already has a draft.",
-          409,
-        );
-      }
-      await this.revisions.createVariant(
-        tx,
-        actor,
-        organizationId,
-        parsed.id,
-        parsed.locale,
-        {
-          title: parsed.title,
-          slug: parsed.slug,
-          description: "",
-          socialImageId: null,
-          data: isSitePart(content.kind)
-            ? sitePartStarter(content.kind)
-            : content.eventId
-              ? withDefaultEventDesign(emptyCmsData)
-              : emptyCmsData,
-        },
-      );
-      await this.record(
-        tx,
-        actor,
-        organizationId,
-        "cms.locale.created",
-        parsed.id,
-      );
-    });
-    return this.detail(actor, parsed.id, parsed.locale);
+    const apply = (tx: Transaction) =>
+      new CmsCreationService(
+        this.authorization,
+        this.repository,
+        this.scope,
+        this.revisions,
+      ).addLocale(actor, parsed, tx);
+    if (executor) await apply(executor);
+    else await this.db.transaction(apply);
+    return this.detail(actor, parsed.id, parsed.locale, executor);
   }
 
   async save(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
@@ -284,6 +291,11 @@ export class CmsService {
       content.eventId,
     );
     const assets = contentAssets(draft.data, draft.socialImageId);
+    await this.media.assertAssetKinds(
+      organizationId,
+      contentAssetKinds(draft.data, draft.socialImageId),
+      tx,
+    );
     await this.media.assertPublicAssets(organizationId, assets, tx);
     if (content.kind === "page" && !content.eventId) {
       const live = await this.repository.published(
@@ -328,54 +340,71 @@ export class CmsService {
       true,
     );
     await this.record(tx, actor, organizationId, "cms.published", parsed.id);
+    await new AlbumReader(this.db).replaceUsage(
+      `cms:${variant.id}`,
+      organizationId,
+      contentAlbums(draft.data),
+      tx,
+      true,
+    );
   }
 
   async unpublish(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
     const parsed = expectedInput.parse(input);
-    await this.db.transaction(async (tx) => {
-      const { organizationId } = await this.scope.lock(
-        actor,
-        parsed.id,
-        "cms.publish",
-        tx,
-      );
-      const { content, variant } = await this.load(
-        organizationId,
-        parsed.id,
-        parsed.locale,
-        tx,
-      );
-      this.editable(content.archivedAt, variant, parsed.expectedRevisionId);
-      await this.references.requireUnusedSection(
-        organizationId,
-        content,
-        parsed.locale,
-        tx,
-      );
-      await tx
-        .update(cmsVariant)
-        .set({
-          publishedRevisionId: null,
-          publishedSlug: null,
-          publicationVersion: variant.publicationVersion + 1,
-        })
-        .where(eq(cmsVariant.id, variant.id));
-      await this.media.replaceUsage(
-        `cms:${variant.id}`,
-        organizationId,
-        [],
-        tx,
-        true,
-      );
-      await this.record(
-        tx,
-        actor,
-        organizationId,
-        "cms.unpublished",
-        parsed.id,
-      );
-    });
+    await this.db.transaction((tx) =>
+      this.unpublishRevision(actor, parsed, tx),
+    );
     return this.detail(actor, parsed.id, parsed.locale);
+  }
+
+  async unpublishRevision(
+    actor: TrustedActor,
+    input: unknown,
+    tx: Transaction,
+  ) {
+    const parsed = expectedInput.parse(input);
+    const { organizationId } = await this.scope.lock(
+      actor,
+      parsed.id,
+      "cms.publish",
+      tx,
+    );
+    const { content, variant } = await this.load(
+      organizationId,
+      parsed.id,
+      parsed.locale,
+      tx,
+    );
+    this.editable(content.archivedAt, variant, parsed.expectedRevisionId);
+    await this.references.requireUnusedSection(
+      organizationId,
+      content,
+      parsed.locale,
+      tx,
+    );
+    await tx
+      .update(cmsVariant)
+      .set({
+        publishedRevisionId: null,
+        publishedSlug: null,
+        publicationVersion: variant.publicationVersion + 1,
+      })
+      .where(eq(cmsVariant.id, variant.id));
+    await this.media.replaceUsage(
+      `cms:${variant.id}`,
+      organizationId,
+      [],
+      tx,
+      true,
+    );
+    await new AlbumReader(this.db).replaceUsage(
+      `cms:${variant.id}`,
+      organizationId,
+      [],
+      tx,
+      true,
+    );
+    await this.record(tx, actor, organizationId, "cms.unpublished", parsed.id);
   }
 
   async archive(actor: TrustedActor, input: unknown): Promise<CmsDetail> {
@@ -389,7 +418,7 @@ export class CmsService {
     await this.archiveContent(actor, expectedInput.parse(input), tx, true);
   }
 
-  private async archiveContent(
+  async archiveContent(
     actor: TrustedActor,
     parsed: z.infer<typeof expectedInput>,
     tx: Transaction,
@@ -483,11 +512,19 @@ export class CmsService {
         tx,
         true,
       );
+      await new AlbumReader(this.db).replaceUsage(
+        `cms:${item.id}`,
+        organizationId,
+        [],
+        tx,
+        true,
+      );
     }
     await tx
       .update(cmsContent)
       .set({ archivedAt: new Date() })
       .where(eq(cmsContent.id, parsed.id));
+    await detachPageChildren(tx, organizationId, parsed.id);
     await this.record(tx, actor, organizationId, "cms.archived", parsed.id);
   }
 
@@ -570,10 +607,14 @@ export class CmsService {
   publicPage(locale: unknown, slug: unknown) {
     return this.publicReader.publicPage(locale, slug);
   }
-  async eventPages(actor: TrustedActor, id: string) {
-    await this.events.detail(actor, id);
-    const scope = await this.authorization.approved(actor);
-    return this.repository.list(scope.organizationId, this.db, id);
+  async eventPages(
+    actor: TrustedActor,
+    id: string,
+    executor: DatabaseExecutor = this.db,
+  ) {
+    await this.events.detail(actor, id, executor);
+    const scope = await this.authorization.approved(actor, executor);
+    return this.repository.list(scope.organizationId, executor, id);
   }
 
   /** Scoped staff can read placement without receiving page drafts or editor privileges. */
@@ -657,18 +698,19 @@ export class CmsService {
     return this.publicReader.pageCards(locale);
   }
 
-  getSite(actor: TrustedActor, locale: unknown) {
-    return this.site.get(actor, locale);
+  getSite(actor: TrustedActor, locale: unknown, executor?: DatabaseExecutor) {
+    return this.site.get(actor, locale, executor);
   }
-  saveSite(actor: TrustedActor, input: unknown) {
-    return this.site.save(actor, input);
+  saveSite(actor: TrustedActor, input: unknown, executor?: Transaction) {
+    return this.site.save(actor, input, executor);
   }
   publishSite(
     actor: TrustedActor,
     input: unknown,
     scope: "website" | "menu" = "website",
+    executor?: Transaction,
   ) {
-    return this.site.publish(actor, input, scope);
+    return this.site.publish(actor, input, scope, executor);
   }
   publicSite(locale: unknown) {
     return this.site.publicSite(locale);
@@ -714,7 +756,7 @@ export class CmsService {
     if (archivedAt)
       throw new DomainError(
         "CONTENT_ARCHIVED",
-        "This content is archived. Duplicate it to create an editable draft.",
+        "This content is archived. Restore it from Pages or duplicate it to create an editable draft.",
         409,
       );
     if (variant.draftRevisionId !== expected) {

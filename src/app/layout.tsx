@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { services } from "@/composition/services";
+import { ContentGeneration } from "@/core/content/ContentGeneration";
+import { db } from "@/infrastructure/database/client";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,10 +33,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  await connection();
+  const generation = await ContentGeneration.installed(db);
   return (
     <html lang="en">
-      <body>
+      <body
+        data-content-generation={generation?.generation}
+        data-content-reset-at={generation?.resetAt?.toISOString()}
+      >
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>

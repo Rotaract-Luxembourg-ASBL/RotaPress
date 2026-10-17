@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { mediaImageEditingJourney } from "./media-image-editing-journey";
+import { mediaAlbumJourney } from "./media-album-journey";
 import type { AdminMediaAssetDto } from "../../src/features/media/media_schemas";
 
 /** B02: real saved batches, public defaults, protected references and recovery. */
@@ -22,7 +23,7 @@ export async function mediaLibraryJourney(
     })),
   );
   const uploadDialog = page.getByRole("dialog", {
-    name: "Upload images",
+    name: "Upload files",
     exact: true,
   });
   const search = page.getByRole("searchbox", {
@@ -75,9 +76,9 @@ export async function mediaLibraryJourney(
   expect(
     policy.split(";").find((part) => part.trim().startsWith("script-src")),
   ).not.toContain("blob:");
-  await page.getByRole("button", { name: "Upload image", exact: true }).click();
+  await page.getByRole("button", { name: "Upload files", exact: true }).click();
   await uploadDialog
-    .getByLabel("Image file", { exact: true })
+    .getByLabel("Media file", { exact: true })
     .setInputFiles(fixtures);
   await expect(
     uploadDialog.getByLabel("Visibility", { exact: true }),
@@ -89,7 +90,7 @@ export async function mediaLibraryJourney(
     uploadDialog.getByText("bulk-blue.png", { exact: true }),
   ).toBeVisible();
   await uploadDialog
-    .getByRole("button", { name: "Upload 3 images", exact: true })
+    .getByRole("button", { name: "Upload 3 files", exact: true })
     .waitFor({ state: "visible" });
   await expect
     .poll(() =>
@@ -100,7 +101,7 @@ export async function mediaLibraryJourney(
     )
     .toBe(120);
   await uploadDialog
-    .getByRole("button", { name: "Upload 3 images", exact: true })
+    .getByRole("button", { name: "Upload 3 files", exact: true })
     .click();
   await uploadDialog.getByRole("button", { name: "Done", exact: true }).click();
   await expect(uploadDialog).toHaveCount(0);
@@ -112,8 +113,8 @@ export async function mediaLibraryJourney(
     );
 
   // The private choice is deliberate even though every new queue starts public.
-  await page.getByRole("button", { name: "Upload image", exact: true }).click();
-  await uploadDialog.getByLabel("Image file", { exact: true }).setInputFiles({
+  await page.getByRole("button", { name: "Upload files", exact: true }).click();
+  await uploadDialog.getByLabel("Media file", { exact: true }).setInputFiles({
     ...fixtures[0],
     name: "private-gallery-fixture.png",
   });
@@ -121,7 +122,7 @@ export async function mediaLibraryJourney(
     .getByLabel("Visibility", { exact: true })
     .selectOption("private");
   await uploadDialog
-    .getByRole("button", { name: "Upload 1 image", exact: true })
+    .getByRole("button", { name: "Upload 1 file", exact: true })
     .click();
   await uploadDialog.getByRole("button", { name: "Done", exact: true }).click();
   await expect(uploadDialog).toHaveCount(0);
@@ -239,7 +240,7 @@ export async function mediaLibraryJourney(
     .getByRole("button", { name: "Edit selected", exact: true })
     .click();
   const editBatch = page.getByRole("dialog", {
-    name: "Edit selected images",
+    name: "Edit selected files",
     exact: true,
   });
   await editBatch
@@ -255,7 +256,7 @@ export async function mediaLibraryJourney(
     .getByLabel("Tags, separated by commas", { exact: true })
     .fill("gallery, synthetic");
   await editBatch
-    .getByRole("button", { name: "Update selected images", exact: true })
+    .getByRole("button", { name: "Update selected files", exact: true })
     .click();
   await expect(editBatch).toHaveCount(0);
   await expect
@@ -292,11 +293,11 @@ export async function mediaLibraryJourney(
     .fill("Unfinished gallery title");
   const [navigationConfirmation] = await Promise.all([
     page.waitForEvent("dialog"),
-    details.getByRole("button", { name: "Next image", exact: true }).click(),
+    details.getByRole("button", { name: "Next file", exact: true }).click(),
   ]);
   expect(navigationConfirmation.type()).toBe("confirm");
   expect(navigationConfirmation.message()).toContain(
-    "Discard your unsaved image changes",
+    "Discard your unsaved media changes",
   );
   const blue = uploaded.find((asset) => asset.title === "bulk-blue")!;
   expect(
@@ -307,7 +308,7 @@ export async function mediaLibraryJourney(
     ).asset.title,
   ).toBe("bulk-blue");
   await details
-    .getByRole("button", { name: "Previous image", exact: true })
+    .getByRole("button", { name: "Previous file", exact: true })
     .click();
   await expect(details.getByLabel("Title", { exact: true })).toHaveValue(
     "bulk-blue",
@@ -331,7 +332,7 @@ export async function mediaLibraryJourney(
     page.keyboard.press("Escape"),
   ]);
   expect(dismissConfirmation.message()).toContain(
-    "Discard your unsaved image changes",
+    "Discard your unsaved media changes",
   );
   await expect(details).toHaveCount(0);
   await expect(opener).toBeFocused();
@@ -384,6 +385,7 @@ export async function mediaLibraryJourney(
       404,
     );
   await expect(
-    page.getByRole("heading", { name: "No images to show", exact: true }),
+    page.getByRole("heading", { name: "No files to show", exact: true }),
   ).toBeVisible();
+  await mediaAlbumJourney(page);
 }

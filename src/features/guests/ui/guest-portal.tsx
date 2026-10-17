@@ -6,6 +6,10 @@ import { useResource, request, errorMessage } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import type { GuestInvitation, GuestPortal } from "../guest_schemas";
 import { GuestPurchases } from "./guest-purchases";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import type { CollectionPage } from "@/core/collections";
+import { useCollectionReturn } from "@/ui/collection-return";
 
 function when(date: string, timezone: string) {
   return new Date(date).toLocaleString("en-GB", {
@@ -15,16 +19,22 @@ function when(date: string, timezone: string) {
   });
 }
 export function GuestInvitations({ embedded = false }: { embedded?: boolean }) {
-  const { data, error, refresh } = useResource<{
-    invitations: GuestInvitation[];
-  }>("/api/guest");
+  const { params, change } = useCollectionLocation();
+  const page = Number(params.get("invitationsPage")) || 1;
+  const search = params.get("invitationsSearch") ?? "";
+  const returnTo = embedded ? `/membership?${params}` : `/guest?${params}`;
+  const { data, error, refresh } = useResource<
+    CollectionPage & {
+      invitations: GuestInvitation[];
+    }
+  >(`/api/guest?${new URLSearchParams({ page: String(page), search })}`);
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
   const destination = (row: GuestInvitation) =>
     embedded
-      ? `/membership?tab=bookings&event=${row.eventId}&invitation=${row.id}`
-      : `/guest/${row.eventId}/${row.id}`;
+      ? `/membership?tab=bookings&event=${row.eventId}&invitation=${row.id}&returnTo=${encodeURIComponent(returnTo)}`
+      : `/guest/${row.eventId}/${row.id}?returnTo=${encodeURIComponent(returnTo)}`;
   async function claim(row: GuestInvitation) {
     setBusy(true);
     setProblem(undefined);
@@ -46,13 +56,28 @@ export function GuestInvitations({ embedded = false }: { embedded?: boolean }) {
       <p className="muted">
         Your invitations, event details and booking status in one private place.
       </p>
+      <label>
+        Find an invitation
+        <input
+          type="search"
+          value={search}
+          onChange={(event) =>
+            change(
+              { invitationsSearch: event.target.value, invitationsPage: 1 },
+              false,
+            )
+          }
+        />
+      </label>
       {error && (
         <Notice>
           {error}{" "}
           <button className="inline-button" onClick={refresh}>
             Try again
           </button>{" "}
-          <Link href="/sign-in?next=/guest">Sign in</Link>
+          <Link href={`/sign-in?next=${encodeURIComponent(returnTo)}`}>
+            Sign in
+          </Link>
         </Notice>
       )}
       {problem && <Notice>{problem}</Notice>}
@@ -99,11 +124,11 @@ export function GuestInvitations({ embedded = false }: { embedded?: boolean }) {
               </li>
             ))}
           </ul>
-          {data.invitations.length === 100 && (
-            <p className="field-help">
-              Showing your most recent 100 available invitations.
-            </p>
-          )}
+          <CollectionPagination
+            {...data}
+            noun="invitations"
+            onPage={(next) => change({ invitationsPage: next }, false)}
+          />
         </>
       )}
       {!embedded && (
@@ -128,20 +153,31 @@ export function GuestEvent({
   id: string;
   embedded?: boolean;
 }) {
+  const returnTo = useCollectionReturn(embedded ? "/membership" : "/guest");
+  const { params } = useCollectionLocation();
   const { data, error } = useResource<GuestPortal>(
     `/api/guest/${encodeURIComponent(eventId)}/${encodeURIComponent(id)}`,
   );
   return (
     <>
       <Link
-        href={embedded ? "/membership?tab=bookings&view=invitations" : "/guest"}
+        href={
+          returnTo === "/membership"
+            ? "/membership?tab=bookings&view=invitations"
+            : returnTo
+        }
         className="text-link"
       >
         All my invitations
       </Link>
       {error && (
         <Notice>
-          {error} <Link href="/sign-in?next=/guest">Sign in</Link>
+          {error}{" "}
+          <Link
+            href={`/sign-in?next=${encodeURIComponent(embedded ? `/membership?${params}` : `/guest/${eventId}/${id}?${params}`)}`}
+          >
+            Sign in
+          </Link>
         </Notice>
       )}
       {!data && !error && <Loading />}

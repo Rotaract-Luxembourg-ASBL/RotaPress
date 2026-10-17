@@ -130,9 +130,13 @@ export async function clubContentJourney(owner: Page, visitor: Page) {
     "Club information |",
   );
   await expect(
-    owner.getByRole("button", { name: "Run code preview", exact: true }),
+    owner
+      .frameLocator(".editor-canvas iframe")
+      .getByRole("button", { name: "Run code preview", exact: true }),
   ).toBeVisible();
-  await expect(owner.locator("iframe.cms-custom-code")).toHaveCount(0);
+  await expect(
+    owner.frameLocator(".editor-canvas iframe").locator("iframe.cms-custom-code"),
+  ).toHaveCount(0);
   const ownerProbe = await interceptCustomCodeProbe(owner);
   // The editing canvas intercepts block clicks for selection. Execute the same
   // sandbox in the authenticated saved-draft preview, before publication.

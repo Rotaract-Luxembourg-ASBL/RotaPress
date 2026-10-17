@@ -20,13 +20,25 @@ export function FormPicker({
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<FormDto>();
   const [createError, setCreateError] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const event = useEditorEvent();
   const canBrowse = Boolean(event) || capabilities.includes("forms.edit");
-  const { data, error, refresh } = useResource<{ forms: FormDto[] }>(
+  const { data, error, refresh } = useResource<{
+    forms: FormDto[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+  }>(
     features.forms && canBrowse
       ? event
         ? `/api/admin/events/${event.id}/forms`
-        : "/api/admin/forms"
+        : `/api/admin/forms?status=active&sort=name&page=${page}&pageSize=30&search=${encodeURIComponent(search)}`
+      : null,
+  );
+  const selectedResource = useResource<FormDto>(
+    features.forms && canBrowse && value && !event
+      ? `/api/admin/forms/${value}`
       : null,
   );
   const refreshForms = useCallback(() => {
@@ -38,6 +50,11 @@ export function FormPicker({
     ...(data?.forms ?? []),
     ...(created && !data?.forms.some((form) => form.id === created.id)
       ? [created]
+      : []),
+    ...(selectedResource.data &&
+    selectedResource.data.id !== created?.id &&
+    !data?.forms.some((form) => form.id === selectedResource.data?.id)
+      ? [selectedResource.data]
       : []),
   ].filter(
     (form) =>
@@ -65,6 +82,20 @@ export function FormPicker({
             : "No form selected";
   return (
     <div className="editor-connection-picker">
+      {features.forms && canBrowse && !event && (
+        <label>
+          Find a form
+          <input
+            type="search"
+            value={search}
+            disabled={disabled}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+      )}
       {features.forms && (
         <label>
           {event ? "Event form" : "Reusable form"}
@@ -91,6 +122,33 @@ export function FormPicker({
             ))}
           </select>
         </label>
+      )}
+      {!event && data && (data.total ?? 0) > (data.pageSize ?? 30) && (
+        <div className="form-actions" aria-label="Form picker pages">
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={disabled || (data.page ?? page) <= 1}
+            onClick={() => setPage((data.page ?? page) - 1)}
+          >
+            Previous
+          </button>
+          <span>
+            Page {data.page ?? page} of{" "}
+            {Math.ceil((data.total ?? 0) / (data.pageSize ?? 30))}
+          </span>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={
+              disabled ||
+              (data.page ?? page) * (data.pageSize ?? 30) >= (data.total ?? 0)
+            }
+            onClick={() => setPage((data.page ?? page) + 1)}
+          >
+            Next
+          </button>
+        </div>
       )}
       <ConnectedSource
         name={event ? "Event forms" : "Forms"}

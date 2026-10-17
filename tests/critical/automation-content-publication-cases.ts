@@ -1,3 +1,4 @@
+import { AutomationRuntime } from "../../src/integrations/automation/receipt_service";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
@@ -86,6 +87,7 @@ export function automationContentPublicationChecks(
       // Real domain services/actors; only unused transport dependencies are omitted.
       const context = {
         services: {
+          automationRuntime: new AutomationRuntime(db),
           authorization,
           forms,
           cms,
@@ -98,13 +100,17 @@ export function automationContentPublicationChecks(
       } as unknown as AutomationContext;
       const run = (
         name: string,
-        input: unknown,
+        input: Record<string, unknown>,
         replacement: AutomationPrincipal = principal,
       ) => {
         const op = contentPublicationOperations.find(
           (item) => item.name === name,
         )!;
-        return op.run({ ...context, principal: replacement }, input);
+        // Each call here is a new publication attempt; receipt replays have their own cases.
+        return op.run(
+          { ...context, principal: replacement },
+          { requestId: randomUUID(), ...input },
+        );
       };
       const enable = async (key: EventModuleKey) =>
         modules.change(people.owner, {
@@ -266,7 +272,13 @@ export function automationContentPublicationChecks(
       await expect(s.run("directory_publish", input)).rejects.toMatchObject({
         code: "MEDIA_NOT_PUBLIC",
       });
-      expect((await s.partners.list(s.owner))[0].published).toBeNull();
+      expect(
+        (
+          await s.partners
+            .query(s.owner, { status: "all", pageSize: 100 })
+            .then((result) => result.items)
+        )[0].published,
+      ).toBeNull();
       expect((await s.media.detail(s.owner, image.id)).visibility).toBe(
         "private",
       );

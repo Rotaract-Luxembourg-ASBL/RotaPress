@@ -4,6 +4,12 @@ Open **Events** in administration to create and manage an event. Each event has
 one workspace for details, its page, participation, packages, guests, prizes and
 team access. A feature appears when it is available and deliberately enabled.
 
+Search, status, date and sort filters in Events are saved in the URL. Counts and
+result pages include every event your current role can access. Opening an event
+and using **Back to events** retains that collection context. The copy chooser
+searches and pages through existing events; a source does not need to appear on
+the current Events page. Revision history also has page controls.
+
 ## Create and configure
 
 Create an event with a name, schedule, time zone, visibility and responsible

@@ -4,7 +4,7 @@ import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
 import { eventExample } from "../../src/integrations/automation/examples";
 
-/** Real HTTP/MCP + staff review: private native event and closed registration. */
+/** Real HTTP/MCP: explicit operational grant, direct execution and exact replay. */
 export async function automationEventJourney(
   owner: Page,
   api: APIRequestContext,
@@ -15,6 +15,7 @@ export async function automationEventJourney(
       "events:read",
       "events:write",
       "events:prepare",
+      "events:operate",
       "website:read",
       "website:write",
       "forms:read",
@@ -76,9 +77,15 @@ export async function automationEventJourney(
     expect(event.event.published).toBe(false);
     expect(event.pages.length).toBeGreaterThan(0);
     expect(event.forms).toHaveLength(1);
+    const sameConnection = await api.post("/api/v1/events/preparation", {
+      headers,
+      data: create,
+    });
+    expect(sameConnection.status()).toBe(200);
+    expect((await sameConnection.json()).data).toEqual(event);
     const retry = await rpc("events_prepare", create);
-    expect(retry.isError).toBe(false);
-    expect(retry.structuredContent.data).toEqual(event);
+    expect(retry.isError).toBe(true);
+    expect(JSON.stringify(retry.content)).toContain("another connection");
     const workspacePath = `/api/v1/events/${event.event.id}/preparation`;
     const workspace = (await (await api.get(workspacePath, { headers })).json())
       .data;
@@ -90,6 +97,7 @@ export async function automationEventJourney(
     expect(workspace.publication).toBe("manual-only");
     expect((await api.get(`/events/${event.event.slug}`)).status()).toBe(404);
     const packages = await rpc("events_package_save", {
+      requestId: randomUUID(),
       eventId: event.event.id,
       expectedVersion: 0,
       sourceId: null,
@@ -106,6 +114,7 @@ export async function automationEventJourney(
     expect(packages.isError).toBe(false);
     expect(packages.structuredContent.data.items[0].published).toBe(false);
     const prize = await rpc("events_prize_save", {
+      requestId: randomUUID(),
       eventId: event.event.id,
       expectedVersion: 0,
       draft: {
@@ -123,70 +132,35 @@ export async function automationEventJourney(
     expect(
       (await rpc("events_apply_settings", { confirmed: true })).isError,
     ).toBe(true);
-    const proposalInput = {
+    const operationalInput = {
       eventId: event.event.id,
       requestId: randomUUID(),
-      proposal: {
-        kind: "registration",
-        settings: {
-          expectedVersion: workspace.registration.version,
-          authority: "native",
-          formId: event.forms[0].id,
-          capacity: 80,
-          open: false,
-        },
-      },
+      expectedVersion: workspace.registration.version,
+      authority: "native",
+      formId: event.forms[0].id,
+      capacity: 80,
+      open: false,
+      confirmed: true,
     };
-    const response = await api.post("/api/v1/events/proposals", {
+    const changed = await rpc("events_registration_set", operationalInput);
+    expect(changed.isError).toBe(false);
+    expect(changed.structuredContent.data).toMatchObject({
+      capacity: 80,
+      open: false,
+    });
+    const repeated = await rpc("events_registration_set", operationalInput);
+    expect(repeated.structuredContent).toEqual(changed.structuredContent);
+    const stale = await rpc("events_registration_set", {
+      ...operationalInput,
+      requestId: randomUUID(),
+      capacity: 81,
+    });
+    expect(stale.isError).toBe(true);
+    const removed = await api.post("/api/v1/events/proposals", {
       headers,
-      data: proposalInput,
+      data: {},
     });
-    expect(response.status(), await response.text()).toBe(200);
-    const proposal = (await response.json()).data;
-    expect(proposal.status).toBe("pending");
-    expect(
-      (await (await api.get(workspacePath, { headers })).json()).data
-        .registration.capacity,
-    ).toBeNull();
-    expect(
-      (
-        await api.post("/api/admin/integrations/automation/proposals", {
-          headers: { ...headers, origin: smokeOrigin },
-          data: { id: proposal.id, action: "apply", confirmed: true },
-        })
-      ).status(),
-    ).toBe(401);
-    const previousViewport = owner.viewportSize();
-    await owner.goto(proposal.reviewUrl);
-    await expect(
-      owner.getByRole("heading", {
-        name: "Review event suggestions",
-        exact: true,
-      }),
-    ).toBeVisible();
-    await owner.setViewportSize({ width: 390, height: 844 });
-    expect(
-      await owner.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-    await owner.screenshot({
-      path: ".local/automation-proposal-phone.png",
-      fullPage: true,
-    });
-    if (previousViewport) await owner.setViewportSize(previousViewport);
-    await owner
-      .getByRole("button", { name: "Review and apply", exact: true })
-      .click();
-    await owner
-      .getByRole("button", { name: "Apply reviewed settings", exact: true })
-      .click();
-    await expect(
-      owner.getByText(
-        "The reviewed settings were applied. Content publication is unchanged.",
-        { exact: true },
-      ),
-    ).toBeVisible();
+    expect(removed.status()).toBe(404);
     const applied = (await (await api.get(workspacePath, { headers })).json())
       .data;
     expect(applied.registration).toMatchObject({ capacity: 80, open: false });

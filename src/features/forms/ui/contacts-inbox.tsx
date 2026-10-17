@@ -1,17 +1,15 @@
 "use client";
-import { answerText } from "../form_elements";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useCurrentUser } from "@/ui/admin-shell";
-import { errorMessage, request, useResource } from "@/ui/api";
 import { FilterTabs, StatusBadge } from "@/ui/collection";
 import { Loading, Notice, PageHeading } from "@/ui/primitives";
-import type { InboxMessage } from "../inbox_schemas";
-import type { SubmissionDto } from "../form_types";
-import { submissionStatuses, type SubmissionStatus } from "../form_schemas";
+import { submissionStatuses } from "../form_schemas";
 import { useInboxPage } from "./use-inbox-page";
+import { InboxMessagePanel } from "./inbox-message-panel";
+import { InboxSourcePicker } from "./inbox-source-picker";
 
 const statusNames = { new: "New", reviewing: "In progress", closed: "Closed" };
 const purposeNames: Record<string, string> = {
@@ -21,85 +19,68 @@ const purposeNames: Record<string, string> = {
   registration: "Event registrations",
 };
 
-type InboxFilters = {
-  query: string;
-  status: string;
-  kind: string;
-  after: string;
-  before: string;
-};
-
 export function ContactsInbox() {
   const params = useSearchParams();
-  const formId = params.get("formId") ?? "";
-  const requestedStatus = params.get("status") ?? "";
-  const initialFilters: InboxFilters = {
-    query: params.get("q") ?? "",
-    status: submissionStatuses.some((value) => value === requestedStatus)
-      ? requestedStatus
-      : "",
-    kind: Object.hasOwn(purposeNames, params.get("kind") ?? "")
-      ? params.get("kind")!
-      : "",
-    after: params.get("after") ?? "",
-    before: params.get("before") ?? "",
-  };
-  return (
-    <InboxWorkspace
-      key={params.toString()}
-      formId={formId}
-      initialFilters={initialFilters}
-      initialView={params.get("view") === "people" ? "contacts" : "inbox"}
-    />
-  );
-}
-
-function InboxWorkspace({
-  formId,
-  initialFilters,
-  initialView,
-}: {
-  formId: string;
-  initialFilters: InboxFilters;
-  initialView: "inbox" | "contacts";
-}) {
   const user = useCurrentUser();
   const router = useRouter();
-  const [view, setView] = useState(initialView);
-  const [search, setSearch] = useState(initialFilters.query);
-  const [query, setQuery] = useState(initialFilters.query);
-  const [status, setStatus] = useState(initialFilters.status);
-  const [kind, setKind] = useState(initialFilters.kind);
-  const [after, setAfter] = useState(initialFilters.after);
-  const [before, setBefore] = useState(initialFilters.before);
-  const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<InboxMessage>();
+  const formId = params.get("formId") ?? "";
+  const query = params.get("q") ?? "";
+  const status = submissionStatuses.some(
+    (value) => value === params.get("status"),
+  )
+    ? params.get("status")!
+    : "";
+  const kind = Object.hasOwn(purposeNames, params.get("kind") ?? "")
+    ? params.get("kind")!
+    : "";
+  const after = params.get("after") ?? "";
+  const before = params.get("before") ?? "";
+  const view = params.get("view") === "people" ? "contacts" : "inbox";
+  const page = Math.min(
+    1000,
+    Math.max(0, Math.floor(Number(params.get("page"))) || 0),
+  );
   const [selectionRequest, setSelectionRequest] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const responseButtons = useRef(new Map<string, HTMLButtonElement>());
+  const focusOnReturn = useRef<string | null>(null);
   const filters = new URLSearchParams({ q: query, page: String(page) });
   if (status) filters.set("status", status);
   if (formId) filters.set("formId", formId);
   if (kind) filters.set("kind", kind);
   if (after) filters.set("after", after);
   if (before) filters.set("before", before);
-  const { data, forms, error, refresh } = useInboxPage(
-    `/api/admin/inbox?${filters}`,
+  const { data, error, refresh } = useInboxPage(`/api/admin/inbox?${filters}`);
+  const selected = data?.messages.find(
+    (message) => message.id === params.get("response"),
   );
-  function selectForm(value: string, onlyQuery?: string, nextView = view) {
-    const next = new URLSearchParams();
-    if (value) next.set("formId", value);
-    if (nextView === "contacts") next.set("view", "people");
-    const searchQuery = onlyQuery ?? query;
-    if (searchQuery) next.set("q", searchQuery);
-    if (onlyQuery === undefined) {
-      if (status) next.set("status", status);
-      if (kind) next.set("kind", kind);
-      if (after) next.set("after", after);
-      if (before) next.set("before", before);
+  useEffect(() => {
+    if (selected || !focusOnReturn.current) return;
+    const target = responseButtons.current.get(focusOnReturn.current);
+    if (target) {
+      target.focus();
+      focusOnReturn.current = null;
+    }
+  }, [selected, data]);
+  function update(values: Record<string, string>, resetPage = true) {
+    const next = new URLSearchParams(params);
+    if (resetPage) next.delete("page");
+    if (!("response" in values)) next.delete("response");
+    for (const [key, value] of Object.entries(values)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
     }
     router.push(`/admin/inbox${next.size ? `?${next}` : ""}`, {
       scroll: false,
+    });
+  }
+  function selectForm(value: string, onlyQuery?: string, nextView = view) {
+    update({
+      formId: value,
+      view: nextView === "contacts" ? "people" : "",
+      ...(onlyQuery === undefined
+        ? {}
+        : { q: onlyQuery, status: "", kind: "", after: "", before: "" }),
     });
   }
   if (
@@ -129,22 +110,12 @@ function InboxWorkspace({
         latest: message.receivedAt,
       });
   }
-  function find(event: FormEvent) {
+  function find(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setQuery(search);
-    setPage(0);
-    setSelected(undefined);
+    update({ q: String(new FormData(event.currentTarget).get("q") ?? "") });
   }
   function clearFilters() {
-    setQuery("");
-    setSearch("");
-    setStatus("");
-    selectForm("", "");
-    setKind("");
-    setAfter("");
-    setBefore("");
-    setPage(0);
-    setSelected(undefined);
+    update({ q: "", status: "", formId: "", kind: "", after: "", before: "" });
   }
   const secondaryFilterCount = [kind, after, before].filter(Boolean).length;
   const hasFilters = Boolean(query || status || formId || secondaryFilterCount);
@@ -165,7 +136,7 @@ function InboxWorkspace({
           type="button"
           aria-current={view === "inbox" ? "page" : undefined}
           onClick={() => {
-            setView("inbox");
+            update({ view: "" }, false);
             setSelectionRequest(0);
           }}
         >
@@ -175,7 +146,7 @@ function InboxWorkspace({
           type="button"
           aria-current={view === "contacts" ? "page" : undefined}
           onClick={() => {
-            setView("contacts");
+            update({ view: "people" }, false);
             setSelectionRequest(0);
           }}
         >
@@ -188,9 +159,7 @@ function InboxWorkspace({
             label="Filter responses by status"
             value={status}
             onChange={(value) => {
-              setStatus(value);
-              setPage(0);
-              setSelected(undefined);
+              update({ status: value });
             }}
             options={[
               { value: "", label: "All responses" },
@@ -215,37 +184,16 @@ function InboxWorkspace({
             <label>
               Search contacts and messages
               <input
-                value={search}
+                key={query}
+                name="q"
+                defaultValue={query}
                 maxLength={160}
-                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Name, email or message"
               />
             </label>
             <button className="button button-outline">Search</button>
           </form>
-          <label>
-            Source form
-            <select
-              value={formId}
-              onChange={(event) => {
-                selectForm(event.target.value);
-                setPage(0);
-                setSelected(undefined);
-              }}
-            >
-              <option value="">All forms</option>
-              {formId && !forms?.some((item) => item.id === formId) && (
-                <option value={formId}>Selected form</option>
-              )}
-              {forms?.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
-                  {item.eventTitle ? ` · ${item.eventTitle}` : ""}
-                  {item.archived ? " · archived" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InboxSourcePicker value={formId} onChange={selectForm} />
           <button
             type="button"
             className="button button-outline"
@@ -267,9 +215,7 @@ function InboxWorkspace({
             <select
               value={kind}
               onChange={(e) => {
-                setKind(e.target.value);
-                setPage(0);
-                setSelected(undefined);
+                update({ kind: e.target.value });
               }}
             >
               <option value="">All purposes</option>
@@ -286,9 +232,7 @@ function InboxWorkspace({
               value={after}
               max={before || undefined}
               onChange={(e) => {
-                setAfter(e.target.value);
-                setPage(0);
-                setSelected(undefined);
+                update({ after: e.target.value });
               }}
             />
           </label>
@@ -299,9 +243,7 @@ function InboxWorkspace({
               value={before}
               min={after || undefined}
               onChange={(e) => {
-                setBefore(e.target.value);
-                setPage(0);
-                setSelected(undefined);
+                update({ before: e.target.value });
               }}
             />
           </label>
@@ -315,20 +257,13 @@ function InboxWorkspace({
             aria-label="Active response filters"
           >
             {formId && (
-              <>
-                <strong>
-                  Responses for{" "}
-                  {forms?.find((item) => item.id === formId)?.title ??
-                    "the selected form"}
-                </strong>
-                <button
-                  type="button"
-                  className="inline-button"
-                  onClick={() => selectForm("")}
-                >
-                  View all forms
-                </button>
-              </>
+              <button
+                type="button"
+                className="inline-button"
+                onClick={() => selectForm("")}
+              >
+                View all forms
+              </button>
             )}
             {query && <span>Search: {query}</span>}
             {kind && <span>Purpose: {purposeNames[kind] ?? kind}</span>}
@@ -388,16 +323,7 @@ function InboxWorkspace({
                         type="button"
                         className="button button-outline"
                         onClick={() => {
-                          setSearch(contact.email!);
-                          setQuery(contact.email!);
-                          setStatus("");
                           selectForm("", contact.email!, "inbox");
-                          setKind("");
-                          setAfter("");
-                          setBefore("");
-                          setPage(0);
-                          setView("inbox");
-                          setSelected(undefined);
                         }}
                       >
                         Open response history
@@ -436,7 +362,7 @@ function InboxWorkspace({
                     className="inbox-message"
                     aria-pressed={selected?.id === message.id}
                     onClick={() => {
-                      setSelected(message);
+                      update({ response: message.id }, false);
                       setSelectionRequest((value) => value + 1);
                     }}
                   >
@@ -471,17 +397,15 @@ function InboxWorkspace({
                 ))}
               </section>
               {selected ? (
-                <MessagePanel
+                <InboxMessagePanel
                   key={selected.id}
                   message={selected}
                   selectionRequest={selectionRequest}
                   onSaved={refresh}
+                  returnTo={`/admin/inbox?${params}`}
                   onBack={() => {
-                    const id = selected.id;
-                    setSelected(undefined);
-                    requestAnimationFrame(() =>
-                      responseButtons.current.get(id)?.focus(),
-                    );
+                    focusOnReturn.current = selected.id;
+                    update({ response: "" }, false);
                   }}
                 />
               ) : (
@@ -502,8 +426,7 @@ function InboxWorkspace({
                 className="button button-outline"
                 disabled={page === 0}
                 onClick={() => {
-                  setPage(page - 1);
-                  setSelected(undefined);
+                  update({ page: String(page - 1) }, false);
                 }}
               >
                 Previous page
@@ -513,8 +436,7 @@ function InboxWorkspace({
                 className="button button-outline"
                 disabled={!data.hasMore}
                 onClick={() => {
-                  setPage(page + 1);
-                  setSelected(undefined);
+                  update({ page: String(page + 1) }, false);
                 }}
               >
                 Next page
@@ -524,151 +446,5 @@ function InboxWorkspace({
         </>
       )}
     </div>
-  );
-}
-
-function MessagePanel({
-  message,
-  selectionRequest,
-  onSaved,
-  onBack,
-}: {
-  message: InboxMessage;
-  selectionRequest: number;
-  onSaved: () => void;
-  onBack: () => void;
-}) {
-  const { data, error, refresh } = useResource<SubmissionDto>(
-    `/api/admin/forms/submissions/${message.id}`,
-  );
-  const [status, setStatus] = useState<SubmissionStatus>(message.status);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string>();
-  const [failure, setFailure] = useState<string>();
-  const heading = useRef<HTMLHeadingElement>(null);
-  const lastSelection = useRef(0);
-  useEffect(() => {
-    if (!selectionRequest) {
-      lastSelection.current = 0;
-      return;
-    }
-    if (!data || selectionRequest === lastSelection.current) return;
-    lastSelection.current = selectionRequest;
-    if (!window.matchMedia("(max-width: 900px)").matches) return;
-    heading.current?.focus({ preventScroll: true });
-    heading.current?.scrollIntoView({ block: "center" });
-  }, [data, selectionRequest]);
-  async function save() {
-    setBusy(true);
-    setFailure(undefined);
-    setNotice(undefined);
-    try {
-      await request(`/api/admin/forms/submissions/${message.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      });
-      setNotice("Review status saved.");
-      refresh();
-      onSaved();
-    } catch (cause) {
-      setFailure(errorMessage(cause));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="panel inbox-detail" aria-label="Selected response">
-      <button
-        type="button"
-        className="inline-button inbox-back"
-        onClick={onBack}
-      >
-        Back to responses
-      </button>
-      <p className="eyebrow">{message.formTitle}</p>
-      <h2 ref={heading} tabIndex={-1}>
-        {message.name}
-      </h2>
-      <p>{message.email}</p>
-      {message.eventTitle && (
-        <p className="field-help">Event: {message.eventTitle}</p>
-      )}
-      <p className="field-help">
-        {message.verified
-          ? "Submitted with a verified account"
-          : "Contact details supplied by the visitor"}
-      </p>
-      {error && (
-        <Notice>
-          {error}{" "}
-          <button type="button" className="inline-button" onClick={refresh}>
-            Retry response
-          </button>
-        </Notice>
-      )}
-      {failure && <Notice>{failure}</Notice>}
-      {notice && <Notice kind="success">{notice}</Notice>}
-      {!data && !error && <Loading />}
-      {data && (
-        <>
-          <p className="muted">
-            {data.formTitle} · version {data.versionNumber} ·{" "}
-            {new Date(data.receivedAt).toLocaleString()}
-          </p>
-          <dl className="inbox-answers">
-            {data.definition.fields
-              .filter((field) => Object.hasOwn(data.answers, field.id))
-              .map((field) => (
-                <div key={field.id}>
-                  <dt>{field.label}</dt>
-                  <dd>{answerText(data.answers[field.id]) || "No answer"}</dd>
-                </div>
-              ))}
-          </dl>
-          <div className="inbox-status">
-            <label>
-              Review status
-              <select
-                value={status}
-                disabled={busy}
-                onChange={(event) =>
-                  setStatus(event.target.value as SubmissionStatus)
-                }
-              >
-                {submissionStatuses.map((value) => (
-                  <option key={value} value={value}>
-                    {statusNames[value]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="button button-accent"
-              disabled={busy}
-              onClick={save}
-            >
-              {busy ? "Saving…" : "Save status"}
-            </button>
-          </div>
-          <p className="field-help">
-            Email delivery: {data.notifications.sent} sent ·{" "}
-            {data.notifications.pending + data.notifications.processing} queued
-            · {data.notifications.failed} failed.
-          </p>
-          <div className="forms-actions">
-            <Link
-              href={`/admin/forms/${message.formId}/submissions/${message.id}`}
-              className="text-link"
-            >
-              Full response & delivery
-            </Link>
-            <Link href={`/admin/forms/${message.formId}`} className="text-link">
-              Form & notifications
-            </Link>
-          </div>
-        </>
-      )}
-    </section>
   );
 }

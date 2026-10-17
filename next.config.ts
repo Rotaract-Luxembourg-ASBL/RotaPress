@@ -3,12 +3,25 @@ import type { NextConfig } from "next";
 const policy =
   "default-src 'self'; script-src 'self' 'unsafe-inline'" +
   (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "") +
-  "; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'";
+  "; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'";
 
 const config: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
-  serverExternalPackages: ["pg", "nodemailer", "playwright-core"],
+  serverExternalPackages: [
+    "pg",
+    "nodemailer",
+    "playwright-core",
+    "mediainfo.js",
+    "pdf-lib",
+  ],
+  outputFileTracingIncludes: {
+    "/api/admin/media/uploads/*": [
+      "./scripts/media-inspect.mjs",
+      "./node_modules/mediainfo.js/**/*",
+      "./node_modules/pdf-lib/**/*",
+    ],
+  },
   outputFileTracingExcludes: {
     "/*": ["./.local/**/*", "./.data/**/*", "./.env*"],
   },
@@ -53,16 +66,18 @@ const config: NextConfig = {
           },
         ],
       },
-      {
-        source: "/admin/website/:id/preview",
-        headers: [
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          {
-            key: "Content-Security-Policy",
-            value: `${policy}; frame-ancestors 'self'`,
-          },
-        ],
-      },
+      ...["/admin/website/preview", "/admin/website/:id/preview"].map(
+        (source) => ({
+          source,
+          headers: [
+            { key: "X-Frame-Options", value: "SAMEORIGIN" },
+            {
+              key: "Content-Security-Policy",
+              value: `${policy}; frame-ancestors 'self'`,
+            },
+          ],
+        }),
+      ),
     ];
   },
 };

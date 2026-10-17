@@ -1,12 +1,14 @@
+import { formPublicationOperations } from "./form_publication_operations";
 import { z } from "zod";
 import { DomainError } from "@/core/DomainError";
-import { formPublishSchema } from "@/features/forms/form_schemas";
 import { eventVersionSchema } from "@/features/events/event_schemas";
 import { partnerPublicationSchema } from "@/features/partners/partner_schemas";
-import { operation, type AutomationContext } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import {
+  requireReceiptCapability,
+  requireReceiptEvent,
+} from "./receipt_authority";
 import { exampleId } from "./examples";
-import { requireScopes } from "./event_preparation";
-import { scopeDefinitions } from "./scopes";
 import { publicationConfirmation as confirmed } from "./publication_policy";
 const versionInput = eventVersionSchema.extend({ confirmed });
 const versionReceipt = z.strictObject({
@@ -16,59 +18,12 @@ const versionReceipt = z.strictObject({
   reviewUrl: z.string(),
 });
 
-async function requirePublication(
-  context: AutomationContext,
-  scope: "forms:publish" | "events:publish" | "directory:publish",
-) {
-  requireScopes(context, [scope]);
-  const current = await context.services.authorization.require(
-    context.principal.actor,
-    scopeDefinitions[scope].capability,
-  );
-  if (current.organizationId !== context.principal.organizationId)
-    throw new DomainError(
-      "AUTOMATION_ORGANIZATION_CHANGED",
-      "Create a connection for the current club.",
-      403,
-    );
-}
-
 export const contentPublicationOperations = [
-  operation(
-    {
-      name: "forms_publish",
-      method: "POST",
-      path: "/forms/{id}/publish",
-      scope: "forms:publish",
-      description:
-        "Publish the exact saved form revision only when the user asks, with confirmed:true and expectedRevision from forms_get. The current form/event publisher permissions still apply. Does not read responses, change recipients, activate registration or publish its page.",
-      input: formPublishSchema.extend({ id: z.uuid(), confirmed }),
-      output: z.strictObject({
-        id: z.uuid(),
-        draftRevision: z.int().positive(),
-        publishedVersionId: z.uuid(),
-        reviewUrl: z.string(),
-      }),
-      example: { id: exampleId, expectedRevision: 1, confirmed: true },
-    },
-    async (context, { id, expectedRevision }) => {
-      await requirePublication(context, "forms:publish");
-      const form = await context.services.forms.publish(
-        context.principal.actor,
-        id,
-        { expectedRevision },
-      );
-      return {
-        id: form.id,
-        draftRevision: form.draftRevision,
-        publishedVersionId: form.publishedVersionId,
-        reviewUrl: `/admin/forms/${form.id}`,
-      };
-    },
-  ),
-  operation(
+  ...formPublicationOperations,
+  receiptOperation(
     {
       name: "events_publish",
+      effect: "publish",
       method: "POST",
       path: "/events/{id}/publish",
       scope: "events:publish",
@@ -78,8 +33,9 @@ export const contentPublicationOperations = [
       output: versionReceipt,
       example: { id: exampleId, expectedVersion: 1, confirmed: true },
     },
-    async (context, input) => {
-      await requirePublication(context, "events:publish");
+    (context, input, tx) =>
+      requireReceiptEvent(context, input.id, "events.publish", tx),
+    async (context, input, tx) => {
       const event = await context.services.eventWebsite.publication(
         context.principal.actor,
         {
@@ -87,6 +43,7 @@ export const contentPublicationOperations = [
           operation: "publish",
           pages: [],
         },
+        tx,
       );
       return {
         id: event.id,
@@ -96,9 +53,10 @@ export const contentPublicationOperations = [
       };
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "directory_publish",
+      effect: "publish",
       method: "POST",
       path: "/directory/{id}/publish",
       scope: "directory:publish",
@@ -108,13 +66,14 @@ export const contentPublicationOperations = [
       output: versionReceipt,
       example: { id: exampleId, expectedVersion: 1, confirmed: true },
     },
-    async (context, { id, ...input }) => {
-      await requirePublication(context, "directory:publish");
+    requireReceiptCapability("cms.publish"),
+    async (context, { id, ...input }, tx) => {
       const profile = await context.services.partners.change(
         context.principal.actor,
         id,
         "publish",
         input,
+        tx,
       );
       return {
         id: profile.id,
@@ -124,9 +83,10 @@ export const contentPublicationOperations = [
       };
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_prize_publish",
+      effect: "publish",
       method: "POST",
       path: "/events/{eventId}/prizes/{id}/publish",
       scope: "events:publish",
@@ -141,13 +101,15 @@ export const contentPublicationOperations = [
         confirmed: true,
       },
     },
-    async (context, { eventId, id, ...input }) => {
-      await requirePublication(context, "events:publish");
+    (context, input, tx) =>
+      requireReceiptEvent(context, input.eventId, "events.publish", tx, true),
+    async (context, { eventId, id, ...input }, tx) => {
       const workspace = await context.services.eventPrizes.publication(
         context.principal.actor,
         eventId,
         id,
         { ...input, operation: "publish" },
+        tx,
       );
       const prize = workspace.items.find((item) => item.id === id);
       if (!prize)

@@ -74,6 +74,8 @@ function sanitizeBlock(block: Block): Block {
 function sanitizeLeaf<
   T extends Exclude<Block, { type: "SiteRow" | "Columns" }>,
 >(block: T): T {
+  if (block.type === "Gallery" && block.props.albumId)
+    return { ...block, props: { ...block.props, items: [] } };
   if (block.type !== "RichText") return block;
   const safe = sanitizeHtml(block.props.text, {
     allowedTags: [
@@ -111,8 +113,13 @@ export function contentAssets(
   const ids = new Set<string>();
   if (socialImageId) ids.add(socialImageId);
   for (const block of flattenBlocks(data.content)) {
+    if (block.type === "Video" && block.props.posterAssetId)
+      ids.add(block.props.posterAssetId);
     if (
       (block.type === "Image" ||
+        block.type === "File" ||
+        block.type === "Audio" ||
+        block.type === "Video" ||
         block.type === "EventHero" ||
         block.type === "EventFlyer" ||
         block.type === "Hero" ||
@@ -131,6 +138,7 @@ export function contentAssets(
         "HeroSlider",
         "Cards",
       ].includes(block.type) &&
+      !(block.type === "Gallery" && block.props.albumId) &&
       "items" in block.props
     ) {
       for (const item of block.props.items) {

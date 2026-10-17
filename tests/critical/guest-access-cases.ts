@@ -117,9 +117,50 @@ export function guestAccessChecks(get: () => Context) {
     };
   }
 
+  it("C10 paginates eligible guests and invitations without changing current source or identity scope", async () => {
+    const s = await setup();
+    await s.change("portal", "enable");
+    const first = await s.guests.workspace(s.manager, s.event.id, {
+      pageSize: 1,
+    });
+    const second = await s.guests.workspace(s.manager, s.event.id, {
+      pageSize: 1,
+      candidatePage: 2,
+    });
+    expect(first.candidatePagination.total).toBe(2);
+    expect(first.candidates).toHaveLength(1);
+    expect(second.candidates[0].id).not.toBe(first.candidates[0].id);
+    const grant = await s.invite();
+    expect(
+      (
+        await s.guests.workspace(s.manager, s.event.id, {
+          search: s.first.email,
+        })
+      ).pagination.total,
+    ).toBe(1);
+    expect(
+      (await s.guests.workspace(s.manager, s.event.id)).candidatePagination
+        .total,
+    ).toBe(1);
+    expect(await s.guests.queryMine(s.first, { pageSize: 1 })).toMatchObject({
+      total: 1,
+      invitations: [{ id: grant.id }],
+    });
+    expect((await s.guests.queryMine(s.second)).total).toBe(0);
+    await s.registrations.cancel(s.first, s.firstBooking.id, confirmed);
+    expect((await s.guests.queryMine(s.first)).total).toBe(0);
+    expect(
+      (await s.guests.workspace(s.manager, s.event.id)).grants[0].available,
+    ).toBe(false);
+  });
+
   it("C10 requires explicit scoped grants and binds two guests to their own records", async () => {
     const s = await setup();
-    expect(await s.guests.mine(s.first)).toEqual([]);
+    expect(
+      await s.guests
+        .queryMine(s.first, { pageSize: 100 })
+        .then((result) => result.invitations),
+    ).toEqual([]);
     await expect(s.invite()).rejects.toMatchObject({
       code: "GUEST_UNAVAILABLE",
     });
@@ -145,7 +186,13 @@ export function guestAccessChecks(get: () => Context) {
     const a = await s.invite(),
       b = await s.invite(s.secondBooking.id);
     expect(await s.invite()).toEqual(a);
-    expect((await s.guests.mine(s.first)).map((r) => r.id)).toEqual([a.id]);
+    expect(
+      (
+        await s.guests
+          .queryMine(s.first, { pageSize: 100 })
+          .then((result) => result.invitations)
+      ).map((r) => r.id),
+    ).toEqual([a.id]);
     await expect(
       s.guests.portal(s.first, s.event.id, a.id),
     ).rejects.toMatchObject({ code: "GUEST_UNAVAILABLE" });
@@ -251,7 +298,11 @@ export function guestAccessChecks(get: () => Context) {
     expect(next.id).not.toBe(grant.id);
     await s.guests.claim(s.first, s.event.id, next.id, confirmed);
     await s.change("portal", "disable");
-    expect(await s.guests.mine(s.first)).toEqual([]);
+    expect(
+      await s.guests
+        .queryMine(s.first, { pageSize: 100 })
+        .then((result) => result.invitations),
+    ).toEqual([]);
     await expect(
       s.guests.claim(s.first, s.event.id, next.id, confirmed),
     ).rejects.toMatchObject({ code: "GUEST_UNAVAILABLE" });
@@ -274,7 +325,11 @@ export function guestAccessChecks(get: () => Context) {
         .update(clubEvent)
         .set(blocked)
         .where(eq(clubEvent.id, s.event.id));
-      expect(await s.guests.mine(s.first)).toEqual([]);
+      expect(
+        await s.guests
+          .queryMine(s.first, { pageSize: 100 })
+          .then((result) => result.invitations),
+      ).toEqual([]);
       await s.db
         .update(clubEvent)
         .set({ publishedAt: new Date(), archivedAt: null, cancelledAt: null })
@@ -285,7 +340,13 @@ export function guestAccessChecks(get: () => Context) {
       s.guests.portal(s.first, s.event.id, next.id),
     ).rejects.toMatchObject({ code: "GUEST_UNAVAILABLE" });
     expect(await s.db.select().from(guestAccess)).toHaveLength(2);
-    expect((await s.registrations.mine(s.first))[0].status).toBe("cancelled");
+    expect(
+      (
+        await s.registrations
+          .queryMine(s.first, { pageSize: 100 })
+          .then((result) => result.items)
+      )[0].status,
+    ).toBe("cancelled");
   });
 
   it("C10 fences staff event scope and database source identity; registration managers can revoke after shutdown", async () => {
@@ -390,7 +451,11 @@ export function guestAccessChecks(get: () => Context) {
         operation: "enable",
         ...confirmed,
       });
-      expect(await guests.mine(person)).toEqual([]);
+      expect(
+        await guests
+          .queryMine(person, { pageSize: 100 })
+          .then((result) => result.invitations),
+      ).toEqual([]);
       const grant = await guests.grant(s.manager, s.event.id, {
         source: "luma",
         sourceId: source.id,
@@ -413,7 +478,11 @@ export function guestAccessChecks(get: () => Context) {
           .update(lumaGuestProjection)
           .set(changed)
           .where(eq(lumaGuestProjection.id, source.id));
-        expect(await guests.mine(person)).toEqual([]);
+        expect(
+          await guests
+            .queryMine(person, { pageSize: 100 })
+            .then((result) => result.invitations),
+        ).toEqual([]);
         await expect(
           guests.portal(person, s.event.id, grant.id),
         ).rejects.toMatchObject({ code: "GUEST_UNAVAILABLE" });

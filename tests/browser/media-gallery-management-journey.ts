@@ -68,9 +68,15 @@ export async function mediaGalleryManagementJourney(
   await expect(
     gallery.getByLabel("Caption for image 1", { exact: true }),
   ).toHaveValue("Private photo caption");
+  await gallery
+    .getByRole("button", { name: "Edit gallery image 2", exact: true })
+    .click();
   await expect(
     gallery.getByLabel("Caption for image 2", { exact: true }),
   ).toHaveValue("Public club photo");
+  await gallery
+    .getByRole("button", { name: "Edit gallery image 1", exact: true })
+    .click();
   await expect(
     gallery.getByLabel("Alternative text for image 1", { exact: true }),
   ).toHaveValue("Private gallery test photograph");

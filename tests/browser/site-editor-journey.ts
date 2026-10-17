@@ -70,7 +70,10 @@ export async function siteEditorJourney({
   await expect(
     page.getByText("Shared layout example", { exact: false }),
   ).toBeVisible();
-  await page.locator(`[data-puck-component="${logoId}"]`).click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(`[data-puck-component="${logoId}"]`)
+    .click();
   await page
     .getByRole("textbox", {
       name: "Name (blank uses club identity)",
@@ -236,11 +239,14 @@ export async function siteEditorJourney({
     });
     await publicPage.goto(`${origin}/pages/en/shared-layout`);
     await expect(publicPage.locator("footer")).toContainText("Visit the club");
-    const footerTone = await publicPage.locator("footer").evaluate((footer) => ({
-      shell: getComputedStyle(footer).backgroundColor,
-      row: getComputedStyle(footer.querySelector(".cms-design")!).backgroundColor,
-      text: getComputedStyle(footer).color,
-    }));
+    const footerTone = await publicPage
+      .locator("footer")
+      .evaluate((footer) => ({
+        shell: getComputedStyle(footer).backgroundColor,
+        row: getComputedStyle(footer.querySelector(".cms-design")!)
+          .backgroundColor,
+        text: getComputedStyle(footer).color,
+      }));
     expect(footerTone.shell).toBe(footerTone.row);
     expect(footerTone.text).toBe("rgb(255, 255, 255)");
     expect(

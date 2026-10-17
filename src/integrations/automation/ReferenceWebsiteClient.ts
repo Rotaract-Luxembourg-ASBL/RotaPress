@@ -60,7 +60,7 @@ export class ReferenceHttpTransport implements ReferenceTransport {
           lookup: (_host, _options, callback) =>
             callback(null, addresses[0].address, 4),
           headers: {
-              accept: "text/html,text/plain,image/png,image/jpeg,image/webp",
+            accept: "text/html,text/plain,image/png,image/jpeg,image/webp",
             "accept-encoding": "identity",
             "user-agent": "RotaPress-Content/1",
           },

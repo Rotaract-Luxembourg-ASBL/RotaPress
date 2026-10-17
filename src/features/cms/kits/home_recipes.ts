@@ -6,6 +6,7 @@ import {
   events,
   invitation,
   gallery,
+  heading,
   calendar,
   directory,
   linkButton,
@@ -23,34 +24,58 @@ export function homeRecipe(context: RecipeContext) {
     assetId: photo(context, 1),
     alt: "Young plants growing in soil",
     imagePosition: "left",
-    items: [],
+    items: [
+      {
+        title: "Make connections",
+        text: "Meet people with different stories and a shared willingness to contribute.",
+        icon: "people",
+      },
+      {
+        title: "Learn together",
+        text: "Bring what you know, ask questions and try something new.",
+        icon: "spark",
+      },
+    ],
     buttonLabel: context.links?.about ? "Meet the club" : "",
     buttonHref: context.links?.about ?? "",
+    design: {
+      spacing: "spacious",
+      responsive: { mobile: { spacing: "compact" } },
+    },
   });
   const benefits = block("Cards", {
     items: [
       {
-        title: "Make a difference",
-        text: "Turn a shared idea into hands-on community service.",
+        title: "Discover our projects",
+        text: "Explore the causes and community ideas that bring us together.",
         href: context.links?.projects ?? "",
         icon: "heart",
         linkLabel: "Explore our projects",
       },
       {
-        title: "Make connections",
-        text: "Meet people with different stories and a common willingness to contribute.",
+        title: "Come to an activity",
+        text: "See what is coming up and find an opportunity to meet the club.",
         href: context.links?.events ?? "",
         icon: "people",
         linkLabel: "Find an activity",
       },
       {
-        title: "Keep growing",
-        text: "Learn by doing, share what you know and try something new.",
+        title: "Explore membership",
+        text: "Find out what taking part could look like for you.",
         href: context.links?.join || "/membership",
         icon: "spark",
         linkLabel: "Find your place",
       },
     ],
+    design: {
+      tone: "soft",
+      spacing: "comfortable",
+      columns: "three",
+      responsive: {
+        tablet: { columns: "three" },
+        mobile: { columns: "one", spacing: "compact" },
+      },
+    },
   });
   const hero = action
     ? block("Hero", {
@@ -61,10 +86,22 @@ export function homeRecipe(context: RecipeContext) {
         assetId: photo(context, 0),
         imageAlt: "An inviting garden with raised beds and greenhouses",
         imagePosition: "right",
+        design: {
+          spacing: "spacious",
+          corners: "square",
+          responsive: { mobile: { spacing: "compact" } },
+        },
       })
     : block("HeroSlider", {
         label: "Our community",
         position: "left",
+        height: "tall",
+        presentation: "overlay",
+        design: {
+          width: "viewport",
+          corners: "square",
+          responsive: { mobile: { alignment: "left" } },
+        },
         items: [
           {
             title: "People taking action in our community.",
@@ -94,15 +131,16 @@ export function homeRecipe(context: RecipeContext) {
           ...schedule,
           ...calendarLink,
           directory("Stronger together", "partner"),
+          heading("A glimpse of club life"),
           gallery(context),
           invitation(context),
         ]
       : [
           hero,
+          benefits,
           intro,
           collection(context, "Service in practice"),
           events("Come together"),
-          benefits,
           ...schedule,
           ...calendarLink,
           directory("Stronger together", "partner"),

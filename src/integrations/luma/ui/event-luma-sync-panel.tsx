@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { request, useResource, errorMessage } from "@/ui/api";
+import { request, errorMessage } from "@/ui/api";
+import { useRequestResource } from "@/ui/request-resource";
+import { CollectionPagination } from "@/ui/collection-pagination";
 import { Dialog } from "@/ui/dialog";
 import { Loading, Notice } from "@/ui/primitives";
 import type { LumaSyncDto } from "../sync_schemas";
@@ -9,11 +11,26 @@ import { ReconciliationJobs } from "./reconciliation-jobs";
 import { LumaGuestPurchasePanel } from "./luma-guest-purchase-panel";
 
 export function EventLumaSyncPanel({ eventId }: { eventId: string }) {
-  const sourceId = useSearchParams().get("sourceId");
+  const params = useSearchParams();
+  const sourceId = params.get("sourceId");
+  const requestedPage = Number(params.get("lumaPage"));
+  const page =
+    Number.isInteger(requestedPage) &&
+    requestedPage > 0 &&
+    requestedPage <= 100000
+      ? requestedPage
+      : 1;
   function select(id: string) {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("sourceId", id);
     else url.searchParams.delete("sourceId");
+    url.searchParams.delete("lumaPage");
+    window.history.replaceState(null, "", url.pathname + url.search);
+  }
+  function changePage(next: number) {
+    const url = new URL(window.location.href);
+    if (next === 1) url.searchParams.delete("lumaPage");
+    else url.searchParams.set("lumaPage", String(next));
     window.history.replaceState(null, "", url.pathname + url.search);
   }
   return (
@@ -22,6 +39,8 @@ export function EventLumaSyncPanel({ eventId }: { eventId: string }) {
       eventId={eventId}
       sourceId={sourceId}
       onSelect={select}
+      page={page}
+      onPage={changePage}
     />
   );
 }
@@ -30,16 +49,20 @@ function SourceLumaSyncPanel({
   eventId,
   sourceId,
   onSelect,
+  page,
+  onPage,
 }: {
   eventId: string;
   sourceId: string | null;
   onSelect: (sourceId: string) => void;
+  page: number;
+  onPage: (page: number) => void;
 }) {
   const endpoint = `/api/admin/events/${eventId}/luma-api`;
-  const { data, error, refresh } = useResource<LumaSyncDto>(
-    sourceId
-      ? `${endpoint}?sourceId=${encodeURIComponent(sourceId)}`
-      : endpoint,
+  const query = new URLSearchParams({ page: String(page) });
+  if (sourceId) query.set("sourceId", sourceId);
+  const { data, error, refresh } = useRequestResource<LumaSyncDto>(
+    `${endpoint}?${query}`,
   );
   const [providerId, setProviderId] = useState("");
   const [review, setReview] = useState<{
@@ -97,7 +120,10 @@ function SourceLumaSyncPanel({
         </div>
         {error && (
           <Notice>
-            {error}
+            {error}{" "}
+            <button type="button" className="inline-button" onClick={refresh}>
+              Try again
+            </button>
             {sourceId && (
               <>
                 {" "}
@@ -264,13 +290,7 @@ function SourceLumaSyncPanel({
               Booking source: <strong>{selectedSource.label}</strong>
             </p>
           )}
-          <p>
-            {data.count} retained records.{" "}
-            {data.count > data.guests.length
-              ? `Showing the first ${data.guests.length}.`
-              : ""}{" "}
-            Provider observations are historical, not current eligibility.
-          </p>
+          <p>Provider observations are historical, not current eligibility.</p>
           <ul className="content-rows">
             {data.guests.map((guest) => (
               <li className="content-row" key={guest.id}>
@@ -297,6 +317,13 @@ function SourceLumaSyncPanel({
               </li>
             ))}
           </ul>
+          <CollectionPagination
+            page={data.page}
+            pageSize={data.pageSize}
+            total={data.count}
+            onPage={onPage}
+            noun="retained records"
+          />
         </div>
       )}
       {data && review && (

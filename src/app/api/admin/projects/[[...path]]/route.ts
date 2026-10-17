@@ -15,7 +15,7 @@ export async function GET(request: Request, context: Context) {
     const actor = await actorFor(request);
     const path = (await context.params).path ?? [];
     if (!path.length)
-      return json({ items: await services.projects.list(actor) });
+      return json(await services.projects.query(actor, Object.fromEntries(new URL(request.url).searchParams)));
     if (path.length === 1)
       return json(await services.projects.detail(actor, path[0]));
     throw new HttpError(404, "Project operation not found.");

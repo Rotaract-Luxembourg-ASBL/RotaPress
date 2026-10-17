@@ -83,7 +83,7 @@ export async function mediaPickerJourney(page: Page, visitor: Page) {
   ]);
   expect(confirmation.type()).toBe("confirm");
   expect(confirmation.message()).toContain(
-    "Discard your unsaved image changes",
+    "Discard your unsaved media changes",
   );
   await expect(picker).toHaveCount(0);
   const trigger = page

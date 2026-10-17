@@ -13,6 +13,14 @@ export function binaryMediaUploadPath() {
       security: [{ staffConnection: [] }],
       parameters: [
         {
+          name: "X-RotaPress-Content-Generation",
+          in: "header",
+          required: false,
+          description:
+            "Current contentGeneration from capabilities. Required after a content reset; stale uploads are rejected.",
+          schema: { type: "string", format: "uuid" },
+        },
+        {
           name: "X-RotaPress-Upload",
           in: "header",
           required: true,

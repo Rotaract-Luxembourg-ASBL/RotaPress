@@ -63,6 +63,10 @@ export function siteRecipe(
             layout: action ? "balanced" : "wide-left",
             flow: "columns",
             spacing: "comfortable",
+            design: {
+              tone: "soft",
+              responsive: { mobile: { spacing: "compact", alignment: "left" } },
+            },
             left: [
               brand(),
               text(

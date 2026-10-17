@@ -1,0 +1,295 @@
+/* Operational surfaces own their palette. Published site content keeps its theme. */
+:is(
+  .admin-layout,
+  .admin-dialog,
+  .media-dialog,
+  .admin-editor-root,
+  .admin-workspace-root,
+  .event-studio
+) {
+  --paper: #f7f8fb;
+  --panel: #ffffff;
+  --ink: #182230;
+  --muted: #586575;
+  --line: #dce2ea;
+  --club-accent: #2855ce;
+  --accent-foreground: #ffffff;
+  --admin-soft: #edf2ff;
+  --admin-hover: #f0f3f8;
+  --sans: "Segoe UI", Arial, sans-serif;
+  --serif: var(--sans);
+  color: var(--ink);
+  font-family: var(--sans);
+  accent-color: var(--club-accent);
+}
+.admin-layout {
+  --admin-header-height: 4rem;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  background: var(--paper);
+}
+.admin-layout :is(h1, h2, h3),
+.admin-dialog :is(h1, h2, h3) {
+  letter-spacing: -0.025em;
+}
+.admin-layout .page-heading h1 {
+  font-size: 1.75rem;
+}
+.admin-content {
+  padding: 1.75rem 2rem 3rem;
+  max-width: 110rem;
+}
+.admin-topbar {
+  gap: 1rem;
+  padding-inline: 1.25rem;
+}
+.admin-sidebar {
+  padding: 1rem 0.75rem;
+}
+.admin-navigation {
+  gap: 1.125rem;
+}
+.admin-navigation-group {
+  display: grid;
+  gap: 0.125rem;
+}
+.admin-navigation-group .admin-nav-label {
+  color: var(--muted);
+  margin: 0 0.75rem 0.35rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.07em;
+}
+.admin-navigation a {
+  min-height: 2.75rem;
+  color: #465367;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+}
+.admin-navigation a:hover {
+  background: var(--admin-hover);
+}
+.admin-navigation a.active {
+  color: #2248af;
+  background: var(--admin-soft);
+  border-color: #d8e3ff;
+}
+.admin-header-actions {
+  gap: 1rem;
+  min-width: 0;
+}
+.admin-avatar {
+  background: var(--admin-soft);
+  color: #2248af;
+}
+.admin-account-identity .admin-role-label {
+  background: var(--admin-soft);
+  color: #2248af;
+}
+:is(.admin-layout, .admin-dialog, .admin-editor-root, .admin-workspace-root)
+  :focus-visible {
+  outline: 2px solid var(--club-accent);
+  outline-offset: 3px;
+}
+:is(.admin-layout, .admin-dialog) :is(input, textarea, select) {
+  border: 1px solid #b8c2d1;
+  border-radius: 0.4375rem;
+  box-shadow: 0 1px 2px #14213d05;
+}
+:is(.admin-layout, .admin-dialog) textarea {
+  min-height: 5rem;
+}
+:is(.admin-layout, .admin-dialog) .button {
+  border-radius: 0.4375rem;
+  font-weight: 600;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+:is(.admin-layout, .admin-dialog) .button:hover:not(:disabled) {
+  transform: none;
+}
+:is(.admin-layout, .admin-dialog) .button-accent:hover:not(:disabled) {
+  background: #2047af;
+}
+:is(.admin-layout, .admin-dialog) .button-outline {
+  border-color: #b8c2d1;
+}
+.admin-dialog {
+  box-shadow: 0 24px 80px #14213d33;
+}
+.admin-dialog::backdrop {
+  background: #10182880;
+  backdrop-filter: blur(2px);
+}
+.admin-dialog:focus {
+  outline: none;
+}
+.admin-collection,
+.admin-layout .panel {
+  box-shadow: 0 1px 3px #14213d05;
+}
+.admin-collection-columns {
+  background: var(--paper);
+}
+.admin-collection-row:hover,
+button.admin-stat:hover {
+  background: #f8faff;
+}
+.admin-collection-icon {
+  background: var(--paper);
+  color: #526582;
+}
+.admin-filter-tabs [aria-pressed="true"] {
+  color: #2248af;
+  background: var(--admin-soft);
+  border-color: #d8e3ff;
+}
+.admin-stat[aria-pressed="true"] {
+  border-color: #9cb4ee;
+  box-shadow: inset 0 3px var(--club-accent);
+}
+.admin-collection-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+.admin-command {
+  min-width: 0;
+}
+.admin-command-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.admin-command-trigger:hover {
+  border-color: #9fb0ca;
+  color: var(--ink);
+}
+.admin-command-trigger kbd {
+  font: inherit;
+  font-size: 0.6875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.25rem;
+  background: var(--panel);
+}
+.admin-command-floating {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 25;
+}
+.admin-command-floating .admin-command-trigger {
+  box-shadow: 0 2px 12px #14213d15;
+}
+.admin-command-floating .admin-command-trigger > span,
+.admin-command-floating .admin-command-trigger > kbd {
+  display: none;
+}
+.admin-command-content {
+  display: grid;
+  gap: 0.75rem;
+}
+.admin-command-search {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.admin-command-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: min(52dvh, 28rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.admin-command-results a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  min-height: 3.5rem;
+  border-radius: 0.4375rem;
+}
+.admin-command-results a:hover,
+.admin-command-results a:focus-visible {
+  background: var(--admin-soft);
+}
+.admin-command-results a > span {
+  display: grid;
+  flex: 1;
+  font-weight: 600;
+}
+.admin-command-results small {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.admin-command-empty {
+  padding: 1.5rem 0;
+  color: var(--muted);
+}
+@media (max-width: 80rem) {
+  .admin-command-trigger > span,
+  .admin-command-trigger > kbd {
+    display: none;
+  }
+  .admin-command-trigger {
+    width: 2.75rem;
+    justify-content: center;
+    padding: 0;
+  }
+}
+@media (max-width: 55rem) {
+  .admin-content {
+    padding: 1.25rem 1rem 2rem;
+  }
+  .admin-header-actions {
+    gap: 0.5rem;
+  }
+  .admin-mobile-navigation {
+    max-height: 70dvh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 30rem) {
+  .admin-content {
+    padding: 1rem 0.75rem 2rem;
+  }
+  .admin-topbar {
+    padding-inline: 0.625rem;
+    gap: 0.5rem;
+  }
+  .admin-brand {
+    flex: 1;
+  }
+  .admin-brand .site-brand-name {
+    max-width: 7rem;
+  }
+  .admin-layout .page-heading h1 {
+    font-size: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.admin-layout, .admin-dialog) .button {
+    transition: none;
+  }
+}
+.collection-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.collection-pagination .admin-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}

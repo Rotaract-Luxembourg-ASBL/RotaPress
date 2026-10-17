@@ -11,7 +11,6 @@ import {
   CallToActionBlock,
   CardsBlock,
   FaqBlock,
-  GalleryBlock,
   HeroBlock,
   SponsorsBlock,
   StatisticsBlock,
@@ -19,6 +18,7 @@ import {
 } from "./block-renderers";
 import { RichTextEditorPreview } from "./rich-text-preview";
 import { galleryItemsField } from "./gallery-field";
+import { galleryAlbumField, GalleryEditorPreview } from "./gallery-album-field";
 import {
   aspectRatioField,
   assetField,
@@ -33,6 +33,7 @@ import { eventContentConfig } from "./event-content-config";
 import { eventReferenceConfig } from "./event-reference-config";
 import { partnerBlockConfig } from "./directory-block";
 import { withDesign } from "./designed-config";
+import { fileBlockConfig } from "./file-block-config";
 import { sectionBlockConfig, featureIconField } from "./section-block-config";
 import {
   imageWidthField,
@@ -116,6 +117,9 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
         "Cover",
         "Image",
         "Gallery",
+        "File",
+        "Audio",
+        "Video",
         "ImageSlider",
         "Cards",
         "CallToAction",
@@ -136,6 +140,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
     ...siteBlockConfig,
     ...basicBlockConfig,
     ...sectionBlockConfig,
+    ...fileBlockConfig,
     PartnerCollection: partnerBlockConfig,
     Form: {
       label: "Form",
@@ -295,6 +300,7 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
     },
     Gallery: {
       fields: {
+        albumId: galleryAlbumField,
         version: { type: "custom", visible: false, render: () => <></> },
         columns: {
           type: "radio",
@@ -307,14 +313,42 @@ export const puckConfig: Config<PuckBlocks> = withDesign({
         },
         aspectRatio: aspectRatioField,
         items: galleryItemsField,
+        layout: {
+          type: "select",
+          label: "Layout",
+          options: [
+            { label: "Grid", value: "grid" },
+            { label: "Masonry", value: "masonry" },
+            { label: "Slider", value: "slider" },
+          ],
+        },
+        fit: {
+          type: "select",
+          label: "Image fit",
+          options: [
+            { label: "Fill", value: "cover" },
+            { label: "Contain", value: "contain" },
+          ],
+        },
+        lightbox: {
+          type: "radio",
+          label: "Enlarge on click",
+          options: [
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ],
+        },
       },
       defaultProps: {
         version,
         items: [],
         columns: "three",
         aspectRatio: "landscape",
+        layout: "grid",
+        fit: "cover",
+        lightbox: false,
       },
-      render: (props) => <GalleryBlock {...props} />,
+      render: (props) => <GalleryEditorPreview {...props} />,
     },
     Cards: {
       fields: {

@@ -1,4 +1,6 @@
 import "server-only";
+import { AlbumReader } from "../media/AlbumReader";
+import { resolveAlbumGalleries } from "./cms_albums";
 import type { DatabaseExecutor } from "../../core/authorization/AuthorizationService";
 import { z } from "zod";
 import { cmsRevision } from "../../../db/schema/cms";
@@ -192,8 +194,15 @@ export class CmsPublicReader {
     executor: DatabaseExecutor = this.db,
   ): Promise<PublicPage> {
     const draft = revisionDto(revision, kind);
+    const resolvedData = await resolveAlbumGalleries(
+      draft.data,
+      organizationId,
+      new AlbumReader(this.db),
+      executor,
+      requirePublic,
+    );
     const sections: Record<string, CmsData> = {};
-    const assets = new Set(contentAssets(draft.data, draft.socialImageId));
+    const assets = new Set(contentAssets(resolvedData, draft.socialImageId));
     for (const sectionId of contentSections(draft.data)) {
       const content = await this.repository.content(
         organizationId,
@@ -225,7 +234,13 @@ export class CmsPublicReader {
           );
         continue;
       }
-      const data = validateContent(shared.data, "section");
+      const data = await resolveAlbumGalleries(
+        validateContent(shared.data, "section"),
+        organizationId,
+        new AlbumReader(this.db),
+        executor,
+        requirePublic,
+      );
       sections[sectionId] = data;
       contentAssets(data).forEach((asset) => assets.add(asset));
     }
@@ -272,7 +287,7 @@ export class CmsPublicReader {
       locale,
       description: draft.description,
       socialImageId: draft.socialImageId,
-      data: draft.data,
+      data: resolvedData,
       sections,
       partners: Object.fromEntries(
         partners.map((partner) => [partner.id, partner]),

@@ -53,6 +53,7 @@ export const collectionConfig: Pick<
           { label: "Equal", value: "balanced" },
           { label: "Wide left", value: "wide-left" },
           { label: "Wide right", value: "wide-right" },
+          { label: "Stacked group", value: "stacked" },
         ],
       },
       left: {
@@ -84,10 +85,10 @@ export const collectionConfig: Pick<
     render: ({ left: Left, right: Right, ratio }) => (
       <section className={`cms-block cms-columns cms-columns-${ratio}`}>
         <div>
-          <Left minEmptyHeight={120} />
+          <Left minEmptyHeight={ratio === "stacked" ? 0 : 120} />
         </div>
         <div>
-          <Right minEmptyHeight={120} />
+          <Right minEmptyHeight={ratio === "stacked" ? 0 : 120} />
         </div>
       </section>
     ),

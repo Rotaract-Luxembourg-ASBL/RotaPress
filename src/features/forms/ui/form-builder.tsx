@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCollectionReturn } from "@/ui/collection-return";
 import { useEffect, useState } from "react";
 import {
   formDefinitionSchema,
@@ -32,6 +33,7 @@ function Builder({
 }) {
   const user = useCurrentUser();
   const router = useRouter();
+  const collectionReturn = useCollectionReturn("/admin/forms");
   const [saved, setSaved] = useState(initial);
   const [draft, setDraft] = useState(initial.draft);
   const [past, setPast] = useState<FormDefinition[]>([]);
@@ -267,7 +269,7 @@ function Builder({
         href={
           saved.event
             ? `/admin/events/${saved.event.id}?tab=participation`
-            : "/admin/forms"
+            : collectionReturn
         }
       >
         <Icon name="back" />
@@ -338,7 +340,7 @@ function Builder({
                 router.replace(
                   saved.event
                     ? `/admin/events/${saved.event.id}?tab=participation`
-                    : "/admin/forms",
+                    : collectionReturn,
                 )
               }
               disabled={busy || dirty || !canPublish}

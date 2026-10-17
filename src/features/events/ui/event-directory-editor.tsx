@@ -14,10 +14,16 @@ import { Loading, Notice, PageHeading } from "@/ui/primitives";
 import { Icon } from "@/ui/icon";
 import { MediaPicker } from "@/ui/media-picker";
 import { EventDirectoryView } from "./event-directory-view";
+import { useCollectionLocation } from "@/ui/collection-location";
 
 type Workspace = EventDirectoryWorkspace & { events: PublicEventCard[] };
 export function EventDirectoryEditor() {
-  const [locale, setLocale] = useState<CmsLocale>("en");
+  const { params, change } = useCollectionLocation();
+  const requestedLocale = params.get("locale");
+  const locale: CmsLocale =
+    requestedLocale === "fr" || requestedLocale === "lb"
+      ? requestedLocale
+      : "en";
   const [dirty, setDirty] = useState(false);
   const [generation, setGeneration] = useState(0);
   return (
@@ -34,7 +40,7 @@ export function EventDirectoryEditor() {
               )
             ) {
               setDirty(false);
-              setLocale(event.target.value as CmsLocale);
+              change({ locale: event.target.value }, false);
             }
           }}
         >

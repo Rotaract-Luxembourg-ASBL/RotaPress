@@ -13,6 +13,7 @@ import {
   DomainError,
   type TrustedActor,
   type DatabaseExecutor,
+  type Transaction,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import { CmsService } from "../cms/CmsService";
@@ -79,9 +80,9 @@ export class EventWebsiteService {
     };
   }
 
-  async publication(actor: TrustedActor, input: unknown) {
+  async publication(actor: TrustedActor, input: unknown, executor?: Transaction) {
     const parsed = publicationInput.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         parsed.id,
@@ -160,8 +161,10 @@ export class EventWebsiteService {
         action: `event.${parsed.operation}ed`,
         targetId: event.id,
       });
-    });
-    return this.events.detail(actor, parsed.id);
+    };
+    if (executor) await apply(executor);
+    else await this.db.transaction(apply);
+    return this.events.detail(actor, parsed.id, executor ?? this.db);
   }
 
   async publicPage(

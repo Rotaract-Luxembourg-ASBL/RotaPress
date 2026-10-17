@@ -14,7 +14,7 @@ export async function projectsJourney(page: Page, publicPage: Page) {
     200,
   );
   await page.route(
-    "**/api/admin/projects",
+    /\/api\/admin\/projects(?:\?.*)?$/,
     async (route) => {
       await route.fulfill({
         status: 503,
@@ -51,6 +51,14 @@ export async function projectsJourney(page: Page, publicPage: Page) {
   expect(((await empty.json()) as { items: ProjectDto[] }).items).toHaveLength(
     0,
   );
+  await page
+    .getByRole("searchbox", { name: "Search projects", exact: true })
+    .fill("Riverside");
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("search") === "Riverside",
+  );
+  const collectionUrl = new URL(page.url());
+  const returnTo = `${collectionUrl.pathname}${collectionUrl.search}`;
   await page.getByRole("button", { name: "New project", exact: true }).click();
   dialog = page.getByRole("dialog", { name: "New project", exact: true });
   await dialog
@@ -62,7 +70,14 @@ export async function projectsJourney(page: Page, publicPage: Page) {
   await dialog
     .getByRole("button", { name: "Create draft", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/admin\/projects\/[0-9a-f-]+$/);
+  await expect(page).toHaveURL(
+    (url) =>
+      /^\/admin\/projects\/[0-9a-f-]+$/.test(url.pathname) &&
+      url.searchParams.get("returnTo") === returnTo,
+  );
+  await expect(
+    page.getByRole("link", { name: "Back to projects", exact: true }),
+  ).toHaveAttribute("href", returnTo);
   const id = new URL(page.url()).pathname.split("/").at(-1)!;
   const initial = (await page.request
     .get(`/api/admin/projects/${id}`)
@@ -118,7 +133,10 @@ export async function projectsJourney(page: Page, publicPage: Page) {
   ).toHaveValue("Riverside park");
   page.on("dialog", (event) => event.accept());
   await page.goBack();
-  await expect(page).toHaveURL(/\/admin\/projects$/);
+  await expect(page).toHaveURL(new URL(returnTo, smokeOrigin).href);
+  await expect(
+    page.getByRole("searchbox", { name: "Search projects", exact: true }),
+  ).toHaveValue("Riverside");
   await page.getByRole("link", { name: "Edit project", exact: true }).click();
   await expect(
     page.getByText(

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   ReferenceHttpTransport,
   ReferenceWebsiteClient,
@@ -15,6 +15,10 @@ import {
   operationCatalogue,
 } from "../../src/integrations/automation/catalogue";
 import { openApiDocument } from "../../src/integrations/automation/openapi";
+import {
+  operationScopes,
+  type AutomationContext,
+} from "../../src/integrations/automation/operation";
 
 describe("C14 automation source and contract boundaries", () => {
   it("rejects private, non-HTTPS, credentialed and malformed references and connection origins", () => {
@@ -136,7 +140,7 @@ describe("C14 automation source and contract boundaries", () => {
       ),
     ).toBe(true);
   });
-  it("derives shared REST/MCP schemas, requires separate publication grants and excludes private participant actions", () => {
+  it("derives shared REST/MCP schemas with separate publication and participant grants", () => {
     const catalogue = operationCatalogue();
     const spec = openApiDocument();
     expect(catalogue).toHaveLength(operations.length);
@@ -146,9 +150,7 @@ describe("C14 automation source and contract boundaries", () => {
         "x-rotapress-scope": entry.scope,
       });
       expect(entry.inputSchema.type).toBe("object");
-      expect(entry.name).not.toMatch(
-        /submission|guest|payment|draw|member|credential/,
-      );
+      expect(entry.name).not.toMatch(/payment|draw|credential|authentication/);
       if (entry.name.endsWith("_publish")) {
         expect(entry.scope).toMatch(/:publish$/);
         expect(entry.readOnly).toBe(false);
@@ -167,6 +169,82 @@ describe("C14 automation source and contract boundaries", () => {
         "projects:write",
       ]).some((entry) => entry.name.endsWith("_publish")),
     ).toBe(false);
+  });
+  it("keeps private participant actions undiscoverable and uncallable with legacy content grants", async () => {
+    const legacyScopes = [
+      "website:read",
+      "website:write",
+      "website:manage",
+      "website:settings",
+      "website:publish",
+      "website:preview",
+      "forms:read",
+      "forms:write",
+      "forms:publish",
+      "events:read",
+      "events:write",
+      "events:prepare",
+      "events:publish",
+      "media:read",
+      "media:inspect",
+      "media:write",
+      "media:publish",
+      "directory:read",
+      "directory:write",
+      "directory:publish",
+      "projects:read",
+      "projects:write",
+      "projects:publish",
+      "calendar:read",
+      "calendar:write",
+      "calendar:design",
+      "calendar:publish",
+      "sources:read",
+    ];
+    const privateOperations = operations.filter((entry) =>
+      /^(members|responses|registrations|guests)_/u.test(entry.name),
+    );
+    expect(privateOperations.map((entry) => entry.name)).toEqual(
+      expect.arrayContaining([
+        "members_decide",
+        "members_role_set",
+        "responses_get",
+        "responses_export",
+        "registrations_list",
+        "guests_grant",
+      ]),
+    );
+    const authorize = vi.fn();
+    const context = {
+      principal: { scopes: legacyScopes },
+      services: { authorization: { require: authorize } },
+    } as unknown as AutomationContext;
+    const advertised = new Set(
+      operationCatalogue(legacyScopes).map((entry) => entry.name),
+    );
+    for (const entry of privateOperations) {
+      expect(advertised.has(entry.name), entry.name).toBe(false);
+      expect(
+        operationScopes(entry).some((scope) =>
+          /^(members|responses|registrations|guests|access):/u.test(scope),
+        ),
+        entry.name,
+      ).toBe(true);
+      await expect(
+        entry.run(context, entry.example),
+        entry.name,
+      ).rejects.toMatchObject({
+        code: "AUTOMATION_SCOPE_REQUIRED",
+        status: 403,
+      });
+      const grant = entry.scope!;
+      expect(
+        operationCatalogue([grant]).some((item) => item.name === entry.name),
+        entry.name,
+      ).toBe(true);
+    }
+    // Request fields and a tool name cannot bypass the connection's grant boundary.
+    expect(authorize).not.toHaveBeenCalled();
   });
   it("uses explicit crawler groups before wildcard rules and matches percent-encoded paths", () => {
     expect(

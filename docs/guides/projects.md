@@ -5,6 +5,9 @@ community work. A one-day cleanup and a year-long partnership can use the same
 simple story format. Use **Events** for bookings and registration, and **Calendar**
 for schedules and recurring activities.
 
+The collection searches all saved projects and shows accurate status totals.
+Search, status and page stay in the URL, including when returning from an editor.
+
 ## Add your first project
 
 1. Open **Projects → New project**, enter a title and short summary, then choose

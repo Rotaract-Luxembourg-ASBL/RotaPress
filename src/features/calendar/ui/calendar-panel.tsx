@@ -21,13 +21,28 @@ import { ScopedEmailTemplates } from "@/integrations/email/ui/scoped-email-templ
 import { SummaryStats } from "@/ui/collection";
 import { Icon } from "@/ui/icon";
 import { CalendarActivityList } from "./calendar-activity-list";
+import type { CalendarActivityCollection } from "../calendar_collection";
 
 export function CalendarPanel() {
   const query = useSearchParams();
   const { data, error, refresh } = useResource<CalendarWorkspace>(
-    "/api/admin/calendar",
+    "/api/admin/calendar?summary=true",
   );
-  const [tab, setTab] = useState("schedules");
+  const stats = useResource<CalendarActivityCollection>(
+    "/api/admin/calendar/schedules?pageSize=1",
+  );
+  const [revision, setRevision] = useState(0);
+  const tab = query.get("tab") ?? "schedules";
+  function setTab(value: string) {
+    const url = new URL(location.href);
+    url.searchParams.set("tab", value);
+    history.replaceState(null, "", url);
+  }
+  function refreshWorkspace() {
+    refresh();
+    stats.refresh();
+    setRevision((value) => value + 1);
+  }
   const [pageDirty, setPageDirty] = useState(false);
   const [calendarDialog, setCalendarDialog] = useState<
     CalendarRecord | "new" | null
@@ -49,6 +64,7 @@ export function CalendarPanel() {
     const url = new URL(location.href);
     if (id) url.searchParams.set("calendar", id);
     else url.searchParams.delete("calendar");
+    url.searchParams.delete("page");
     history.replaceState(null, "", url);
     setMessage("");
     setActionError("");
@@ -95,7 +111,7 @@ export function CalendarPanel() {
           }),
         },
       );
-      refresh();
+      refreshWorkspace();
       setMessage(
         operation === "publish"
           ? "Published. Calendar views now use this saved version."
@@ -167,7 +183,7 @@ export function CalendarPanel() {
               </button>
             ))}
           </nav>
-          {tab === "schedules" && (
+          {tab === "schedules" && stats.data && (
             <SummaryStats
               label="Calendar counts"
               items={[
@@ -187,15 +203,13 @@ export function CalendarPanel() {
                 },
                 {
                   label: "Active activities",
-                  value: data.schedules.filter((item) => !item.archived).length,
+                  value: stats.data.counts.active,
                   hint: "Repeating schedules count once",
                   icon: "calendar",
                 },
                 {
                   label: "Activity drafts",
-                  value: data.schedules.filter(
-                    (item) => !item.archived && !item.published,
-                  ).length,
+                  value: stats.data.counts.draft,
                   hint: "Not published yet",
                   icon: "edit",
                 },
@@ -406,7 +420,7 @@ export function CalendarPanel() {
                   )}
                 </div>
                 <CalendarActivityList
-                  key={chosen?.id ?? "all"}
+                  key={`${chosen?.id ?? "all"}-${revision}`}
                   workspace={data}
                   calendar={chosen}
                   busy={busy}
@@ -432,7 +446,7 @@ export function CalendarPanel() {
               onSaved={(id) => {
                 setCalendarDialog(null);
                 select(id);
-                refresh();
+                refreshWorkspace();
                 setMessage("Calendar draft saved. Publish it when ready.");
               }}
             />
@@ -444,7 +458,7 @@ export function CalendarPanel() {
               onClose={() => setScheduleDialog(null)}
               onSaved={() => {
                 setScheduleDialog(null);
-                refresh();
+                refreshWorkspace();
                 setMessage("Activity draft saved. Publish it when ready.");
               }}
             />

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useId } from "react";
 import type { MediaAssetDto } from "@/features/media/media_schemas";
 import { Icon } from "./icon";
+import { MediaAssetThumbnail, mediaAssetSize } from "./media-asset-preview";
 export type VisibilityFilter = "all" | "private" | "public";
 export type MediaSort = "newest" | "oldest" | "title";
 
@@ -35,11 +35,15 @@ export function MediaFilters({
   visibility,
   onQuery,
   onVisibility,
+  kind = "image",
+  publicOnly = false,
 }: {
   query: string;
   visibility: VisibilityFilter;
   onQuery: (value: string) => void;
   onVisibility: (value: VisibilityFilter) => void;
+  kind?: MediaAssetDto["kind"];
+  publicOnly?: boolean;
 }) {
   const prefix = useId();
   return (
@@ -48,25 +52,35 @@ export function MediaFilters({
         Search media
         <input
           type="search"
-          placeholder="Search by title, filename or tag"
+          placeholder={
+            publicOnly ? "Search public media" : "Search by title, filename or tag"
+          }
           value={query}
           onChange={(event) => onQuery(event.target.value)}
         />
       </label>
-      <div className="media-description-field">
-        <label htmlFor={`${prefix}-visibility`}>Visibility</label>
-        <select
-          id={`${prefix}-visibility`}
-          value={visibility}
-          onChange={(event) =>
-            onVisibility(event.target.value as VisibilityFilter)
-          }
-        >
-          <option value="all">All images</option>
-          <option value="public">Public</option>
-          <option value="private">Private</option>
-        </select>
-      </div>
+      {publicOnly ? (
+        <p className="field-help">
+          Public {kind === "image" ? "images" : "files"} only
+        </p>
+      ) : (
+        <div className="media-description-field">
+          <label htmlFor={`${prefix}-visibility`}>Visibility</label>
+          <select
+            id={`${prefix}-visibility`}
+            value={visibility}
+            onChange={(event) =>
+              onVisibility(event.target.value as VisibilityFilter)
+            }
+          >
+            <option value="all">
+              All {kind === "image" ? "images" : "files"}
+            </option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -81,6 +95,7 @@ export function AssetGrid({
   disabled,
   view = "grid",
   emptyMessage = "No images yet. Upload the first image for your club.",
+  emptyTitle = "No images to show",
 }: {
   assets: MediaAssetDto[];
   onSelect: (asset: MediaAssetDto) => void;
@@ -91,6 +106,7 @@ export function AssetGrid({
   disabled?: boolean;
   view?: "grid" | "list";
   emptyMessage?: string;
+  emptyTitle?: string;
 }) {
   return assets.length ? (
     <div className={`media-grid${view === "list" ? " media-list" : ""}`}>
@@ -128,13 +144,7 @@ export function AssetGrid({
               aria-pressed={onToggle ? undefined : checked}
             >
               <span className="media-tile-image">
-                <Image
-                  src={`/media/${asset.id}?variant=thumbnail`}
-                  alt=""
-                  width={240}
-                  height={180}
-                  unoptimized
-                />
+                <MediaAssetThumbnail asset={asset} />
                 {!onToggle && checked && (
                   <span className="media-selection-check" aria-hidden="true">
                     <Icon name="check" />
@@ -147,13 +157,19 @@ export function AssetGrid({
                   {asset.visibility}
                 </span>
                 <span>
-                  {asset.width} × {asset.height}
+                  {asset.width
+                    ? `${asset.width} × ${asset.height}`
+                    : asset.kind === "document"
+                      ? "PDF"
+                      : asset.kind === "video"
+                        ? "Video"
+                        : "Audio"}
                 </span>
               </span>
               {view === "list" && (
                 <span className="media-list-facts">
                   {asset.collection || "No collection"} ·{" "}
-                  {Math.ceil(asset.size / 1024)} KB
+                  {mediaAssetSize(asset.size)}
                 </span>
               )}
             </button>
@@ -175,7 +191,7 @@ export function AssetGrid({
   ) : (
     <div className="media-empty">
       <Icon name="image" width={32} height={32} />
-      <h3>No images to show</h3>
+      <h3>{emptyTitle}</h3>
       <p>{emptyMessage}</p>
     </div>
   );

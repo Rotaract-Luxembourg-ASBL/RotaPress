@@ -32,6 +32,7 @@ export async function editedImage(
   asset: MediaAssetDto,
   edit: ImageEdit,
 ) {
+  if (asset.kind !== "image") throw new DomainError("MEDIA_IMAGE_REQUIRED", "Choose a photograph to edit.", 422);
   const crop = edit.crop ?? {
     left: 0,
     top: 0,

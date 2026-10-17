@@ -269,6 +269,10 @@
 .cms-public .cms-columns-wide-left {
   grid-template-columns: 1.6fr 1fr;
 }
+.cms-public .cms-columns-stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
 .cms-public .cms-columns > div {
   min-width: 0;
 }
