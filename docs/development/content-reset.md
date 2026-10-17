@@ -38,7 +38,11 @@ actually restored and rehearsed.
 
 Use an exact origin matching `APP_URL`. The runtime and migrator configuration
 files must identify the same database. The migrator account is required; runtime
-credentials cannot perform the reset.
+credentials cannot perform the reset. Database ownership and the database
+`TEMPORARY` privilege are not required. Retained club-domain rows stay in process
+memory as PostgreSQL JSON text while the transaction holds exclusive table locks;
+their complete values, including timestamp precision, are restored and verified
+before commit.
 
 ```sh
 node scripts/pnpm.mjs content:reset inventory --target https://club.example.org --runtime-env /protected/runtime.env --database-env /protected/migration.env
