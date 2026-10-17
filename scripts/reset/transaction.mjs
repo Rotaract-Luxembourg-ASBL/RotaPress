@@ -37,15 +37,18 @@ export async function resetTransaction(
       )
     )
       throw new Error("RESET_RESTRICTIVE_FOREIGN_KEY");
-    await client.query(
-      "CREATE TEMP TABLE retained_domains ON COMMIT DROP AS SELECT * FROM club.site_domain WHERE event_id IS NULL",
+    // Keep PostgreSQL's JSON text intact: JavaScript Date conversion would lose
+    // timestamp precision. Hosted migrators need no database TEMP privilege.
+    const { rows: retainedDomains } = await client.query(
+      "SELECT coalesce(jsonb_agg(to_jsonb(d)), '[]'::jsonb)::text AS domains FROM club.site_domain d WHERE d.event_id IS NULL",
     );
     // RESTRICT fails closed. No schema drops, CASCADE, disabled constraints or disabled triggers.
     await client.query(
       `TRUNCATE TABLE ${truncations.map(tableSql).join(", ")} RESTRICT`,
     );
     await client.query(
-      "INSERT INTO club.site_domain SELECT * FROM retained_domains",
+      "INSERT INTO club.site_domain SELECT * FROM jsonb_populate_recordset(NULL::club.site_domain, $1::jsonb)",
+      [retainedDomains[0].domains],
     );
     await client.query(
       "DELETE FROM club.membership WHERE NOT (role='owner' AND status='approved')",

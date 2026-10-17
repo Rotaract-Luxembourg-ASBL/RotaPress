@@ -13,6 +13,7 @@ import {
 } from "../../scripts/reset/completion.mjs";
 import { resetTransaction } from "../../scripts/reset/transaction.mjs";
 import { clearedTables } from "../../scripts/reset/tables.mjs";
+import { withRestrictedResetDatabase } from "./reset-permissions";
 import { ContentGeneration } from "../../src/core/content/ContentGeneration";
 import {
   AuthorizationService,
@@ -46,7 +47,7 @@ beforeAll(async () => {
   runtimeUrl = env.DATABASE_URL;
   await client.connect();
 });
-beforeEach(async () => {
+async function seedResetFixtures(client: Client) {
   await client.query(
     'TRUNCATE club.installation,club.organization,club.membership,club.audit_entry,club."user" CASCADE',
   );
@@ -98,7 +99,8 @@ beforeEach(async () => {
     "INSERT INTO club.automation_receipt (organization_id,actor_user_id,connection_id,request_id,task_id,generation,operation,input_hash,result) SELECT $1,$2,'synthetic-client',$3,$4,generation,'synthetic-operation',repeat('a',64),'{\"private\":\"content\"}' FROM club.content_generation WHERE organization_id=$1",
     [organizationId, ownerId, randomUUID(), randomUUID()],
   );
-});
+}
+beforeEach(() => seedResetFixtures(client));
 afterAll(async () => {
   await client?.end();
   if (dirname(filesRoot) !== filesBase)
@@ -107,6 +109,58 @@ afterAll(async () => {
 });
 
 describe("controlled content reset on real PostgreSQL", () => {
+  it("preserves exact mixed domain rows and authentication without database ownership or TEMP", async () => {
+    await withRestrictedResetDatabase(migrationUrl, async (restricted) => {
+      await seedResetFixtures(restricted);
+      expect(
+        (
+          await restricted.query(
+            "SELECT current_user AS role, pg_get_userbyid(datdba) = current_user AS owns_database, has_database_privilege(current_user, current_database(), 'TEMP') AS temporary_allowed FROM pg_database WHERE datname=current_database()",
+          )
+        ).rows[0],
+      ).toEqual({
+        role: "rotapress_migrator",
+        owns_database: false,
+        temporary_allowed: false,
+      });
+      await expect(
+        restricted.query("CREATE TEMP TABLE reset_permission_probe (id integer)"),
+      ).rejects.toMatchObject({ code: "42501" });
+      await restricted.query(
+        "UPDATE club.site_domain SET verified_at='2026-10-17 09:10:11.123456+00', last_checked_at='2026-10-17 09:11:12.654321+00', created_at='2026-10-16 08:09:10.987654+00' WHERE event_id IS NULL",
+      );
+      await restricted.query(
+        "INSERT INTO club.site_domain (organization_id,hostname,challenge,created_at) VALUES ($1,'unverified.example.test',$2,'2026-10-17 01:02:03.111222+00')",
+        [organizationId, 'Synthetic "quoted" challenge — ü'],
+      );
+      const domains = await restricted.query(
+        "SELECT to_jsonb(d)::text AS row FROM club.site_domain d WHERE event_id IS NULL ORDER BY id",
+      );
+      const before = await inventory(restricted);
+      const result = await resetTransaction(restricted, before, { commit: true });
+      expect(result).toMatchObject({ committed: true, emptyContent: true });
+      expect(
+        (
+          await restricted.query(
+            "SELECT to_jsonb(d)::text AS row FROM club.site_domain d ORDER BY id",
+          )
+        ).rows,
+      ).toEqual(domains.rows);
+      const after = await inventory(restricted);
+      expect(after.protectedRows).toEqual(before.protectedRows);
+      expect(after.protectedFingerprint).toBe(before.protectedFingerprint);
+      expect(after.counts.site_domain).toBe(2);
+      expect(after.counts.event).toBe(0);
+      expect(after.ownerIds).toEqual([ownerId]);
+      // The same query must also restore an empty retained set without TEMP.
+      await restricted.query("DELETE FROM club.site_domain");
+      await resetTransaction(restricted, await inventory(restricted), {
+        commit: true,
+      });
+      expect((await inventory(restricted)).counts.site_domain).toBe(0);
+    });
+  }, 30_000);
+
   it("finishes files once under database locks and rejects newly retained content", async () => {
     const source = await inventory(client);
     const backupRoot = resolve(filesRoot, "backup");
