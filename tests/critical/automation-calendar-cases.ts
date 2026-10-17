@@ -1,3 +1,5 @@
+import { AutomationRuntime } from "../../src/integrations/automation/receipt_service";
+import { randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import {
   activity,
@@ -237,14 +239,24 @@ export function automationCalendarChecks(get: () => Context) {
     });
     // Only the authorization and calendar dependencies are used by these tools.
     const context = {
-      services: { authorization: f.authorization, calendar: f.service },
+      services: {
+        authorization: f.authorization,
+        calendar: f.service,
+        automationRuntime: new AutomationRuntime(f.db),
+      },
       principal: {
         actor: f.owner,
         organizationId: f.scope.organizationId,
+        keyId: "calendar-receipt-fixture",
         scopes: ["calendar:publish"],
       },
     } as unknown as AutomationContext;
-    const input = { id: created.id, expectedVersion: 1, confirmed: true };
+    const input = {
+      id: created.id,
+      expectedVersion: 1,
+      confirmed: true,
+      requestId: randomUUID(),
+    };
     await expect(
       executeOperation(
         {
@@ -270,6 +282,7 @@ export function automationCalendarChecks(get: () => Context) {
     ).rejects.toMatchObject({ code: "CALENDAR_PUBLICATION_MANUAL" });
     await expect(
       executeOperation(context, "calendar_schedule_publish", {
+        requestId: randomUUID(),
         id: schedule.id,
         calendarId: f.id,
         expectedVersion: 1,
@@ -280,12 +293,17 @@ export function automationCalendarChecks(get: () => Context) {
       { name: "calendar_publish", input, result: { id: created.id } },
       {
         name: "calendar_schedule_publish",
-        input: { ...input, id: schedule.id, calendarId: created.id },
+        input: {
+          ...input,
+          requestId: randomUUID(),
+          id: schedule.id,
+          calendarId: created.id,
+        },
         result: { id: schedule.id },
       },
       {
         name: "calendar_page_publish",
-        input: { expectedVersion: 1, confirmed: true },
+        input: { expectedVersion: 1, confirmed: true, requestId: randomUUID() },
         result: { saved: true },
       },
     ];
@@ -298,7 +316,10 @@ export function automationCalendarChecks(get: () => Context) {
         reviewUrl: "/admin/calendar",
       });
       await expect(
-        executeOperation(context, publication.name, publication.input),
+        executeOperation(context, publication.name, {
+          ...publication.input,
+          requestId: randomUUID(),
+        }),
       ).rejects.toMatchObject({ code: "CALENDAR_CHANGED" });
     }
     const saved = await f.service.workspace(f.owner);

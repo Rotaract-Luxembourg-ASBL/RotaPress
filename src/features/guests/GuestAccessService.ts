@@ -17,6 +17,9 @@ import type { LumaGuestAccessSource } from "../../integrations/luma/LumaGuestAcc
 import type { GuestSource } from "../events/guest_sources";
 import { eventFieldsSchema } from "../events/event_schemas";
 import { GuestGrantRepository, type GuestGrant } from "./GuestGrantRepository";
+import { GuestCollectionReader } from "./GuestCollectionReader";
+import { guestCollectionSchema } from "./guest_collection";
+import { collectionQuerySchema } from "@/core/collections";
 import {
   claimGuestSchema,
   grantGuestSchema,
@@ -41,30 +44,25 @@ export class GuestAccessService {
   async workspace(
     actor: TrustedActor,
     rawEventId: unknown,
+    raw: unknown = {},
   ): Promise<GuestWorkspace> {
     const eventId = z.uuid().parse(rawEventId);
+    const input = guestCollectionSchema.parse(raw);
     return this.db.transaction(async (tx) => {
       const { organizationId } = await this.staff(actor, eventId, tx);
-      const native = await this.registrations.guestSources(
+      const reader = new GuestCollectionReader();
+      const candidates = await reader.candidates(
+        tx,
         organizationId,
         eventId,
-        tx,
+        input,
       );
-      const external = await this.luma.guestSources(
-        organizationId,
-        eventId,
-        tx,
-      );
-      const grants = await this.repository.list(tx, organizationId, eventId);
+      const grants = await reader.grants(tx, organizationId, eventId, input);
       const modules = await this.modules.states(organizationId, eventId, tx);
       const event = await this.repository.event(tx, organizationId, eventId);
-      const sources = [...native.slice(0, 200), ...external.slice(0, 200)];
       const history: GuestWorkspace["grants"] = [];
-      for (const row of grants.slice(0, 200)) {
-        const source =
-          sources.find(
-            (s) => s.id === this.sourceId(row) && s.kind === this.kind(row),
-          ) ?? (await this.source(tx, row));
+      for (const row of grants.items) {
+        const source = await this.source(tx, row);
         history.push({
           id: row.id,
           sourceId: source?.sourceId,
@@ -84,39 +82,36 @@ export class GuestAccessService {
       return {
         modules,
         published: Boolean(event?.publishedAt),
-        candidates: sources
-          .filter(
-            (source) =>
-              source.available &&
-              z.email().safeParse(source.email).success &&
-              !grants.some(
-                (row) =>
-                  !row.revokedAt &&
-                  this.sourceId(row) === source.id &&
-                  this.kind(row) === source.kind,
-              ),
-          )
-          .map((source) => ({
-            source: source.kind,
-            id: source.id,
-            sourceId: source.sourceId,
-            sourceLabel: source.sourceLabel,
-            name: source.name,
-            email: source.email,
-            status: source.status,
-          })),
+        candidates: candidates.items.map((source) => ({
+          ...source,
+          validEmail: z.email().safeParse(source.email).success,
+        })),
         grants: history,
-        limited:
-          native.length > 200 || external.length > 200 || grants.length > 200,
+        candidatePagination: {
+          total: candidates.total,
+          page: candidates.page,
+          pageSize: candidates.pageSize,
+        },
+        pagination: {
+          total: grants.total,
+          page: grants.page,
+          pageSize: grants.pageSize,
+        },
+        limited: false,
       };
     });
   }
 
-  async grant(actor: TrustedActor, rawEventId: unknown, input: unknown) {
+  async grant(
+    actor: TrustedActor,
+    rawEventId: unknown,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     requireRecentActor(actor);
     const eventId = z.uuid().parse(rawEventId);
     const value = grantGuestSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.staff(actor, eventId, tx);
       this.events.requireEditableVersion(event, event.version);
       this.events.requireActive(event);
@@ -132,6 +127,15 @@ export class GuestAccessService {
         throw new DomainError(
           "GUEST_SOURCE_UNAVAILABLE",
           "Choose a current confirmed registration or present Luma guest with an email address.",
+          409,
+        );
+      if (
+        value.expectedEmail &&
+        value.expectedEmail.toLowerCase() !== source.email.trim().toLowerCase()
+      )
+        throw new DomainError(
+          "GUEST_SOURCE_CHANGED",
+          "The guest identity changed. Read the current guest before granting access.",
           409,
         );
       const existing = await this.repository.activeSource(
@@ -166,7 +170,8 @@ export class GuestAccessService {
         targetId: row.id,
       });
       return { id: row.id };
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async revoke(
@@ -174,12 +179,13 @@ export class GuestAccessService {
     rawEventId: unknown,
     rawId: unknown,
     input: unknown,
+    executor?: Transaction,
   ) {
     requireRecentActor(actor);
     const eventId = z.uuid().parse(rawEventId),
       id = z.uuid().parse(rawId);
     const value = revokeGuestSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.staff(actor, eventId, tx);
       const row = await this.repository.get(tx, organizationId, eventId, id);
       if (!row) throw this.unavailable();
@@ -198,41 +204,75 @@ export class GuestAccessService {
         targetId: row.id,
       });
       return { id: row.id };
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
-  async mine(actor: TrustedActor): Promise<GuestInvitation[]> {
+  async queryMine(actor: TrustedActor, raw: unknown = {}) {
     requireVerifiedActor(actor);
-    return this.db.transaction(async (tx) => {
-      const organizationId = await this.repository.installed(tx);
-      const rows = await this.repository.mine(tx, organizationId, actor);
-      const invitations: GuestInvitation[] = [];
-      for (const row of rows) {
-        try {
-          const { event } = await this.access(
+    const input = collectionQuerySchema.parse(raw);
+    return this.db.transaction(
+      async (tx) => {
+        const organizationId = await this.repository.installed(tx);
+        let total = 0;
+        let items: GuestInvitation[] = [];
+        let lastPage: GuestInvitation[] = [];
+        for (let offset = 0; ; offset += 100) {
+          const rows = await this.repository.mine(
             tx,
             organizationId,
-            row.eventId,
-            row.id,
             actor,
+            offset,
+            100,
           );
-          invitations.push({
-            id: row.id,
-            eventId: row.eventId,
-            title: event.title,
-            startsAt: event.startsAt,
-            timezone: event.timezone,
-            claimed: row.claimedBy === actor.userId,
-          });
-        } catch (error) {
-          if (!(
-            error instanceof DomainError && error.code === "GUEST_UNAVAILABLE"
-          ))
-            throw error;
+          for (const row of rows) {
+            try {
+              const { event } = await this.access(
+                tx,
+                organizationId,
+                row.eventId,
+                row.id,
+                actor,
+              );
+              if (
+                input.search &&
+                !event.title
+                  .toLocaleLowerCase()
+                  .includes(input.search.toLocaleLowerCase())
+              )
+                continue;
+              const invitation = {
+                id: row.id,
+                eventId: row.eventId,
+                title: event.title,
+                startsAt: event.startsAt,
+                timezone: event.timezone,
+                claimed: row.claimedBy === actor.userId,
+              };
+              if (total % input.pageSize === 0) lastPage = [];
+              lastPage.push(invitation);
+              if (Math.floor(total / input.pageSize) + 1 === input.page)
+                items.push(invitation);
+              total++;
+            } catch (error) {
+              if (!(
+                error instanceof DomainError &&
+                error.code === "GUEST_UNAVAILABLE"
+              ))
+                throw error;
+            }
+          }
+          if (rows.length < 100) break;
         }
-      }
-      return invitations;
-    });
+        const page = Math.min(
+          input.page,
+          Math.max(1, Math.ceil(total / input.pageSize)),
+        );
+        if (page !== input.page) items = lastPage;
+        return { invitations: items, total, page, pageSize: input.pageSize };
+      },
+      { isolationLevel: "repeatable read" },
+    );
   }
 
   async claim(

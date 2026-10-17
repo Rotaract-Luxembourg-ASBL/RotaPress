@@ -90,7 +90,7 @@ connection keys and OAuth tokens; operations recheck current scope and call the
 existing domain services. Draft content, uploads and metadata writes remain private.
 Separately granted publication targets exact reviewed saved content or image batches
 and reuses current authority, version checks and domain transactions. Settings that
-lack a draft model use typed proposals for staff review. See the
+lack a draft model use explicit operational grants and transaction-safe receipts. See the
 [workflow architecture](automation-workflows.md) and
 [API/MCP extension contract](automation.md).
 

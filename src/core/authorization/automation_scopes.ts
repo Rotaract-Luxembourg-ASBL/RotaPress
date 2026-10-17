@@ -1,6 +1,126 @@
 import type { Capability } from "./AuthorizationService";
 
 export const scopeDefinitions = {
+  "projects:manage": { label: "Archive, restore or unpublish requested projects", capability: "cms.publish" },
+  "directory:manage": { label: "Restore or unpublish requested directory profiles", capability: "cms.publish" },
+  "media:manage": { label: "Edit, hide or delete requested images", capability: "media.manage" },
+  "files:manage": { label: "Edit, hide or delete requested PDF, audio and video files", capability: "media.manage" },
+  "website:organize": {
+    label: "Organize page drafts and create reusable sections",
+    capability: "cms.edit",
+  },
+  "files:read": {
+    label: "Read PDF, audio and video metadata",
+    capability: "media.manage",
+  },
+  "files:download": {
+    label: "Read private PDF, audio and video bytes",
+    capability: "media.manage",
+  },
+  "files:write": {
+    label: "Upload private PDFs, audio and video",
+    capability: "media.manage",
+  },
+  "files:publish": {
+    label: "Make requested files public",
+    capability: "media.manage",
+  },
+  "albums:read": {
+    label: "Read saved photo albums",
+    capability: "media.manage",
+  },
+  "albums:write": {
+    label: "Create and edit album drafts",
+    capability: "media.manage",
+  },
+  "albums:publish": {
+    label: "Publish requested albums",
+    capability: "cms.publish",
+  },
+  "albums:manage": {
+    label: "Unpublish or delete requested unused albums",
+    capability: "media.manage",
+  },
+  "members:read": {
+    label: "Read private member names, email and membership status",
+    capability: "members.review",
+  },
+  "members:decide": {
+    label: "Approve, reject or suspend requested memberships",
+    capability: "members.manage",
+  },
+  "access:roles": {
+    label: "Change requested staff roles and event team access",
+    capability: "members.manage",
+  },
+  "access:ownership": {
+    label: "Change requested owner access",
+    capability: "ownership.manage",
+  },
+  "responses:read": {
+    label: "Read private form answers and applicant identity",
+    capability: "submissions.read",
+  },
+  "responses:write": {
+    label: "Update requested response statuses",
+    capability: "submissions.manage",
+  },
+  "responses:export": {
+    label: "Export requested private form responses",
+    capability: "submissions.export",
+  },
+  "responses:delete": {
+    label: "Permanently delete requested non-registration responses",
+    capability: "submissions.manage",
+  },
+  "registrations:read": {
+    label: "Read authorized event registrations and attendee identity",
+    capability: "events.manage",
+  },
+  "registrations:manage": {
+    label: "Cancel requested event registrations",
+    capability: "events.manage",
+  },
+  "guests:read": {
+    label: "Read authorized event guest access",
+    capability: "events.manage",
+  },
+  "guests:access": {
+    label: "Grant or revoke requested event guest access",
+    capability: "events.manage",
+  },
+  "events:operate": {
+    label: "Apply requested event registration and feature settings",
+    capability: "events.manage",
+  },
+  "events:manage": {
+    label: "Archive or cancel requested events",
+    capability: "events.manage",
+  },
+  "forms:settings": {
+    label: "Edit requested form recipients and retention settings",
+    capability: "forms.settings",
+  },
+  "forms:manage": {
+    label: "Archive or restore requested forms",
+    capability: "forms.edit",
+  },
+  "forms:delete": {
+    label: "Permanently delete requested archived forms",
+    capability: "forms.settings",
+  },
+  "communications:templates": {
+    label: "Prepare shared notification email drafts",
+    capability: "integrations.manage",
+  },
+  "communications:publish": {
+    label: "Activate requested notification email templates",
+    capability: "integrations.manage",
+  },
+  "communications:send": {
+    label: "Retry requested failed form alerts to configured staff",
+    capability: "submissions.manage",
+  },
   "website:read": { label: "Read website content", capability: "cms.edit" },
   "website:write": {
     label: "Create and edit website drafts",

@@ -7,6 +7,7 @@ import {
   DomainError,
   type AuthorizationService,
   type Transaction,
+  type DatabaseExecutor,
 } from "@/core/authorization/AuthorizationService";
 import { AuditRepository } from "@/core/audit/AuditRepository";
 import type { CmsService } from "@/features/cms/CmsService";
@@ -16,6 +17,7 @@ import { isSitePart } from "@/features/cms/cms_schemas";
 import type { AutomationPrincipal } from "./AutomationAccess";
 import { importReceiptSchema } from "./import_schemas";
 import { requireNonExecutableContent } from "./website_content_policy";
+import type { AutomationContext } from "./operation";
 import {
   websiteCopyInput,
   websiteSettingsInput,
@@ -23,6 +25,14 @@ import {
   websiteSettingsPublishInput,
   websiteArchiveInput,
 } from "./website_management_schemas";
+
+export function websiteManagementFor(context: AutomationContext) {
+  return new WebsiteManagementService(
+    context.services.automationRuntime.database,
+    context.services.authorization,
+    context.services.cms,
+  );
+}
 
 /** Uses existing CMS writers and explicit grants for draft and publication actions. */
 export class WebsiteManagementService {
@@ -32,13 +42,17 @@ export class WebsiteManagementService {
     private readonly cms: CmsService,
   ) {}
 
-  async duplicate(principal: AutomationPrincipal, input: unknown) {
+  async duplicate(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:manage");
     const parsed = websiteCopyInput.parse(input);
     const inputHash = createHash("sha256")
       .update(JSON.stringify({ operation: "website_duplicate", ...parsed }))
       .digest("hex");
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const organizationId = await this.lock(principal, tx);
       const [previous] = await tx
         .select()
@@ -167,13 +181,18 @@ export class WebsiteManagementService {
         targetId: id,
       });
       return receipt;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
-  async restore(principal: AutomationPrincipal, input: unknown) {
+  async restore(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:manage");
     const parsed = restoreInput.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       await this.lock(principal, tx);
       const source = await this.cms.revision(
         principal.actor,
@@ -201,23 +220,37 @@ export class WebsiteManagementService {
         tx,
         "cms.automation.draft.restored",
       );
-    });
-    return this.cms.detail(principal.actor, parsed.id, parsed.locale);
+    };
+    if (executor) await apply(executor);
+    else await this.db.transaction(apply);
+    return this.cms.detail(principal.actor, parsed.id, parsed.locale, executor);
   }
 
-  async addLocale(principal: AutomationPrincipal, input: unknown) {
+  async addLocale(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:manage");
     const parsed = duplicateInput.parse(input);
-    await this.requireCurrentClub(principal);
+    await this.requireCurrentClub(principal, executor);
     // The CMS locks and creates only a missing language; retries cannot overwrite it.
-    return this.cms.addLocale(principal.actor, parsed);
+    return this.cms.addLocale(principal.actor, parsed, executor);
   }
 
-  async saveSettings(principal: AutomationPrincipal, input: unknown) {
+  async saveSettings(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:settings");
     const parsed = websiteSettingsInput.parse(input);
-    await this.requireCurrentClub(principal);
-    const current = await this.cms.getSite(principal.actor, parsed.locale);
+    await this.requireCurrentClub(principal, executor);
+    const current = await this.cms.getSite(
+      principal.actor,
+      parsed.locale,
+      executor,
+    );
     if (current.version !== parsed.expectedVersion)
       throw new DomainError(
         "REVISION_CONFLICT",
@@ -233,10 +266,14 @@ export class WebsiteManagementService {
         "Preserve installed template records from website_context. Use Website Templates to change the installation.",
         422,
       );
-    return this.cms.saveSite(principal.actor, parsed);
+    return this.cms.saveSite(principal.actor, parsed, executor);
   }
 
-  async publish(principal: AutomationPrincipal, input: unknown) {
+  async publish(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:publish");
     const inputValues = websitePublishInput.parse(input);
     const parsed = {
@@ -244,7 +281,7 @@ export class WebsiteManagementService {
       locale: inputValues.locale,
       expectedRevisionId: inputValues.expectedRevisionId,
     };
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         principal.actor,
         "cms.publish",
@@ -262,15 +299,21 @@ export class WebsiteManagementService {
       );
       requireNonExecutableContent(source.revision.data);
       await this.cms.publishRevision(principal.actor, parsed, tx);
-    });
-    return this.cms.detail(principal.actor, parsed.id, parsed.locale);
+    };
+    if (executor) await apply(executor);
+    else await this.db.transaction(apply);
+    return this.cms.detail(principal.actor, parsed.id, parsed.locale, executor);
   }
 
-  async archive(principal: AutomationPrincipal, input: unknown) {
+  async archive(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:manage");
     this.requireGrant(principal, "website:publish");
     const parsed = websiteArchiveInput.parse(input);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId } = await this.authorization.lock(
         principal.actor,
         "cms.publish",
@@ -286,16 +329,23 @@ export class WebsiteManagementService {
         },
         tx,
       );
-    });
-    return this.cms.detail(principal.actor, parsed.id, parsed.locale);
+    };
+    if (executor) await apply(executor);
+    else await this.db.transaction(apply);
+    return this.cms.detail(principal.actor, parsed.id, parsed.locale, executor);
   }
 
-  async publishSettings(principal: AutomationPrincipal, input: unknown) {
+  async publishSettings(
+    principal: AutomationPrincipal,
+    input: unknown,
+    executor?: Transaction,
+  ) {
     this.requireGrant(principal, "website:publish");
     const parsed = websiteSettingsPublishInput.parse(input);
     const { organizationId } = await this.authorization.require(
       principal.actor,
       "cms.publish",
+      executor,
     );
     this.requireOrganization(principal, organizationId);
     return this.cms.publishSite(
@@ -305,6 +355,7 @@ export class WebsiteManagementService {
         expectedVersion: parsed.expectedVersion,
       },
       parsed.scope === "menu" ? "menu" : "website",
+      executor,
     );
   }
 
@@ -320,10 +371,14 @@ export class WebsiteManagementService {
       );
   }
 
-  private async requireCurrentClub(principal: AutomationPrincipal) {
+  private async requireCurrentClub(
+    principal: AutomationPrincipal,
+    executor?: DatabaseExecutor,
+  ) {
     const { organizationId } = await this.authorization.require(
       principal.actor,
       "cms.edit",
+      executor,
     );
     this.requireOrganization(principal, organizationId);
   }

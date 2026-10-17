@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { mediaMetadataSchema } from "@/features/media/media_schemas";
 import { mediaOutput } from "./response_schemas";
+import { receiptFields } from "./receipt_service";
 
 export const MAX_INLINE_IMAGE_BYTES = 180 * 1024;
 export const imageMimeSchema = z.enum([
@@ -10,7 +11,7 @@ export const imageMimeSchema = z.enum([
 ]);
 export const mediaUploadMetadata = mediaMetadataSchema
   .extend({
-    requestId: z.uuid(),
+    ...receiptFields,
     filename: z
       .string()
       .trim()

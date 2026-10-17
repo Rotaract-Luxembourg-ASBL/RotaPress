@@ -3,6 +3,9 @@ import { useState } from "react";
 import type { operationCatalogue } from "../catalogue";
 import type { AutomationTransport } from "../availability_schemas";
 import { scopeDefinitions } from "../scopes";
+import { operationEffectLabels } from "../operation_effects";
+import { OperationInput } from "./operation-input";
+import { OperationResult } from "./operation-result";
 import {
   runTester,
   testMcpConnection,
@@ -12,6 +15,22 @@ import {
 } from "./tester_request";
 
 type Entry = ReturnType<typeof operationCatalogue>[number];
+function contentGeneration(body: unknown): string | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  if (
+    "contentGeneration" in body &&
+    typeof body.contentGeneration === "string" &&
+    /^[a-f0-9-]{36}$/i.test(body.contentGeneration)
+  )
+    return body.contentGeneration;
+  for (const key of ["data", "result", "structuredContent", "capabilities"]) {
+    if (key in body) {
+      const found = contentGeneration(Reflect.get(body, key));
+      if (found) return found;
+    }
+  }
+  return null;
+}
 export function AutomationDocs({
   operations,
   version,
@@ -38,6 +57,7 @@ export function AutomationDocs({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<TesterResult | null>(null);
+  const [generation, setGeneration] = useState<string | null>(null);
   const current = operations.find((entry) => entry.name === selected)!;
   const filtered = operations.filter((entry) =>
     `${entry.name} ${entry.description} ${rest ? entry.path : ""}`
@@ -47,6 +67,8 @@ export function AutomationDocs({
   function choose(name: string) {
     const operation = operations.find((entry) => entry.name === name)!;
     const example = { ...operation.example };
+    if (!operation.readOnly && generation)
+      example.expectedGeneration = generation;
     if ("requestId" in example) example.requestId = crypto.randomUUID();
     setSelected(name);
     setInput(JSON.stringify(example, null, 2));
@@ -59,7 +81,12 @@ export function AutomationDocs({
     setError("");
     setResult(null);
     try {
-      setResult(await action());
+      const response = await action();
+      setResult(response);
+      if (response.ok) {
+        const current = contentGeneration(response.body);
+        if (current) setGeneration(current);
+      }
     } catch (cause) {
       setError(
         cause instanceof Error &&
@@ -147,7 +174,7 @@ export function AutomationDocs({
         <p className="small muted">
           {rest
             ? "Send Authorization: Bearer <API token>. Responses wrap results in data and failures in error. Cookies do not authorize requests."
-            : "This server uses stateless Streamable HTTP. The connection test initializes MCP and lists tools, resources and prompts without saving content."}
+            : "This server uses stateless Streamable HTTP. The connection test initializes MCP and lists tools, resources and prompts, then reads current capabilities without saving content."}
         </p>
       </section>
       <div className="automation-docs-layout">
@@ -213,25 +240,22 @@ export function AutomationDocs({
                 {rest ? `${current.method} ${current.path}` : current.name}
               </code>
             </dd>
-            <dt>Required permission</dt>
+            <dt>Required permissions</dt>
             <dd>
-              {current.scope ? (
-                <>
-                  {scopeDefinitions[current.scope].label}{" "}
-                  <code>({current.scope})</code>
-                </>
+              {current.requiredScopes.length ? (
+                <ul>
+                  {current.requiredScopes.map((scope) => (
+                    <li key={scope}>
+                      {scopeDefinitions[scope].label} <code>({scope})</code>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 "Any current credential for this integration"
               )}
             </dd>
             <dt>Effect</dt>
-            <dd>
-              {current.readOnly
-                ? "Reads content or returns instructions."
-                : current.scope?.endsWith(":publish")
-                  ? "Publishes the saved content to its configured audience. Confirm the exact target and version before sending."
-                  : "Saves private content or a settings proposal. Publishing needs a separate permission and explicit request."}
-            </dd>
+            <dd>{operationEffectLabels[current.effect]}</dd>
           </dl>
           <details>
             <summary>Input schema</summary>
@@ -277,13 +301,17 @@ export function AutomationDocs({
                 connection/minute and 20 source reads per connection/minute.
               </li>
               <li>
-                Lists accept offset and limit (maximum 50). Follow nextOffset
-                until null.
+                Lists expose offset/nextOffset or page/pageSize/total in their
+                schema. Follow pagination until the requested selection is
+                complete.
               </li>
               <li>
-                Imports, image uploads, event preparation and settings proposals
-                support stable request IDs. Reuse the exact payload for retries;
-                other create requests can create duplicates.
+                Actions exposing requestId commit a retry receipt with their
+                changes. Reuse the exact payload for retries; other create
+                requests can create duplicates. Pass current
+                capabilities.contentGeneration as expectedGeneration on
+                mutations; old or missing generations are rejected after content
+                reset.
               </li>
             </ul>
           </details>
@@ -351,16 +379,13 @@ export function AutomationDocs({
               );
             }}
           >
-            <label>
-              Request input (JSON)
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                rows={12}
-                spellCheck={false}
-                disabled={busy}
-              />
-            </label>
+            <OperationInput
+              key={current.name}
+              schema={current.inputSchema}
+              value={input}
+              onChange={setInput}
+              disabled={busy}
+            />
             <p className="small muted">
               {rest
                 ? "Include path IDs in the input; the tester moves them into the URL. "
@@ -427,18 +452,7 @@ export function AutomationDocs({
             )}
           </div>
           {error && <p role="alert">{error}</p>}
-          {result && (
-            <section aria-label="Test response">
-              <p role="status">
-                {result.ok ? "Request succeeded" : "Request failed"} · HTTP{" "}
-                {result.status}
-              </p>
-              <pre>{JSON.stringify(result.body, null, 2).slice(0, 200000)}</pre>
-              {JSON.stringify(result.body).length > 200000 && (
-                <p>Response preview limited to 200,000 characters.</p>
-              )}
-            </section>
-          )}
+          {result && <OperationResult result={result} />}
         </section>
       </div>
     </div>

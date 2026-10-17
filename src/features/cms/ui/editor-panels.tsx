@@ -9,6 +9,7 @@ import { isSitePart } from "../cms_schemas";
 import Link from "next/link";
 import { useSitePart } from "./site-part-blocks";
 import { clubPageTitle } from "../page_title";
+import { EditorRevisionHistory } from "./editor-revision-history";
 
 export type EditorDialogName =
   "revisions" | "duplicate" | "locale" | "help" | "schedule";
@@ -244,13 +245,14 @@ export function DocumentDialog({
             Select any block to open its settings.
           </p>
           <p>
-            Use <strong>Add blocks</strong> to insert content. Drag blocks in
-            List view, or use Move up and Move down in block settings.
+            Use <strong>Add blocks</strong> to insert content. List view lets
+            you select several blocks to move, duplicate, copy or save as a
+            reusable section. Drag individual blocks on the canvas.
           </p>
           <p>
             Image blocks offer your media library, alternative text, captions,
-            alignment and display options. Uploads start private; make an image
-            public explicitly before publishing it.
+            alignment and display options. Administration uploads are public by
+            default. You can choose private visibility in the media library.
           </p>
           <dl>
             <dt>Save draft</dt>
@@ -261,54 +263,15 @@ export function DocumentDialog({
             <dd>Ctrl / ⌘ + Shift + Z</dd>
           </dl>
           <p>
-            Saving keeps your changes private. Preview shows the saved draft;
-            publishing makes it live. Undo applies to block edits; revision
-            history also restores saved page details.
+            Recovery copies automatically retain unfinished input for your
+            account. Save draft creates a version your team can review. Preview
+            can include your open changes and saved website drafts; publishing
+            makes the saved revision live. Revision history compares and
+            restores earlier content.
           </p>
         </div>
       ) : name === "revisions" ? (
-        <>
-          <p className="editor-help">
-            Restoring creates a new draft. The published page stays unchanged.
-          </p>
-          {doc.dirty && (
-            <p className="editor-inline-warning">
-              Save current changes before restoring a revision.
-            </p>
-          )}
-          <ol className="editor-revision-list">
-            {doc.detail.revisions.map((revision) => (
-              <li key={revision.id}>
-                <div>
-                  <strong>{revision.title}</strong>
-                  <time>{new Date(revision.createdAt).toLocaleString()}</time>
-                  <span>
-                    {revision.id === doc.detail.draft.id
-                      ? "Current draft"
-                      : "Saved revision"}
-                    {revision.id === doc.detail.publishedRevisionId
-                      ? " · Published"
-                      : ""}
-                  </span>
-                </div>
-                <button
-                  className="button button-outline button-small"
-                  disabled={
-                    doc.busy ||
-                    doc.dirty ||
-                    doc.readOnly ||
-                    revision.id === doc.detail.draft.id
-                  }
-                  onClick={async () => {
-                    await doc.operation("restore", revision.id);
-                  }}
-                >
-                  Restore to draft
-                </button>
-              </li>
-            ))}
-          </ol>
-        </>
+        <EditorRevisionHistory document={doc} />
       ) : (
         <form
           className="form-stack"

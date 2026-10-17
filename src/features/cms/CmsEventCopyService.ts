@@ -60,7 +60,7 @@ export class CmsEventCopyService {
       modules,
       media,
     );
-    this.revisions = new CmsRevisionWriter(media);
+    this.revisions = new CmsRevisionWriter(media, db);
   }
 
   async snapshot(

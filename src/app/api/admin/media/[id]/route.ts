@@ -1,6 +1,12 @@
 import { services } from "@/composition/services";
 import { getActor } from "@/core/auth/actor";
-import { handle, HttpError, json, readMutation, requireMutationOrigin } from "@/core/http";
+import {
+  handle,
+  HttpError,
+  json,
+  readMutation,
+  requireMutationOrigin,
+} from "@/core/http";
 import { z } from "zod";
 import { adminMediaAssetDto } from "@/features/media/media_admin";
 
@@ -10,19 +16,28 @@ export async function GET(request: Request, context: Context) {
   return handle(async () => {
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in to manage media.");
-    const usage = await services.media.usage(actor, (await context.params).id);
+    const usage = await services.media.usage(
+      actor,
+      (await context.params).id,
+      Object.fromEntries(new URL(request.url).searchParams),
+    );
     return json({ ...usage, asset: adminMediaAssetDto(usage.asset) });
   });
 }
 
 export async function PATCH(request: Request, context: Context) {
   return handle(async () => {
-    const body = z.record(z.string(), z.unknown()).parse(await readMutation(request));
-    if ("id" in body) throw new HttpError(400, "Image identity belongs in the URL.");
+    const body = z
+      .record(z.string(), z.unknown())
+      .parse(await readMutation(request));
+    if ("id" in body)
+      throw new HttpError(400, "Image identity belongs in the URL.");
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in to manage media.");
     const { id } = await context.params;
-    return json(adminMediaAssetDto(await services.media.update(actor, { ...body, id })));
+    return json(
+      adminMediaAssetDto(await services.media.update(actor, { ...body, id })),
+    );
   });
 }
 

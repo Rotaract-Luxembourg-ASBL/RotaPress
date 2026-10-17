@@ -207,21 +207,3 @@
 .automation-settings li {
   margin-bottom: 0.75rem;
 }
-.automation-connections {
-  list-style: none;
-  padding: 0;
-}
-.automation-connections li {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
-  overflow-wrap: anywhere;
-}
-@media (max-width: 600px) {
-  .automation-connections li {
-    flex-direction: column;
-  }
-}

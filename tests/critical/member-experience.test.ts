@@ -168,12 +168,30 @@ it("C02 keeps self profiles and signed-in response history private without grant
   expect(JSON.stringify(await account.workspace(person))).not.toContain(
     "Private submitted text",
   );
+  await db
+    .insert(schema.formSubmission)
+    .values(
+      Array.from({ length: 55 }, () => ({
+        organizationId: scope.organizationId,
+        formId: draft.id,
+        versionId: published.publishedVersionId!,
+        requestId: randomUUID(),
+        payloadHash: "0".repeat(64),
+        answers: { private: "Never project this answer" },
+        submittedByUserId: person.userId,
+      })),
+    );
+  const history = await account.responses(person, { page: 2, pageSize: 30 });
+  expect(history).toMatchObject({ total: 56, page: 2 });
+  expect(history.items).toHaveLength(26);
+  expect(JSON.stringify(history)).not.toContain("Never project this answer");
+  expect((await account.responses(other)).total).toBe(0);
   const inbox = await new InboxService(db, authorization).list(owner, {
     formId: draft.id,
     kind: "contact",
   });
-  expect(inbox.total).toBe(2);
-  expect(inbox.counts.new).toBe(2);
+  expect(inbox.total).toBe(57);
+  expect(inbox.counts.new).toBe(57);
   expect(
     (
       await new InboxService(db, authorization).list(owner, {
@@ -327,14 +345,12 @@ it("C02 verifies exact domain ownership without activating origins and enforces 
     }),
   ).rejects.toThrow();
   await expect(
-    db
-      .insert(schema.siteDomain)
-      .values({
-        organizationId: scope.organizationId,
-        hostname: "constraint.example.org",
-        eventId: randomUUID(),
-        challenge: "synthetic-proof",
-      }),
+    db.insert(schema.siteDomain).values({
+      organizationId: scope.organizationId,
+      hostname: "constraint.example.org",
+      eventId: randomUUID(),
+      challenge: "synthetic-proof",
+    }),
   ).rejects.toThrow();
 });
 

@@ -52,6 +52,7 @@ export const siteBlockConfig: Pick<
           { label: "Wider left", value: "wide-left" },
           { label: "Wider center", value: "wide-center" },
           { label: "Wider right", value: "wide-right" },
+          { label: "Stacked group", value: "stacked" },
         ],
       },
       flow: {
@@ -86,9 +87,9 @@ export const siteBlockConfig: Pick<
     render: ({ left: Left, center: Center, right: Right, ...props }) => (
       <SiteRowBlock
         {...props}
-        left={<Left minEmptyHeight={64} />}
-        center={<Center minEmptyHeight={64} />}
-        right={<Right minEmptyHeight={64} />}
+        left={<Left minEmptyHeight={props.layout === "stacked" ? 0 : 64} />}
+        center={<Center minEmptyHeight={props.layout === "stacked" ? 0 : 64} />}
+        right={<Right minEmptyHeight={props.layout === "stacked" ? 0 : 64} />}
       />
     ),
   },

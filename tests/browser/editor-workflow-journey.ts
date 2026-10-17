@@ -83,26 +83,37 @@ export async function editorWorkflowJourney(
 
   // Before/after placement must stay within the selected child block's column.
   await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block before Heading", exact: true })
     .click();
   await library
     .getByRole("button", { name: "Add Divider block", exact: true })
     .click();
-  await page.locator(".editor-canvas .cms-heading h2").click();
   await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-heading h2")
+    .click();
+  await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block after Heading", exact: true })
     .click();
   await library
     .getByRole("button", { name: "Add Spacer block", exact: true })
     .click();
-  await page.locator(".editor-canvas .cms-heading h2").click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-heading h2")
+    .click();
   await location
     .getByRole("button", { name: "Content columns", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Content columns", exact: true }),
   ).toBeVisible();
-  await page.locator(".editor-canvas .cms-heading h2").click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-heading h2")
+    .click();
 
   // Changing inspector tabs preserves the selected block and unsaved values.
   const pageTab = page.getByRole("tab", { name: "Page", exact: true });
@@ -129,7 +140,7 @@ export async function editorWorkflowJourney(
     library.getByRole("button", { name: "Add Form block", exact: true }),
   ).toContainText("Forms");
   await page.route(
-    `${origin}/api/admin/forms`,
+    `${origin}/api/admin/forms?**`,
     (route) =>
       route.fulfill({
         status: 503,
@@ -164,6 +175,7 @@ export async function editorWorkflowJourney(
   await expect(editSource).toHaveAttribute("target", "_blank");
   await expect(
     page
+      .frameLocator(".editor-canvas iframe")
       .getByRole("region", { name: "Club form preview", exact: true })
       .getByRole("heading", { name: "Editor connected contact", exact: true }),
   ).toBeVisible();
@@ -173,9 +185,11 @@ export async function editorWorkflowJourney(
     .poll(
       async () => {
         const preview = await page
+          .frameLocator(".editor-canvas iframe")
           .getByRole("region", { name: "Club form preview", exact: true })
           .boundingBox();
         const after = await page
+          .frameLocator(".editor-canvas iframe")
           .getByRole("button", { name: "Add block after Form", exact: true })
           .boundingBox();
         if (!preview || !after) return false;
@@ -221,6 +235,7 @@ export async function editorWorkflowJourney(
 
   await page.reload();
   await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("region", { name: "Club form preview", exact: true })
     .getByRole("heading", { name: "Editor connected contact", exact: true })
     .click();
@@ -231,8 +246,7 @@ export async function editorWorkflowJourney(
   await page.getByRole("tab", { name: "Page", exact: true }).click();
   await page.getByRole("button", { name: "List view", exact: true }).click();
   const outline = page.getByRole("complementary", { name: "Page outline" });
-  // Puck's draggable wrapper also has role=button; select its actual row button.
-  await outline.locator("button").filter({ hasText: /^Form$/ }).click();
+  await outline.getByRole("button", { name: "2. Form", exact: true }).click();
   await expect(outline).not.toBeVisible();
   await expect(
     page.getByRole("tab", { name: "Block", exact: true }),

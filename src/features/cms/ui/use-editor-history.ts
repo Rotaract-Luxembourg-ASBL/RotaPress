@@ -31,7 +31,7 @@ export function useEditorHistory() {
     (action, next, previous) => {
       if (
         action.recordHistory === false ||
-        ["set", "setUi", "setData", "registerZone", "unregisterZone"].includes(
+        ["set", "setUi", "registerZone", "unregisterZone"].includes(
           action.type,
         ) ||
         JSON.stringify(next.data) === JSON.stringify(previous.data)

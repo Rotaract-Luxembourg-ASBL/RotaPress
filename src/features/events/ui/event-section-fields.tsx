@@ -12,6 +12,10 @@ import { EventWinnersPreview } from "@/features/cms/ui/event-winners-block";
 import { FormEditorPreview } from "@/features/cms/ui/form-block";
 import { PartnerPicker } from "@/features/cms/ui/directory-block";
 import { EventRichTextField } from "./event-rich-text-field";
+import {
+  GalleryAlbumField,
+  independentAlbumPlacement,
+} from "@/features/cms/ui/gallery-album-field";
 
 export function sectionLabel(type: Block["type"]) {
   if (type === "PageIntro") return "Introduction";
@@ -231,14 +235,18 @@ function Fields({
 export function EventSectionFields({
   block,
   onChange,
+  onRefreshPreview,
   sectionLinks = [],
 }: {
   block: Block;
   onChange: (block: Block) => void;
+  onRefreshPreview: () => void;
   sectionLinks?: { label: string; href: string }[];
 }) {
   const config = puckConfig.components[block.type];
   const fields = { ...config.fields } as Record<string, Field<unknown>>;
+  // This adapter reads the complete event block; AutoField caches custom render callbacks.
+  if (block.type === "Gallery") delete fields.albumId;
   if (block.type === "PartnerCollection") {
     // Match the central directory block's conditional controls in this editor too.
     if (block.props.selectionMode === "category") delete fields.partnerIds;
@@ -278,6 +286,23 @@ export function EventSectionFields({
   }
   return (
     <>
+      {block.type === "Gallery" && (
+        <div className="event-custom-field">
+          <GalleryAlbumField
+            value={block.props.albumId}
+            onRefreshPreview={onRefreshPreview}
+            onChange={(albumId) =>
+              onChange({ ...block, props: { ...block.props, albumId } })
+            }
+            onCopy={(source) =>
+              onChange({
+                ...block,
+                props: { ...block.props, ...independentAlbumPlacement(source) },
+              })
+            }
+          />
+        </div>
+      )}
       <Fields
         fields={fields}
         values={block.props}
@@ -308,9 +333,7 @@ export function EventSectionFields({
               {setting.label}
               <select
                 value={
-                  block.props.design?.[
-                    key as keyof typeof block.props.design
-                  ] ?? ""
+                  block.props.design?.[key as keyof typeof designOptions] ?? ""
                 }
                 onChange={(e) => {
                   const design = { ...block.props.design };

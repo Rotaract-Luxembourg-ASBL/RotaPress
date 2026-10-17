@@ -61,13 +61,13 @@ export function useMediaBulkActions({
     }
     if (targets.some((item) => !managedAsset(item)))
       setError(
-        "Refresh the library before selecting these images for bulk changes.",
+        "Refresh the library before selecting these files for bulk changes.",
       );
     else setError(undefined);
     setSelected(next);
     previous.current = asset.id;
     if (!removing && next.size === 250)
-      setMessage("250 images selected. Apply an action before selecting more.");
+      setMessage("250 files selected. Apply an action before selecting more.");
   }
   function selectShown(shown: MediaAssetDto[]) {
     if (!enabled || busy) return;
@@ -76,12 +76,12 @@ export function useMediaBulkActions({
       if (managedAsset(item) && next.size < 250) next.set(item.id, item);
     if (shown.some((item) => !managedAsset(item)))
       setError(
-        "Refresh the library before selecting these images for bulk changes.",
+        "Refresh the library before selecting these files for bulk changes.",
       );
     setSelected(next);
     if (next.size === 250 && shown.some((item) => !next.has(item.id)))
       setMessage(
-        "250 images selected. Apply an action before selecting the remaining images.",
+        "250 files selected. Apply an action before selecting the remaining files.",
       );
   }
   function clear() {
@@ -112,7 +112,7 @@ export function useMediaBulkActions({
     if (
       action === "delete" &&
       !window.confirm(
-        `Delete ${selected.size} selected images permanently? This cannot be undone. Images used by saved content or revision history cannot be deleted. If any image is protected, the entire selection is kept.`,
+        `Delete ${selected.size} selected files permanently? This cannot be undone. Files used by saved content or revision history cannot be deleted. If any file is protected, the entire selection is kept.`,
       )
     )
       return;
@@ -138,10 +138,10 @@ export function useMediaBulkActions({
       else onUpdated(result.assets ?? []);
       setMessage(
         action === "delete"
-          ? `${selected.size} images deleted.`
+          ? `${selected.size} files deleted.`
           : "visibility" in action
-            ? `${selected.size} images made ${action.visibility}.`
-            : `${selected.size} images updated.`,
+            ? `${selected.size} files made ${action.visibility}.`
+            : `${selected.size} files updated.`,
       );
       setSelected(new Map());
       setEditing(false);
@@ -188,7 +188,7 @@ export function useMediaBulkActions({
     if (failures.length) setError(failures.join(" "));
     else
       setMessage(
-        "Selected images refreshed. Review your selection and retry the action.",
+        "Selected files refreshed. Review your selection and retry the action.",
       );
   }
   return {
@@ -328,11 +328,10 @@ export function MediaBulkActions({
           </>
         ) : (
           <span>
-            Select several images to change visibility or organize them
-            together.
+            Select several files to change visibility or organize them together.
           </span>
         )}
-        {bulk.busy && <span role="status">Updating selected images…</span>}
+        {bulk.busy && <span role="status">Updating selected files…</span>}
       </div>
       {mode && description && (
         <p className="field-help media-bulk-explanation">{description}</p>
@@ -346,7 +345,7 @@ export function MediaBulkActions({
             disabled={bulk.busy || disabled}
             onClick={bulk.refreshSelected}
           >
-            Refresh selected images
+            Refresh selected files
           </button>
         </Notice>
       )}

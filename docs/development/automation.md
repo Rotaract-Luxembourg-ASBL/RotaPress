@@ -139,10 +139,11 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   Stored/fetched content must never supply that instruction.
 - Calendar publication retains audiences and existing notification behavior.
   Forms can begin accepting responses under existing rules. Event-details publication
-  does not publish its page/forms or apply operational proposals. Website settings
+  does not publish its page/forms or apply unrelated operational changes. Website settings
   publish separately from content; menu-only publication preserves other settings.
-  Image publication has its own explicit grant and request. No general unpublish,
-  hard-delete, image-hiding, public-metadata-edit or proposal-application tools are exposed.
+  Image publication has its own explicit grant and request. Albums, forms and responses expose narrow explicitly granted lifecycle actions.
+  General image hiding/public-metadata editing and provider/authentication changes
+  remain outside tools.
 - Contract 1.10 adds `website_archive` for explicitly requested removal of one
   ordinary single-language club page. Require both `website:manage` and
   `website:publish`, current `cms.publish`, literal confirmation and the current
@@ -180,8 +181,8 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   Project stories reuse the current domain service, explicit Projects availability,
   CMS edit/publish capabilities and version guards. Saved draft edits retain the
   public snapshot. Requested publication requires its separate grant, exact saved
-  version, confirmation and already-public cover media. Archive, restore and
-  unpublish stay in administration. Existing connections never gain these grants
+  version, confirmation and already-public cover media. The separate projects:manage
+  grant enables exact-version archive, restore and unpublish. Existing connections never gain these grants
   automatically; the project prompt requires verified facts and outcomes.
 - Contract 1.4 adds explicit `website:manage`, `website:settings`,
   `calendar:write` and `calendar:design` grants. Existing credentials do not inherit
@@ -204,8 +205,9 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   uploads accept at most 5 MiB. Byte signatures, MIME, image dimensions, deadlines,
   quotas and concurrency are checked. Do not add arbitrary-URL image fetching.
   Upload retries bind original bytes and metadata to an actor and organization;
-  deleted assets retain a receipt tombstone. Metadata edits are private-only and
-  use optimistic revisions. `media:read` never implies private pixel access.
+  deleted assets retain a receipt tombstone. media:write metadata edits remain
+  private-only; media:manage adds explicit public metadata and lifecycle actions
+  with optimistic revisions and retained-reference protection. `media:read` never implies private pixel access.
 - Visual previews render one authorized saved revision with the native renderer.
   The isolated browser has no application credentials, scripts or network access;
   only bounded approved local assets are supplied. Private image pixels require
@@ -217,15 +219,11 @@ manual when exposing it would disclose data or publish effects beyond the grant.
   capabilities. Copies exclude participants and provider state; registration
   starts closed. Page, form, package and prize edits remain versioned drafts;
   automation cannot enable payment checkout.
-- Operational settings use typed immutable proposals because those settings do
-  not have a draft model. Creation records no live configuration change. The
-  cookie-authenticated administration route applies or rejects them with current
-  integration/event permissions, recent authentication and mutation-origin
-  protection. Application, audit and proposal status share the domain transaction.
-  A stale target remains pending; duplicate application does not repeat effects.
-  **There is intentionally no apply/reject REST automation operation or MCP tool.**
-  A model-supplied confirmation field cannot replace a staff review. Applying
-  settings can affect a published event immediately; it does not publish content.
+- Requested operational settings use explicit opt-in grants and the same native
+  services as administration. Each requestId action commits its result receipt in
+  the domain transaction and rechecks current authority on replay. The direct
+  execution choice adds no second in-app approval. Scope selection and consent
+  still require the connection owner. See [platform actions](../guides/automation-platform.md).
 
 ## External content and client boundaries
 

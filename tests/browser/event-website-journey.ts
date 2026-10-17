@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { smokeOrigin as origin } from "../../scripts/smoke_origin.mjs";
 import type { CmsDetail } from "../../src/features/cms/cms_schemas";
 import { eventPreviewJourney } from "./event-preview-journey";
+import { eventAlbumJourney } from "./event-album-journey";
 
 /** Continues B01 with its real, currently assigned manager session. */
 export async function eventWebsiteJourney(
@@ -312,5 +313,6 @@ export async function eventWebsiteJourney(
     .get(`/api/admin/cms/content/${id}?locale=en`)
     .then((r) => r.json())) as CmsDetail;
   expect(saved.event?.id).toBe(eventId);
+  await eventAlbumJourney(owner, manager.url(), asset.id);
   await anonymous.close();
 }

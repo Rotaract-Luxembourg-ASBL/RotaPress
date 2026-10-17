@@ -13,6 +13,12 @@ import {
   withAutomationImageWork,
 } from "../../src/features/media/media_automation";
 
+vi.mock("../../src/core/content/ContentGeneration", () => ({
+  ContentGeneration: {
+    assertCurrent: async () => ({ generation: "fixture", resetAt: null }),
+  },
+}));
+
 const mocks = vi.hoisted(() => ({
   context: vi.fn<() => Promise<AutomationContext>>(),
 }));
@@ -79,6 +85,7 @@ beforeEach(() => {
       sourceOrigins: [],
     },
     services: {
+      automationRuntime: { database: {}, recover: async () => ({ found: false }) },
       authorization: { require: authorize },
       limiter: { consume: quota },
       media: { upload, inspect },
@@ -181,6 +188,7 @@ describe("C14 bounded media automation transports", () => {
     expect(upload).toHaveBeenCalledWith(
       context.principal.actor,
       expect.objectContaining({ ...metadata, bytes: imageBytes }),
+      expect.any(Function),
       expect.any(Function),
     );
     expect(quota).toHaveBeenCalledWith("media-upload", actorId, 20);

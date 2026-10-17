@@ -277,7 +277,11 @@ export function eventWebsiteChecks(get: () => Context) {
       website: "",
       logoId: null,
     });
-    await expect(partners.list(s.manager)).rejects.toMatchObject({
+    await expect(
+      partners
+        .query(s.manager, { status: "all", pageSize: 100 })
+        .then((result) => result.items),
+    ).rejects.toMatchObject({
       code: "ACCESS_DENIED",
     });
     await s.change("website", "enable");
@@ -314,7 +318,13 @@ export function eventWebsiteChecks(get: () => Context) {
       role: "editor",
       status: "approved",
     });
-    expect((await partners.list(clubEditor))[0].placements).toEqual([
+    expect(
+      (
+        await partners
+          .query(clubEditor, { status: "all", pageSize: 100 })
+          .then((result) => result.items)
+      )[0].placements,
+    ).toEqual([
       { id: null, title: "Restricted event page", locale: null, eventId: null },
     ]);
     await s.change("sponsors", "disable");
@@ -546,7 +556,7 @@ export function eventWebsiteChecks(get: () => Context) {
       title: "Private event test",
       alt: "Synthetic square",
     });
-    expect(await s.media.publicLibrary(editor)).toHaveLength(0);
+    expect((await s.media.publicLibrary(editor)).total).toBe(0);
     await expect(
       s.cms.save(editor, { ...save(changed), socialImageId: asset.id }),
     ).rejects.toMatchObject({ code: "MEDIA_NOT_PUBLIC" });

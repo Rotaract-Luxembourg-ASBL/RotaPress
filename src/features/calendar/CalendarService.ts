@@ -11,6 +11,7 @@ import {
   AuthorizationService,
   DomainError,
   type TrustedActor,
+  type Transaction,
 } from "@/core/authorization/AuthorizationService";
 import type { Database } from "@/infrastructure/database/client";
 import { CalendarReader } from "./CalendarReader";
@@ -24,6 +25,7 @@ import {
   type CalendarWorkspace,
 } from "./calendar_schemas";
 import { validateSchedule } from "./calendar_dates";
+import { CalendarCollection } from "./CalendarCollection";
 
 function version(actual: number, expected: number) {
   if (actual !== expected)
@@ -59,7 +61,18 @@ export class CalendarService {
     readonly reader: CalendarReader,
   ) {}
 
-  async workspace(actor: TrustedActor): Promise<CalendarWorkspace> {
+  async schedules(actor: TrustedActor, input: unknown = {}) {
+    const { organizationId } = await this.auth.require(
+      actor,
+      "calendar.manage",
+    );
+    return new CalendarCollection(this.db).schedules(organizationId, input);
+  }
+
+  async workspace(
+    actor: TrustedActor,
+    includeSchedules = true,
+  ): Promise<CalendarWorkspace> {
     const { organizationId: org } = await this.auth.require(
       actor,
       "calendar.manage",
@@ -70,11 +83,13 @@ export class CalendarService {
         .from(calendar)
         .where(eq(calendar.organizationId, org))
         .orderBy(calendar.updatedAt),
-      this.db
-        .select()
-        .from(calendarSchedule)
-        .where(eq(calendarSchedule.organizationId, org))
-        .orderBy(calendarSchedule.updatedAt),
+      includeSchedules
+        ? this.db
+            .select()
+            .from(calendarSchedule)
+            .where(eq(calendarSchedule.organizationId, org))
+            .orderBy(calendarSchedule.updatedAt)
+        : Promise.resolve([]),
       this.db
         .select()
         .from(calendarPage)
@@ -115,9 +130,10 @@ export class CalendarService {
     actor: TrustedActor,
     raw: unknown,
     options: { draftOnly?: boolean } = {},
+    executor?: Transaction,
   ) {
     const input = calendarCommandSchema.parse(raw);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId: org } = await this.auth.lock(
         actor,
         "calendar.manage",
@@ -210,15 +226,17 @@ export class CalendarService {
         targetId: saved.id,
       });
       return saved;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
   async schedule(
     actor: TrustedActor,
     raw: unknown,
     options: { draftOnly?: boolean } = {},
+    executor?: Transaction,
   ) {
     const input = scheduleCommandSchema.parse(raw);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId: org } = await this.auth.lock(
         actor,
         "calendar.manage",
@@ -332,9 +350,10 @@ export class CalendarService {
         targetId: saved.id,
       });
       return saved;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
-  async page(actor: TrustedActor, raw: unknown) {
+  async page(actor: TrustedActor, raw: unknown, executor?: Transaction) {
     const input = z
       .strictObject({
         operation: z.enum(["save", "publish"]),
@@ -342,7 +361,7 @@ export class CalendarService {
         definition: calendarPageSchema.optional(),
       })
       .parse(raw);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId: org } = await this.auth.lock(
         actor,
         "calendar.manage",
@@ -386,6 +405,7 @@ export class CalendarService {
         action: "calendar.page." + input.operation,
       });
       return { saved: true, version: values.version };
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 }

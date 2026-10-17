@@ -1,4 +1,5 @@
 import { issueTransportPair } from "./automation-credentials";
+import { randomUUID } from "node:crypto";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import type { Pool } from "pg";
 import { smokeOrigin } from "../../scripts/smoke_origin.mjs";
@@ -43,7 +44,9 @@ export async function automationSecurityJourney(
           error:
             name === "website_publish"
               ? "This connection needs website:publish."
-              : "This operation is unavailable.",
+              : name === "members_list"
+                ? "This connection needs members:read."
+                : "This operation is unavailable.",
         }),
       },
     ]);
@@ -141,7 +144,11 @@ export async function automationSecurityJourney(
       ).toBe(200);
     const formResponse = await api.post("/api/v1/forms", {
       headers,
-      data: { kind: "contact", title: "API contract contact" },
+      data: {
+        requestId: randomUUID(),
+        kind: "contact",
+        title: "API contract contact",
+      },
     });
     expect(formResponse.status()).toBe(200);
     const form = (await formResponse.json()).data;
@@ -154,6 +161,7 @@ export async function automationSecurityJourney(
           headers,
           data: {
             expectedRevision: form.draftRevision,
+            requestId: randomUUID(),
             definition: { ...form.draft, title: "Updated API contact" },
           },
         })
@@ -170,7 +178,7 @@ export async function automationSecurityJourney(
     };
     const eventResponse = await api.post("/api/v1/events", {
       headers,
-      data: eventInput,
+      data: { ...eventInput, requestId: randomUUID() },
     });
     expect(eventResponse.status()).toBe(200);
     const event = (await eventResponse.json()).data;
@@ -182,6 +190,7 @@ export async function automationSecurityJourney(
           headers,
           data: {
             ...eventInput,
+            requestId: randomUUID(),
             title: "Updated API draft event",
             expectedVersion: event.version,
           },
@@ -197,7 +206,7 @@ export async function automationSecurityJourney(
     };
     const directoryResponse = await api.post("/api/v1/directory", {
       headers,
-      data: profile,
+      data: { ...profile, requestId: randomUUID() },
     });
     expect(directoryResponse.status()).toBe(200);
     const partner = (await directoryResponse.json()).data;
@@ -208,6 +217,7 @@ export async function automationSecurityJourney(
           headers,
           data: {
             expectedVersion: partner.version,
+            requestId: randomUUID(),
             profile: { ...profile, name: "Updated API partner" },
           },
         })

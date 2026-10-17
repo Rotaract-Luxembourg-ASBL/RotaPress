@@ -186,7 +186,7 @@ export async function eventRegistrationJourney(
   await owner
     .getByRole("button", { name: "Cancel registration", exact: true })
     .click();
-  await expect(owner.getByText("Cancelled", { exact: true })).toBeVisible();
+  await expect(owner.getByRole("listitem").getByText("Cancelled", { exact: true })).toBeVisible();
   await visitor.reload();
   await expect(
     visitor.getByRole("link", { name: "Sign in to register", exact: true }),

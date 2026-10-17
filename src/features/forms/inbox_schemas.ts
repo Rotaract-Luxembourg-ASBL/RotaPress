@@ -42,12 +42,24 @@ export type InboxPage = {
   messages: InboxMessage[];
   hasMore: boolean;
   page: number;
-  forms: {
-    id: string;
-    title: string;
-    kind: string;
-    eventId: string | null;
-    eventTitle: string | null;
-    archived: boolean;
-  }[];
+};
+export type InboxForm = {
+  id: string;
+  title: string;
+  kind: string;
+  eventId: string | null;
+  eventTitle: string | null;
+  archived: boolean;
+};
+export const inboxFormQuerySchema = z.strictObject({
+  q: z.string().trim().max(160).default(""),
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  id: z.uuid().optional(),
+});
+export type InboxFormPage = {
+  forms: InboxForm[];
+  page: number;
+  pageSize: number;
+  total: number;
 };

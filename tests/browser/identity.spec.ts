@@ -396,7 +396,12 @@ test("B01: verified owner setup, approval, live revocation and saved identity", 
     .toBe(403);
   const forged = await applicant.request.patch("/api/admin/members", {
     headers: { origin: smokeOrigin },
-    data: { membershipId: randomUUID(), status: "approved", role: "owner" },
+    data: {
+      membershipId: randomUUID(),
+      status: "approved",
+      role: "owner",
+      expectedVersion: 1,
+    },
   });
   expect(forged.status()).toBe(403);
   const csrf = await page.request.patch("/api/admin/settings", {

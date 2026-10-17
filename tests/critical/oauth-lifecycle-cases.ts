@@ -77,7 +77,7 @@ export function oauthLifecycleChecks(context: () => RenewalContext) {
           "website:read sources:read offline_access",
         );
         const independent = await authorize(other.clientId, callback);
-        const before = (await connections.list(actor)).find(
+        const before = (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         )!;
         const credentials = await pool.query(
@@ -104,7 +104,7 @@ export function oauthLifecycleChecks(context: () => RenewalContext) {
           before.permissionsRevision,
         );
         expect(revoked.reconnectRequired).toBe(true);
-        const after = (await connections.list(actor)).find(
+        const after = (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         )!;
         expect(after).toMatchObject({
@@ -241,7 +241,7 @@ export function oauthLifecycleChecks(context: () => RenewalContext) {
           connections.revoke(actor, headers, client.clientId, "initial"),
         ).rejects.toThrow("Synthetic audit failure");
         audit.mockRestore();
-        const current = (await connections.list(actor)).find(
+        const current = (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         )!;
         expect(current.permissionsRevision).not.toBe("initial");
@@ -335,12 +335,12 @@ export function oauthLifecycleChecks(context: () => RenewalContext) {
         expect(removed.status).toBe(200);
         expect(await removed.json()).toEqual({ removed: true });
         expect(
-          (await connections.list(actor)).some(
+          (await connections.list(actor)).clients.some(
             (item) => item.clientId === client.clientId,
           ),
         ).toBe(false);
       } finally {
-        const current = (await connections.list(actor)).find(
+        const current = (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         );
         if (current)
@@ -460,7 +460,7 @@ export function oauthLifecycleChecks(context: () => RenewalContext) {
           "DELETE FROM club.oauth_client WHERE user_id=$1 AND client_id LIKE $2",
           [actor.userId, `${prefix}%`],
         );
-        const retained = (await connections.list(actor)).find(
+        const retained = (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         );
         if (retained)

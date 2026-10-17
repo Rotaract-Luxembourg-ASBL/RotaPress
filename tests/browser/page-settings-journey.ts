@@ -24,7 +24,10 @@ export async function pageSettingsJourney(
           .querySelector('meta[name="description"]')
           ?.getAttribute("content") ?? "",
     );
-  await page.locator(".editor-canvas .cms-hero h1").click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-hero h1")
+    .click();
   await expect(
     page.getByRole("tab", { name: "Block", exact: true }),
   ).toHaveAttribute("aria-selected", "true");

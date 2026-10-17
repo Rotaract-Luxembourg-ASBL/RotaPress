@@ -66,22 +66,14 @@ export class GuestGrantRepository {
     return row;
   }
 
-  list(db: DatabaseExecutor, organizationId: string, eventId: string) {
-    return db
-      .select()
-      .from(guestAccess)
-      .where(
-        and(
-          eq(guestAccess.organizationId, organizationId),
-          eq(guestAccess.eventId, eventId),
-        ),
-      )
-      .orderBy(desc(guestAccess.createdAt))
-      .limit(201);
-  }
-
-  mine(db: DatabaseExecutor, organizationId: string, actor: TrustedActor) {
-    return db
+  mine(
+    db: DatabaseExecutor,
+    organizationId: string,
+    actor: TrustedActor,
+    offset = 0,
+    limit?: number,
+  ) {
+    const query = db
       .select()
       .from(guestAccess)
       .where(
@@ -97,8 +89,10 @@ export class GuestGrantRepository {
           ),
         ),
       )
-      .orderBy(desc(guestAccess.createdAt))
-      .limit(100);
+      .orderBy(desc(guestAccess.createdAt), guestAccess.id)
+      .offset(offset)
+      .$dynamic();
+    return limit === undefined ? query : query.limit(limit);
   }
 
   async activeSource(

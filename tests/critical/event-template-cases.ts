@@ -134,9 +134,9 @@ export function eventTemplateChecks(get: () => Context) {
         locale: page.locale,
         expectedRevisionId: page.draftRevisionId,
       });
-      const draft = (await forms.eventForms(people.manager, eventId)).find(
-        (f) => f.kind === "registration",
-      )!;
+      const draft = (
+        await forms.collection.list(people.manager, {}, eventId)
+      ).forms.find((f) => f.kind === "registration")!;
       const publishedForm = await forms.publish(people.manager, draft.id, {
         expectedRevision: draft.draftRevision,
       });
@@ -183,9 +183,15 @@ export function eventTemplateChecks(get: () => Context) {
     const s = await setup();
     for (const id of ["simple", "networking", "fundraiser"] as const) {
       const input = s.input({ kind: "preset", id });
-      const before = await s.events.list(s.owner);
+      const before = await s.events
+        .query(s.owner, { status: "all", pageSize: 100 })
+        .then((result) => result.events);
       const review = await s.templates.preview(s.owner, input);
-      expect(await s.events.list(s.owner)).toEqual(before);
+      expect(
+        await s.events
+          .query(s.owner, { status: "all", pageSize: 100 })
+          .then((result) => result.events),
+      ).toEqual(before);
       const values = {
         ...input,
         reviewToken: review.token,
@@ -214,7 +220,7 @@ export function eventTemplateChecks(get: () => Context) {
         ),
       ).toBe(true);
       expect(
-        (await s.forms.eventForms(s.owner, event.id)).every(
+        (await s.forms.collection.list(s.owner, {}, event.id)).forms.every(
           (f) => !f.publishedVersionId && f.draftRevision === 1,
         ),
       ).toBe(true);
@@ -259,7 +265,11 @@ export function eventTemplateChecks(get: () => Context) {
         }),
       ).rejects.toThrow();
     }
-    expect(await s.events.list(s.owner)).toHaveLength(0);
+    expect(
+      await s.events
+        .query(s.owner, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).toHaveLength(0);
     const changed = s.input({
       kind: "preset",
       id: "simple",
@@ -279,7 +289,11 @@ export function eventTemplateChecks(get: () => Context) {
         confirmed: true,
       }),
     ).rejects.toMatchObject({ code: "EVENT_TEMPLATE_REVIEW_CHANGED" });
-    expect(await s.events.list(s.owner)).toHaveLength(0);
+    expect(
+      await s.events
+        .query(s.owner, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).toHaveLength(0);
     const selections: EventModuleKey[][] = [
       [],
       ["website", "gallery"],
@@ -303,7 +317,8 @@ export function eventTemplateChecks(get: () => Context) {
           .filter((key) => ["website", "gallery", "sponsors"].includes(key))
           .sort(),
       );
-      const forms = await s.forms.eventForms(s.owner, event.id);
+      const forms = (await s.forms.collection.list(s.owner, {}, event.id))
+        .forms;
       for (const page of pages) {
         const detail = await s.cms.detail(s.owner, page.id, page.locale);
         expect(detail.draft.data.root.props).toMatchObject({
@@ -473,7 +488,8 @@ export function eventTemplateChecks(get: () => Context) {
       expect(detail.draft.data).toEqual(original.draft.data);
       expect(detail.revisions).toHaveLength(1);
     }
-    const [copiedForm] = await s.forms.eventForms(s.owner, copy.id);
+    const [copiedForm] = (await s.forms.collection.list(s.owner, {}, copy.id))
+      .forms;
     expect(copiedForm.id).not.toBe(publishedForm.id);
     expect(copiedForm.draft).toEqual(publishedForm.draft);
     expect(copiedForm.publishedVersionId).toBeNull();
@@ -514,7 +530,9 @@ export function eventTemplateChecks(get: () => Context) {
       (page) => page.moduleKey === "website",
     )!;
     let original = await s.cms.detail(s.manager, sourcePage.id, "en");
-    const [sourceForm] = await s.forms.eventForms(s.manager, source.id);
+    const [sourceForm] = (
+      await s.forms.collection.list(s.manager, {}, source.id)
+    ).forms;
     original = await s.cms.save(s.manager, {
       id: original.id,
       locale: original.locale,
@@ -541,7 +559,8 @@ export function eventTemplateChecks(get: () => Context) {
       (page) => page.moduleKey === "website",
     )!;
     const detail = await s.cms.detail(s.owner, copiedPage.id, "en");
-    const [copiedForm] = await s.forms.eventForms(s.owner, copy.id);
+    const [copiedForm] = (await s.forms.collection.list(s.owner, {}, copy.id))
+      .forms;
     expect(copiedForm.id).not.toBe(sourceForm.id);
     expect(copiedForm.event?.id).toBe(copy.id);
     expect(copiedForm.publishedVersionId).toBeNull();
@@ -610,7 +629,11 @@ export function eventTemplateChecks(get: () => Context) {
     await expect(
       s.templates.preview(s.owner, s.input({ kind: "copy", id: source.id })),
     ).rejects.toThrow();
-    expect(await s.events.list(s.owner)).toHaveLength(1);
+    expect(
+      await s.events
+        .query(s.owner, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).toHaveLength(1);
     expect(
       (
         await s.db
@@ -683,7 +706,13 @@ export function eventTemplateChecks(get: () => Context) {
     expect((await s.cancellations.cancel(s.manager, values)).version).toBe(
       cancelled.version,
     );
-    expect((await s.registrations.mine(guest))[0].status).toBe("cancelled");
+    expect(
+      (
+        await s.registrations
+          .queryMine(guest, { pageSize: 100 })
+          .then((result) => result.items)
+      )[0].status,
+    ).toBe("cancelled");
     expect(await s.registrations.workspace(s.manager, event.id)).toMatchObject({
       open: false,
       confirmedCount: 0,

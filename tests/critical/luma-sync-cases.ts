@@ -23,6 +23,59 @@ import {
 } from "./luma-sync-fixture";
 export function lumaSyncChecks(get: () => Context) {
   const setup = (client: LumaClient) => prepare(get(), client);
+  it("C08 paginates every retained Luma guest with exact totals and current event scope", async () => {
+    const provider = await fixture();
+    try {
+      const s = await setup(provider.client);
+      await s.link();
+      const workspace = await s.api.workspace(s.manager, s.event.id);
+      expect(workspace).toMatchObject({ count: 0, page: 1, pageSize: 30 });
+      const sourceId = workspace.sourceId!;
+      const marker = randomUUID();
+      await s.db.insert(lumaGuestProjection).values(
+        Array.from({ length: 125 }, (_, index) => ({
+          organizationId: s.scope.organizationId,
+          eventId: s.event.id,
+          sourceId,
+          providerGuestId: `pagination-${index}`,
+          name: `Synthetic guest ${index}`,
+          email: `pagination-${index}@example.test`,
+          approvalStatus: "approved" as const,
+          ticketCount: 1,
+          observedAt: new Date("2026-01-01T00:00:00Z"),
+          lastSeenRunId: marker,
+        })),
+      );
+      const ids: string[] = [];
+      for (let page = 1; page <= 5; page++) {
+        const result = await s.api.workspace(s.manager, s.event.id, sourceId, {
+          page,
+        });
+        expect(result).toMatchObject({ count: 125, page, pageSize: 30 });
+        expect(result.guests).toHaveLength(page === 5 ? 5 : 30);
+        ids.push(...result.guests.map((guest) => guest.id));
+      }
+      expect(new Set(ids).size).toBe(125);
+      expect(
+        await s.api.workspace(s.manager, s.event.id, sourceId, { page: 999 }),
+      ).toMatchObject({ count: 125, page: 5, pageSize: 30 });
+      await expect(
+        s.api.workspace(s.manager, s.event.id, sourceId, { pageSize: 101 }),
+      ).rejects.toThrow();
+      await expect(
+        s.api.workspace(s.manager, s.event.id, randomUUID(), { page: 2 }),
+      ).rejects.toMatchObject({ code: "LUMA_SOURCE_NOT_FOUND" });
+      await s.db
+        .update(membership)
+        .set({ status: "suspended" })
+        .where(eq(membership.userId, s.manager.userId));
+      await expect(
+        s.api.workspace(s.manager, s.event.id, sourceId, { page: 2 }),
+      ).rejects.toThrow();
+    } finally {
+      await provider.close();
+    }
+  });
   it("C08 requires reviewed scoped management and matching API event/calendar/destination", async () => {
     const provider = await fixture();
     try {

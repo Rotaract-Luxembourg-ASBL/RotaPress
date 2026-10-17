@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { request, errorMessage } from "@/ui/api";
+import type { PreviewComposition } from "../CmsCompositionPreview";
 
 /** Keep the editor mounted: selection, tabs, undo history and scroll never get replaced. */
 export function UnsavedPreview({
@@ -12,6 +13,8 @@ export function UnsavedPreview({
   focusId,
   fullScreen = false,
   onFullScreenChange,
+  compositionEndpoint,
+  refreshVersion = 0,
 }: {
   endpoint: string;
   payload: object;
@@ -20,18 +23,28 @@ export function UnsavedPreview({
   focusId?: string;
   fullScreen?: boolean;
   onFullScreenChange?: (open: boolean) => void;
+  compositionEndpoint?: string;
+  refreshVersion?: number;
 }) {
   const [mode, setMode] = useState<"closed" | "side" | "full">("closed");
   const [device, setDevice] = useState<"desktop" | "phone">("desktop");
   const [url, setUrl] = useState("");
+  const [renderedInput, setRenderedInput] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [combined, setCombined] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [inlineWidth, setInlineWidth] = useState(360);
   const serialized = JSON.stringify(payload);
+  const previewInput = JSON.stringify([
+    endpoint,
+    serialized,
+    combined,
+    compositionEndpoint,
+  ]);
   const active = inline || mode !== "closed";
   useEffect(() => {
     if (!inline || fullScreen || !stage.current) return;
@@ -48,11 +61,23 @@ export function UnsavedPreview({
       setBusy(true);
       setError("");
       try {
+        const composition =
+          combined && compositionEndpoint
+            ? await request<PreviewComposition>(compositionEndpoint, {
+                method: "POST",
+                body: serialized,
+              })
+            : undefined;
         const result = await request<{ url: string }>(endpoint, {
           method: "POST",
-          body: serialized,
+          body: composition
+            ? JSON.stringify({ ...JSON.parse(serialized), composition })
+            : serialized,
         });
-        if (current) setUrl(result.url);
+        if (current) {
+          setUrl(result.url);
+          setRenderedInput(previewInput);
+        }
       } catch (cause) {
         if (current) {
           setError(errorMessage(cause));
@@ -66,7 +91,16 @@ export function UnsavedPreview({
       current = false;
       window.clearTimeout(timer);
     };
-  }, [active, endpoint, serialized, retry]);
+  }, [
+    active,
+    endpoint,
+    serialized,
+    retry,
+    refreshVersion,
+    combined,
+    compositionEndpoint,
+    previewInput,
+  ]);
   useEffect(() => {
     if (mode === "full" || fullScreen) {
       const focused = document.activeElement;
@@ -97,6 +131,16 @@ export function UnsavedPreview({
           </span>
         </div>
         <div className="unsaved-preview-actions">
+          {compositionEndpoint && (
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={combined}
+                onChange={(event) => setCombined(event.target.checked)}
+              />
+              Include saved website drafts
+            </label>
+          )}
           <button
             type="button"
             aria-pressed={device === "desktop"}
@@ -129,7 +173,7 @@ export function UnsavedPreview({
       </header>
       <div className="unsaved-preview-status" role="status">
         {error ||
-          (busy
+          (busy || renderedInput !== previewInput
             ? "Updating preview…"
             : "Current unsaved input. Links show their normal destination.")}
         {error && (
@@ -155,7 +199,6 @@ export function UnsavedPreview({
                 : undefined
             }
             key={url}
-            onLoad={() => setBusy(false)}
           />
         ) : (
           !error && <p>Preparing private preview…</p>

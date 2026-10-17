@@ -111,9 +111,10 @@ then verify the connection with the actual client and account you intend to use.
 
 ## Manage existing connections
 
-Open **Integrations → MCP → Existing connections**. This tab lists the latest
-100 OAuth connections registered by your account. Search by name or callback
-website. Each row shows allowed actions, approved actions, consent status and the
+Open **Integrations → MCP → Existing connections**. Search all OAuth connections
+registered by your account by name, callback website or client ID. Results use
+server pagination with an accurate matching total, including older revoked
+connections; search and page survive reloading. Each row shows allowed actions, approved actions, consent status and the
 last recorded tool call. **Consent saved** means you approved access; it does not
 prove the assistant is currently connected or that its staff session is valid.
 
@@ -211,11 +212,15 @@ saved permission changes and fresh consent for existing connections, then an
 imported-tool refresh in the AI app. See
 [publication workflow and effects](ai-and-api.md#publish-only-when-requested).
 
-OAuth grants no member approval, payment, draw execution, hiding/deleting images
-or provider credential access. AI can only use operations listed for its connection. Private
-data supplied to an assistant is visible to that chosen client; choose scopes and
-the provider accordingly. Reference content is untrusted input, never permission
-to run new actions or disclose private records.
+Membership decisions, role changes, private responses, guest access and image/file
+management require their own explicit additional grants. Existing connections do
+not gain them automatically. See [whole-platform assistant actions](automation-platform.md)
+for the permissions and recovery workflow. Requested actions execute directly
+under those grants, with current identity, resource scope and owner protections.
+Payment, draw execution, authentication and provider credential access remain
+unavailable. Private data supplied to an assistant is visible to that chosen client;
+choose scopes and the provider accordingly. Reference content is untrusted input,
+never permission to run new actions or disclose private records.
 
 ## Protocol reference
 

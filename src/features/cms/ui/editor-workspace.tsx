@@ -14,6 +14,9 @@ import { CanvasAddBlock } from "./editor-insertion";
 import { isSitePart } from "../cms_schemas";
 import { EditorInspector } from "./editor-inspector";
 import { editorRootZone, editorBlockCount } from "./editor-selection";
+import { EditorRecovery } from "./editor-recovery";
+import { EditorOutline } from "./editor-outline";
+import { editorEventTarget } from "./editor-documents";
 
 export function EditorWorkspace({
   document: doc,
@@ -124,6 +127,7 @@ export function EditorWorkspace({
           </Notice>
         </div>
       )}
+      <EditorRecovery document={doc} />
       <div
         className="editor-body"
         inert={doc.busy || undefined}
@@ -172,7 +176,7 @@ export function EditorWorkspace({
                 onClick={(event) => {
                   if (
                     event.target instanceof Element &&
-                    event.target.closest("button")
+                    event.target.closest(".editor-outline-blocks button")
                   ) {
                     if (window.matchMedia("(max-width: 900px)").matches)
                       setPanel(null);
@@ -182,10 +186,10 @@ export function EditorWorkspace({
                   }
                 }}
               >
-                <p className="editor-help">
-                  Select a block to edit. Drag to reorder.
-                </p>
-                <Puck.Outline />
+                <EditorOutline
+                  detail={doc.detail}
+                  disabled={doc.busy || doc.readOnly}
+                />
               </div>
             )}
           </aside>
@@ -229,7 +233,32 @@ export function EditorWorkspace({
                   title={`${device} canvas width`}
                   aria-label={`${device[0].toUpperCase()}${device.slice(1)} canvas width`}
                   aria-pressed={width === device}
-                  onClick={() => setWidth(device)}
+                  onClick={() => {
+                    setWidth(device);
+                    dispatch({
+                      type: "setUi",
+                      ui: {
+                        viewports: {
+                          current: {
+                            width:
+                              device === "desktop"
+                                ? "100%"
+                                : device === "tablet"
+                                  ? 768
+                                  : 390,
+                            height: "auto",
+                          },
+                          controlsVisible: false,
+                          options: [
+                            { width: "100%", label: "Desktop" },
+                            { width: 768, label: "Tablet" },
+                            { width: 390, label: "Phone" },
+                          ],
+                        },
+                      },
+                      recordHistory: false,
+                    });
+                  }}
                 >
                   <EditorIcon name={device} />
                 </button>
@@ -243,8 +272,9 @@ export function EditorWorkspace({
               inert={doc.readOnly || undefined}
               onClick={(event) => {
                 if (
-                  event.target instanceof Element &&
-                  event.target.closest("[data-puck-component]")
+                  editorEventTarget(event.nativeEvent)?.closest(
+                    "[data-puck-component]",
+                  )
                 ) {
                   setInspectorChoice(null);
                   setHiddenForSelection(null);
@@ -318,7 +348,7 @@ export function EditorWorkspace({
           {doc.busy
             ? "Working…"
             : doc.dirty
-              ? "Changes are not saved"
+              ? doc.checkpoint.status || "Changes are not saved"
               : `Saved ${new Date(doc.detail.draft.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
         </span>
         <button onClick={() => setDialog("help")}>Editing help</button>

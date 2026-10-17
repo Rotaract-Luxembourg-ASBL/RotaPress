@@ -9,7 +9,14 @@ export function imageToolContent(
   result: Record<string, unknown>,
   ok: boolean,
 ): (TextContent | ImageContent)[] {
-  if (ok && ["media_inspect", "website_preview"].includes(operation)) {
+  if (
+    ok &&
+    [
+      "media_inspect",
+      "website_preview",
+      "website_composition_preview",
+    ].includes(operation)
+  ) {
     const data = result.data;
     if (data && typeof data === "object" && "image" in data) {
       const image = data.image;

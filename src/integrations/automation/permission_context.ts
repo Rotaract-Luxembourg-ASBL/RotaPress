@@ -4,7 +4,12 @@ export function readOnlyScopes(scopes: readonly string[]) {
   return scopes.every(
     (scope) =>
       scope.endsWith(":read") ||
-      ["media:inspect", "website:preview", "offline_access"].includes(scope),
+      [
+        "media:inspect",
+        "files:download",
+        "website:preview",
+        "offline_access",
+      ].includes(scope),
   );
 }
 

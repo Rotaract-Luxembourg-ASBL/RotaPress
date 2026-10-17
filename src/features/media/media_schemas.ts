@@ -2,6 +2,13 @@ import { z } from "zod";
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const MAX_IMAGE_PIXELS = 20_000_000;
+export const UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
+export const mediaKindSchema = z.enum(["image", "document", "audio", "video"]);
+export type MediaKind = z.infer<typeof mediaKindSchema>;
+export const mediaLimits = { image: MAX_UPLOAD_BYTES, document: 25 * 1024 * 1024,
+  audio: 100 * 1024 * 1024, video: 500 * 1024 * 1024 } as const;
+export const mediaMimeTypes = ["image/webp", "application/pdf", "audio/mpeg", "audio/mp4", "video/mp4", "video/webm"] as const;
+export type MediaMimeType = typeof mediaMimeTypes[number];
 
 const cleanText = (max: number) => z.string().trim().max(max).refine(
   (text) => [...text].every((character) => {
@@ -57,8 +64,10 @@ const dateFilter = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(
 export const mediaAdminListSchema = z.strictObject({
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(48),
+  offset: z.coerce.number().int().min(0).max(100000).optional(),
   search: cleanText(160).default(""),
   visibility: z.enum(["all", "public", "private"]).default("all"),
+  kind: z.enum(["all", "image", "document", "audio", "video"]).default("all"),
   collection: cleanText(80).default(""),
   dateFrom: dateFilter,
   dateTo: dateFilter,
@@ -67,15 +76,20 @@ export const mediaAdminListSchema = z.strictObject({
   "The end date must be on or after the start date.");
 
 export type MediaMetadata = z.infer<typeof mediaMetadataSchema>;
-export type MediaAssetDto = MediaMetadata & {
+type MediaAssetBase = MediaMetadata & {
   id: string;
   visibility: "private" | "public";
-  mimeType: "image/webp";
   originalName: string;
   size: number;
-  width: number;
-  height: number;
   createdAt: string;
 };
+export type MediaAssetDto = MediaAssetBase & (
+  | { kind: "image"; mimeType: "image/webp"; width: number; height: number }
+  | { kind: "document"; mimeType: "application/pdf"; width: null; height: null }
+  | { kind: "audio"; mimeType: "audio/mpeg" | "audio/mp4"; width: null; height: null }
+  | { kind: "video"; mimeType: "video/mp4" | "video/webm"; width: number; height: number }
+);
 export type AdminMediaAssetDto = MediaAssetDto & { metadataRevision: string };
+export type ImageMediaAssetDto = Extract<MediaAssetDto, { kind: "image" }>;
+export type AdminImageMediaAssetDto = ImageMediaAssetDto & { metadataRevision: string };
 export type MediaAdminListInput = z.infer<typeof mediaAdminListSchema>;

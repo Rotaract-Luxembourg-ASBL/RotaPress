@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
 import type { CmsSummary } from "../../cms/cms_schemas";
 import type { FormDto } from "../../forms/form_types";
+import type { FormCollection } from "../../forms/form_collection";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 import type { EventDraft } from "../event_schemas";
 import type { EventReadiness } from "../event_readiness";
 import { eventModules, type EventModuleState } from "../event_modules";
@@ -34,8 +37,14 @@ export function EventFormsPanel({
 }) {
   const router = useRouter();
   const { features } = useCurrentUser();
-  const { data, error, refresh } = useResource<{ forms: FormDto[] }>(
-    features.forms ? `/api/admin/events/${event.id}/forms` : null,
+  const { params, change: changeLocation } = useCollectionLocation();
+  const formView = params.get("formsStatus") ?? "active";
+  const search = params.get("formsSearch") ?? "";
+  const page = Number(params.get("formsPage")) || 1;
+  const { data, error, refresh } = useResource<FormCollection>(
+    features.forms
+      ? `/api/admin/events/${event.id}/forms?${new URLSearchParams({ status: formView, search, page: String(page) })}`
+      : null,
   );
   const website = useResource<{
     modules: EventModuleState[];
@@ -46,11 +55,8 @@ export function EventFormsPanel({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
-  const [formView, setFormView] = useState("active");
   const [formMessage, setFormMessage] = useState("");
-  const visibleForms = data?.forms.filter(
-    (form) => formView === "all" || form.archived === (formView === "archived"),
-  );
+  const visibleForms = data?.forms;
   const active = (key: string) =>
     website.data?.modules.some((m) => m.key === key && m.state === "enabled");
   const pages =
@@ -247,8 +253,6 @@ export function EventFormsPanel({
           event.capabilities.includes("events.responses.manage") && (
             <EventRegistrationPanel
               eventId={event.id}
-              forms={data?.forms ?? []}
-              formsLoaded={!features.forms || Boolean(data)}
               canConfigure={event.capabilities.includes("events.publish")}
               canCreate={event.capabilities.includes("events.edit")}
               onCreateForm={() => void createRegistrationForm()}
@@ -275,19 +279,37 @@ export function EventFormsPanel({
           <Loading />
         ) : (
           <>
-            {data.forms.length > 0 && (
+            {data.counts.all > 0 && (
               <SavedForms active={Boolean(active("forms"))}>
                 {formMessage && <Notice kind="success">{formMessage}</Notice>}
                 <label>
                   View event forms
                   <select
                     value={formView}
-                    onChange={(change) => setFormView(change.target.value)}
+                    onChange={(event) =>
+                      changeLocation(
+                        { formsStatus: event.target.value, formsPage: 1 },
+                        false,
+                      )
+                    }
                   >
                     <option value="active">Active forms</option>
                     <option value="archived">Removed / archived</option>
                     <option value="all">All forms</option>
                   </select>
+                </label>
+                <label>
+                  Find an event form
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) =>
+                      changeLocation(
+                        { formsSearch: event.target.value, formsPage: 1 },
+                        false,
+                      )
+                    }
+                  />
                 </label>
                 <ul className="content-rows">
                   {visibleForms?.map((form) => (
@@ -343,6 +365,11 @@ export function EventFormsPanel({
                     </li>
                   ))}
                 </ul>
+                <CollectionPagination
+                  {...data}
+                  noun="forms"
+                  onPage={(next) => changeLocation({ formsPage: next }, false)}
+                />
                 {!visibleForms?.length && (
                   <p className="field-help">
                     {formView === "archived"
@@ -418,14 +445,13 @@ export function EventFormsPanel({
                 </fieldset>
               </form>
             )}
-            {active("forms") &&
-              data.forms.some((form) => form.kind === "event") && (
-                <EventPagePlacement
-                  kind="form"
-                  {...placement}
-                  placement={readiness?.forms.placement}
-                />
-              )}
+            {active("forms") && data.counts.all > 0 && (
+              <EventPagePlacement
+                kind="form"
+                {...placement}
+                placement={readiness?.forms.placement}
+              />
+            )}
           </>
         )}
       </section>

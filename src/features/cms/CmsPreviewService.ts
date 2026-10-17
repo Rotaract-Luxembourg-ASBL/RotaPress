@@ -19,9 +19,14 @@ import { CmsPublicReader } from "./CmsPublicReader";
 import { CmsRepository } from "./CmsRepository";
 import { saveInput } from "./cms_commands";
 import { cmsLocaleSchema } from "./cms_schemas";
+import {
+  CmsCompositionPreview,
+  compositionInput,
+} from "./CmsCompositionPreview";
 
 const previewInput = saveInput.extend({
   event: eventVersionSchema.extend({ fields: eventFieldsSchema }).optional(),
+  composition: compositionInput.optional(),
 });
 
 /** Ephemeral input uses the normal scope/content policy and the real public projector. */
@@ -38,9 +43,24 @@ export class CmsPreviewService {
 
   async create(actor: TrustedActor, input: unknown) {
     const parsed = previewInput.parse(input);
-    const { event: eventInput, ...draft } = parsed;
+    const { event: eventInput, composition, ...draft } = parsed;
     return this.db.transaction(async (tx) => {
       const prepared = await this.cms.drafts.prepare(actor, draft, tx);
+      if (composition) {
+        if (prepared.content.eventId)
+          throw new DomainError(
+            "PREVIEW_SCOPE",
+            "Combined website drafts belong to club pages and shared site parts.",
+            422,
+          );
+        await new CmsCompositionPreview(this.cms).project(
+          actor,
+          draft.id,
+          draft.locale,
+          prepared.draft.data,
+          composition,
+        );
+      }
       const event = prepared.content.eventId
         ? await this.events.detail(actor, prepared.content.eventId, tx)
         : null;
@@ -64,6 +84,7 @@ export class CmsPreviewService {
         );
       const payload = {
         ...draft,
+        ...(composition ? { composition } : {}),
         data: prepared.draft.data,
         ...(event
           ? {
@@ -104,6 +125,25 @@ export class CmsPreviewService {
         url: `/admin/website/${draft.id}/preview?locale=${draft.locale}&snapshot=${snapshot.id}`,
         expiresAt: expiresAt.toISOString(),
       };
+    });
+  }
+
+  async reviewComposition(actor: TrustedActor, input: unknown) {
+    const draft = saveInput.parse(input);
+    return this.db.transaction(async (tx) => {
+      const prepared = await this.cms.drafts.prepare(actor, draft, tx);
+      if (prepared.content.eventId)
+        throw new DomainError(
+          "PREVIEW_SCOPE",
+          "Combined website drafts belong to club pages and shared site parts.",
+          422,
+        );
+      return new CmsCompositionPreview(this.cms).review(
+        actor,
+        draft.id,
+        draft.locale,
+        prepared.draft.data,
+      );
     });
   }
 
@@ -170,7 +210,9 @@ export class CmsPreviewService {
         "This private preview expired. Return to the editor and preview again.",
         404,
       );
-    const { event, ...draft } = previewInput.parse(snapshot.payload);
+    const { event, composition, ...draft } = previewInput.parse(
+      snapshot.payload,
+    );
     if (draft.locale !== locale)
       throw new DomainError(
         "PREVIEW_UNAVAILABLE",
@@ -184,7 +226,16 @@ export class CmsPreviewService {
         const current = await this.events.detail(actor, event.id, tx);
         this.events.requireEditableVersion(current, event.expectedVersion);
       }
-      return value;
+      const combined = composition
+        ? await new CmsCompositionPreview(this.cms).project(
+            actor,
+            draft.id,
+            draft.locale,
+            value.draft.data,
+            composition,
+          )
+        : null;
+      return { ...value, combined };
     });
     const page = await this.reader.project(
       prepared.organizationId,
@@ -200,6 +251,16 @@ export class CmsPreviewService {
       prepared.content.kind,
       false,
     );
-    return { page, event: event?.fields ?? null };
+    return {
+      page: prepared.combined
+        ? {
+            ...page,
+            sections: { ...page.sections, ...prepared.combined.sections },
+            partners: { ...page.partners, ...prepared.combined.partners },
+          }
+        : page,
+      event: event?.fields ?? null,
+      site: prepared.combined?.site ?? null,
+    };
   }
 }

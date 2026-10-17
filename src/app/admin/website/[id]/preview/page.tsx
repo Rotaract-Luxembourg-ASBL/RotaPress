@@ -42,9 +42,11 @@ export default async function DraftPreview({
     (await services.cms.preview(actor, (await params).id, locale));
   const [club, site] = await Promise.all([
     services.organization.publicIdentity(),
-    (await searchParams).appearance === "draft"
-      ? services.cms.previewSite(actor, locale)
-      : services.cms.publicSite(locale),
+    unsaved?.site
+      ? Promise.resolve(unsaved.site)
+      : (await searchParams).appearance === "draft"
+        ? services.cms.previewSite(actor, locale)
+        : services.cms.publicSite(locale),
   ]);
   if (isSitePart(page.kind)) {
     const home = await services.cms.publicHome(locale);
@@ -82,7 +84,9 @@ export default async function DraftPreview({
         event
           ? `Private event preview: ${event.title}. ${snapshot ? "Unsaved changes" : "Saved draft"}; publication remains unchanged.`
           : snapshot
-            ? "Private preview of unsaved changes. Nothing has been saved or published."
+            ? unsaved?.site
+              ? "Private combined preview: unsaved page and saved website, menu and shared drafts. Nothing has been published."
+              : "Private preview of unsaved changes. Nothing has been saved or published."
             : undefined
       }
       beforeContent={

@@ -62,6 +62,7 @@ export const sourceImageOperations = [
   operation(
     {
       name: "source_image_import",
+      effect: "draft",
       method: "POST",
       path: "/sources/images",
       scope: "media:write",
@@ -99,6 +100,7 @@ export const sourceImageOperations = [
         createHash("sha256")
           .update(JSON.stringify([new URL(url).href, rightsConfirmed]))
           .digest("hex"),
+        "source_image_import",
       );
     },
   ),

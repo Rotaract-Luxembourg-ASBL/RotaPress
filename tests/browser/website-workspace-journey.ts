@@ -44,6 +44,7 @@ export async function publishWebsite(page: Page) {
 
 /** Complete website setup extends B02; catalogue previews never install records. */
 export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
+  const canvas = page.frameLocator(".editor-canvas iframe");
   const workspace = async () =>
     (await page.request
       .get("/api/admin/cms/website?locale=en")
@@ -172,7 +173,7 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Our next activities", exact: true }),
+    canvas.getByRole("heading", { name: "Our next activities", exact: true }),
   ).toBeVisible();
   await page.goto("/admin/website");
   await page
@@ -261,10 +262,10 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
   )!;
   await page.goto(`/admin/website/${draftContact.id}?locale=en`);
   await expect(
-    page.getByRole("region", { name: "Club form preview", exact: true }),
+    canvas.getByRole("region", { name: "Club form preview", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Send message", exact: true }),
+    canvas.getByRole("button", { name: "Send message", exact: true }),
   ).toBeDisabled();
   await page.goto(`/admin/forms/${contactId}`);
   await page.getByRole("button", { name: "Publish form", exact: true }).click();

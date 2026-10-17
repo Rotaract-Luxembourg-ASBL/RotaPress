@@ -1,5 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useResource } from "@/ui/api";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import { Loading, Notice } from "@/ui/primitives";
+import type { CalendarActivityCollection } from "../calendar_collection";
 import { ActionsMenu } from "@/ui/actions-menu";
 import { Icon } from "@/ui/icon";
 import {
@@ -32,31 +36,29 @@ export function CalendarActivityList({
     operation: "publish" | "unpublish" | "archive" | "restore",
   ) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [view, setView] = useState("active");
-  const all = workspace.schedules.filter(
-    (item) => !calendar || item.calendarId === calendar.id,
+  const { params, page, change } = useCollectionLocation();
+  const query = params.get("search") ?? "";
+  const view = params.get("status") ?? "active";
+  const setView = (status: string) => change({ status });
+  const search = new URLSearchParams({
+    page: String(page),
+    search: query,
+    status: view,
+  });
+  if (calendar) search.set("calendarId", calendar.id);
+  const { data, error, refresh } = useResource<CalendarActivityCollection>(
+    `/api/admin/calendar/schedules?${search}`,
   );
-  const counts = {
-    active: all.filter((item) => !item.archived).length,
-    published: all.filter((item) => !item.archived && item.published).length,
-    draft: all.filter((item) => !item.archived && !item.published).length,
-    archived: all.filter((item) => item.archived).length,
+  const counts = data?.counts ?? {
+    all: 0,
+    active: 0,
+    published: 0,
+    draft: 0,
+    archived: 0,
   };
-  const items = all.filter(
-    (item) =>
-      (view === "archived"
-        ? item.archived
-        : !item.archived &&
-          (view === "active" ||
-            (view === "draft" ? !item.published : Boolean(item.published)))) &&
-      item.draft.title
-        .toLocaleLowerCase()
-        .includes(query.trim().toLocaleLowerCase()),
-  );
+  const items = data?.items ?? [];
   function clear() {
-    setQuery("");
-    setView("active");
+    change({ search: undefined, status: "active" });
   }
   return (
     <Collection
@@ -83,7 +85,7 @@ export function CalendarActivityList({
           <CollectionToolbar
             searchLabel="Search activities"
             query={query}
-            onQuery={setQuery}
+            onQuery={(search) => change({ search })}
           >
             {query && (
               <button className="button button-outline" onClick={clear}>
@@ -93,8 +95,25 @@ export function CalendarActivityList({
           </CollectionToolbar>
         </>
       }
-      footer={`${items.length} of ${all.length} activities shown · Repeating schedules count once. Connected events appear in Combined calendar.`}
+      footer={
+        data && (
+          <CollectionPagination
+            {...data}
+            noun="activities"
+            onPage={(next) => change({ page: next }, false)}
+          />
+        )
+      }
     >
+      {error && (
+        <Notice>
+          {error}{" "}
+          <button className="inline-button" onClick={refresh}>
+            Try again
+          </button>
+        </Notice>
+      )}
+      {!data && !error && <Loading />}
       <ul className="admin-collection-rows">
         {items.map((item) => {
           const parent = workspace.calendars.find(
@@ -212,23 +231,23 @@ export function CalendarActivityList({
           );
         })}
       </ul>
-      {!items.length && (
+      {data && !items.length && (
         <CollectionEmpty
           icon="calendar"
           title={
-            all.length
+            counts.all
               ? "No activities match these filters"
               : "No activities yet"
           }
           description={
-            all.length
+            counts.all
               ? "Try another search or status."
               : calendar
                 ? "Add an activity or import a calendar. Connect published events with Edit calendar."
                 : "Choose a calendar to add activities, or create one to group them."
           }
         >
-          {all.length > 0 && (
+          {counts.all > 0 && (
             <button className="button button-outline" onClick={clear}>
               Clear filters
             </button>

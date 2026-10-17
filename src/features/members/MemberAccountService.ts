@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, sql } from "drizzle-orm";
 import { user } from "../../../db/schema/auth";
 import { organization } from "../../../db/schema/club";
 import { memberProfile } from "../../../db/schema/member-profile";
@@ -13,6 +13,11 @@ import {
 import type { Database } from "../../infrastructure/database/client";
 import { MembershipRepository } from "./MembershipRepository";
 import { formDefinitionSchema } from "../forms/form_schemas";
+import {
+  collectionPage,
+  collectionQuerySchema,
+  searchPattern,
+} from "@/core/collections";
 import {
   profileSchema,
   saveProfileSchema,
@@ -144,5 +149,58 @@ export class MemberAccountService {
       });
     });
     return this.workspace(actor);
+  }
+
+  async responses(actor: TrustedActor, raw: unknown = {}) {
+    const organizationId = await this.scope(actor);
+    const input = collectionQuerySchema.parse(raw);
+    return this.db.transaction(
+      async (tx) => {
+        const where = and(
+          eq(formSubmission.organizationId, organizationId),
+          eq(formSubmission.submittedByUserId, actor.userId),
+          input.search
+            ? ilike(
+                sql`${formVersion.definition}->>'title'`,
+                searchPattern(input.search),
+              )
+            : undefined,
+        );
+        const join = and(
+          eq(formVersion.id, formSubmission.versionId),
+          eq(formVersion.organizationId, organizationId),
+          eq(formVersion.formId, formSubmission.formId),
+        );
+        const [matched] = await tx
+          .select({ total: count() })
+          .from(formSubmission)
+          .innerJoin(formVersion, join)
+          .where(where);
+        const page = collectionPage(matched.total, input.page, input.pageSize);
+        const rows = await tx
+          .select({
+            id: formSubmission.id,
+            status: formSubmission.status,
+            createdAt: formSubmission.createdAt,
+            title: sql<string>`${formVersion.definition}->>'title'`,
+          })
+          .from(formSubmission)
+          .innerJoin(formVersion, join)
+          .where(where)
+          .orderBy(desc(formSubmission.createdAt), formSubmission.id)
+          .limit(input.pageSize)
+          .offset((page - 1) * input.pageSize);
+        return {
+          items: rows.map(({ createdAt, ...row }) => ({
+            ...row,
+            receivedAt: createdAt.toISOString(),
+          })),
+          total: matched.total,
+          page,
+          pageSize: input.pageSize,
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
   }
 }

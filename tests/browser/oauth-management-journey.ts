@@ -1,4 +1,5 @@
 import { expect, type APIRequestContext } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 import type {
   CalendarFeed,
   CalendarWorkspace,
@@ -26,12 +27,18 @@ export async function oauthManagementJourney(
     name: string,
     args: Record<string, unknown>,
   ): Promise<T> => {
-    const result = await rpc("tools/call", { name, arguments: args });
+    const requiresRequest = listing.tools
+      .find((tool) => tool.name === name)
+      ?.inputSchema.required?.includes("requestId");
+    const result = await rpc("tools/call", {
+      name,
+      arguments: requiresRequest ? { requestId: randomUUID(), ...args } : args,
+    });
     expect(result.isError, JSON.stringify(result.content)).toBe(false);
     return result.structuredContent.data as T;
   };
   const listing = (await rpc("tools/list", {})) as {
-    tools: { name: string }[];
+    tools: { name: string; inputSchema: { required?: string[] } }[];
   };
   const names = listing.tools.map((tool) => tool.name);
   expect(names).toEqual(
@@ -93,6 +100,7 @@ export async function oauthManagementJourney(
   const stale = await rpc("tools/call", {
     name: "calendar_save",
     arguments: {
+      requestId: randomUUID(),
       id: calendar.id,
       expectedVersion: calendar.version,
       definition,

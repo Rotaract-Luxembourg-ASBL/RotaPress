@@ -1,3 +1,4 @@
+import { AutomationRuntime } from "../../src/integrations/automation/receipt_service";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { mediaAsset } from "../../db/schema/media";
@@ -51,6 +52,7 @@ export function sourceImageChecks(context: () => Context) {
         },
         sources,
         services: {
+          automationRuntime: new AutomationRuntime(ctx.db),
           media: ctx.media,
           authorization: ctx.authorization,
           limiter: { consume: async () => {} },
@@ -72,7 +74,7 @@ export function sourceImageChecks(context: () => Context) {
     }
 
     it("normalizes imported pixels privately and reuses identical actor-bound retries", async () => {
-      const { ctx, automation, input } = await fixture();
+      const { ctx, automation, input, calls } = await fixture();
       const first = (await sourceImageOperations[0].run(automation, input)) as {
         asset: { id: string; visibility: string; mimeType: string };
         metadataRevision: string;
@@ -82,15 +84,17 @@ export function sourceImageChecks(context: () => Context) {
         mimeType: "image/webp",
       });
       expect(first.metadataRevision).toMatch(/^[a-f0-9]{64}$/);
+      const fetches = calls();
       const repeated = await sourceImageOperations[0].run(automation, input);
       expect(repeated).toEqual(first);
+      expect(calls()).toBe(fetches);
       expect(await ctx.db.select().from(mediaAsset)).toHaveLength(1);
       await expect(
         sourceImageOperations[0].run(automation, {
           ...input,
           url: "https://www.rotaract.lu/another-photo.png",
         }),
-      ).rejects.toMatchObject({ code: "MEDIA_UPLOAD_RETRY_CHANGED" });
+      ).rejects.toMatchObject({ code: "AUTOMATION_REQUEST_CHANGED" });
       expect(await ctx.db.select().from(mediaAsset)).toHaveLength(1);
       await expect(ctx.media.read(null, first.asset.id)).rejects.toMatchObject({
         code: "MEDIA_NOT_FOUND",
@@ -100,7 +104,7 @@ export function sourceImageChecks(context: () => Context) {
           ...input,
           alt: "Changed retry",
         }),
-      ).rejects.toMatchObject({ code: "MEDIA_UPLOAD_RETRY_CHANGED" });
+      ).rejects.toMatchObject({ code: "AUTOMATION_REQUEST_CHANGED" });
       expect(await ctx.db.select().from(mediaAsset)).toHaveLength(1);
     });
 
@@ -121,6 +125,15 @@ export function sourceImageChecks(context: () => Context) {
       automation.reauthorize = async () => ({
         ...automation.principal,
         sourceOrigins: [],
+      });
+      await expect(
+        sourceImageOperations[0].run(automation, input),
+      ).rejects.toMatchObject({ code: "SOURCE_ORIGIN_DENIED" });
+      expect(calls()).toBe(0);
+      // A grant revoked during the two bounded HTTP reads must also block persistence.
+      automation.reauthorize = async () => ({
+        ...automation.principal,
+        sourceOrigins: calls() >= 2 ? [] : automation.principal.sourceOrigins,
       });
       await expect(
         sourceImageOperations[0].run(automation, input),

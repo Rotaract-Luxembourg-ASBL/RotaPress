@@ -2,7 +2,7 @@
 import { answerText } from "../form_elements";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { FormDto, SubmissionDto } from "../form_types";
 import { submissionStatuses, type SubmissionStatus } from "../form_schemas";
@@ -20,6 +20,14 @@ function Detail({
   reload: () => void;
 }) {
   const router = useRouter();
+  const requestedReturn = useSearchParams().get("returnTo");
+  const returnTo =
+    requestedReturn === `/admin/forms/${formId}/submissions` ||
+    requestedReturn?.startsWith(`/admin/forms/${formId}/submissions?`) ||
+    requestedReturn === "/admin/inbox" ||
+    requestedReturn?.startsWith("/admin/inbox?")
+      ? requestedReturn
+      : `/admin/inbox?formId=${formId}`;
   const user = useCurrentUser();
   const [submission, setSubmission] = useState(initial);
   const [status, setStatus] = useState(initial.status);
@@ -38,7 +46,10 @@ function Detail({
     try {
       const next = await request<SubmissionDto>(
         `/api/admin/forms/submissions/${submission.id}`,
-        { method: "PATCH", body: JSON.stringify({ status }) },
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status, expectedVersion: submission.version }),
+        },
       );
       setSubmission(next);
       setStatus(next.status);
@@ -65,7 +76,7 @@ function Detail({
         method: "DELETE",
         body: JSON.stringify({ confirm: true }),
       });
-      router.replace(`/admin/inbox?formId=${formId}`);
+      router.replace(returnTo);
     } catch (cause) {
       setError(errorMessage(cause));
       setBusy(false);
@@ -105,14 +116,23 @@ function Detail({
         title={submission.formTitle}
         description={`Received ${new Date(submission.receivedAt).toLocaleString()}`}
       >
-        <Link
-          href={`/admin/inbox?formId=${formId}`}
-          className="button button-outline"
-        >
+        <Link href={returnTo} className="button button-outline">
           Back to responses
         </Link>
       </PageHeading>
-      {error && <Notice>{error}</Notice>}
+      {error && (
+        <Notice>
+          {error}{" "}
+          <button
+            type="button"
+            className="inline-button"
+            disabled={busy}
+            onClick={reload}
+          >
+            Reload response
+          </button>
+        </Notice>
+      )}
       {message && <Notice kind="success">{message}</Notice>}
       <div className="forms-workspace">
         <section className="panel">

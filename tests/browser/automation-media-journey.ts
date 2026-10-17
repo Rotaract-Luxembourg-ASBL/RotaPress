@@ -74,6 +74,12 @@ export async function automationMediaJourney(
           params: { name, arguments: args },
         },
       });
+    const sameConnection = await api.post("/api/v1/media/upload", {
+      headers,
+      data: image,
+    });
+    expect(sameConnection.status()).toBe(200);
+    expect((await sameConnection.json()).data).toEqual(uploaded);
     const retry = await rpc("media_upload", {
       ...metadata,
       mimeType: "image/png",
@@ -81,8 +87,9 @@ export async function automationMediaJourney(
     });
     expect(retry.status()).toBe(200);
     const retried = (await retry.json()).result;
-    expect(retried.isError).toBe(false);
-    expect(retried.structuredContent.data.asset.id).toBe(assetId);
+    // A different credential cannot replay another connection's receipt.
+    expect(retried.isError).toBe(true);
+    expect(JSON.stringify(retried.content)).toContain("another connection");
     const inspection = await rpc("media_inspect", { id: assetId });
     expect(inspection.status()).toBe(200);
     const inspected = (await inspection.json()).result;
@@ -100,6 +107,7 @@ export async function automationMediaJourney(
     expect(text.text.includes(imageBlock.data)).toBe(false);
 
     const edit = {
+      requestId: randomUUID(),
       expectedRevision: uploaded.metadataRevision,
       title: "Event artwork",
       alt: metadata.alt,
@@ -111,7 +119,7 @@ export async function automationMediaJourney(
       (
         await api.patch(`/api/v1/media/${assetId}/metadata`, {
           headers: bearer,
-          data: edit,
+          data: { ...edit, requestId: randomUUID() },
         })
       ).status(),
     ).toBe(200);
@@ -136,6 +144,7 @@ export async function automationMediaJourney(
     const creation = await api.post("/api/v1/website/content", {
       headers: bearer,
       data: {
+        requestId: randomUUID(),
         kind: "page",
         locale: "en",
         title: "Event artwork draft",
@@ -148,6 +157,7 @@ export async function automationMediaJourney(
     const save = await api.patch(`/api/v1/website/content/${created.id}`, {
       headers: bearer,
       data: {
+        requestId: randomUUID(),
         locale: "en",
         expectedRevisionId: created.draft.id,
         title: created.draft.title,
@@ -203,6 +213,7 @@ export async function automationMediaJourney(
     });
     expect(currentMedia.status()).toBe(200);
     const publish = {
+      requestId: randomUUID(),
       assets: [
         {
           id: assetId,

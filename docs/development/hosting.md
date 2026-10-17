@@ -126,7 +126,8 @@ Restore requires a fresh stack/configuration and checks that its database/upload
 are empty. Imports belong to the migrator so subsequent forward migrations work.
 Startup reapplies the reviewed privilege policy instead of importing database-owner ACLs.
 It never uses `--clean`, drops schemas or resets an installation. Upload restore
-accepts bounded random `.webp` names, verifies contents and creates files
+accepts bounded random names for supported images, PDFs, audio, video and upload
+parts, verifies checksums and creates files
 exclusively; archive paths and symlinks cannot overwrite other files.
 
 ```sh
@@ -140,3 +141,6 @@ expiry/renewal, HTTPS/cookies, persistence, backup/restore and overwrite refusal
 It uses synthetic sender configuration and sends no email. Only its own test
 containers/volumes are removed; private archives remain under `.local/hosting/`.
 Public TLS and live providers require separate acceptance.
+
+A separately authorized fresh start uses the [controlled content reset](content-reset.md)
+procedure. Normal restore and update never reset an installation or Google sign-in.

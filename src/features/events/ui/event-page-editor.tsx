@@ -61,6 +61,7 @@ function EventPageForm({
   const [choosingLayout, setChoosingLayout] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [fullPreview, setFullPreview] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const [undo, setUndo] = useState<CmsData>();
   const {
     data: workspace,
@@ -414,6 +415,9 @@ function EventPageForm({
                         </p>
                       )}
                       <EventSectionFields
+                        onRefreshPreview={() =>
+                          setPreviewVersion((value) => value + 1)
+                        }
                         key={selected.props.id}
                         block={selected}
                         sectionLinks={eventPageNavigation(doc.draft.data)}
@@ -484,6 +488,7 @@ function EventPageForm({
               </fieldset>
               {(showPreview || fullPreview) && active && (
                 <UnsavedPreview
+                  refreshVersion={previewVersion}
                   inline
                   fullScreen={fullPreview}
                   onFullScreenChange={setFullPreview}

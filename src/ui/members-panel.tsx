@@ -21,6 +21,8 @@ import {
   SummaryStats,
 } from "./collection";
 import { Dialog } from "./dialog";
+import { useCollectionLocation } from "./collection-location";
+import { CollectionPagination } from "./collection-pagination";
 
 const roleLabels: Record<MembershipRole, string> = {
   owner: "Owner",
@@ -37,7 +39,7 @@ const statuses: MembershipStatus[] = [
 ];
 
 function MemberAccess({
-  member,
+  member: initial,
   protectedReason,
   onClose,
   onSaved,
@@ -48,6 +50,7 @@ function MemberAccess({
   onSaved: () => void;
 }) {
   const me = useCurrentUser();
+  const [member, setMember] = useState(initial);
   const [status, setStatus] = useState(member.status);
   const [role, setRole] = useState(member.role);
   const [busy, setBusy] = useState(false);
@@ -65,9 +68,33 @@ function MemberAccess({
     try {
       await request("/api/admin/members", {
         method: "PATCH",
-        body: JSON.stringify({ membershipId: member.id, status, role }),
+        body: JSON.stringify({
+          membershipId: member.id,
+          expectedVersion: member.version,
+          status,
+          role,
+        }),
       });
       onSaved();
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function reload() {
+    setBusy(true);
+    try {
+      const result = await request<{ members: Member[] }>(
+        `/api/admin/members?search=${encodeURIComponent(member.email)}&status=all`,
+      );
+      const latest = result.members.find((item) => item.id === member.id);
+      if (!latest) throw new Error("This membership is no longer available.");
+      setMember(latest);
+      setStatus(latest.status);
+      setRole(latest.role);
+      setReviewing(false);
+      setError(undefined);
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -89,7 +116,19 @@ function MemberAccess({
           <p className="muted">{member.email}</p>
         </div>
         {protectedReason && <Notice kind="info">{protectedReason}</Notice>}
-        {error && <Notice>{error}</Notice>}
+        {error && (
+          <Notice>
+            {error}{" "}
+            <button
+              type="button"
+              className="inline-button"
+              disabled={busy}
+              onClick={reload}
+            >
+              Reload current access
+            </button>
+          </Notice>
+        )}
         {reviewing ? (
           <div className="change-summary">
             <h3>Review access change</h3>
@@ -190,24 +229,39 @@ export function MembersPanel({
   initialView?: string;
 }) {
   const me = useCurrentUser();
-  const { data, error, refresh } = useResource<{ members: Member[] }>(
-    "/api/admin/members",
-  );
+  const { params, change, page } = useCollectionLocation();
+  const requestedView = params.get("status") ?? initialView;
+  const view =
+    statuses.some((status) => status === requestedView) ||
+    requestedView === "all"
+      ? requestedView
+      : "approved";
+  const requestedRole = params.get("role") ?? "all";
+  const roleFilter = Object.hasOwn(roleLabels, requestedRole)
+    ? requestedRole
+    : "all";
+  const query = (params.get("search") ?? "").slice(0, 160);
+  const setView = (status: string) => change({ status });
+  const setQuery = (search: string) => change({ search });
+  const apiQuery = new URLSearchParams({
+    status: view,
+    role: roleFilter,
+    search: query,
+    page: String(page),
+  });
+  const { data, error, refresh } = useResource<{
+    members: Member[];
+    total: number;
+    page: number;
+    pageSize: number;
+    counts: Record<MembershipStatus | "all", number>;
+    approvedOwners: number;
+  }>(`/api/admin/members?${apiQuery}`);
   const [selected, setSelected] = useState<Member>();
   const [saved, setSaved] = useState(false);
-  const [view, setView] = useState(
-    statuses.some((status) => status === initialView) || initialView === "all"
-      ? initialView
-      : "approved",
-  );
-  const [query, setQuery] = useState("");
   const canManage = me.capabilities.includes("members.manage");
-  const pending = data?.members.filter(
-    (member) => member.status === "pending",
-  ).length;
-  const owners = data?.members.filter(
-    (member) => member.status === "approved" && member.role === "owner",
-  ).length;
+  const pending = data?.counts.pending;
+  const owners = data?.approvedOwners;
   function protectedReason(member: Member) {
     if (member.role === "owner" && member.status === "approved" && owners === 1)
       return "Last active owner. Assign another approved owner before changing this membership or role.";
@@ -220,13 +274,7 @@ export function MembersPanel({
       return "Another authorized owner must change your own staff permissions.";
     return undefined;
   }
-  const members = data?.members.filter(
-    (member) =>
-      (view === "all" || member.status === view) &&
-      `${member.name} ${member.email}`
-        .toLocaleLowerCase()
-        .includes(query.trim().toLocaleLowerCase()),
-  );
+  const members = data?.members;
   return (
     <>
       <PageHeading
@@ -252,8 +300,7 @@ export function MembersPanel({
           items={[
             {
               label: "Approved members",
-              value: data.members.filter((item) => item.status === "approved")
-                .length,
+              value: data.counts.approved,
               hint: "Current club memberships",
               icon: "members",
               onClick: () => setView("approved"),
@@ -269,7 +316,7 @@ export function MembersPanel({
             },
             {
               label: "All memberships",
-              value: data.members.length,
+              value: data.counts.all,
               hint: "Includes inactive memberships",
               icon: "members",
               onClick: () => setView("all"),
@@ -292,9 +339,7 @@ export function MembersPanel({
                 {
                   value: "approved",
                   label: "Approved members",
-                  count: data?.members.filter(
-                    (item) => item.status === "approved",
-                  ).length,
+                  count: data?.counts.approved,
                 },
                 {
                   value: "pending",
@@ -304,14 +349,13 @@ export function MembersPanel({
                 {
                   value: "all",
                   label: "All memberships",
-                  count: data?.members.length,
+                  count: data?.counts.all,
                 },
                 ...(["suspended", "rejected", "former"] as const).map(
                   (value) => ({
                     value,
                     label: value[0].toUpperCase() + value.slice(1),
-                    count: data?.members.filter((item) => item.status === value)
-                      .length,
+                    count: data?.counts[value],
                   }),
                 ),
               ]}
@@ -321,6 +365,20 @@ export function MembersPanel({
               query={query}
               onQuery={setQuery}
             >
+              <label>
+                Club role
+                <select
+                  value={roleFilter}
+                  onChange={(event) => change({ role: event.target.value })}
+                >
+                  <option value="all">All roles</option>
+                  {Object.entries(roleLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {query && (
                 <button
                   className="button button-outline"
@@ -333,11 +391,15 @@ export function MembersPanel({
           </>
         }
         footer={
-          data &&
-          (members?.length ?? 0) +
-            " of " +
-            data.members.length +
-            " memberships shown"
+          data && (
+            <CollectionPagination
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              noun="memberships"
+              onPage={(next) => change({ page: next }, false)}
+            />
+          )
         }
       >
         {!data && !error && <Loading />}

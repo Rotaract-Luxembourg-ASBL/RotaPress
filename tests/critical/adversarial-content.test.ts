@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { validateContent } from "../../src/features/cms/cms_validation";
 import { operations } from "../../src/integrations/automation/catalogue";
 import { ReferenceHttpTransport } from "../../src/integrations/automation/ReferenceWebsiteClient";
@@ -6,14 +6,21 @@ import { CalendarFeedClient } from "../../src/features/calendar/providers/Calend
 import { WebhookClient } from "../../src/infrastructure/http/WebhookClient";
 import { formSubmitSchema } from "../../src/features/forms/form_schemas";
 import { csvCell } from "../../src/features/forms/form_answers";
+import { DomainError } from "../../src/core/DomainError";
+import type { TrustedActor } from "../../src/core/authorization/AuthorizationService";
+import type { AutomationContext } from "../../src/integrations/automation/operation";
 
 describe("Adversarial content and outbound boundaries", () => {
-  it("rejects authority fields and prototype keys for every automation input", () => {
+  it("rejects caller-authority fields and prototype keys while validating explicit target identities", () => {
     for (const operation of operations) {
       // Directory profiles have a public job/club role label; it is not membership authority.
       for (const name of [
         "organizationId",
         "userId",
+        "managerUserId",
+        "actor",
+        "principal",
+        "sessionId",
         "membershipRole",
         "authMethod",
         "permissions",
@@ -25,10 +32,22 @@ describe("Adversarial content and outbound boundaries", () => {
           value: "owner",
           enumerable: true,
         });
+        const targetField =
+          (operation.name === "events_team_set" && name === "userId") ||
+          (operation.name === "events_manager_set" && name === "managerUserId");
         expect(
           operation.input.safeParse(input).success,
           `${operation.name}: ${name}`,
-        ).toBe(false);
+        ).toBe(targetField);
+        if (targetField) {
+          // A target account ID is data; it never accepts an embedded actor or role grant.
+          expect(
+            operation.input.safeParse({
+              ...operation.example,
+              [name]: { userId: "owner", role: "owner" },
+            }).success,
+          ).toBe(false);
+        }
       }
     }
     const payload = JSON.parse(
@@ -38,6 +57,43 @@ describe("Adversarial content and outbound boundaries", () => {
     // The decisive boundary is that no attacker-owned prototype survives parsing.
     expect(formSubmitSchema.parse(payload).answers).toEqual({});
     expect(Reflect.get({}, "polluted")).toBeUndefined();
+  });
+
+  it("authorizes event access changes against the trusted caller, never the requested target account", async () => {
+    const actor: TrustedActor = {
+      userId: "authenticated-caller",
+      email: "fixture@example.test",
+      emailVerified: true,
+      sessionId: "trusted-session",
+      authenticatedAt: new Date(),
+      authMethod: "email-otp",
+    };
+    const authorize = vi
+      .fn()
+      .mockRejectedValue(
+        new DomainError(
+          "ACCESS_DENIED",
+          "The current caller cannot manage staff.",
+        ),
+      );
+    const context = {
+      principal: {
+        actor,
+        organizationId: "trusted-club",
+        scopes: ["access:roles"],
+      },
+      services: { authorization: { require: authorize } },
+    } as unknown as AutomationContext;
+    for (const name of ["events_team_set", "events_manager_set"]) {
+      const entry = operations.find((item) => item.name === name)!;
+      expect(entry.input.safeParse(entry.example).success).toBe(true);
+      await expect(entry.run(context, entry.example)).rejects.toMatchObject({
+        code: "ACCESS_DENIED",
+        status: 403,
+      });
+      expect(authorize).toHaveBeenLastCalledWith(actor, "members.manage");
+    }
+    expect(authorize).toHaveBeenCalledTimes(2);
   });
 
   it("removes active markup and obfuscated script links from top-level and nested rich text", () => {

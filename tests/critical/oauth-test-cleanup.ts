@@ -8,9 +8,9 @@ export async function removeOAuthConnection(
   headers: Headers,
   clientId: string,
 ) {
-  const current = (await connections.list(actor)).find(
-    (client) => client.clientId === clientId,
-  );
+  const current = (
+    await connections.list(actor, { search: clientId })
+  ).clients.find((client) => client.clientId === clientId);
   if (!current) throw new Error("Synthetic OAuth connection unavailable.");
   return connections.remove(
     actor,

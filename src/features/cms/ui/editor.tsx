@@ -20,6 +20,7 @@ import { eventPageEditorHref } from "@/features/events/event_routes";
 import { FormInsertionPrompt } from "./form-insertion-prompt";
 import { editorRootZone } from "./editor-selection";
 import { useRefreshOnFocus } from "./event-editor-scope";
+import { AlbumPreviewProvider } from "./album-preview-context";
 
 type SiteContext = import("./site-part-blocks").SiteBlockContext & {
   site: PublicSite;
@@ -52,7 +53,7 @@ function EditorForm({
                     className={
                       isSitePart(initial.kind)
                         ? "cms-public cms-site-part site-part-editor-preview"
-                        : "cms-public cms-content"
+                        : "cms-public public-site editor-page-preview"
                     }
                     data-theme={
                       initial.draft.data.root.props.demonstration
@@ -71,7 +72,13 @@ function EditorForm({
                         : context.site,
                     )}
                   >
-                    {children}
+                    {isSitePart(initial.kind) ? (
+                      children
+                    ) : (
+                      <div className="cms-content content-width">
+                        {children}
+                      </div>
+                    )}
                   </div>
                 </SitePartProvider>
               ),
@@ -109,7 +116,16 @@ function EditorForm({
               key={doc.editorKey}
               config={config}
               data={doc.data}
-              iframe={{ enabled: false }}
+              iframe={{
+                enabled: true,
+                syncHostStyles: true,
+                waitForStyles: true,
+              }}
+              viewports={[
+                { width: "100%", height: "auto", label: "Desktop" },
+                { width: 768, height: "auto", label: "Tablet" },
+                { width: 390, height: "auto", label: "Phone" },
+              ]}
               fieldTransforms={{ richtext: ({ value }) => value }}
               overrides={{ componentOverlay: BoundaryOverlay }}
               permissions={{
@@ -163,7 +179,9 @@ function ThemedEditor({ initial }: { initial: CmsDetail }) {
   );
   useRefreshOnFocus(refresh);
   return data ? (
-    <EditorForm initial={initial} context={data} />
+    <AlbumPreviewProvider>
+      <EditorForm initial={initial} context={data} />
+    </AlbumPreviewProvider>
   ) : error ? (
     <Notice>{error}</Notice>
   ) : (

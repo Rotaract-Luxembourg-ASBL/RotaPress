@@ -1,11 +1,18 @@
 import { z } from "zod";
-import { automationScopeSchema, connectionInput } from "../scopes";
+import {
+  automationScopeSchema,
+  connectionInput,
+  scopeDefinitions,
+} from "../scopes";
 import { storedSourceRulesSchema } from "../source_rules";
 
 export const oauthClientInput = z.strictObject({
   name: z.string().trim().min(2).max(80),
   redirectUris: z.array(z.url().max(1000)).min(1).max(3),
-  scopes: z.array(automationScopeSchema).min(1).max(40),
+  scopes: z
+    .array(automationScopeSchema)
+    .min(1)
+    .max(Object.keys(scopeDefinitions).length),
   sourceOrigins: connectionInput.shape.sourceOrigins,
   authentication: z
     .enum(["client_secret_post", "none"])
@@ -45,7 +52,7 @@ export const oauthConsentInput = z.strictObject({
   accept: z.boolean(),
   scopes: z
     .array(z.union([automationScopeSchema, z.literal("offline_access")]))
-    .max(41),
+    .max(Object.keys(scopeDefinitions).length + 1),
 });
 export const oauthReviewInput = oauthConsentInput.pick({
   oauth_query: true,

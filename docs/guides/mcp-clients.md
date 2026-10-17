@@ -215,7 +215,8 @@ shared-part combinations still need signed-in Website preview. See
 For event work, ask the assistant to start with `automation_event_prompt`, inspect
 the available event blueprints, preview the preparation and create a private event
 with a stable request ID. It can prepare pages, forms, packages and prizes, return
-readiness blockers and propose registration or feature settings for human review.
+readiness blockers and execute specifically requested registration or feature
+changes with the separate events:operate grant.
 
 For website maintenance, ask for `website_revision_get`, `website_duplicate`,
 `website_locale_create`, `website_restore` or `website_settings_save` as appropriate.
@@ -274,8 +275,10 @@ authorization-code flow and S256 PKCE. Anonymous dynamic registration and arbitr
 remote client-metadata fetching are unavailable. See the [OAuth guide](automation-oauth.md)
 for registration, consent, expiry and revocation.
 
-The assistant cannot unpublish/delete content, hide images, edit public image metadata, apply operational
-proposals, approve members, send arbitrary notifications or run payments/draws.
+The assistant can perform specifically requested membership, access, response,
+registration and supported notification work only with the new explicit grants.
+It cannot change credentials, authentication policy, send arbitrary notifications
+or run payments/draws. See [platform actions](automation-platform.md).
 Calendar publication retains its normal notification behavior. Verify the selected
 client on your installation by reading its capabilities, creating a private draft
 and confirming that revoking the connection blocks subsequent calls.

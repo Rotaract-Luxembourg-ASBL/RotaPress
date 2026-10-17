@@ -1,7 +1,7 @@
 import "server-only";
-import { and, desc, eq, isNotNull, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { collectionPage } from "@/core/collections";
 import { alias } from "drizzle-orm/pg-core";
-import { z } from "zod";
 import { kitIdSchema } from "./kits/catalogue";
 import { installation } from "../../../db/schema/club";
 import {
@@ -12,20 +12,7 @@ import {
 } from "../../../db/schema/cms";
 import type { Database } from "../../infrastructure/database/client";
 import type { DatabaseExecutor } from "../../core/authorization/AuthorizationService";
-import {
-  siteSettingsSchema,
-  type CmsLocale,
-  type CmsSummary,
-} from "./cms_schemas";
-
-const provenanceSchema = z.object({
-  root: z.object({
-    props: z.object({
-      kit: kitIdSchema.optional(),
-      demonstration: z.boolean().optional(),
-    }),
-  }),
-});
+import { type CmsLocale, type CmsSummary } from "./cms_schemas";
 
 export class CmsRepository {
   constructor(private readonly db: Database) {}
@@ -59,8 +46,9 @@ export class CmsRepository {
         archivedAt: cmsContent.archivedAt,
         updatedAt: cmsRevision.createdAt,
         liveSlug: liveRevision.slug,
-        liveSite: cmsSite.published,
-        draftData: cmsRevision.data,
+        homePageId: sql<string | null>`${cmsSite.published}->>'homePageId'`,
+        kit: sql<string | null>`${cmsRevision.data}->'root'->'props'->>'kit'`,
+        demonstration: sql<boolean>`coalesce((${cmsRevision.data}->'root'->'props'->>'demonstration')::boolean, false)`,
       })
       .from(cmsContent)
       .innerJoin(cmsVariant, eq(cmsVariant.contentId, cmsContent.id))
@@ -86,21 +74,16 @@ export class CmsRepository {
       )
       .orderBy(cmsContent.createdAt, cmsContent.id, cmsVariant.locale);
     return rows.map(
-      ({ archivedAt, updatedAt, liveSlug, liveSite, draftData, ...row }) => ({
+      ({ archivedAt, updatedAt, liveSlug, homePageId, kit, ...row }) => ({
         ...row,
-        kitId: provenanceSchema.safeParse(draftData).data?.root.props.kit,
-        demonstration:
-          provenanceSchema.safeParse(draftData).data?.root.props
-            .demonstration === true,
+        kitId: kitIdSchema.safeParse(kit).data,
         archived: archivedAt !== null,
         updatedAt: updatedAt.toISOString(),
         isHomepage:
           row.kind === "page" &&
           archivedAt === null &&
           row.publishedRevisionId !== null &&
-          (liveSite && siteSettingsSchema.parse(liveSite).homePageId
-            ? siteSettingsSchema.parse(liveSite).homePageId === row.id
-            : liveSlug === "home"),
+          (homePageId ? homePageId === row.id : liveSlug === "home"),
       }),
     );
   }
@@ -169,7 +152,19 @@ export class CmsRepository {
     return row;
   }
 
-  async revisions(variantId: string, executor: DatabaseExecutor = this.db) {
+  async revisions(
+    variantId: string,
+    executor: DatabaseExecutor = this.db,
+    requestedPage = 1,
+    pageSize = 30,
+  ) {
+    const where = eq(cmsRevision.variantId, variantId);
+    const [summary] = await executor
+      .select({ total: count() })
+      .from(cmsRevision)
+      .where(where);
+    const total = summary.total;
+    const page = collectionPage(total, requestedPage, pageSize);
     const rows = await executor
       .select({
         id: cmsRevision.id,
@@ -177,13 +172,19 @@ export class CmsRepository {
         createdAt: cmsRevision.createdAt,
       })
       .from(cmsRevision)
-      .where(eq(cmsRevision.variantId, variantId))
-      .orderBy(desc(cmsRevision.createdAt))
-      .limit(100);
-    return rows.map((row) => ({
-      ...row,
-      createdAt: row.createdAt.toISOString(),
-    }));
+      .where(where)
+      .orderBy(desc(cmsRevision.createdAt), desc(cmsRevision.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+    return {
+      revisions: rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   async published(

@@ -8,6 +8,11 @@ import type { Block } from "../cms_schemas";
 import type { puckConfig } from "./puck-config";
 import { locateEditorBlock } from "./editor-selection";
 import { getBlockMetadata } from "./editor-block-catalogue";
+import {
+  editorEventTarget,
+  editorViewportPoint,
+  observeEditorDocuments,
+} from "./editor-documents";
 
 const useContextPuck = createUsePuck<typeof puckConfig>();
 type Position = { id: string; left: number; top: number };
@@ -52,21 +57,25 @@ export function EditorContextMenu({
       });
     }
     function context(event: MouseEvent) {
-      if (!(event.target instanceof Element)) return;
-      if (!event.target.closest(".editor-canvas")) return;
+      const target = editorEventTarget(event);
+      if (!target) return;
+      const owner = target.ownerDocument;
+      if (owner === document && !target.closest(".editor-canvas")) return;
       // Preserve spelling, text selection and native input menus.
       if (
-        event.target.closest(
+        target.closest(
           "input,textarea,[contenteditable='true'],[contenteditable='plaintext-only']",
         )
       )
         return;
-      const direct = event.target.closest<HTMLElement>("[data-puck-component]");
+      const direct = target.closest<HTMLElement>("[data-puck-component]");
       const element =
         direct ??
         Array.from(
-          document.querySelectorAll<HTMLElement>(
-            ".editor-canvas [data-puck-component]",
+          owner.querySelectorAll<HTMLElement>(
+            owner === document
+              ? ".editor-canvas [data-puck-component]"
+              : "[data-puck-component]",
           ),
         )
           .reverse()
@@ -83,7 +92,8 @@ export function EditorContextMenu({
       if (!element || !id || !locateEditorBlock(blocks, id)) return;
       event.preventDefault();
       event.stopPropagation();
-      open(id, event.clientX, event.clientY, element);
+      const point = editorViewportPoint(owner, event.clientX, event.clientY);
+      open(id, point.x, point.y, element);
     }
     function keyboard(event: globalThis.KeyboardEvent) {
       if (!(
@@ -91,34 +101,58 @@ export function EditorContextMenu({
         (event.shiftKey && event.key === "F10")
       ))
         return;
+      const target = editorEventTarget(event);
+      if (!selectedId || !target) return;
+      const owner = target.ownerDocument;
+      if (owner === document && !target.closest(".cms-puck")) return;
       if (
-        !selectedId ||
-        !(event.target instanceof Element) ||
-        !event.target.closest(".cms-puck")
-      )
-        return;
-      if (
-        event.target.closest(
+        target.closest(
           "input,textarea,[contenteditable='true'],[contenteditable='plaintext-only']",
         )
       )
         return;
-      const element = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          ".editor-canvas [data-puck-component]",
-        ),
-      ).find((item) => item.getAttribute("data-puck-component") === selectedId);
+      const surfaces = [owner];
+      if (owner === document)
+        for (const frame of document.querySelectorAll<HTMLIFrameElement>(
+          ".editor-canvas iframe",
+        )) {
+          try {
+            if (frame.contentDocument) surfaces.push(frame.contentDocument);
+          } catch {
+            /* Embedded cross-origin content owns its keyboard boundary. */
+          }
+        }
+      const element = surfaces
+        .flatMap((surface) =>
+          Array.from(
+            surface.querySelectorAll<HTMLElement>(
+              surface === document
+                ? ".editor-canvas [data-puck-component]"
+                : "[data-puck-component]",
+            ),
+          ),
+        )
+        .find(
+          (item) => item.getAttribute("data-puck-component") === selectedId,
+        );
       if (!element || !locateEditorBlock(blocks, selectedId)) return;
       event.preventDefault();
       const rect = element.getBoundingClientRect();
-      open(selectedId, rect.left + 24, rect.top + 24, element);
+      const point = editorViewportPoint(
+        element.ownerDocument,
+        rect.left + 24,
+        rect.top + 24,
+      );
+      open(selectedId, point.x, point.y, element);
     }
-    document.addEventListener("contextmenu", context, true);
-    document.addEventListener("keydown", keyboard, true);
-    return () => {
-      document.removeEventListener("contextmenu", context, true);
-      document.removeEventListener("keydown", keyboard, true);
-    };
+    return observeEditorDocuments((surface) => {
+      surface.addEventListener("contextmenu", context, true);
+      surface.addEventListener("keydown", keyboard, true);
+      return () => {
+        surface.removeEventListener("contextmenu", context, true);
+        surface.removeEventListener("keydown", keyboard, true);
+      };
+    });
   }, [blocks, dispatch, disabled, selectedId]);
 
   useEffect(() => {
@@ -127,14 +161,17 @@ export function EditorContextMenu({
       ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
       ?.focus();
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !menu.current?.contains(event.target))
-        setPosition(null);
+      const target = editorEventTarget(event);
+      if (target && !menu.current?.contains(target)) setPosition(null);
     };
     const close = () => setPosition(null);
-    document.addEventListener("pointerdown", outside, true);
+    const cleanup = observeEditorDocuments((surface) => {
+      surface.addEventListener("pointerdown", outside, true);
+      return () => surface.removeEventListener("pointerdown", outside, true);
+    });
     window.addEventListener("resize", close);
     return () => {
-      document.removeEventListener("pointerdown", outside, true);
+      cleanup();
       window.removeEventListener("resize", close);
     };
   }, [position, disabled]);

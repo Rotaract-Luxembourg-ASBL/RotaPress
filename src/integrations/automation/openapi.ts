@@ -7,6 +7,7 @@ import {
 } from "./operation";
 import { automationPrompts } from "./prompts";
 import { binaryMediaUploadPath } from "./media_openapi";
+import { privateExportDownloadPath } from "./export_openapi";
 
 // Zod references are local to each schema; nested OpenAPI components need absolute pointers.
 export function rebaseSchema(value: unknown, root: string): unknown {
@@ -137,6 +138,7 @@ export function openApiDocument() {
     };
   }
   paths["/api/v1/media/upload"] = binaryMediaUploadPath();
+  paths["/api/v1/response-exports/{id}/download"] = privateExportDownloadPath();
   paths["/api/v1/openapi.json"] = {
     get: {
       operationId: "openapi_document",
@@ -220,11 +222,16 @@ export function openApiDocument() {
       title: "RotaPress content automation",
       version: contractVersion,
       description:
-        "Session-bound staff connections using scoped REST API tokens. Content writes stay private drafts; event settings are proposals for staff review. Discover scopes, schemas and workflow prompts before writing. JSON bodies are limited to 256 KiB; the dedicated binary image upload accepts up to 5 MiB.",
+        "Session-bound staff connections using scoped REST API tokens. Content writes stay private drafts; requested operational actions execute directly within explicit opt-in grants and current authority. Discover scopes, schemas and workflow prompts before writing. JSON bodies are limited to 256 KiB; the dedicated binary image upload accepts up to 5 MiB.",
     },
     components: {
       schemas,
       securitySchemes: {
+        privateExportConnection: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "Originating REST token, MCP key or MCP OAuth bearer",
+        },
         staffConnection: {
           type: "http",
           scheme: "bearer",

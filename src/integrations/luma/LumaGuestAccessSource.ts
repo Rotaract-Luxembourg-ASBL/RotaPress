@@ -11,7 +11,7 @@ export class LumaGuestAccessSource {
     org: string,
     eventId: string,
     db: DatabaseExecutor,
-    id?: string,
+    id: string,
   ): Promise<GuestSource[]> {
     const rows = await db
       .select({
@@ -40,11 +40,11 @@ export class LumaGuestAccessSource {
         and(
           eq(lumaGuestProjection.organizationId, org),
           eq(lumaGuestProjection.eventId, eventId),
-          id ? eq(lumaGuestProjection.id, id) : undefined,
+          eq(lumaGuestProjection.id, id),
         ),
       )
       .orderBy(desc(lumaGuestProjection.observedAt), lumaGuestProjection.id)
-      .limit(201);
+      .limit(1);
     return rows.map((row) => ({
       kind: "luma",
       id: row.id,

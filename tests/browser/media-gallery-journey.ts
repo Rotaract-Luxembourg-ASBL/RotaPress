@@ -58,6 +58,9 @@ export async function mediaGalleryJourney(
     .getByLabel("Caption for image 1", { exact: true })
     .fill("Public club photo");
   await gallery
+    .getByRole("button", { name: "Edit gallery image 2", exact: true })
+    .click();
+  await gallery
     .getByLabel("Alternative text for image 2", { exact: true })
     .fill("Private gallery test photograph");
   await gallery
@@ -110,7 +113,11 @@ export async function mediaGalleryJourney(
     (await visitor.request.get("/pages/en/photo-gallery-controls")).status(),
   ).toBe(404);
   await page.reload();
-  await page.locator(".editor-canvas .cms-gallery img").first().click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-gallery img")
+    .first()
+    .click();
   await page.getByRole("button", { name: "Edit gallery", exact: true }).click();
   const editing = page.getByRole("dialog", {
     name: "Edit gallery",

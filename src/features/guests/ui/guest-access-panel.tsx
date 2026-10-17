@@ -5,6 +5,8 @@ import { request, useResource, errorMessage } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
 import type { EventDraft } from "../../events/event_schemas";
 import type { GuestWorkspace } from "../guest_schemas";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 
 export function GuestAccessPanel(props: {
   event: EventDraft;
@@ -24,8 +26,13 @@ function Workspace({
   disabled: boolean;
   onSaved: (event: EventDraft) => void;
 }) {
+  const { params, change } = useCollectionLocation();
+  const page = Number(params.get("guestsPage")) || 1;
+  const candidatePage = Number(params.get("candidatesPage")) || 1;
+  const search = params.get("guestsSearch") ?? "";
+  const source = params.get("guestsSource") ?? "all";
   const { data, error, refresh } = useResource<GuestWorkspace>(
-    `/api/admin/events/${event.id}/guests`,
+    `/api/admin/events/${event.id}/guests?${new URLSearchParams({ page: String(page), candidatePage: String(candidatePage), search, source })}`,
   );
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
@@ -87,6 +94,7 @@ function Workspace({
         body: JSON.stringify({
           source: candidate.source,
           sourceId: candidate.id,
+          expectedEmail: candidate.email,
           confirmed: true,
         }),
       });
@@ -155,6 +163,45 @@ function Workspace({
       {!data && !error && <Loading />}
       {data && (
         <>
+          <div className="admin-actions">
+            <label>
+              Find guests
+              <input
+                type="search"
+                value={search}
+                onChange={(e) =>
+                  change(
+                    {
+                      guestsSearch: e.target.value,
+                      guestsPage: 1,
+                      candidatesPage: 1,
+                    },
+                    false,
+                  )
+                }
+              />
+            </label>
+            <label>
+              Booking source
+              <select
+                value={source}
+                onChange={(e) =>
+                  change(
+                    {
+                      guestsSource: e.target.value,
+                      guestsPage: 1,
+                      candidatesPage: 1,
+                    },
+                    false,
+                  )
+                }
+              >
+                <option value="all">All sources</option>
+                <option value="native">Native registration</option>
+                <option value="luma">Luma</option>
+              </select>
+            </label>
+          </div>
           <p>
             Registration and imports do not grant access automatically. Guests
             verify the invited email and accept their invitation. This gives no
@@ -198,16 +245,29 @@ function Workspace({
                     <option
                       key={`${c.source}:${c.id}`}
                       value={`${c.source}:${c.id}`}
+                      disabled={!c.validEmail}
                     >
                       {c.name} — {c.email} (
                       {c.source === "native"
                         ? "Registration"
                         : `Luma${c.sourceLabel ? ` · ${c.sourceLabel}` : ""}`}
-                      , {c.status})
+                      ,{" "}
+                      {c.validEmail
+                        ? c.status
+                        : "Correct this guest's email first"}
+                      )
                     </option>
                   ))}
                 </select>
               </label>
+              <CollectionPagination
+                {...data.candidatePagination}
+                noun="guests available to invite"
+                onPage={(next) => {
+                  setSelected("");
+                  change({ candidatesPage: next }, false);
+                }}
+              />
               <div>
                 <button
                   className="button button-accent"
@@ -276,12 +336,11 @@ function Workspace({
           {!data.grants.length && (
             <p className="muted">No guest invitations yet.</p>
           )}
-          {data.limited && (
-            <p className="field-help">
-              Showing up to 200 recent records per source and 200 invitations.
-              Full guest search is not available in this first release.
-            </p>
-          )}
+          <CollectionPagination
+            {...data.pagination}
+            noun="invitations"
+            onPage={(next) => change({ guestsPage: next }, false)}
+          />
         </>
       )}
     </section>

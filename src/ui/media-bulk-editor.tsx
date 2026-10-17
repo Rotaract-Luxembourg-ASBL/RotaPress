@@ -42,7 +42,7 @@ export function MediaBulkEditor({
   }
   return (
     <Dialog
-      title="Edit selected images"
+      title="Edit selected files"
       onClose={onClose}
       canClose={() => !busy && canDiscard(dirty)}
     >
@@ -52,7 +52,7 @@ export function MediaBulkEditor({
         onChange={() => setDirty(true)}
       >
         <p>
-          Update {count} selected {count === 1 ? "image" : "images"}. Selected
+          Update {count} selected {count === 1 ? "file" : "files"}. Selected
           fields replace their current values; all other details stay saved.
         </p>
         {error && (
@@ -64,7 +64,7 @@ export function MediaBulkEditor({
               disabled={busy}
               onClick={onRefresh}
             >
-              Refresh selected images
+              Refresh selected files
             </button>
           </Notice>
         )}
@@ -130,7 +130,7 @@ export function MediaBulkEditor({
             className="button button-accent"
             disabled={busy || (!changeCollection && !changeTags)}
           >
-            {busy ? "Updating…" : "Update selected images"}
+            {busy ? "Updating…" : "Update selected files"}
           </button>
         </div>
       </form>

@@ -5,7 +5,6 @@ import {
   intro,
   photo,
   text,
-  heading,
   gallery,
   invitation,
   collection,
@@ -334,6 +333,10 @@ export function catalogueRecipe(
         ),
         block("Columns", {
           ratio: action ? "balanced" : "wide-right",
+          design: {
+            spacing: "comfortable",
+            responsive: { mobile: { spacing: "compact" } },
+          },
           left: [
             block("Cards", {
               items: [
@@ -373,23 +376,7 @@ export function catalogueRecipe(
           !action,
         ),
         gallery(context),
-        heading("A closer look"),
-        block("ImageSlider", {
-          aspectRatio: "wide",
-          items: (context.assets ?? []).map((assetId, index) => ({
-            assetId,
-            alt: [
-              "A garden in sunlight",
-              "Young plants",
-              "A vertical herb garden",
-            ][index % 3],
-            caption: context.demo
-              ? "Illustrative photography · See the kit asset notes for credits."
-              : "",
-            focalX: 50,
-            focalY: 50,
-          })),
-        }),
+        contactAction,
       ]);
     case "partners":
       return document(context, [

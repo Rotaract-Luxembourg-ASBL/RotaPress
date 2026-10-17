@@ -29,6 +29,7 @@ import type { Database } from "../../src/infrastructure/database/client";
 import { installationEmailChecks } from "./installation-email-cases";
 import { installationTemplateChecks } from "./installation-template-cases";
 import { defaultClubProfile } from "../../src/core/organization/club_profile";
+import { membershipWorkspaceChecks } from "./membership-workspace-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -197,6 +198,10 @@ describe("C01 protected installation on real PostgreSQL", () => {
 });
 
 describe("C02 membership authority and current staff policy", () => {
+  membershipWorkspaceChecks(async () => {
+    const { owner, access } = await installedClub();
+    return { db, members, owner, organizationId: access.organizationId };
+  });
   it("enforces the scoped capability matrix and rejects browser role or organization authority", async () => {
     const { owner, access } = await installedClub();
     await expect(
@@ -258,6 +263,7 @@ describe("C02 membership authority and current staff policy", () => {
     expect(application).toMatchObject({ role: "member", status: "pending" });
     await expect(
       members.change(applicant, {
+        expectedVersion: 1,
         membershipId: application!.id,
         status: "approved",
         role: "owner",
@@ -266,6 +272,7 @@ describe("C02 membership authority and current staff policy", () => {
     await expect(
       members.change(owner, {
         membershipId: application!.id,
+        expectedVersion: 1,
         status: "approved",
         role: "member",
         organizationId: randomUUID(),
@@ -274,6 +281,7 @@ describe("C02 membership authority and current staff policy", () => {
     await expect(
       members.change(owner, {
         membershipId: randomUUID(),
+        expectedVersion: 1,
         status: "approved",
         role: "member",
       }),
@@ -292,6 +300,7 @@ describe("C02 membership authority and current staff policy", () => {
       membershipId,
       role: "editor",
       status: "approved",
+      expectedVersion: 1,
     });
     expect(
       await authorization.require(applicant, "admin.access"),
@@ -300,6 +309,7 @@ describe("C02 membership authority and current staff policy", () => {
       membershipId,
       role: "editor",
       status: "suspended",
+      expectedVersion: 2,
     });
     await expect(
       authorization.require(applicant, "admin.access"),
@@ -311,6 +321,7 @@ describe("C02 membership authority and current staff policy", () => {
       membershipId,
       role: "editor",
       status: "former",
+      expectedVersion: 3,
     });
     expect(await members.apply(applicant)).toMatchObject({
       role: "member",
@@ -322,6 +333,7 @@ describe("C02 membership authority and current staff policy", () => {
     };
     await expect(
       members.change(stale, {
+        expectedVersion: 5,
         membershipId,
         role: "editor",
         status: "approved",
@@ -334,6 +346,7 @@ describe("C02 membership authority and current staff policy", () => {
     await expect(
       members.change(owner, {
         membershipId: access.membershipId,
+        expectedVersion: 1,
         role: "member",
         status: "approved",
       }),
@@ -342,6 +355,7 @@ describe("C02 membership authority and current staff policy", () => {
     const application = await members.apply(secondOwner);
     await members.change(owner, {
       membershipId: application!.id,
+      expectedVersion: 1,
       role: "owner",
       status: "approved",
     });
@@ -350,9 +364,11 @@ describe("C02 membership authority and current staff policy", () => {
         membershipId: access.membershipId,
         role: "member",
         status: "approved",
+        expectedVersion: 1,
       }),
       members.change(secondOwner, {
         membershipId: application!.id,
+        expectedVersion: 2,
         role: "member",
         status: "approved",
       }),

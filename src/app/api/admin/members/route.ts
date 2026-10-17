@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   return handle(async () => {
     const actor = await getActor(request.headers);
     if (!actor) throw new HttpError(401, "Sign in to continue.");
-    return json({ members: await services.members.list(actor) });
+    return json(await services.members.query(actor, Object.fromEntries(new URL(request.url).searchParams)));
   });
 }
 

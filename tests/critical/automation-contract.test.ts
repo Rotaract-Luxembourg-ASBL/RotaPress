@@ -26,6 +26,35 @@ vi.mock("../../src/core/config", () => ({
 }));
 
 describe("C14 documented contracts and failure privacy", () => {
+  it("requires stable request IDs for mutations, with explicit durable upload-session exceptions", () => {
+    const sessionActions = new Set([
+      "files_upload_chunk",
+      "files_upload_finish",
+      "files_upload_cancel",
+    ]);
+    for (const op of operations.filter((item) => !item.readOnly)) {
+      if (sessionActions.has(op.name)) {
+        expect(
+          op.input.safeParse({ ...op.example, id: undefined }).success,
+          op.name,
+        ).toBe(false);
+        continue;
+      }
+      expect(
+        op.input.safeParse({ ...op.example, requestId: undefined }).success,
+        op.name,
+      ).toBe(false);
+      expect(
+        op.input.safeParse({ ...op.example, requestId: "not-a-uuid" }).success,
+        op.name,
+      ).toBe(false);
+    }
+    expect(
+      [...sessionActions].every((name) =>
+        operations.some((op) => op.name === name),
+      ),
+    ).toBe(true);
+  });
   it("provides valid examples, closed response shapes and resolvable OpenAPI references", () => {
     const spec = openApiDocument();
     for (const op of operations) {
@@ -65,6 +94,7 @@ describe("C14 documented contracts and failure privacy", () => {
         name: "fixture",
         description: "Injected response privacy fixture",
         method: "GET",
+        effect: "read",
         path: "/fixture",
         scope: null,
         input: z.strictObject({}),
@@ -74,7 +104,17 @@ describe("C14 documented contracts and failure privacy", () => {
       async () => ({ title: "Safe", privateCredential: "synthetic-secret" }),
     );
     const error = await boundary
-      .run({} as AutomationContext, {})
+      .run(
+        {
+          principal: { scopes: [], organizationId: "fixture" },
+          services: {
+            authorization: {
+              require: async () => ({ organizationId: "fixture" }),
+            },
+          },
+        } as unknown as AutomationContext,
+        {},
+      )
       .catch((cause: unknown) => cause);
     expect(error).toMatchObject({
       code: "AUTOMATION_RESPONSE_INVALID",

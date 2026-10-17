@@ -4,7 +4,11 @@ import {
   projectSaveSchema,
   type ProjectDto,
 } from "@/features/projects/project_schemas";
-import { operation, page, pagination } from "./operation";
+import { operation, pagination, pageMetadata } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { requireReceiptCapability } from "./receipt_authority";
+import type { Transaction } from "@/core/authorization/AuthorizationService";
+import type { AutomationContext } from "./operation";
 import { pageOutput } from "./response_schemas";
 import { publicationConfirmation } from "./publication_policy";
 import { exampleId } from "./examples";
@@ -20,6 +24,16 @@ const projectOutput = z.strictObject({
   reviewUrl: z.string(),
 });
 const idInput = z.strictObject({ id: z.uuid() });
+const projectAuthority =
+  (capability: "cms.edit" | "cms.publish") =>
+  async (context: AutomationContext, _input: unknown, tx: Transaction) => {
+    await requireReceiptCapability(capability)(context, _input, tx);
+    await context.services.authorization.features.require(
+      context.principal.organizationId,
+      "projects",
+      tx,
+    );
+  };
 const example = {
   title: "Neighbourhood garden",
   summary: "A club initiative to create a shared green space.",
@@ -51,6 +65,7 @@ export const projectOperations = [
   operation(
     {
       name: "projects_list",
+      effect: "read",
       method: "GET",
       path: "/projects",
       scope: "projects:read",
@@ -60,12 +75,22 @@ export const projectOperations = [
       output: pageOutput(projectOutput),
       example: { limit: 20, offset: 0 },
     },
-    async ({ services, principal }, input) =>
-      page((await services.projects.list(principal.actor)).map(content), input),
+    async ({ services, principal }, { offset, limit }) => {
+      const result = await services.projects.query(principal.actor, {
+        offset,
+        pageSize: limit,
+        status: "all",
+      });
+      return {
+        items: result.items.map(content),
+        ...pageMetadata(result.total, { offset, limit }),
+      };
+    },
   ),
   operation(
     {
       name: "projects_get",
+      effect: "read",
       method: "GET",
       path: "/projects/{id}",
       scope: "projects:read",
@@ -78,24 +103,27 @@ export const projectOperations = [
     async ({ services, principal }, { id }) =>
       content(await services.projects.detail(principal.actor, id)),
   ),
-  operation(
+  receiptOperation(
     {
       name: "projects_create",
+      effect: "draft",
       method: "POST",
       path: "/projects",
       scope: "projects:write",
       description:
-        "Create a private project story from verified facts. Dates, cover image, outcomes and link are optional. Never invent impact figures or completed work. Read projects_list after an uncertain create before retrying to avoid duplicates.",
+        "Create a private project story from verified facts. Dates, cover image, outcomes and link are optional. Never invent impact figures or completed work.",
       input: projectContentSchema,
       output: projectOutput,
       example,
     },
-    async ({ services, principal }, input) =>
-      content(await services.projects.create(principal.actor, input)),
+    projectAuthority("cms.edit"),
+    async ({ services, principal }, input, tx) =>
+      content(await services.projects.create(principal.actor, input, tx)),
   ),
-  operation(
+  receiptOperation(
     {
       name: "projects_save",
+      effect: "draft",
       method: "PATCH",
       path: "/projects/{id}",
       scope: "projects:write",
@@ -105,14 +133,16 @@ export const projectOperations = [
       output: projectOutput,
       example: { id: exampleId, expectedVersion: 1, content: example },
     },
-    async ({ services, principal }, { id, ...input }) =>
+    projectAuthority("cms.edit"),
+    async ({ services, principal }, { id, ...input }, tx) =>
       content(
-        await services.projects.change(principal.actor, id, "save", input),
+        await services.projects.change(principal.actor, id, "save", input, tx),
       ),
   ),
-  operation(
+  receiptOperation(
     {
       name: "projects_publish",
+      effect: "publish",
       method: "POST",
       path: "/projects/{id}/publish",
       scope: "projects:publish",
@@ -125,9 +155,45 @@ export const projectOperations = [
       output: projectOutput,
       example: { id: exampleId, expectedVersion: 1, confirmed: true },
     },
-    async ({ services, principal }, { id, ...input }) =>
+    projectAuthority("cms.publish"),
+    async ({ services, principal }, { id, ...input }, tx) =>
       content(
-        await services.projects.change(principal.actor, id, "publish", input),
+        await services.projects.change(
+          principal.actor,
+          id,
+          "publish",
+          input,
+          tx,
+        ),
       ),
+  ),
+  ...(["archive", "restore", "unpublish"] as const).map((action) =>
+    receiptOperation(
+      {
+        name: `projects_${action}`,
+        effect: action === "restore" ? "draft" : "archive",
+        method: "POST",
+        path: `/projects/{id}/${action}`,
+        scope: "projects:manage",
+        description: `${action} the exact requested project using its current version. History is retained and restored projects remain private drafts.`,
+        input: idInput.extend({
+          expectedVersion: z.int().positive(),
+          confirmed: z.literal(true),
+        }),
+        output: projectOutput,
+        example: { id: exampleId, expectedVersion: 1, confirmed: true },
+      },
+      projectAuthority("cms.publish"),
+      async ({ services, principal }, { id, expectedVersion }, tx) =>
+        content(
+          await services.projects.change(
+            principal.actor,
+            id,
+            action,
+            { expectedVersion, confirmed: true },
+            tx,
+          ),
+        ),
+    ),
   ),
 ];

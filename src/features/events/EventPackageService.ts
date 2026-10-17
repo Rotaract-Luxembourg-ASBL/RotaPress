@@ -11,6 +11,7 @@ import {
   AuthorizationService,
   DomainError,
   type DatabaseExecutor,
+  type Transaction,
   type TrustedActor,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
@@ -242,10 +243,10 @@ export class EventPackageService {
       return this.workspace(actor, eventId, tx);
     });
   }
-  async save(actor: TrustedActor, eventId: string, input: unknown) {
+  async save(actor: TrustedActor, eventId: string, input: unknown, executor?: Transaction) {
     z.uuid().parse(eventId);
     const values = packageSaveSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         eventId,
@@ -307,7 +308,8 @@ export class EventPackageService {
         targetId: eventId,
       });
       return this.workspace(actor, eventId, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
   async publication(
     actor: TrustedActor,

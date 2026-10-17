@@ -21,7 +21,7 @@ export async function GET(request: Request, context: Context) {
   return handle(async () => {
     const actor = await actorFor(request);
     const path = (await context.params).path ?? [];
-    if (!path.length) return json({ forms: await services.forms.list(actor) });
+    if (!path.length) return json(await services.forms.collection.list(actor, Object.fromEntries(new URL(request.url).searchParams)));
     if (path[0] === "submissions") {
       if (path.length !== 2) return notFound();
       return json(await services.submissions.detail(actor, path[1]));

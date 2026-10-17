@@ -8,6 +8,7 @@ import { imageThumbnail } from "../../src/features/media/image_preview";
 import type { MediaAssetDto } from "../../src/features/media/media_schemas";
 
 const asset: MediaAssetDto = {
+  kind: "image",
   id: "22222222-2222-4222-8222-222222222222",
   originalName: "synthetic.png",
   title: "Synthetic",

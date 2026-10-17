@@ -1,3 +1,4 @@
+import { AutomationRuntime } from "../../src/integrations/automation/receipt_service";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
@@ -12,7 +13,10 @@ import {
 } from "../../src/features/projects/project_schemas";
 import { MediaService } from "../../src/features/media/MediaService";
 import { LocalStorageDriver } from "../../src/infrastructure/storage/LocalStorageDriver";
-import { executeOperation } from "../../src/integrations/automation/catalogue";
+import {
+  executeOperation,
+  operations,
+} from "../../src/integrations/automation/catalogue";
 import type { AutomationContext } from "../../src/integrations/automation/operation";
 import type { AutomationScope } from "../../src/integrations/automation/scopes";
 import type { Context } from "./luma-sync-fixture";
@@ -28,10 +32,15 @@ export function automationProjectChecks(get: () => Context) {
     );
     const projects = new ProjectService(c.db, c.authorization, media);
     const context = {
-      services: { authorization: c.authorization, projects },
+      services: {
+        authorization: c.authorization,
+        projects,
+        automationRuntime: new AutomationRuntime(c.db),
+      },
       principal: {
         actor: people.owner,
         organizationId: people.scope.organizationId,
+        keyId: "project-receipt-fixture",
         scopes: ["projects:read", "projects:write", "projects:publish"],
       },
     } as unknown as AutomationContext;
@@ -39,13 +48,19 @@ export function automationProjectChecks(get: () => Context) {
       title: "Synthetic community garden",
       summary: "A verified project summary for the local fixture.",
     });
-    const run = (name: string, value: unknown, scopes?: AutomationScope[]) =>
+    const run = (
+      name: string,
+      value: Record<string, unknown>,
+      scopes?: AutomationScope[],
+    ) =>
       executeOperation(
         scopes
           ? { ...context, principal: { ...context.principal, scopes } }
           : context,
         name,
-        value,
+        operations.find((operation) => operation.name === name)?.readOnly
+          ? value
+          : { requestId: randomUUID(), ...value },
       );
     return { ...c, ...people, projects, context, input, run };
   }
@@ -117,7 +132,38 @@ export function automationProjectChecks(get: () => Context) {
         expectedVersion: 4,
         confirmed: true,
       }),
-    ).rejects.toMatchObject({ code: "OPERATION_NOT_FOUND" });
+    ).rejects.toMatchObject({ code: "AUTOMATION_SCOPE_REQUIRED" });
+  });
+
+  it("C14 projects: explicit lifecycle permission supports exact replay and restores private drafts", async () => {
+    const f = await fixture();
+    const draft = await f.projects.create(f.owner, f.input);
+    let current = await f.projects.change(f.owner, draft.id, "publish", {
+      expectedVersion: draft.version,
+      confirmed: true,
+    });
+    for (const action of ["unpublish", "archive", "restore"] as const) {
+      const input = {
+        id: draft.id,
+        expectedVersion: current.version,
+        confirmed: true,
+        requestId: randomUUID(),
+      };
+      const result = (await f.run(`projects_${action}`, input, [
+        "projects:manage",
+      ])) as ProjectDto;
+      expect(
+        await f.run(`projects_${action}`, input, ["projects:manage"]),
+      ).toEqual(result);
+      expect(result.version).toBe(current.version + 1);
+      expect(result.published).toBeNull();
+      expect(result.archived).toBe(action === "archive");
+      current = result;
+    }
+    expect(await new ProjectReader(f.db).publicList()).toEqual([]);
+    expect((await f.projects.detail(f.owner, draft.id)).version).toBe(
+      current.version,
+    );
   });
 
   it("C14 projects: rechecks current membership, organization and feature availability for scoped automation", async () => {

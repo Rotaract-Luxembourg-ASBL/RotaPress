@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import type { CmsSummary } from "@/features/cms/cms_schemas";
+import { useDeferredValue, useState } from "react";
+import { cmsLocaleSchema, type CmsLocale } from "@/features/cms/cms_schemas";
+import type { PageCollection } from "@/features/cms/cms_workspace_schemas";
 import { Dialog } from "@/ui/dialog";
 import { useResource } from "@/ui/api";
 import { Loading, Notice } from "@/ui/primitives";
+import { CollectionPagination } from "@/ui/collection-pagination";
 
 export function FormPlacement({
   formId,
@@ -36,18 +38,20 @@ function PlacementPicker({
   formId: string;
   close: () => void;
 }) {
-  const { data, error } = useResource<{ items: CmsSummary[] }>(
-    "/api/admin/cms/content",
-  );
   const [query, setQuery] = useState("");
-  const pages =
-    data?.items.filter(
-      (item) =>
-        item.kind === "page" &&
-        !item.archived &&
-        !item.moduleKey &&
-        item.title.toLowerCase().includes(query.toLowerCase()),
-    ) ?? [];
+  const [locale, setLocale] = useState<CmsLocale>("en");
+  const [page, setPage] = useState(1);
+  const search = useDeferredValue(query);
+  const params = new URLSearchParams({
+    locale,
+    page: String(page),
+    pageSize: "10",
+    search,
+    collection: "website",
+  });
+  const { data, error, refresh } = useResource<PageCollection>(
+    `/api/admin/cms/pages?${params}`,
+  );
   return (
     <Dialog title="Add form to a page" onClose={close}>
       <div className="form-stack">
@@ -60,12 +64,36 @@ function PlacementPicker({
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
           />
         </label>
-        {error && <Notice>{error}</Notice>}
+        <label>
+          Page language
+          <select
+            value={locale}
+            onChange={(event) => {
+              setLocale(cmsLocaleSchema.parse(event.target.value));
+              setPage(1);
+            }}
+          >
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="lb">Luxembourgish</option>
+          </select>
+        </label>
+        {error && (
+          <Notice>
+            {error}{" "}
+            <button type="button" className="inline-button" onClick={refresh}>
+              Try again
+            </button>
+          </Notice>
+        )}
         {!data && !error && <Loading />}
-        {pages.map((page) => (
+        {data?.items.map((page) => (
           <Link
             key={`${page.id}:${page.locale}`}
             className="settings-destination"
@@ -78,7 +106,7 @@ function PlacementPicker({
             </span>
           </Link>
         ))}
-        {data && !pages.length && (
+        {data && !data.items.length && (
           <p>
             No matching website pages.{" "}
             <Link href="/admin/website?tab=pages">
@@ -86,6 +114,9 @@ function PlacementPicker({
             </Link>
             .
           </p>
+        )}
+        {data && (
+          <CollectionPagination {...data} onPage={setPage} noun="pages" />
         )}
         <p className="field-help">
           This opens the editor. Nothing is inserted, saved or published until

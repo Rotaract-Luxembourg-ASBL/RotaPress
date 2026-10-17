@@ -21,6 +21,12 @@ The panel shows invitation, claim and revocation state. Revoke access without
 cancelling the booking, including after feature shutdown or event archive. A later
 invitation creates a new grant; the revoked grant cannot be claimed again.
 
+Search available guests by name or email, invitation history by email, and filter
+by booking source. Available guests and
+invitation history have separate page controls and exact totals. A source with
+an invalid email is shown but cannot be selected until corrected. The server
+rechecks the selected source address before creating the grant.
+
 ## Guest workflow
 
 Sign in through the existing email verification code flow using the invited email.
@@ -28,6 +34,10 @@ Sign in through the existing email verification code flow using the invited emai
 Choose **Accept invitation** to bind the grant to the current account. Repeated
 claims return the same grant. Native invitations also require the registration's
 original user ID, so matching an email alone cannot claim another account's booking.
+
+Search and pagination include all invitations currently available to the account.
+An unavailable source, cancelled event or revoked invitation is excluded from
+both the results and their total. Returning from event details keeps the search.
 
 `/guest/<eventId>/<grantId>` displays published event title, description, venue and
 schedule, plus the guest's own booking status. Native guests can open **My
@@ -78,9 +88,9 @@ are not publicly cached; claims are rate limited and recorded in audit history.
 
 ## Limits
 
-Staff lists are bounded to 200 recent records per source and 200 grants; guest
-discovery considers the latest 100 invitations. Search/pagination, invitation
-emails, guest documents/forms, ticket transfers and self-service email rebinding
-are unsupported. Native registrations and Luma imports stay separate. See
+Staff can search and page through eligible bookings and guest-access grants,
+with separate accurate totals. Guests can page through all invitations they may
+currently access. Invitation emails, guest documents/forms, ticket transfers and
+self-service email rebinding are unsupported. Native registrations and Luma imports stay separate. See
 [registration](event-registration.md) for native bookings and [Luma](luma.md)
 for source and purchase configuration.

@@ -1,7 +1,20 @@
 "use client";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
-import { errorMessage, request, useResource } from "@/ui/api";
+import { errorMessage, request } from "@/ui/api";
+import { useRequestResource } from "@/ui/request-resource";
+import { useCollectionLocation } from "@/ui/collection-location";
+import {
+  Collection,
+  CollectionRow,
+  CollectionToolbar,
+  StatusBadge,
+} from "@/ui/collection";
+import { CollectionPagination } from "@/ui/collection-pagination";
+import type {
+  AutomationConnection,
+  TokenCollection,
+} from "../token_collection";
 import { Loading, Notice } from "@/ui/primitives";
 import {
   connectionInput,
@@ -17,15 +30,6 @@ import {
 } from "./reference-origins";
 
 const endpoint = "/api/admin/integrations/automation";
-type Connection = {
-  id: string;
-  name: string | null;
-  enabled: boolean;
-  expiresAt: string | null;
-  expired: boolean;
-  scopes: AutomationScope[];
-  sourceOrigins: string[];
-};
 type IssuedConnection = { id: string; key: string; expiresAt: string };
 
 export function TokenSettings({
@@ -37,8 +41,15 @@ export function TokenSettings({
 }) {
   const rest = transport === "rest";
   const credential = rest ? "API token" : "MCP access key";
-  const { data, error, refresh } = useResource<{ connections: Connection[] }>(
-    `${endpoint}?transport=${transport}`,
+  const { params, change } = useCollectionLocation();
+  const query = (params.get("tokenSearch") ?? "").slice(0, 160);
+  const rawPage = Number(params.get("tokenPage"));
+  const page =
+    Number.isInteger(rawPage) && rawPage > 0 && rawPage <= 100000 ? rawPage : 1;
+  const setQuery = (search: string) =>
+    change({ tokenSearch: search, tokenPage: "" }, false);
+  const { data, error, refresh } = useRequestResource<TokenCollection>(
+    `${endpoint}?${new URLSearchParams({ transport, search: query, page: String(page) })}`,
   );
   const [name, setName] = useState("");
   const [origins, setOrigins] = useState("");
@@ -77,6 +88,7 @@ export function TokenSettings({
         }),
       );
       refresh();
+      change({ tokenSearch: "", tokenPage: "" }, false);
       setName("");
     } catch (cause) {
       setProblem(errorMessage(cause));
@@ -85,7 +97,7 @@ export function TokenSettings({
       setBusy(false);
     }
   }
-  async function revoke(connection: Connection) {
+  async function revoke(connection: AutomationConnection) {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -244,64 +256,128 @@ export function TokenSettings({
           Issued by your account. Revocation stops future requests; create a new
           credential to reconnect.
         </p>
-        {error ? (
-          <Notice>{error}</Notice>
-        ) : !data ? (
-          <Loading />
-        ) : !data.connections.length ? (
-          <p>
-            {rest
-              ? "No API tokens yet. Generate one above to start using REST."
-              : "No MCP access keys yet. OAuth clients do not need an access key."}
-          </p>
-        ) : (
-          <ul className="automation-connections">
-            {data.connections.map((connection) => (
-              <li key={connection.id}>
-                <div>
-                  <h3>{connection.name || credential}</h3>
-                  <p>
-                    {connection.expired
-                      ? "Expired"
-                      : connection.enabled
-                        ? "Issued · session required"
-                        : "Disabled"}
-                    {connection.expiresAt &&
-                      ` · Expires ${new Date(connection.expiresAt).toLocaleString()}`}
-                  </p>
-                  <details>
-                    <summary>
-                      {connection.scopes.length} allowed actions
-                    </summary>
-                    <ul>
-                      {connection.scopes.map((scope) => (
-                        <li key={scope}>{scopeDefinitions[scope].label}</li>
-                      ))}
-                    </ul>
-                    {connection.sourceOrigins.length > 0 && (
-                      <ReferenceCoverage rules={connection.sourceOrigins} />
-                    )}
-                  </details>
-                </div>
+        <Collection
+          label={rest ? "API token results" : "MCP access key results"}
+          noun={credential}
+          detailLabel="Expires"
+          toolbar={
+            <CollectionToolbar
+              searchLabel={
+                rest ? "Search API tokens" : "Search MCP access keys"
+              }
+              query={query}
+              onQuery={setQuery}
+            >
+              <button
+                className="button button-outline"
+                onClick={refresh}
+                disabled={busy}
+              >
+                Refresh {rest ? "tokens" : "keys"}
+              </button>
+            </CollectionToolbar>
+          }
+          footer={
+            data &&
+            !error && (
+              <CollectionPagination
+                page={data.page}
+                pageSize={data.pageSize}
+                total={data.total}
+                noun={rest ? "API tokens" : "MCP access keys"}
+                onPage={(next) => change({ tokenPage: next }, false)}
+              />
+            )
+          }
+        >
+          {error ? (
+            <Notice>
+              {error}{" "}
+              <button className="inline-button" onClick={refresh}>
+                Try again
+              </button>
+            </Notice>
+          ) : !data ? (
+            <Loading />
+          ) : !data.connections.length ? (
+            <div>
+              <p>
+                {query
+                  ? "No credentials match your search."
+                  : rest
+                    ? "No API tokens yet. Generate one above to start using REST."
+                    : "No MCP access keys yet. OAuth clients do not need an access key."}
+              </p>
+              {query && (
                 <button
                   className="button button-outline"
-                  disabled={busy}
-                  onClick={() => void revoke(connection)}
-                  aria-label={`Revoke ${connection.name || credential}`}
+                  onClick={() => setQuery("")}
                 >
-                  Revoke
+                  Clear credential search
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <button
-          className="button button-outline"
-          onClick={refresh}
-          disabled={busy}
-        >
-          Refresh {rest ? "tokens" : "keys"}
-        </button>
+              )}
+            </div>
+          ) : (
+            <ul className="admin-collection-rows">
+              {data.connections.map((connection) => (
+                <CollectionRow
+                  key={connection.id}
+                  title={connection.name || credential}
+                  status={
+                    <StatusBadge
+                      tone={
+                        connection.enabled && !connection.expired
+                          ? "success"
+                          : "neutral"
+                      }
+                    >
+                      {connection.expired
+                        ? "Expired"
+                        : connection.enabled
+                          ? "Issued · session required"
+                          : "Disabled"}
+                    </StatusBadge>
+                  }
+                  detail={{
+                    label: "Expires",
+                    value: connection.expiresAt ? (
+                      <time dateTime={connection.expiresAt}>
+                        {new Date(connection.expiresAt).toLocaleString()}
+                      </time>
+                    ) : (
+                      "No recorded expiry"
+                    ),
+                  }}
+                  description={
+                    <details>
+                      <summary>
+                        {connection.scopes.length} allowed actions
+                      </summary>
+                      <ul>
+                        {connection.scopes.map((scope) => (
+                          <li key={scope}>{scopeDefinitions[scope].label}</li>
+                        ))}
+                      </ul>
+                      {connection.sourceOrigins.length > 0 && (
+                        <ReferenceCoverage rules={connection.sourceOrigins} />
+                      )}
+                    </details>
+                  }
+                  actions={
+                    <button
+                      className="button button-outline"
+                      disabled={busy}
+                      onClick={() => void revoke(connection)}
+                      aria-label={`Revoke ${connection.name || credential}`}
+                    >
+                      Revoke
+                    </button>
+                  }
+                />
+              ))}
+            </ul>
+          )}
+        </Collection>
       </section>
     </div>
   );

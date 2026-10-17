@@ -353,6 +353,14 @@ export async function oauthConnectionsJourney(
   await expect(
     owner.getByText("No matching connections", { exact: true }),
   ).toBeVisible();
+  await expect(owner).toHaveURL(/search=No\+such\+assistant/);
+  await owner.reload();
+  await expect(
+    owner.getByRole("searchbox", { name: "Search connections", exact: true }),
+  ).toHaveValue("No such assistant");
+  await expect(
+    owner.getByText("No matching connections", { exact: true }),
+  ).toBeVisible();
   await owner
     .getByRole("button", { name: "Clear search", exact: true })
     .click();

@@ -23,11 +23,13 @@ export function MediaAttachmentDialog({
   busy?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   useEffect(() => {
     const trigger = document.activeElement;
     const element = dialog.current;
     element?.showModal();
+    closeButton.current?.focus();
     return () => {
       element?.close();
       if (trigger instanceof HTMLElement && trigger.isConnected)
@@ -43,19 +45,21 @@ export function MediaAttachmentDialog({
       className="media-dialog media-attachment-dialog"
       aria-labelledby={titleId}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         dismiss();
       }}
       onKeyDown={(event) => {
         if (
           busy ||
+          event.defaultPrevented ||
           event.altKey ||
           event.ctrlKey ||
           event.metaKey ||
           event.shiftKey ||
           (event.target instanceof HTMLElement &&
             event.target.closest(
-              "input,textarea,select,[contenteditable=true]",
+              "input,textarea,select,[contenteditable=true],[data-media-editor]",
             ))
         )
           return;
@@ -81,7 +85,7 @@ export function MediaAttachmentDialog({
                   className="media-close"
                   disabled={busy || !onPrevious}
                   onClick={onPrevious}
-                  aria-label="Previous image"
+                  aria-label="Previous file"
                 >
                   <Icon name="back" />
                 </button>
@@ -90,13 +94,14 @@ export function MediaAttachmentDialog({
                   className="media-close media-next"
                   disabled={busy || !onNext}
                   onClick={onNext}
-                  aria-label="Next image"
+                  aria-label="Next file"
                 >
                   <Icon name="back" />
                 </button>
               </>
             )}
             <button
+              ref={closeButton}
               type="button"
               className="media-close"
               disabled={busy}

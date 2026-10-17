@@ -112,6 +112,7 @@ export const formSubmission = club.table(
     requestId: uuid("request_id").notNull(),
     payloadHash: text("payload_hash").notNull(),
     answers: jsonb("answers").notNull(),
+    version: integer("version").notNull().default(1),
     submittedByUserId: text("submitted_by_user_id").references(() => user.id),
     membershipStatus: text("membership_status", {
       enum: ["pending", "approved"],
@@ -143,6 +144,7 @@ export const formSubmission = club.table(
       ],
     }),
     index("form_submission_form_created").on(table.formId, table.createdAt),
+    check("form_submission_version_positive", sql`${table.version} > 0`),
     check(
       "form_submission_status",
       sql`${table.status} in ('new', 'reviewing', 'closed')`,

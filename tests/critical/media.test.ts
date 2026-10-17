@@ -1,3 +1,4 @@
+import { AutomationRuntime } from "../../src/integrations/automation/receipt_service";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { link, mkdir, readFile, readdir, rm, symlink } from "node:fs/promises";
 import path from "node:path";
@@ -25,6 +26,10 @@ import { mediaPublicationOperations } from "../../src/integrations/automation/me
 import type { AutomationContext } from "../../src/integrations/automation/operation";
 import { sourceImageChecks } from "./source-image-cases";
 import { mediaAdministrationChecks } from "./media-admin-cases";
+import { mediaUploadChecks } from "./media-upload-cases";
+import { mediaAlbumChecks } from "./media-album-cases";
+import { automationMediaManagementChecks } from "./automation-media-management-cases";
+import { mediaUsageChecks } from "./media-usage-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -141,7 +146,31 @@ sourceImageChecks(() => ({
   installedClub,
 }));
 
-mediaAdministrationChecks(() => ({ db, media, authorization, imageBytes, installedClub }));
+mediaAdministrationChecks(() => ({
+  db,
+  media,
+  authorization,
+  imageBytes,
+  installedClub,
+}));
+mediaUploadChecks(() => ({
+  db,
+  media,
+  authorization,
+  driver,
+  imageBytes,
+  installedClub,
+  actor,
+}));
+mediaAlbumChecks(() => ({
+  db,
+  media,
+  authorization,
+  imageBytes,
+  installedClub,
+}));
+automationMediaManagementChecks(() => ({ db, media, authorization, imageBytes, driver, installedClub }));
+mediaUsageChecks(() => ({ db, media, authorization, imageBytes, installedClub, actor }));
 
 describe("C04 media authorization, safe decoding and private local storage", () => {
   it("C14 requires a separate current publication grant and exact batch confirmation", async () => {
@@ -158,10 +187,16 @@ describe("C04 media authorization, safe decoding and private local storage", () 
         scopes: ["media:read", "media:write", "media:inspect"],
         sourceOrigins: [],
       },
-      services: { authorization, media, limiter: { consume: async () => {} } },
+      services: {
+        authorization,
+        media,
+        automationRuntime: new AutomationRuntime(db),
+        limiter: { consume: async () => {} },
+      },
     } as unknown as AutomationContext;
     const operation = mediaPublicationOperations[0];
     const input = {
+      requestId: randomUUID(),
       assets: [
         { id: asset.id, expectedRevision: mediaMetadataRevision(asset) },
       ],
@@ -194,7 +229,7 @@ describe("C04 media authorization, safe decoding and private local storage", () 
     context.principal.organizationId = scope.organizationId;
     context.reauthorize = async () => ({ ...context.principal, scopes: [] });
     await expect(operation.run(context, input)).rejects.toMatchObject({
-      code: "AUTOMATION_SCOPE_REQUIRED",
+      code: "AUTOMATION_ACCESS_CHANGED",
     });
     expect((await media.detail(owner, asset.id)).visibility).toBe("private");
     await expect(media.read(null, asset.id)).rejects.toMatchObject({
@@ -262,10 +297,16 @@ describe("C04 media authorization, safe decoding and private local storage", () 
         scopes: ["media:publish"],
         sourceOrigins: [],
       },
-      services: { authorization, media, limiter: { consume: async () => {} } },
+      services: {
+        authorization,
+        media,
+        automationRuntime: new AutomationRuntime(db),
+        limiter: { consume: async () => {} },
+      },
     } as unknown as AutomationContext;
     const input = {
       ...original,
+      requestId: randomUUID(),
       assets: [
         original.assets[0],
         { id: changed.id, expectedRevision: mediaMetadataRevision(changed) },
@@ -290,7 +331,12 @@ describe("C04 media authorization, safe decoding and private local storage", () 
       "private",
     );
     expect((await media.read(null, first.id)).visibility).toBe("public");
-    await expect(media.publishReviewed(owner, input)).rejects.toMatchObject({
+    await expect(
+      media.publishReviewed(owner, {
+        assets: input.assets,
+        confirmed: input.confirmed,
+      }),
+    ).rejects.toMatchObject({
       code: "MEDIA_METADATA_CHANGED",
     });
     expect(
@@ -525,7 +571,7 @@ describe("C04 media authorization, safe decoding and private local storage", () 
     await expect(media.read(owner, asset.id)).rejects.toMatchObject({
       code: "ACCESS_DENIED",
     });
-    await expect(media.list(owner)).rejects.toMatchObject({
+    await expect(media.adminList(owner, {})).rejects.toMatchObject({
       code: "ACCESS_DENIED",
     });
   });

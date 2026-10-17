@@ -46,9 +46,12 @@ export async function communityJourney(
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/admin/website/${cms.id}?locale=en`);
   await expect(
-    page.locator(".editor-canvas .cms-feature-section"),
+    page.frameLocator(".editor-canvas iframe").locator(".cms-feature-section"),
   ).toBeVisible();
-  await page.locator(".editor-canvas .cms-feature-section h2").click();
+  await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-feature-section h2")
+    .click();
   await page.getByRole("tab", { name: "Design", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Section background", exact: true })
@@ -82,7 +85,8 @@ export async function communityJourney(
     .getByRole("button", { name: "Mobile canvas width", exact: true })
     .click();
   await page
-    .locator(".editor-canvas .cms-feature-section")
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-feature-section")
     .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: ".local/community-editor-mobile-preview.png",

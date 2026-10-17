@@ -131,12 +131,16 @@ export async function guestAccessJourney(
     await page
       .getByRole("button", { name: "Accept invitation", exact: true })
       .click();
-    await expect(page).toHaveURL(
+    await expect(page).toHaveURL((url) =>
       index === 0
-        ? new RegExp(
-            `/membership\\?tab=bookings&event=${eventId}&invitation=${ids[index]}$`,
-          )
-        : new RegExp(`/guest/${eventId}/${ids[index]}$`),
+        ? url.pathname === "/membership" &&
+          url.searchParams.get("tab") === "bookings" &&
+          url.searchParams.get("event") === eventId &&
+          url.searchParams.get("invitation") === ids[index] &&
+          url.searchParams.get("returnTo") ===
+            "/membership?tab=bookings&view=invitations"
+        : url.pathname === `/guest/${eventId}/${ids[index]}` &&
+          url.searchParams.get("returnTo") === "/guest?",
     );
     await expect(
       page.getByRole("region", { name: "Your booking", exact: true }),
@@ -223,7 +227,9 @@ export async function guestAccessJourney(
     await page
       .getByRole("button", { name: "Cancel registration", exact: true })
       .click();
-    await expect(page.getByText("Cancelled", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("listitem").getByText("Cancelled", { exact: true }),
+    ).toBeVisible();
   }
   expect((await second.request.get(route(1))).status()).toBe(404);
   await firstContext.close();

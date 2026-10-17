@@ -10,6 +10,14 @@ import { ReferenceCoverage } from "../ui/reference-origins";
 const actionGroups = [
   { prefix: "website:", name: "Website" },
   { prefix: "media:", name: "Images" },
+  { prefix: "files:", name: "Files" },
+  { prefix: "albums:", name: "Albums" },
+  { prefix: "members:", name: "Membership" },
+  { prefix: "access:", name: "Account access" },
+  { prefix: "responses:", name: "Private responses" },
+  { prefix: "registrations:", name: "Registrations" },
+  { prefix: "guests:", name: "Guest access" },
+  { prefix: "communications:", name: "Communications" },
   { prefix: "projects:", name: "Projects" },
   { prefix: "events:", name: "Events" },
   { prefix: "forms:", name: "Forms" },
@@ -270,15 +278,17 @@ export function OAuthConsent({
                 ? "Publication enabled"
                 : readOnly
                   ? "Read only"
-                  : "Draft editing"}
+                  : "Requested actions enabled"}
             </span>
           )}
         </div>
         <fieldset disabled={busy} className="oauth-consent-requested">
           <legend>Requested actions</legend>
           <p className="oauth-consent-section-hint">
-            Reads may include private drafts. Participant records are never
-            included.
+            Reads may include private drafts. Private participant data is
+            included only through the specific selected grants below. Requested
+            changes execute directly within your grants without another in-app
+            approval.
           </p>
           <div className="oauth-consent-groups">
             {groups.map((group) => (
@@ -315,7 +325,7 @@ export function OAuthConsent({
                             ? "Publish"
                             : readOnlyScopes([scope])
                               ? "Read"
-                              : "Draft"}
+                              : "Change"}
                         </span>
                       </span>
                     </label>

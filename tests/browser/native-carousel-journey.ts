@@ -100,7 +100,7 @@ export async function nativeCarouselJourney(
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/admin/website/${saved.id}?locale=en`);
-  const canvas = page.locator(".editor-canvas");
+  const canvas = page.frameLocator(".editor-canvas iframe");
   const strip = canvas.locator(".cms-image-slider");
   await expect(strip.locator("figure:visible")).toHaveCount(1);
   await canvas.locator(".cms-hero-slider h1").click();
@@ -213,7 +213,7 @@ export async function nativeCarouselJourney(
     for (const section of [".cms-hero-slider", ".cms-feature-section"]) {
       const bounds = await canvas.locator(section).evaluate((node) => {
         const frame = node.closest(".cms-design")!.getBoundingClientRect();
-        const root = node.closest(".editor-canvas")!.getBoundingClientRect();
+        const root = node.ownerDocument.documentElement.getBoundingClientRect();
         return {
           left: frame.left - root.left,
           right: root.right - frame.right,

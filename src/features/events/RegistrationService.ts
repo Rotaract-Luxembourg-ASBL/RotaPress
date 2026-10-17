@@ -22,6 +22,10 @@ import { FormRepository } from "../forms/FormRepository";
 import { FormScopePolicy } from "../forms/FormScopePolicy";
 import { SubmissionIntake } from "../forms/SubmissionIntake";
 import {
+  RegistrationCollection,
+  registrationDto,
+} from "./RegistrationCollection";
+import {
   registrationSettingsSchema,
   cancellationSchema,
   type RegistrationDto,
@@ -491,49 +495,24 @@ export class RegistrationService {
     });
   }
 
-  async mine(actor: TrustedActor): Promise<RegistrationDto[]> {
+  async queryMine(actor: TrustedActor, raw: unknown = {}) {
     requireVerifiedActor(actor);
     const organizationId = await this.forms.installedOrganization();
-    const rows = await this.db
-      .select()
-      .from(eventRegistration)
-      .where(
-        and(
-          eq(eventRegistration.userId, actor.userId),
-          eq(eventRegistration.organizationId, organizationId),
-        ),
-      )
-      .orderBy(desc(eventRegistration.createdAt))
-      .limit(200);
-    return rows.map((row) => this.dto(row));
+    return new RegistrationCollection(this.db).query(
+      organizationId,
+      { userId: actor.userId },
+      raw,
+    );
   }
 
-  async list(actor: TrustedActor, eventId: string) {
+  async query(actor: TrustedActor, eventId: string, raw: unknown = {}) {
     await this.workspace(actor, eventId);
     const { organizationId } = await this.authorization.approved(actor);
-    const rows = await this.db
-      .select({
-        registration: eventRegistration,
-        name: sql<string>`coalesce(nullif(${user.name}, ''), ${user.email})`,
-        email: user.email,
-      })
-      .from(eventRegistration)
-      .innerJoin(user, eq(user.id, eventRegistration.userId))
-      .where(
-        and(
-          eq(eventRegistration.eventId, eventId),
-          eq(eventRegistration.organizationId, organizationId),
-        ),
-      )
-      .orderBy(desc(eventRegistration.createdAt))
-      .limit(500);
-    return rows.map((row) => ({
-      ...this.dto(row.registration),
-      name: row.name,
-      email: row.email,
-      formId: row.registration.formId,
-      submissionId: row.registration.submissionId,
-    }));
+    return new RegistrationCollection(this.db).query(
+      organizationId,
+      { eventId },
+      raw,
+    );
   }
 
   /** Internal portal contract; caller authorizes the event or explicit guest grant. */
@@ -541,7 +520,7 @@ export class RegistrationService {
     org: string,
     eventId: string,
     executor: DatabaseExecutor = this.db,
-    id?: string,
+    id: string,
   ): Promise<GuestSource[]> {
     const rows = await executor
       .select({
@@ -557,11 +536,11 @@ export class RegistrationService {
         and(
           eq(eventRegistration.organizationId, org),
           eq(eventRegistration.eventId, eventId),
-          id ? eq(eventRegistration.id, id) : undefined,
+          eq(eventRegistration.id, id),
         ),
       )
       .orderBy(desc(eventRegistration.createdAt))
-      .limit(201);
+      .limit(1);
     return rows.map((row) => ({
       ...row,
       kind: "native",
@@ -575,11 +554,12 @@ export class RegistrationService {
     id: string,
     input: unknown,
     eventId?: string,
+    executor?: Transaction,
   ) {
     z.uuid().parse(id);
     cancellationSchema.parse(input);
     requireVerifiedActor(actor);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const organizationId = await this.forms.lockInstalled(tx);
       const [row] = await tx
         .select()
@@ -616,17 +596,11 @@ export class RegistrationService {
         targetId: id,
       });
       return this.dto(cancelled);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   private dto(row: typeof eventRegistration.$inferSelect): RegistrationDto {
-    return {
-      id: row.id,
-      eventId: row.eventId,
-      eventTitle: row.eventTitle,
-      status: row.status,
-      createdAt: row.createdAt.toISOString(),
-      cancelledAt: row.cancelledAt?.toISOString() ?? null,
-    };
+    return registrationDto(row);
   }
 }

@@ -1,5 +1,15 @@
 import "server-only";
-import { and, desc, eq, gte, inArray, lte, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { user } from "../../../db/schema/auth";
 import {
   formNotification,
@@ -16,7 +26,7 @@ import {
   formSubmitSchema,
   type SubmissionFilter,
 } from "./form_schemas";
-import type { SubmissionDto, SubmissionSummary } from "./form_types";
+import type { SubmissionDto, SubmissionList } from "./form_types";
 
 export class SubmissionRepository {
   constructor(private readonly db: Database) {}
@@ -114,16 +124,37 @@ export class SubmissionRepository {
     organizationId: string,
     formId: string,
     filter: SubmissionFilter,
-  ): Promise<{ submissions: SubmissionSummary[]; hasMore: boolean }> {
+  ): Promise<SubmissionList> {
+    return this.db.transaction(
+      (tx) => this.listPage(organizationId, formId, filter, tx),
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
+  }
+
+  private async listPage(
+    organizationId: string,
+    formId: string,
+    filter: SubmissionFilter,
+    executor: DatabaseExecutor,
+  ): Promise<SubmissionList> {
+    const pageSize = filter.pageSize ?? 100;
+    const [counted] = await executor
+      .select({ total: count() })
+      .from(formSubmission)
+      .where(and(...this.conditions(organizationId, formId, filter)));
+    const pageNumber = Math.min(
+      filter.page ?? 1,
+      Math.max(1, Math.ceil(counted.total / pageSize)),
+    );
     // The list projection intentionally never selects answer or applicant data.
-    const rows = await this.db
+    const page = await executor
       .select({
         id: formSubmission.id,
         formId: formSubmission.formId,
         status: formSubmission.status,
         createdAt: formSubmission.createdAt,
         versionNumber: formVersion.number,
-        definition: formVersion.definition,
+        title: sql<string>`${formVersion.definition}->>'title'`,
       })
       .from(formSubmission)
       .innerJoin(
@@ -135,10 +166,10 @@ export class SubmissionRepository {
       )
       .where(and(...this.conditions(organizationId, formId, filter)))
       .orderBy(desc(formSubmission.createdAt), desc(formSubmission.id))
-      .limit(101);
-    const page = rows.slice(0, 100);
+      .offset((pageNumber - 1) * pageSize)
+      .limit(pageSize);
     const jobs = page.length
-      ? await this.db
+      ? await executor
           .select({
             submissionId: formNotification.submissionId,
             status: formNotification.status,
@@ -155,11 +186,14 @@ export class SubmissionRepository {
           )
       : [];
     return {
-      hasMore: rows.length > 100,
+      hasMore: pageNumber * pageSize < counted.total,
+      total: counted.total,
+      page: pageNumber,
+      pageSize,
       submissions: page.map((row) => ({
         id: row.id,
         formId: row.formId,
-        formTitle: formDefinitionSchema.parse(row.definition).title,
+        formTitle: row.title,
         status: row.status,
         versionNumber: row.versionNumber,
         receivedAt: row.createdAt.toISOString(),
@@ -218,6 +252,7 @@ export class SubmissionRepository {
       formId: submission.formId,
       formTitle: definition.title,
       versionId: version.id,
+      version: submission.version,
       versionNumber: version.number,
       status: submission.status,
       receivedAt: submission.createdAt.toISOString(),

@@ -109,6 +109,19 @@ export async function integrationCredentialsJourney(owner: Page) {
   await owner
     .getByRole("button", { name: "I saved the token", exact: true })
     .click();
+  const tokenSearch = owner.getByRole("searchbox", {
+    name: "Search API tokens",
+    exact: true,
+  });
+  await tokenSearch.fill("No such credential");
+  await expect(
+    owner.getByText("No credentials match your search.", { exact: true }),
+  ).toBeVisible();
+  await owner.reload();
+  await expect(tokenSearch).toHaveValue("No such credential");
+  await owner
+    .getByRole("button", { name: "Clear credential search", exact: true })
+    .click();
   await owner.reload();
   await expect(
     owner.getByRole("button", {
@@ -116,12 +129,14 @@ export async function integrationCredentialsJourney(owner: Page) {
       exact: true,
     }),
   ).toBeVisible();
-  const savedRest = owner.locator(".automation-connections > li").filter({
-    has: owner.getByRole("heading", {
-      name: "Synthetic REST script",
-      exact: true,
-    }),
-  });
+  const savedRest = owner
+    .getByRole("region", { name: "API token results", exact: true })
+    .locator(".admin-collection-rows > li")
+    .filter({
+      has: owner.getByText("Synthetic REST script", {
+        exact: true,
+      }),
+    });
   await savedRest.locator("summary").click();
   await expect(
     savedRest.getByRole("list", {
@@ -210,12 +225,14 @@ export async function integrationCredentialsJourney(owner: Page) {
   await owner
     .getByRole("button", { name: "I saved the key", exact: true })
     .click();
-  const savedMcp = owner.locator(".automation-connections > li").filter({
-    has: owner.getByRole("heading", {
-      name: "Synthetic MCP assistant",
-      exact: true,
-    }),
-  });
+  const savedMcp = owner
+    .getByRole("region", { name: "MCP access key results", exact: true })
+    .locator(".admin-collection-rows > li")
+    .filter({
+      has: owner.getByText("Synthetic MCP assistant", {
+        exact: true,
+      }),
+    });
   await savedMcp.locator("summary").click();
   await expect(
     savedMcp.getByRole("list", {

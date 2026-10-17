@@ -1,4 +1,6 @@
 import "server-only";
+import { AlbumReader } from "../media/AlbumReader";
+import { contentAlbums } from "./cms_albums";
 import type { cmsContent } from "../../../db/schema/cms";
 import type { Database } from "../../infrastructure/database/client";
 import {
@@ -40,6 +42,12 @@ export class CmsReferencePolicy {
     executor: DatabaseExecutor,
     eventId: string | null = null,
   ) {
+    await new AlbumReader(this.db).assertReferences(
+      organizationId,
+      contentAlbums(data),
+      published,
+      executor,
+    );
     for (const id of new Set(
       flattenBlocks(data.content).flatMap((block) =>
         block.type === "PageCollection" ? block.props.pageIds : [],
@@ -123,6 +131,12 @@ export class CmsReferencePolicy {
           executor,
         );
         if (shared) {
+          await new AlbumReader(this.db).assertReferences(
+            organizationId,
+            contentAlbums(validateContent(shared.data, "section")),
+            true,
+            executor,
+          );
           await new PartnerReader().assertReferences(
             organizationId,
             contentPartners(validateContent(shared.data, "section")),

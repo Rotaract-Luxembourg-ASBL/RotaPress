@@ -1,5 +1,17 @@
 import "server-only";
-import { and, desc, eq, exists, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lt,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { user } from "../../../db/schema/auth";
 import { membership } from "../../../db/schema/club";
@@ -10,6 +22,8 @@ import type {
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import type { EventSummary } from "./event_schemas";
+import { collectionPage, searchPattern } from "@/core/collections";
+import type { EventCollectionQuery } from "./event_collection";
 
 // This repository serves authorized event staff; public event fields omit people.
 const staffDisplayName = sql<string>`coalesce(nullif(${user.name}, ''), ${user.email})`;
@@ -58,46 +72,19 @@ function dto(
 export class EventRepository {
   constructor(private readonly db: Database) {}
 
-  async responseEventIds(organizationId: string, userId?: string) {
-    if (!userId)
-      return (
-        await this.db
-          .select({ id: clubEvent.id })
-          .from(clubEvent)
-          .where(eq(clubEvent.organizationId, organizationId))
-      ).map((row) => row.id);
-    const rows = await this.db
-      .select({ id: eventManager.eventId, role: eventManager.role })
-      .from(eventManager)
-      .where(
-        and(
-          eq(eventManager.organizationId, organizationId),
-          eq(eventManager.userId, userId),
-        ),
-      );
-    return rows;
-  }
-
-  async list(organizationId: string, managerUserId?: string) {
-    const assignment = alias(eventManager, "current_event_assignment");
-    const rows = await this.db
-      .select(projection)
-      .from(clubEvent)
-      .leftJoin(
-        eventManager,
-        and(
-          eq(eventManager.eventId, clubEvent.id),
-          eq(eventManager.organizationId, clubEvent.organizationId),
-          eq(eventManager.role, "manager"),
-        ),
-      )
-      .leftJoin(user, eq(user.id, eventManager.userId))
-      .where(
-        and(
+  async query(
+    organizationId: string,
+    input: EventCollectionQuery,
+    managerUserId?: string,
+  ) {
+    return this.db.transaction(
+      async (tx) => {
+        const assignment = alias(eventManager, "collection_assignment");
+        const scope = and(
           eq(clubEvent.organizationId, organizationId),
           managerUserId
             ? exists(
-                this.db
+                tx
                   .select({ id: assignment.eventId })
                   .from(assignment)
                   .where(
@@ -109,10 +96,127 @@ export class EventRepository {
                   ),
               )
             : undefined,
+        );
+        const active = isNull(clubEvent.archivedAt);
+        const notCancelled = isNull(clubEvent.cancelledAt);
+        const now = new Date();
+        const predicates = {
+          all: undefined,
+          active,
+          published: and(
+            active,
+            notCancelled,
+            isNotNull(clubEvent.publishedAt),
+          ),
+          draft: and(active, notCancelled, isNull(clubEvent.publishedAt)),
+          cancelled: and(active, isNotNull(clubEvent.cancelledAt)),
+          archived: isNotNull(clubEvent.archivedAt),
+          upcoming: and(active, notCancelled, gte(clubEvent.startsAt, now)),
+        };
+        const where = and(
+          scope,
+          predicates[input.status],
+          input.search
+            ? ilike(clubEvent.title, searchPattern(input.search))
+            : undefined,
+          input.timing === "upcoming"
+            ? and(notCancelled, gte(clubEvent.startsAt, now))
+            : input.timing === "past"
+              ? lt(clubEvent.startsAt, now)
+              : undefined,
+        );
+        const [matched] = await tx
+          .select({ total: count() })
+          .from(clubEvent)
+          .where(where);
+        const [counts] = await tx
+          .select({
+            all: count(),
+            active:
+              sql<number>`count(*) filter (where ${predicates.active})`.mapWith(
+                Number,
+              ),
+            published:
+              sql<number>`count(*) filter (where ${predicates.published})`.mapWith(
+                Number,
+              ),
+            draft:
+              sql<number>`count(*) filter (where ${predicates.draft})`.mapWith(
+                Number,
+              ),
+            cancelled:
+              sql<number>`count(*) filter (where ${predicates.cancelled})`.mapWith(
+                Number,
+              ),
+            archived:
+              sql<number>`count(*) filter (where ${predicates.archived})`.mapWith(
+                Number,
+              ),
+            upcoming:
+              sql<number>`count(*) filter (where ${predicates.upcoming})`.mapWith(
+                Number,
+              ),
+          })
+          .from(clubEvent)
+          .where(scope);
+        const page = collectionPage(matched.total, input.page, input.pageSize);
+        const rows = await tx
+          .select(projection)
+          .from(clubEvent)
+          .leftJoin(
+            eventManager,
+            and(
+              eq(eventManager.eventId, clubEvent.id),
+              eq(eventManager.organizationId, clubEvent.organizationId),
+              eq(eventManager.role, "manager"),
+            ),
+          )
+          .leftJoin(user, eq(user.id, eventManager.userId))
+          .where(where)
+          .orderBy(
+            input.sort === "title"
+              ? clubEvent.title
+              : input.sort === "starts"
+                ? clubEvent.startsAt
+                : desc(clubEvent.createdAt),
+            clubEvent.id,
+          )
+          .limit(input.pageSize)
+          .offset(input.offset ?? (page - 1) * input.pageSize);
+        return {
+          events: rows.map(dto),
+          total: matched.total,
+          page,
+          pageSize: input.pageSize,
+          counts,
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
+  }
+
+  async responseEventIds(
+    organizationId: string,
+    userId?: string,
+    executor: DatabaseExecutor = this.db,
+  ) {
+    if (!userId)
+      return (
+        await executor
+          .select({ id: clubEvent.id })
+          .from(clubEvent)
+          .where(eq(clubEvent.organizationId, organizationId))
+      ).map((row) => row.id);
+    const rows = await executor
+      .select({ id: eventManager.eventId, role: eventManager.role })
+      .from(eventManager)
+      .where(
+        and(
+          eq(eventManager.organizationId, organizationId),
+          eq(eventManager.userId, userId),
         ),
-      )
-      .orderBy(desc(clubEvent.createdAt));
-    return rows.map(dto);
+      );
+    return rows;
   }
 
   async detail(

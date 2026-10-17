@@ -1,9 +1,5 @@
+import { formContentOperations } from "./form_content_operations";
 import { z } from "zod";
-import {
-  formCreateSchema,
-  formSaveSchema,
-} from "@/features/forms/form_schemas";
-import type { FormDto } from "@/features/forms/form_types";
 import {
   eventFields,
   eventFieldsSchema,
@@ -14,31 +10,24 @@ import {
   partnerProfileSchema,
   partnerSaveSchema,
 } from "@/features/partners/partner_schemas";
-import { operation, page, pagination } from "./operation";
+import { operation, pagination, pageMetadata } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import {
+  requireReceiptCapability,
+  requireReceiptEvent,
+} from "./receipt_authority";
+import { mediaAdminListSchema } from "@/features/media/media_schemas";
 import {
   calendarOutput,
   directoryOutput,
+  directoryMutationOutput,
   eventOutput,
-  formOutput,
   mediaOutput,
   pageOutput,
 } from "./response_schemas";
-import {
-  directoryExample,
-  eventExample,
-  exampleId,
-  formExample,
-} from "./examples";
+import { directoryExample, eventExample, exampleId } from "./examples";
 
 const idInput = z.strictObject({ id: z.uuid() });
-const formContent = (f: FormDto) => ({
-  id: f.id,
-  kind: f.kind,
-  archived: f.archived,
-  draftRevision: f.draftRevision,
-  draft: f.draft,
-  publishedVersionId: f.publishedVersionId,
-});
 const eventContent = (e: EventSummary) => ({
   ...eventFields(e),
   id: e.id,
@@ -50,83 +39,44 @@ const eventContent = (e: EventSummary) => ({
 });
 
 export const featureOperations = [
+  ...formContentOperations,
   operation(
     {
       name: "media_list",
+      effect: "read",
       output: pageOutput(mediaOutput),
       example: { limit: 20, offset: 0 },
       method: "GET",
       path: "/media",
       scope: "media:read",
       description:
-        "List media metadata for native blocks. Use media_inspect with its separate scope to read image pixels. Uploads are private; only media_publish with its separate grant and an explicit request can make reviewed images public. Hiding and deletion remain manual.",
-      input: pagination,
+        "List media metadata for native blocks with authorized pagination. Use media_inspect with its separate scope to read image pixels. Automation uploads are private; media_publish requires its separate grant and an explicit request. Optional media:manage permits requested metadata, organization, hiding and deletion with native reference protections.",
+      input: pagination.extend({
+        search: mediaAdminListSchema.shape.search,
+        visibility: mediaAdminListSchema.shape.visibility,
+        collection: mediaAdminListSchema.shape.collection,
+        dateFrom: mediaAdminListSchema.shape.dateFrom,
+        dateTo: mediaAdminListSchema.shape.dateTo,
+        sort: mediaAdminListSchema.shape.sort,
+      }),
     },
-    async ({ services: s, principal: p }, i) =>
-      page(await s.media.list(p.actor), i),
-  ),
-  operation(
-    {
-      name: "forms_list",
-      output: pageOutput(formOutput),
-      example: { limit: 20, offset: 0 },
-      method: "GET",
-      path: "/forms",
-      scope: "forms:read",
-      description:
-        "List form definitions. Excludes submissions, response counts, recipients and webhooks.",
-      input: pagination,
+    async ({ services: s, principal: p }, { limit, offset, ...filters }) => {
+      const result = await s.media.adminList(p.actor, {
+        ...filters,
+        kind: "image",
+        pageSize: limit,
+        offset,
+      });
+      return {
+        items: result.assets.map((asset) => mediaOutput.strip().parse(asset)),
+        ...pageMetadata(result.total, { offset, limit }),
+      };
     },
-    async ({ services: s, principal: p }, i) =>
-      page((await s.forms.list(p.actor)).map(formContent), i),
-  ),
-  operation(
-    {
-      name: "forms_get",
-      output: formOutput,
-      example: { id: exampleId },
-      method: "GET",
-      path: "/forms/{id}",
-      scope: "forms:read",
-      description: "Read a form draft and revision number, without responses.",
-      input: idInput,
-    },
-    async ({ services: s, principal: p }, i) =>
-      formContent(await s.forms.detail(p.actor, i.id)),
-  ),
-  operation(
-    {
-      name: "forms_create",
-      output: formOutput,
-      example: { kind: "contact", title: "Contact our club" },
-      method: "POST",
-      path: "/forms",
-      scope: "forms:write",
-      description:
-        "Create a private contact or membership form draft. Publishing requires the separate forms:publish grant and an explicit user request.",
-      input: formCreateSchema,
-    },
-    async ({ services: s, principal: p }, i) =>
-      formContent(await s.forms.create(p.actor, i)),
-  ),
-  operation(
-    {
-      name: "forms_save",
-      output: formOutput,
-      example: { id: exampleId, expectedRevision: 1, definition: formExample },
-      method: "PATCH",
-      path: "/forms/{id}",
-      scope: "forms:write",
-      description:
-        "Save a form draft using its current expectedRevision; no notification or publication changes.",
-      input: z.strictObject({ id: z.uuid(), ...formSaveSchema.shape }),
-    },
-    async ({ services: s, principal: p }, { id, ...i }) =>
-      formContent(await s.forms.save(p.actor, id, i)),
   ),
   operation(
     {
       name: "events_list",
+      effect: "read",
       output: pageOutput(eventOutput),
       example: { limit: 20, offset: 0 },
       method: "GET",
@@ -136,12 +86,22 @@ export const featureOperations = [
         "List authorized event content without staff identities or guest records.",
       input: pagination,
     },
-    async ({ services: s, principal: p }, i) =>
-      page((await s.events.list(p.actor)).map(eventContent), i),
+    async ({ services: s, principal: p }, { offset, limit }) => {
+      const result = await s.events.query(p.actor, {
+        offset,
+        pageSize: limit,
+        status: "all",
+      });
+      return {
+        items: result.events.map(eventContent),
+        ...pageMetadata(result.total, { offset, limit }),
+      };
+    },
   ),
   operation(
     {
       name: "events_get",
+      effect: "read",
       output: eventOutput,
       example: { id: exampleId },
       method: "GET",
@@ -154,9 +114,10 @@ export const featureOperations = [
     async ({ services: s, principal: p }, i) =>
       eventContent(await s.events.detail(p.actor, i.id)),
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_create",
+      effect: "draft",
       output: eventOutput,
       example: eventExample,
       method: "POST",
@@ -166,14 +127,20 @@ export const featureOperations = [
         "Create a private event draft managed by the current staff member. Publication and registrations remain separate.",
       input: eventFieldsSchema,
     },
-    async ({ services: s, principal: p }, i) =>
+    requireReceiptCapability("events.create"),
+    async ({ services: s, principal: p }, i, tx) =>
       eventContent(
-        await s.events.create(p.actor, { ...i, managerUserId: p.actor.userId }),
+        await s.events.create(
+          p.actor,
+          { ...i, managerUserId: p.actor.userId },
+          tx,
+        ),
       ),
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_save",
+      effect: "draft",
       output: eventOutput,
       example: { id: exampleId, expectedVersion: 1, ...eventExample },
       method: "PATCH",
@@ -183,12 +150,15 @@ export const featureOperations = [
         "Save event details to a draft using expectedVersion. Does not publish, change teams or contact guests.",
       input: saveEventSchema,
     },
-    async ({ services: s, principal: p }, i) =>
-      eventContent(await s.events.save(p.actor, i)),
+    (context, input, tx) =>
+      requireReceiptEvent(context, input.id, "events.edit", tx),
+    async ({ services: s, principal: p }, i, tx) =>
+      eventContent(await s.events.save(p.actor, i, tx)),
   ),
   operation(
     {
       name: "directory_list",
+      effect: "read",
       output: pageOutput(directoryOutput),
       example: { limit: 20, offset: 0 },
       method: "GET",
@@ -198,13 +168,22 @@ export const featureOperations = [
         "List partner, sponsor and team website profiles and draft versions.",
       input: pagination,
     },
-    async ({ services: s, principal: p }, i) =>
-      page(await s.partners.list(p.actor), i),
+    async ({ services: s, principal: p }, { offset, limit }) => {
+      const result = await s.partners.query(p.actor, {
+        offset,
+        pageSize: limit,
+      });
+      return {
+        items: result.items,
+        ...pageMetadata(result.total, { offset, limit }),
+      };
+    },
   ),
-  operation(
+  receiptOperation(
     {
       name: "directory_create",
-      output: directoryOutput,
+      effect: "draft",
+      output: directoryMutationOutput,
       example: directoryExample,
       method: "POST",
       path: "/directory",
@@ -213,12 +192,17 @@ export const featureOperations = [
         "Create a private website profile draft; no sponsor is contacted.",
       input: partnerProfileSchema,
     },
-    async ({ services: s, principal: p }, i) => s.partners.create(p.actor, i),
+    requireReceiptCapability("cms.edit"),
+    async ({ services: s, principal: p }, i, tx) =>
+      directoryMutationOutput
+        .strip()
+        .parse(await s.partners.create(p.actor, i, tx)),
   ),
-  operation(
+  receiptOperation(
     {
       name: "directory_save",
-      output: directoryOutput,
+      effect: "draft",
+      output: directoryMutationOutput,
       example: { id: exampleId, expectedVersion: 1, profile: directoryExample },
       method: "PATCH",
       path: "/directory/{id}",
@@ -227,12 +211,16 @@ export const featureOperations = [
         "Save a profile draft with expectedVersion. Publishing requires the separate directory:publish grant and an explicit user request.",
       input: partnerSaveSchema.extend({ id: z.uuid() }),
     },
-    async ({ services: s, principal: p }, { id, ...i }) =>
-      s.partners.change(p.actor, id, "save", i),
+    requireReceiptCapability("cms.edit"),
+    async ({ services: s, principal: p }, { id, ...i }, tx) =>
+      directoryMutationOutput
+        .strip()
+        .parse(await s.partners.change(p.actor, id, "save", i, tx)),
   ),
   operation(
     {
       name: "calendar_read",
+      effect: "read",
       output: calendarOutput,
       example: {},
       method: "GET",

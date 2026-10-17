@@ -7,6 +7,8 @@ import {
   AuthorizationService,
   DomainError,
   type TrustedActor,
+  type DatabaseExecutor,
+  type Transaction,
 } from "@/core/authorization/AuthorizationService";
 import { AuditRepository } from "@/core/audit/AuditRepository";
 import type { Database } from "@/infrastructure/database/client";
@@ -29,20 +31,24 @@ export class EmailSettingsService {
     private readonly delivery: EmailDelivery,
     private readonly origin: string,
   ) {}
-  async workspace(actor: TrustedActor): Promise<EmailWorkspace> {
+  async workspace(
+    actor: TrustedActor,
+    executor: DatabaseExecutor = this.db,
+  ): Promise<EmailWorkspace> {
     const scope = await this.authorization.require(
       actor,
       "integrations.manage",
+      executor,
     );
-    const connections = await this.db
+    const connections = await executor
       .select()
       .from(emailConnection)
       .where(eq(emailConnection.organizationId, scope.organizationId));
-    const templates = await this.db
+    const templates = await executor
       .select()
       .from(emailTemplate)
       .where(eq(emailTemplate.organizationId, scope.organizationId));
-    const [club] = await this.db
+    const [club] = await executor
       .select({ name: organization.name })
       .from(organization)
       .where(eq(organization.id, scope.organizationId));
@@ -346,9 +352,13 @@ export class EmailSettingsService {
     });
     return this.workspace(actor);
   }
-  async saveTemplate(actor: TrustedActor, raw: unknown) {
+  async saveTemplate(
+    actor: TrustedActor,
+    raw: unknown,
+    executor?: Transaction,
+  ) {
     const values = templateSaveSchema.parse(raw);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.authorization.lock(
         actor,
         "integrations.manage",
@@ -377,12 +387,21 @@ export class EmailSettingsService {
         action: "email.template_saved",
         targetId: values.key,
       });
-    });
+    };
+    if (executor) {
+      await apply(executor);
+      return this.workspace(actor, executor);
+    }
+    await this.db.transaction(apply);
     return this.workspace(actor);
   }
-  async publishTemplate(actor: TrustedActor, raw: unknown) {
+  async publishTemplate(
+    actor: TrustedActor,
+    raw: unknown,
+    executor?: Transaction,
+  ) {
     const values = templatePublishSchema.parse(raw);
-    await this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.authorization.lock(
         actor,
         "integrations.manage",
@@ -404,7 +423,12 @@ export class EmailSettingsService {
         action: "email.template_published",
         targetId: values.key,
       });
-    });
+    };
+    if (executor) {
+      await apply(executor);
+      return this.workspace(actor, executor);
+    }
+    await this.db.transaction(apply);
     return this.workspace(actor);
   }
 }

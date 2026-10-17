@@ -102,7 +102,7 @@ export function oauthConsentChecks(context: () => RenewalContext) {
         state: true,
       });
       expect(
-        (await connections.list(actor)).find(
+        (await connections.list(actor)).clients.find(
           (item) => item.clientId === client.clientId,
         )?.approvedScopes,
       ).toEqual(["website:read"]);

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { clubEvent } from "../../../db/schema/events";
 import { eventRevision } from "../../../db/schema/editorial-history";
@@ -19,6 +19,7 @@ import {
   revisionPagesSchema,
 } from "./EventRevisionWriter";
 import { eventFieldsSchema, eventVersionSchema } from "./event_schemas";
+import { collectionPage, collectionQuerySchema } from "@/core/collections";
 
 export class EventEditorialService {
   private readonly revisions = new EventRevisionWriter();
@@ -31,10 +32,20 @@ export class EventEditorialService {
     private readonly cms: CmsService,
   ) {}
 
-  async history(actor: TrustedActor, id: string) {
+  async history(actor: TrustedActor, id: string, raw: unknown = {}) {
+    const input = collectionQuerySchema.parse(raw);
     await this.events.detail(actor, z.uuid().parse(id));
     const { organizationId, capabilities } =
       await this.authorization.approved(actor);
+    const scope = and(
+      eq(eventRevision.eventId, id),
+      eq(eventRevision.organizationId, organizationId),
+    );
+    const [matched] = await this.db
+      .select({ total: count() })
+      .from(eventRevision)
+      .where(scope);
+    const page = collectionPage(matched.total, input.page, input.pageSize);
     const rows = await this.db
       .select()
       .from(eventRevision)
@@ -45,7 +56,8 @@ export class EventEditorialService {
         ),
       )
       .orderBy(desc(eventRevision.createdAt), desc(eventRevision.id))
-      .limit(100);
+      .limit(input.pageSize)
+      .offset((page - 1) * input.pageSize);
     const [featured] = capabilities.includes("events.manage")
       ? await this.db
           .select({
@@ -61,6 +73,9 @@ export class EventEditorialService {
           )
       : [];
     return {
+      total: matched.total,
+      page,
+      pageSize: input.pageSize,
       revisions: rows.map((row) => ({
         id: row.id,
         action: row.action,

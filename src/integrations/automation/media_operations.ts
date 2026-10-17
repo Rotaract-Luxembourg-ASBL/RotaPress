@@ -7,6 +7,7 @@ import {
 } from "@/features/media/media_automation";
 import { exampleId } from "./examples";
 import { operation } from "./operation";
+import { receiptOperation } from "./receipt_operation";
 import {
   mediaDetailOutput,
   mediaInspectOutput,
@@ -23,6 +24,7 @@ export const mediaOperations = [
   operation(
     {
       name: "media_get",
+      effect: "read",
       method: "GET",
       path: "/media/{id}",
       scope: "media:read",
@@ -34,12 +36,19 @@ export const mediaOperations = [
     },
     async ({ services, principal }, input) => {
       const asset = await services.media.detail(principal.actor, input.id);
+      if (asset.kind !== "image")
+        throw new DomainError(
+          "IMAGE_REQUIRED",
+          "This connection's image permission does not include other files.",
+          403,
+        );
       return { asset, metadataRevision: mediaMetadataRevision(asset) };
     },
   ),
   operation(
     {
       name: "media_upload",
+      effect: "draft",
       method: "POST",
       path: "/media/uploads",
       scope: "media:write",
@@ -73,6 +82,7 @@ export const mediaOperations = [
   operation(
     {
       name: "media_inspect",
+      effect: "read",
       method: "GET",
       path: "/media/{id}/image",
       scope: "media:inspect",
@@ -96,14 +106,15 @@ export const mediaOperations = [
       return { asset, metadataRevision: mediaMetadataRevision(asset), image };
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "media_metadata_save",
+      effect: "draft",
       method: "PATCH",
       path: "/media/{id}/metadata",
       scope: "media:write",
       description:
-        "Replace a private image's title, alt, caption, tags and collection using expectedRevision from media_get or media_inspect. Read existing metadata first and preserve fields you are not changing. Public images require manual review in Media; visibility and file bytes cannot change here.",
+        "Replace a private image's title, alt, caption, tags and collection using expectedRevision from media_get or media_inspect. Read existing metadata first and preserve fields you are not changing. Public metadata requires media_details_save with the separate media:manage grant. Visibility and file bytes cannot change here.",
       input: privateMetadataSchema,
       output: mediaDetailOutput,
       example: {
@@ -116,7 +127,9 @@ export const mediaOperations = [
         collection: "Events",
       },
     },
-    async (context, input) => {
+    ({ services, principal }, input, tx) =>
+      services.media.detail(principal.actor, input.id, tx),
+    async (context, input, tx) => {
       await requireMediaScope(context, "media:write");
       await context.services.limiter.consume(
         "automation-media-metadata",
@@ -126,6 +139,7 @@ export const mediaOperations = [
       const asset = await context.services.media.savePrivateMetadata(
         context.principal.actor,
         input,
+        tx,
       );
       return { asset, metadataRevision: mediaMetadataRevision(asset) };
     },

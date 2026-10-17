@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { collectionEditorHref } from "@/ui/collection-return";
 import { useState } from "react";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { errorMessage, request, useResource } from "@/ui/api";
@@ -18,46 +19,37 @@ import { Dialog } from "@/ui/dialog";
 import { Icon } from "@/ui/icon";
 import { Loading, Notice, PageHeading } from "@/ui/primitives";
 import type { ProjectDto } from "../project_schemas";
+import type { ProjectCollection } from "../project_collection";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 import { projectStatusLabels } from "./project-public";
 
 export function ProjectsPanel() {
   const { capabilities } = useCurrentUser();
   const canEdit = capabilities.includes("cms.edit");
-  const { data, error, refresh } = useResource<{ items: ProjectDto[] }>(
-    canEdit ? "/api/admin/projects" : null,
+  const { params, page, change } = useCollectionLocation();
+  const query = params.get("search") ?? "";
+  const filter = params.get("status") ?? "active";
+  const returnTo = encodeURIComponent(`/admin/projects?${params}`);
+  const setFilter = (status: string) => change({ status });
+  const { data, error, refresh } = useResource<ProjectCollection>(
+    canEdit
+      ? `/api/admin/projects?${new URLSearchParams({ page: String(page), search: query, status: filter })}`
+      : null,
   );
   const [creating, setCreating] = useState(false);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("active");
   if (!canEdit)
     return <Notice>You do not have permission to manage projects.</Notice>;
-  const projects = data?.items ?? [];
-  const counts = {
-    active: projects.filter((item) => !item.archived).length,
-    published: projects.filter((item) => !item.archived && item.published)
-      .length,
-    draft: projects.filter((item) => !item.archived && !item.published).length,
-    archived: projects.filter((item) => item.archived).length,
+  const items = data?.items ?? [];
+  const counts = data?.counts ?? {
+    all: 0,
+    active: 0,
+    published: 0,
+    draft: 0,
+    archived: 0,
   };
-  const items = projects.filter((item) => {
-    const matches =
-      filter === "archived"
-        ? item.archived
-        : !item.archived &&
-          (filter === "active" ||
-            (filter === "published"
-              ? Boolean(item.published)
-              : !item.published));
-    return (
-      matches &&
-      `${item.draft.title} ${item.draft.summary} ${item.draft.location}`
-        .toLocaleLowerCase()
-        .includes(query.trim().toLocaleLowerCase())
-    );
-  });
   const clear = () => {
-    setQuery("");
-    setFilter("active");
+    change({ search: undefined, status: "active" });
   };
   return (
     <>
@@ -163,7 +155,7 @@ export function ProjectsPanel() {
             <CollectionToolbar
               searchLabel="Search projects"
               query={query}
-              onQuery={setQuery}
+              onQuery={(search) => change({ search })}
             >
               {(query || filter !== "active") && (
                 <button className="button button-outline" onClick={clear}>
@@ -174,8 +166,13 @@ export function ProjectsPanel() {
           </>
         }
         footer={
-          data &&
-          `${items.length} of ${projects.length} projects shown · Counts include all saved projects; search filters the rows.`
+          data && (
+            <CollectionPagination
+              {...data}
+              noun="projects"
+              onPage={(next) => change({ page: next }, false)}
+            />
+          )
         }
       >
         {!data && !error && <Loading />}
@@ -187,7 +184,9 @@ export function ProjectsPanel() {
                   key={item.id}
                   icon={<Icon name="outline" />}
                   title={
-                    <Link href={`/admin/projects/${item.id}`}>
+                    <Link
+                      href={`/admin/projects/${item.id}?returnTo=${returnTo}`}
+                    >
                       {item.draft.title}
                     </Link>
                   }
@@ -221,7 +220,7 @@ export function ProjectsPanel() {
                   actions={
                     <Link
                       className="button button-outline"
-                      href={`/admin/projects/${item.id}`}
+                      href={`/admin/projects/${item.id}?returnTo=${returnTo}`}
                     >
                       {item.archived ? "View project" : "Edit project"}
                     </Link>
@@ -233,19 +232,19 @@ export function ProjectsPanel() {
               <CollectionEmpty
                 icon="outline"
                 title={
-                  !projects.length
+                  !counts.all
                     ? "Tell the story of your first project"
                     : "No matching projects"
                 }
                 description={
-                  !projects.length
+                  !counts.all
                     ? "A park clean-up, food collection or ongoing community initiative all belong here. Create a private draft and publish when you are ready."
                     : filter === "archived"
                       ? "Archived projects will appear here. You can restore them as private drafts."
                       : "Try another search or project filter."
                 }
               >
-                {!projects.length ? (
+                {!counts.all ? (
                   <button
                     className="button button-accent"
                     onClick={() => setCreating(true)}
@@ -287,7 +286,9 @@ function NewProject({ close }: { close: () => void }) {
         method: "POST",
         body: JSON.stringify({ title, summary }),
       });
-      router.push(`/admin/projects/${item.id}`);
+      router.push(
+        collectionEditorHref(`/admin/projects/${item.id}`, "/admin/projects"),
+      );
     } catch (cause) {
       setError(errorMessage(cause));
       setBusy(false);

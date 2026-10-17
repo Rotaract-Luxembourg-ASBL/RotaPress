@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { operation } from "./operation";
 import { exampleId } from "./examples";
+import { platformInstructions } from "./platform_instructions";
 import {
   workflowInput,
   visualReviewInput,
@@ -14,7 +15,24 @@ const output = z.strictObject({ prompt: z.string() });
 export const workflowOperations = [
   operation(
     {
+      name: "automation_task_prompt",
+      effect: "read",
+      method: "POST",
+      path: "/prompts/platform_task",
+      scope: null,
+      readOnly: true,
+      description:
+        "Get the whole-platform workflow, scope boundaries, retry receipts and private export instructions. Returns guidance only; it does not schedule or execute a task.",
+      input: z.strictObject({}),
+      output,
+      example: {},
+    },
+    async () => ({ prompt: platformInstructions }),
+  ),
+  operation(
+    {
       name: "automation_website_prompt",
+      effect: "read",
       path: "/prompts/plan_native_website",
       method: "POST",
       scope: null,
@@ -34,12 +52,13 @@ export const workflowOperations = [
   operation(
     {
       name: "automation_event_prompt",
+      effect: "read",
       path: "/prompts/prepare_event",
       method: "POST",
       scope: null,
       readOnly: true,
       description:
-        "Get a workflow for preparing event pages, forms, media and human-reviewed settings. Returns instructions only.",
+        "Get a workflow for preparing event pages, forms, media and explicitly requested operational settings. Returns instructions only.",
       input: workflowInput,
       output,
       example: {
@@ -53,6 +72,7 @@ export const workflowOperations = [
   operation(
     {
       name: "automation_review_prompt",
+      effect: "read",
       path: "/prompts/review_page_design",
       method: "POST",
       scope: null,
@@ -68,6 +88,7 @@ export const workflowOperations = [
   operation(
     {
       name: "automation_project_prompt",
+      effect: "read",
       path: "/prompts/prepare_project",
       method: "POST",
       scope: null,

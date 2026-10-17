@@ -15,9 +15,23 @@ import { calendarPublicationOperations } from "./calendar_publication_operations
 import { contentPublicationOperations } from "./content_publication_operations";
 import { projectOperations } from "./project_operations";
 import { publicationFor } from "./publication_policy";
-import { scopeDefinitions } from "./scopes";
 import { permissionContext } from "./permission_context";
 import { z } from "zod";
+import { ContentGeneration } from "@/core/content/ContentGeneration";
+import { memberOperations } from "./member_operations";
+import { responseOperations } from "./response_operations";
+import { exportOperations } from "./export_operations";
+import { fileOperations } from "./file_operations";
+import { albumOperations } from "./album_operations";
+import { operationalEventOperations } from "./operational_event_operations";
+import { formManagementOperations } from "./form_management_operations";
+import { communicationOperations } from "./communication_operations";
+import { taskOperations } from "./task_operations";
+import { websiteWorkspaceOperations } from "./website_workspace_operations";
+import { mediaManagementOperations } from "./media_management_operations";
+import { mediaUsageOperations } from "./media_usage_operations";
+import { directoryManagementOperations } from "./directory_management_operations";
+import { imageEditOperations } from "./image_edit_operations";
 import { capabilitiesOutput } from "./response_schemas";
 import { adaptationPrompt, promptInput } from "./prompts";
 import {
@@ -35,6 +49,7 @@ export const operations: readonly Operation[] = [
   operation(
     {
       name: "automation_capabilities",
+      effect: "read",
       method: "GET",
       path: "/capabilities",
       scope: null,
@@ -49,6 +64,7 @@ export const operations: readonly Operation[] = [
   operation(
     {
       name: "automation_prompt",
+      effect: "read",
       method: "POST",
       path: "/prompts/adapt_reference_website",
       scope: null,
@@ -80,8 +96,22 @@ export const operations: readonly Operation[] = [
   ...calendarPublicationOperations,
   ...contentPublicationOperations,
   ...projectOperations,
+  ...memberOperations,
+  ...responseOperations,
+  ...exportOperations,
+  ...fileOperations,
+  ...albumOperations,
+  ...operationalEventOperations,
+  ...formManagementOperations,
+  ...communicationOperations,
+  ...taskOperations,
+  ...websiteWorkspaceOperations,
+  ...mediaManagementOperations,
+  ...mediaUsageOperations,
+  ...directoryManagementOperations,
+  ...imageEditOperations,
 ];
-export const contractVersion = "1.10.0";
+export const contractVersion = "2.0.0";
 export function operationCatalogue(scopes?: readonly string[]) {
   return operations
     .filter((o) => operationAllowed(o, scopes))
@@ -92,6 +122,7 @@ export function operationCatalogue(scopes?: readonly string[]) {
       scope: o.scope,
       requiredScopes: operationScopes(o),
       description: o.description,
+      effect: o.effect,
       readOnly: o.readOnly,
       inputSchema: inputJsonSchema(o.input),
       outputSchema: outputJsonSchema(successSchema(o.output)),
@@ -104,6 +135,12 @@ export async function capabilities(context: AutomationContext) {
   );
   return {
     version: contractVersion,
+    contentGeneration: (
+      await ContentGeneration.read(
+        context.principal.organizationId,
+        context.services.automationRuntime.database,
+      )
+    ).generation,
     ...permissionContext(context.principal.scopes),
     publication: publicationFor(context.principal.scopes),
     sourceOrigins: context.principal.scopes.includes("sources:read")
@@ -123,6 +160,7 @@ export async function capabilities(context: AutomationContext) {
         scope: o.scope,
         requiredScopes: operationScopes(o),
         description: o.description,
+        effect: o.effect,
         readOnly: o.readOnly,
       })),
   };
@@ -140,27 +178,6 @@ export async function executeOperation(
       404,
     );
   try {
-    const missingScope = operationScopes(operation).find(
-      (scope) => !context.principal.scopes.includes(scope),
-    );
-    if (missingScope)
-      throw new DomainError(
-        "AUTOMATION_SCOPE_REQUIRED",
-        `This connection needs ${missingScope}.`,
-        403,
-      );
-    const current = await context.services.authorization.require(
-      context.principal.actor,
-      operation.scope
-        ? scopeDefinitions[operation.scope].capability
-        : "admin.access",
-    );
-    if (current.organizationId !== context.principal.organizationId)
-      throw new DomainError(
-        "AUTOMATION_ORGANIZATION_CHANGED",
-        "Create a connection for the current club.",
-        403,
-      );
     const result = await operation.run(context, input);
     await context.recordActivity?.(operation.name, "succeeded");
     return result;

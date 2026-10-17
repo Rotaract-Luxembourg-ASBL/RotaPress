@@ -10,6 +10,12 @@ export async function eventDirectoryJourney(page: Page, visitor: Page) {
   await expect(
     page.getByRole("heading", { name: "Events directory design", exact: true }),
   ).toBeVisible();
+  // Media usage links select the language of the referenced directory design.
+  await page.goto("/admin/events?tab=directory&locale=fr");
+  const language = page.getByRole("combobox", { name: "Page language", exact: true });
+  await expect(language).toHaveValue("fr");
+  await language.selectOption("en");
+  await expect(page).toHaveURL((url) => url.searchParams.get("locale") === "en");
   const baseline = await visitor.request
     .get("/events")
     .then((response) => response.text());

@@ -61,73 +61,101 @@
 .media-gallery-editor > .field-help {
   margin-bottom: 12px;
 }
+.media-gallery-announcement:empty {
+  display: none;
+}
+.media-gallery-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
 .media-gallery-items {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 3px;
+  max-height: 65dvh;
+  overflow-y: auto;
 }
 .media-gallery-items > li {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: white;
   overflow: hidden;
 }
-.media-gallery-item-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--line);
-  background: #f7f8f5;
-  padding: 8px 12px;
+.media-gallery-items > li.is-active {
+  border-color: var(--club-accent);
+  box-shadow: 0 0 0 2px var(--club-accent);
 }
-.media-gallery-item-heading strong {
-  font-size: 14px;
+.media-gallery-select {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: grab;
+}
+.media-gallery-select:active {
+  cursor: grabbing;
+}
+.media-gallery-select > img {
+  display: block;
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+}
+.media-gallery-position {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 4px;
+  background: #15271de6;
+  color: white;
+  font-size: 12px;
+}
+.media-gallery-card-title {
+  display: block;
+  padding: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
 }
 .media-gallery-move-controls {
   display: flex;
-  gap: 6px;
-  margin-left: auto;
+  gap: 4px;
+  justify-content: space-between;
+  padding: 5px 8px 8px;
 }
-.media-gallery-drag {
-  cursor: grab;
-}
-.media-gallery-drag:active {
-  cursor: grabbing;
-}
-.media-gallery-drag svg {
-  transform: rotate(90deg);
-}
-.media-gallery-item-content {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 20px;
-  padding: 18px;
-}
-.media-gallery-image-preview {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-.media-gallery-image-preview img {
-  width: 100%;
-  height: 130px;
-  object-fit: contain;
-  background: #f1f3ef;
-  border-radius: 5px;
-}
-.media-gallery-image-preview > span:not(.media-badge) {
-  font-size: 12px;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.media-gallery-move-controls .media-close {
+  width: 36px;
+  height: 36px;
 }
 .media-gallery-item-fields {
   display: grid;
   gap: 14px;
   align-content: start;
   min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbf9;
+}
+.media-gallery-item-fields h3 {
+  font-size: 16px;
+  margin: 0;
 }
 .media-gallery-item-fields label {
   display: grid;
@@ -135,6 +163,22 @@
 }
 .media-gallery-item-fields :is(input, textarea) {
   width: 100%;
+}
+.media-gallery-item-fields textarea {
+  min-height: 90px;
+}
+@media (max-width: 760px) {
+  .media-gallery-composer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .media-gallery-items {
+    max-height: 38dvh;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .media-gallery-item-fields {
+    padding: 16px;
+  }
 }
 @media (max-width: 560px) {
   .media-gallery-dialog .media-tabs {
@@ -148,33 +192,10 @@
   .media-gallery-editor {
     padding: 16px;
   }
-  .media-gallery-item-content {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 14px;
-    gap: 14px;
-  }
-  .media-gallery-image-preview {
-    grid-template-columns: 92px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-  }
-  .media-gallery-image-preview img {
-    width: 92px;
-    height: 72px;
-    grid-row: 1 / 3;
-  }
-  .media-gallery-image-preview > span:not(.media-badge) {
-    grid-column: 2;
-  }
-  .media-gallery-item-heading {
-    padding: 8px;
-    gap: 6px;
-  }
-  .media-gallery-item-heading .media-close {
-    width: 36px;
-    height: 38px;
+  .media-gallery-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .media-gallery-move-controls {
-    gap: 4px;
+    padding-inline: 5px;
   }
 }

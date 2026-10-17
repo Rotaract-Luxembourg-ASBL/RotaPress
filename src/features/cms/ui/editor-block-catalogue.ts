@@ -15,6 +15,18 @@ type BlockDetails = Omit<BlockMetadata, "label" | "group"> & {
 };
 
 const blockDetails: Record<keyof PuckBlocks, BlockDetails> = {
+  File: {
+    description: "Offer a PDF document to read or download.",
+    icon: "website",
+  },
+  Audio: {
+    description: "Play an uploaded recording with an accessible transcript.",
+    icon: "image",
+  },
+  Video: {
+    description: "Play an uploaded video with an accessible transcript.",
+    icon: "image",
+  },
   ClubDetails: {
     description: "Show public club details, meetings and contact information.",
     icon: "members",

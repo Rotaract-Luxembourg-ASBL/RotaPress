@@ -160,7 +160,11 @@ export async function lumaPurchaseJourney(
   await guest
     .getByRole("button", { name: "Accept invitation", exact: true })
     .click();
-  await expect(guest).toHaveURL(new RegExp(`/guest/${eventId}/${grant.id}$`));
+  await expect(guest).toHaveURL(
+    (url) =>
+      url.pathname === `/guest/${eventId}/${grant.id}` &&
+      url.searchParams.get("returnTo") === "/guest?",
+  );
   const purchases = guest.getByRole("region", {
     name: "Your purchases",
     exact: true,

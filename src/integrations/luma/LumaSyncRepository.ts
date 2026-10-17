@@ -11,6 +11,7 @@ import type {
 } from "../../core/authorization/AuthorizationService";
 import { connectionMessages } from "./connection_schemas";
 import { LumaSourceAccess } from "./LumaSourceAccess";
+import { collectionPage } from "../../core/collections";
 import {
   syncMessages,
   type ImportedGuest,
@@ -92,6 +93,7 @@ export class LumaSyncRepository {
     eventId: string,
     db: DatabaseExecutor,
     sourceId?: string,
+    query = { page: 1, pageSize: 30 },
   ) {
     const source = await new LumaSourceAccess().selection(
       org,
@@ -99,7 +101,8 @@ export class LumaSyncRepository {
       db,
       sourceId,
     );
-    if (!source) return { count: 0, guests: [] };
+    if (!source)
+      return { count: 0, guests: [], page: 1, pageSize: query.pageSize };
     const filter = and(
       eq(lumaGuestProjection.organizationId, org),
       eq(lumaGuestProjection.eventId, eventId),
@@ -109,6 +112,7 @@ export class LumaSyncRepository {
       .select({ value: count() })
       .from(lumaGuestProjection)
       .where(filter);
+    const page = collectionPage(total.value, query.page, query.pageSize);
     const rows = await db
       .select({
         id: lumaGuestProjection.id,
@@ -127,9 +131,12 @@ export class LumaSyncRepository {
         desc(lumaGuestProjection.observedAt),
         lumaGuestProjection.id,
       )
-      .limit(100);
+      .limit(query.pageSize)
+      .offset((page - 1) * query.pageSize);
     return {
       count: total.value,
+      page,
+      pageSize: query.pageSize,
       guests: rows.map((row) => ({
         ...row,
         observedAt: row.observedAt.toISOString(),

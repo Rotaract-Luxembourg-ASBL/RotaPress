@@ -19,6 +19,7 @@ import { connectionMessages } from "./connection_schemas";
 import { RequestLimiter } from "../../core/RequestLimiter";
 import {
   apiLinkSchema,
+  importedGuestsQuerySchema,
   syncToggleSchema,
   type LumaSyncDto,
 } from "./sync_schemas";
@@ -37,60 +38,68 @@ export class LumaApiEventService {
     actor: TrustedActor,
     eventId: string,
     sourceId?: string,
+    input: unknown = {},
   ): Promise<LumaSyncDto> {
-    const { organizationId, event } = await this.access.scope(
-      actor,
-      eventId,
-      this.db,
+    const query = importedGuestsQuerySchema.parse(input);
+    return this.db.transaction(
+      async (tx) => {
+        const { organizationId, event } = await this.access.scope(
+          actor,
+          eventId,
+          tx,
+        );
+        const selection = new LumaSourceAccess();
+        const source = await selection.selection(
+          organizationId,
+          eventId,
+          tx,
+          sourceId,
+        );
+        const row = await this.records.link(
+          organizationId,
+          eventId,
+          tx,
+          source?.id,
+        );
+        let reason: string | null = null;
+        try {
+          await this.access.ready(actor, eventId, tx, undefined, source?.id);
+          await this.connection.capture(organizationId, tx);
+        } catch (error) {
+          if (!(error instanceof DomainError)) throw error;
+          reason = error.message;
+        }
+        return {
+          sourceId: source?.id ?? null,
+          sources: await selection.list(organizationId, eventId, tx),
+          version: row?.version ?? 0,
+          providerEventId: row?.providerEventId ?? null,
+          enabled: row?.enabled ?? false,
+          available: !reason,
+          reason,
+          canConfigure:
+            event.capabilities.includes("events.publish") &&
+            !event.archived &&
+            !event.cancelled,
+          mode: this.client.mode,
+          lastSuccessAt: row?.lastSuccessAt?.toISOString() ?? null,
+          ...(await this.records.guests(
+            organizationId,
+            eventId,
+            tx,
+            source?.id,
+            query,
+          )),
+          runs: await this.records.history(
+            organizationId,
+            eventId,
+            tx,
+            source?.id,
+          ),
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
     );
-    const selection = new LumaSourceAccess();
-    const source = await selection.selection(
-      organizationId,
-      eventId,
-      this.db,
-      sourceId,
-    );
-    const row = await this.records.link(
-      organizationId,
-      eventId,
-      this.db,
-      source?.id,
-    );
-    let reason: string | null = null;
-    try {
-      await this.access.ready(actor, eventId, this.db, undefined, source?.id);
-      await this.connection.capture(organizationId, this.db);
-    } catch (error) {
-      if (!(error instanceof DomainError)) throw error;
-      reason = error.message;
-    }
-    return {
-      sourceId: source?.id ?? null,
-      sources: await selection.list(organizationId, eventId, this.db),
-      version: row?.version ?? 0,
-      providerEventId: row?.providerEventId ?? null,
-      enabled: row?.enabled ?? false,
-      available: !reason,
-      reason,
-      canConfigure:
-        event.capabilities.includes("events.publish") &&
-        !event.archived &&
-        !event.cancelled,
-      mode: this.client.mode,
-      lastSuccessAt: row?.lastSuccessAt?.toISOString() ?? null,
-      ...(await this.records.guests(
-        organizationId,
-        eventId,
-        this.db,
-        source?.id,
-      )),
-      runs: await this.records.history(
-        organizationId,
-        eventId,
-        this.db,
-        source?.id,
-      ),
-    };
   }
   async link(actor: TrustedActor, eventId: string, input: unknown) {
     z.uuid().parse(eventId);

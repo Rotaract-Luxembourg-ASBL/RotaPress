@@ -117,7 +117,13 @@ export const invitation = (context: RecipeContext) =>
 export const gallery = (context: RecipeContext) =>
   block("Gallery", {
     columns: "three",
-    aspectRatio: "landscape",
+    aspectRatio: context.kit === "rotaract-action" ? "original" : "landscape",
+    layout: context.kit === "rotaract-action" ? "masonry" : "grid",
+    fit: "cover",
+    lightbox: true,
+    design: {
+      responsive: { tablet: { columns: "two" }, mobile: { columns: "one" } },
+    },
     items: (context.assets ?? []).map((assetId, index) => ({
       assetId,
       alt: [

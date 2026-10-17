@@ -122,7 +122,15 @@ export async function automationDocsJourney(
   await owner
     .getByRole("combobox", { name: "MCP tool", exact: true })
     .selectOption("content_import");
-  await jsonField.fill(JSON.stringify(input));
+  // A new connection cannot replay another connection's private execution receipt.
+  // Give this separately requested import its own request ID and page address.
+  await jsonField.fill(
+    JSON.stringify({
+      ...input,
+      requestId: randomUUID(),
+      pages: [{ ...input.pages[0], slug: "tester-mcp-private-draft" }],
+    }),
+  );
   await owner
     .getByRole("button", { name: "Send write request", exact: true })
     .click();

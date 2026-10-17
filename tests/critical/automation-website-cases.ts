@@ -17,10 +17,13 @@ import type { AutomationPrincipal } from "../../src/integrations/automation/Auto
 import { WebsiteManagementService } from "../../src/integrations/automation/WebsiteManagementService";
 import { websiteRevisionOutput } from "../../src/integrations/automation/website_management_schemas";
 import { automationWebsiteArchiveChecks } from "./automation-website-archive-cases";
+import { automationContentReceiptChecks } from "./automation-content-receipt-cases";
+import type { MediaService } from "../../src/features/media/MediaService";
 
 type Context = {
   db: Database;
   cms: CmsService;
+  media: MediaService;
   authorization: AuthorizationService;
   installedClub: () => Promise<{
     owner: TrustedActor;
@@ -42,6 +45,7 @@ const save = (page: CmsDetail, title: string) => ({
 });
 
 export function automationWebsiteChecks(context: () => Context) {
+  automationContentReceiptChecks(context);
   automationWebsiteArchiveChecks(context);
   describe("C14 website draft management", () => {
     async function fixture() {

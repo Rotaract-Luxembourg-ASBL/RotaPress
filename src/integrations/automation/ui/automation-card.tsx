@@ -43,7 +43,7 @@ function TransportCard({
     <>
       <IntegrationCard
         name={feature.name}
-        category="Content automation"
+        category="Platform automation"
         icon="website"
         enabled={state.enabled}
         state={state.enabled ? "Enabled" : "Disabled"}
@@ -51,7 +51,7 @@ function TransportCard({
         connection={
           <p>
             {state.enabled
-              ? "Available to authorized connections. Content changes stay private drafts."
+              ? "Available to authorized connections. Requested actions follow each connection's chosen grants."
               : "External access is off. Saved content and connection settings are retained."}
           </p>
         }

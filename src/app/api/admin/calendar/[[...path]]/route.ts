@@ -8,13 +8,15 @@ export async function GET(request: Request, context: Context) {
     if (!actor) throw new HttpError(401, "Sign in to manage Calendar.");
     await services.limiter.consume("calendar-admin-read", actor.userId, 90);
     const path = (await context.params).path ?? [];
+    if (path.join("/") === "schedules")
+      return json(await services.calendar.schedules(actor, Object.fromEntries(new URL(request.url).searchParams)));
     if (path.join("/") === "sources")
       return json(await services.calendarSources.workspace(actor));
     if (path.length === 3 && path[0] === "sources" && path[2] === "review")
       return json(await services.calendarSources.review(actor, path[1]));
     if (path.length)
       throw new HttpError(404, "This Calendar view is unavailable.");
-    return json(await services.calendar.workspace(actor));
+    return json(await services.calendar.workspace(actor, new URL(request.url).searchParams.get("summary") !== "true"));
   });
 }
 export async function POST(request: Request, context: Context) {

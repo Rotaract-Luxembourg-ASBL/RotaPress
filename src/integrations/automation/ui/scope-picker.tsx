@@ -29,14 +29,54 @@ const groups = [
     hint: "Images, including private files when selected",
   },
   {
+    name: "Files",
+    prefix: "files:",
+    hint: "PDF, audio and video; private bytes have a separate grant",
+  },
+  {
+    name: "Albums",
+    prefix: "albums:",
+    hint: "Reusable photo albums with separate draft and publication actions",
+  },
+  {
+    name: "Membership",
+    prefix: "members:",
+    hint: "Private member records and requested membership decisions",
+  },
+  {
+    name: "Account access",
+    prefix: "access:",
+    hint: "Staff roles, event teams and owner changes; never the assistant's own access",
+  },
+  {
+    name: "Responses",
+    prefix: "responses:",
+    hint: "Private answers, exact exports and permanent deletion are separate choices",
+  },
+  {
+    name: "Registrations",
+    prefix: "registrations:",
+    hint: "Private attendance and requested booking cancellation",
+  },
+  {
+    name: "Guest access",
+    prefix: "guests:",
+    hint: "Private guests and requested portal access",
+  },
+  {
+    name: "Communications",
+    prefix: "communications:",
+    hint: "Notification templates and failed alerts to configured recipients",
+  },
+  {
     name: "Events",
     prefix: "events:",
-    hint: "Event content and setup suggestions",
+    hint: "Event content, requested operational changes and cancellation",
   },
   {
     name: "Forms",
     prefix: "forms:",
-    hint: "Form definitions, never responses",
+    hint: "Definitions, publication, recipients and retention; private answers are separate",
   },
   { name: "Directory", prefix: "directory:", hint: "Community profiles" },
   {
@@ -94,8 +134,10 @@ export function ScopePicker({
       <legend>{legend}</legend>
       <p id={helpId} className="small muted">
         Choose what this connection can do. Reads may include private drafts.
-        Publishing needs its own selected permission and an explicit request.
-        Participant records are never included.
+        Private participant records require their own selected permissions.
+        Requested actions execute directly within these grants, including
+        publication, access changes and deletion. Existing connections keep
+        their current grants.
       </p>
       <div className="scope-picker-toolbar">
         <strong aria-live="polite">

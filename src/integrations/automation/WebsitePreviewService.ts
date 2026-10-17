@@ -1,6 +1,10 @@
 import "server-only";
 import type { services } from "@/composition/services";
 import { DomainError } from "@/core/DomainError";
+import type {
+  CmsCompositionPreview,
+  PreviewComposition,
+} from "@/features/cms/CmsCompositionPreview";
 import { contentAssets } from "@/features/cms/cms_validation";
 import {
   emptyCmsData,
@@ -34,6 +38,10 @@ type Dependencies = {
   authorization: Pick<typeof services.authorization, "require">;
   limiter: Pick<typeof services.limiter, "consume">;
 };
+type Composition = {
+  service: CmsCompositionPreview;
+  expected: PreviewComposition;
+};
 
 function requireGrants(principal: AutomationPrincipal) {
   if (
@@ -62,6 +70,7 @@ export class WebsitePreviewService {
     principal: AutomationPrincipal,
     raw: unknown,
     reauthorize: () => Promise<AutomationPrincipal>,
+    composition?: Composition,
   ): Promise<PreviewOutput> {
     const input = previewInput.parse(raw);
     requireGrants(principal);
@@ -75,7 +84,7 @@ export class WebsitePreviewService {
     let revoke: (() => void) | undefined;
     let stage: PreviewFailureStage = "load_snapshot";
     try {
-      const snapshot = await this.load(principal, input);
+      const snapshot = await this.load(principal, input, composition);
       const contents = [
         snapshot.page.data,
         ...Object.values(snapshot.page.sections),
@@ -90,7 +99,9 @@ export class WebsitePreviewService {
       if (snapshot.site.branding?.logoId)
         referenced.add(snapshot.site.branding.logoId);
       const warnings = new Set<string>([
-        "Saved draft with published site appearance and shared sections. Interactive controls and custom code are inactive.",
+        composition
+          ? "Exact saved page, website appearance and shared draft revisions. Interactive controls and custom code are inactive."
+          : "Saved draft with published site appearance and shared sections. Interactive controls and custom code are inactive.",
       ]);
       const blocks = contents.flatMap((data) => flattenBlocks(data.content));
       if (
@@ -171,6 +182,14 @@ export class WebsitePreviewService {
         input.locale,
       );
       if (latest.draft.id !== input.expectedRevisionId) this.conflict();
+      if (composition)
+        await composition.service.project(
+          current.actor,
+          input.id,
+          input.locale,
+          latest.draft.data,
+          composition.expected,
+        );
       if (snapshot.event) {
         const latestEvent = await this.services.events.detail(
           current.actor,
@@ -206,6 +225,7 @@ export class WebsitePreviewService {
   private async load(
     principal: AutomationPrincipal,
     input: PreviewInput,
+    composition?: Composition,
   ): Promise<PreviewDocument> {
     const { actor } = principal;
     const detail = await this.services.cms.detail(
@@ -220,6 +240,31 @@ export class WebsitePreviewService {
       this.services.organization.publicIdentity(),
       this.services.cms.publicSite(input.locale),
     ]);
+    if (composition) {
+      if (detail.event || page.kind !== "page")
+        throw new DomainError(
+          "PREVIEW_SCOPE",
+          "Choose an ordinary website page for a combined website draft preview.",
+          422,
+        );
+      const combined = await composition.service.project(
+        actor,
+        input.id,
+        input.locale,
+        detail.draft.data,
+        composition.expected,
+      );
+      return {
+        page: {
+          ...page,
+          sections: combined.sections,
+          partners: { ...page.partners, ...combined.partners },
+        },
+        site: combined.site,
+        club,
+        event: null,
+      };
+    }
     const event = detail.event
       ? await this.services.events.detail(actor, detail.event.id)
       : null;

@@ -273,12 +273,9 @@ function WebsiteLocale({ locale, tab }: { locale: CmsLocale; tab: string }) {
               {(tab === "pages" || tab === "sections") && (
                 <WebsiteContentList
                   key={tab}
-                  contents={data.contents}
-                  selectedIds={data.selection?.contentIds ?? null}
                   kitId={currentTemplate}
                   kind={tab === "sections" ? "section" : "page"}
                   locale={locale}
-                  homePageId={data.site.draft.homePageId}
                   canLeave={canLeave}
                 />
               )}

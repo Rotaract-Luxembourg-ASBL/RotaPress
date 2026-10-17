@@ -21,6 +21,33 @@ export async function GET(request: Request, context: Context) {
     );
     if (path.length === 1 && path[0] === "content")
       return json({ items: await services.cms.list(actor) });
+    if (path.length === 1 && path[0] === "pages")
+      return json(
+        await services.cms.workspace.list(
+          actor,
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
+      );
+    if (path.length === 3 && path[0] === "content" && path[2] === "checkpoint")
+      return json(
+        await services.cms.checkpoints.read(actor, { id: path[1], locale }),
+      );
+    if (path.length === 4 && path[0] === "content" && path[2] === "revisions")
+      return json(
+        await services.cms.revision(actor, {
+          id: path[1],
+          locale,
+          revisionId: path[3],
+        }),
+      );
+    if (path.length === 3 && path[0] === "content" && path[2] === "revisions")
+      return json(
+        await services.cms.revisionHistory(actor, {
+          ...Object.fromEntries(new URL(request.url).searchParams),
+          id: path[1],
+          locale,
+        }),
+      );
     if (path.length === 1 && path[0] === "page-cards") {
       await services.authorization.require(actor, "cms.edit");
       return json({ items: await services.cms.publicPageCards(locale) });
@@ -56,7 +83,6 @@ export async function GET(request: Request, context: Context) {
     if (path[0] === "content" && path.length >= 2 && path.length <= 3) {
       const detail = await services.cms.detail(actor, path[1], locale);
       if (path.length === 2) return json(detail);
-      if (path[2] === "revisions") return json({ revisions: detail.revisions });
       if (path[2] === "affected") return json({ pages: detail.affectedPages });
     }
     throw new HttpError(404, "Website operation not found.");
@@ -78,6 +104,19 @@ async function mutate(request: Request, context: Context) {
         await services.previews.create(actor, { ...body, id: path[1] }),
       );
     }
+    if (
+      path.length === 3 &&
+      path[0] === "content" &&
+      path[2] === "preview-composition"
+    ) {
+      await services.limiter.consume("cms-preview", actor.userId, 90);
+      return json(
+        await services.previews.reviewComposition(actor, {
+          ...body,
+          id: path[1],
+        }),
+      );
+    }
     await services.limiter.consume("cms-write", actor.userId, 60);
     if (path.length === 2 && path[0] === "website" && path[1] === "template")
       return json(await services.websiteSetup.useTemplate(actor, body));
@@ -91,6 +130,10 @@ async function mutate(request: Request, context: Context) {
     }
     if (path.length === 1 && path[0] === "content")
       return json(await services.cms.create(actor, body), 201);
+    if (path.length === 2 && path[0] === "pages" && path[1] === "batch")
+      return json(await services.cms.workspace.batch(actor, body));
+    if (path.length === 1 && path[0] === "patterns")
+      return json(await services.cms.workspace.savePattern(actor, body), 201);
     if (path.length === 1 && path[0] === "site")
       return json(await services.cms.saveSite(actor, body));
     if (
@@ -111,6 +154,14 @@ async function mutate(request: Request, context: Context) {
     if (path[0] === "content" && path.length === 3) {
       const input = { ...body, id: path[1] };
       switch (path[2]) {
+        case "move":
+          return json(await services.pageTree.move(actor, input));
+        case "quick-edit":
+          return json(await services.cms.workspace.quickEdit(actor, input));
+        case "checkpoint":
+          return json(await services.cms.checkpoints.save(actor, input));
+        case "discard-checkpoint":
+          return json(await services.cms.checkpoints.discard(actor, input));
         case "schedule":
           return json(
             await services.publicationSchedule.schedule(actor, input),

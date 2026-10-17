@@ -11,11 +11,12 @@ async function actor(request: Request) {
 export function GET(request: Request) {
   return handle(async () => {
     const current = await actor(request);
-    const clientId = new URL(request.url).searchParams.get("clientId");
+    const params = new URL(request.url).searchParams;
+    const clientId = params.get("clientId");
     return json(
       clientId
         ? { activities: await oauthConnections.activity(current, clientId) }
-        : { clients: await oauthConnections.list(current) },
+        : await oauthConnections.list(current, Object.fromEntries(params)),
     );
   });
 }

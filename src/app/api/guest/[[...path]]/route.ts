@@ -33,7 +33,7 @@ export async function GET(request: Request, context: Context) {
         },
       );
     if (!path.length)
-      return json({ invitations: await services.guests.mine(current) });
+      return json(await services.guests.queryMine(current, Object.fromEntries(new URL(request.url).searchParams)));
     if (path.length === 2)
       return json(await services.guests.portal(current, path[0], path[1]));
     throw new HttpError(404, "This guest page is unavailable.");

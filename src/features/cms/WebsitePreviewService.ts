@@ -22,6 +22,7 @@ import {
   kits,
 } from "./kits/catalogue";
 import { copyKitRecipe } from "./kits/recipes";
+import { copyPageTemplate, pageTemplateIdSchema } from "./page_templates";
 import type { OrganizationRepository } from "@/core/organization/OrganizationRepository";
 
 const selectedInput = z.strictObject({
@@ -47,6 +48,32 @@ export class WebsitePreviewService {
     private readonly authorization: AuthorizationService,
     private readonly organization: OrganizationRepository,
   ) {}
+
+  async layout(actor: TrustedActor, input: unknown): Promise<WebsitePreview> {
+    const parsed = z
+      .strictObject({
+        templateId: pageTemplateIdSchema,
+        locale: cmsLocaleSchema,
+      })
+      .parse(input);
+    await this.authorization.require(actor, "cms.edit");
+    const site = await this.cms.previewSite(actor, parsed.locale);
+    return {
+      page: {
+        id: crypto.randomUUID(),
+        kind: "page",
+        locale: parsed.locale,
+        title: "Page layout preview",
+        slug: "layout-preview",
+        description: "",
+        socialImageId: null,
+        sections: {},
+        data: copyPageTemplate(parsed.templateId),
+      },
+      site,
+      cards: [],
+    };
+  }
 
   async selected(actor: TrustedActor, input: unknown): Promise<WebsitePreview> {
     const parsed = selectedInput.parse(input);

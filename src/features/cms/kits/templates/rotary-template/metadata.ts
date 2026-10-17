@@ -4,7 +4,7 @@ export const rotaryTemplateMetadata = {
   name: "Rotary Template",
   family: "Rotary",
   description:
-    "A service-led website with blue accents, a community calendar, events, contact form and shared directory profiles.",
+    "A service-led website with a panoramic introduction, clear paths to projects and membership, connected activities and an accessible photo gallery.",
   websiteRecipes: [
     "header",
     "footer",

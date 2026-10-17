@@ -9,6 +9,7 @@ import {
   DomainError,
   type DatabaseExecutor,
   type TrustedActor,
+  type Transaction,
 } from "../../core/authorization/AuthorizationService";
 import type { Database } from "../../infrastructure/database/client";
 import { EventService } from "./EventService";
@@ -60,10 +61,10 @@ export class EventCancellationService {
     };
   }
 
-  async cancel(actor: TrustedActor, input: unknown) {
+  async cancel(actor: TrustedActor, input: unknown, executor?: Transaction) {
     const values = cancelSchema.parse(input);
     this.authorization.requireRecent(actor);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.events.lockEvent(
         actor,
         values.id,
@@ -109,6 +110,7 @@ export class EventCancellationService {
         targetId: event.id,
       });
       return this.events.detail(actor, event.id, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 }

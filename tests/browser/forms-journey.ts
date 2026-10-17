@@ -336,8 +336,12 @@ export async function formsJourney({
   });
 
   await page.goto(`/admin/website/${cmsPageId}?locale=en`);
-  await page.locator(".editor-canvas .cms-hero h1").click();
   await page
+    .frameLocator(".editor-canvas iframe")
+    .locator(".cms-hero h1")
+    .click();
+  await page
+    .frameLocator(".editor-canvas iframe")
     .getByRole("button", { name: "Add block after Hero", exact: true })
     .click();
   await page
@@ -348,12 +352,12 @@ export async function formsJourney({
     .selectOption(form.id);
   await expect(
     page
-      .locator(".editor-canvas")
+      .frameLocator(".editor-canvas iframe")
       .getByRole("heading", { name: form.draft.title, exact: true }),
   ).toBeVisible();
   await expect(
     page
-      .locator(".editor-canvas")
+      .frameLocator(".editor-canvas iframe")
       .getByRole("button", { name: "Send message", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();

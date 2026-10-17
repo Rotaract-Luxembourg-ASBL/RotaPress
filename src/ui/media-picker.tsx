@@ -9,23 +9,33 @@ import {
   templateImage,
 } from "@/features/cms/kits/template_images";
 import { MediaPickerDialog } from "./media-picker-dialog";
+import { useResource } from "./api";
+import { MediaAssetThumbnail } from "./media-asset-preview";
 export { MediaPickerDialog } from "./media-picker-dialog";
 
 export function MediaPicker({
   value,
   onChange,
   onSelect,
-  label = "Choose image",
+  kind = "image",
+  label = kind === "image" ? "Choose image" : "Choose file",
 }: {
   value: string;
   onChange: (id: string) => void;
   onSelect?: (asset: MediaAssetDto) => void;
   label?: string;
+  kind?: MediaAssetDto["kind"];
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<MediaAssetDto>();
-  const selected = chosen?.id === value ? chosen : undefined;
+  const detail = useResource<{ asset: MediaAssetDto }>(
+    kind !== "image" && value
+      ? `/api/admin/media/${encodeURIComponent(value)}`
+      : null,
+  );
+  const selected = chosen?.id === value ? chosen : detail.data?.asset;
+  const noun = kind === "image" ? "image" : "file";
   const bundled = templateImage(value);
   const source = cmsImageSource(value);
   function close() {
@@ -34,7 +44,7 @@ export function MediaPicker({
   }
   return (
     <div className={`media-picker${value ? " has-image" : ""}`}>
-      {source && (
+      {source && kind === "image" && (
         <div className="media-picker-preview">
           <button
             type="button"
@@ -57,6 +67,28 @@ export function MediaPicker({
           </span>
         </div>
       )}
+      {kind !== "image" && value && (
+        <button
+          type="button"
+          className="media-picker-file-preview"
+          onClick={() => setOpen(true)}
+          aria-label="Replace current file"
+          aria-haspopup="dialog"
+        >
+          {selected ? (
+            <>
+              <MediaAssetThumbnail asset={selected} />
+              <span>{selected.title || selected.originalName}</span>
+            </>
+          ) : (
+            <span>
+              {detail.error
+                ? "File unavailable — choose another"
+                : "Loading file…"}
+            </span>
+          )}
+        </button>
+      )}
       <div className="media-picker-actions">
         <button
           ref={trigger}
@@ -66,7 +98,7 @@ export function MediaPicker({
           aria-expanded={open}
           onClick={() => setOpen(true)}
         >
-          {value ? "Replace image" : label}
+          {value ? `Replace ${noun}` : label}
         </button>
         {value && (
           <button
@@ -77,7 +109,7 @@ export function MediaPicker({
               setChosen(undefined);
             }}
           >
-            Remove image
+            Remove {noun}
           </button>
         )}
       </div>
@@ -85,6 +117,7 @@ export function MediaPicker({
         createPortal(
           <MediaPickerDialog
             currentId={value}
+            kind={kind}
             onDismiss={close}
             onRemoved={(id) => {
               if (id === value) {

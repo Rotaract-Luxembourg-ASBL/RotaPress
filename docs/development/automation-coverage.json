@@ -29,15 +29,23 @@
       "website_design",
       "website_preview",
       "website_revision_get",
+      "website_revisions_list",
       "website_restore",
       "website_duplicate",
       "website_locale_create",
       "website_settings_save",
       "website_publish",
       "website_settings_publish",
-      "website_archive"
+      "website_archive",
+      "website_composition_review",
+      "website_composition_preview",
+      "website_pages",
+      "website_page_organize",
+      "website_page_move",
+      "website_pages_restore",
+      "website_pattern_create"
     ],
-    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance; dependencies and images never publish automatically. Archiving one ordinary single-language club page requires website:manage plus website:publish, explicit removal intent, a current revision and no draft/published homepage/menu/Events references; history is retained, with no direct unarchive. Multilingual/shared/event archival, hard deletion, timed publication, template installation and executable code require staff workflows."
+    "manual": "Page copies, languages, revision restoration and draft menus/appearance require explicit management/settings grants. Publishing exact saved content or settings needs website:publish and an explicit request. Menu-only publication preserves published appearance; dependencies and images never publish automatically. Archiving one ordinary single-language club page requires website:manage plus website:publish, explicit removal intent, a current revision and no draft/published homepage/menu/Events references; history is retained, with no direct unarchive. Multilingual/shared/event archival, hard deletion, timed publication, template installation and executable code require staff workflows. New website:organize plus website:write permit draft hierarchy, independent slugs and reusable sections. Combined visual preview checks exact saved page, settings and shared draft revisions."
   },
   "features/events": {
     "operations": [
@@ -54,12 +62,20 @@
       "events_package_save",
       "events_prizes",
       "events_prize_save",
-      "events_propose_settings",
-      "events_proposals",
       "events_publish",
-      "events_prize_publish"
+      "events_prize_publish",
+      "registrations_list",
+      "registrations_cancel",
+      "events_registration_get",
+      "events_registration_set",
+      "events_module_set",
+      "events_cancellation_preview",
+      "events_cancel",
+      "events_archive",
+      "events_team_set",
+      "events_manager_set"
     ],
-    "manual": "Publishing saved event details or editorial prizes needs events:publish and an explicit request; existing page, public-media, domain permission and recent-authentication checks apply. Packages, teams, participant records, payments, entries, draws and cancellation require staff workflows. Only recent cookie-authenticated staff can apply operational settings proposals."
+    "manual": "New explicit operational, registration, guest and access grants support requested version-checked actions directly through existing services. Existing events:prepare grants stay draft-only. Provider setup, checkout activation, payments, entries and draws remain outside automation. V1 review proposals are retired in v2."
   },
   "features/forms": {
     "operations": [
@@ -67,9 +83,23 @@
       "forms_get",
       "forms_create",
       "forms_save",
-      "forms_publish"
+      "forms_publish",
+      "responses_list",
+      "responses_sources",
+      "responses_get",
+      "responses_status_set",
+      "responses_delete",
+      "responses_retention_preview",
+      "responses_retention_delete",
+      "responses_export",
+      "responses_export_read",
+      "forms_settings_get",
+      "forms_settings_set",
+      "forms_archive",
+      "forms_deletion_preview",
+      "forms_delete"
     ],
-    "manual": "Publishing saved forms needs forms:publish, an explicit request and current form/event publisher authority. Responses, export, deletion, recipients and webhooks remain outside automation."
+    "manual": "Form definitions retain separate grants from private responses, status updates, exports, deletion, recipients and retention. Direct requests require current form/event authority and exact versions or selection fingerprints. Registration history cannot be deleted. Webhooks remain administration-only."
   },
   "features/projects": {
     "operations": [
@@ -77,38 +107,70 @@
       "projects_get",
       "projects_create",
       "projects_save",
-      "projects_publish"
+      "projects_publish",
+      "projects_archive",
+      "projects_restore",
+      "projects_unpublish"
     ],
-    "manual": "Project stories use separate read/write grants, current versions and saved public snapshots. Publishing requires projects:publish, confirmed=true and an explicit request; cover media must already be public through a separately reviewed media publication. Archive, restore, unpublish and feature availability remain staff workflows. Projects do not manage volunteer identities, attendance or registration."
+    "manual": "Project stories use separate read/write/publication grants and current versions. Requested archive, restore and unpublication require the new projects:manage opt-in and commit receipts atomically. Cover media must already be public; dependencies never publish automatically. Feature availability remains a staff workflow. Projects do not manage volunteer identities, attendance or registration."
   },
   "features/guests": {
-    "operations": [],
-    "manual": "Guest identities, access grants and purchases are private participant workflows, not website content."
+    "operations": ["guests_list", "guests_grant", "guests_revoke"],
+    "manual": "Private guest reads and exact-source access grants/revocations need separate opt-in scopes, event authority and recent identity for access changes. Claiming guest access and sending invitations remain native authenticated workflows; no login bypass."
   },
   "features/media": {
     "operations": [
       "media_list",
       "media_get",
+      "media_usage",
       "media_upload",
       "source_image_import",
       "media_inspect",
       "media_metadata_save",
-      "media_publish"
+      "media_publish",
+      "media_details_save",
+      "media_organize",
+      "media_hide",
+      "media_delete",
+      "media_edit_copy",
+      "files_details_save",
+      "files_organize",
+      "files_hide",
+      "files_delete",
+      "files_list",
+      "files_get",
+      "files_usage",
+      "files_read",
+      "files_upload_start",
+      "files_upload_status",
+      "files_upload_chunk",
+      "files_upload_finish",
+      "files_upload_cancel",
+      "files_publish",
+      "albums_list",
+      "albums_get",
+      "albums_create",
+      "albums_save",
+      "albums_publish",
+      "albums_unpublish",
+      "albums_delete"
     ],
-    "manual": "REST/MCP uploads and source imports stay private; administration uploads default public with an explicit private option. Image pixels need an explicit inspection scope. Publishing 1-50 exact reviewed images requires media:publish, explicit intent, confirmed=true and current metadata fingerprints; the atomic batch changes visibility only and never publishes dependencies. Administration bulk hiding/deletion, collection/tag replacements, image transformations and public-image metadata edits remain manual because existing write/publication grants do not authorize those effects."
+    "manual": "REST/MCP uploads, source imports and edited copies stay private; administration uploads default public with an explicit private option. Separate media:manage and files:manage opt-ins permit requested metadata editing, atomic organization/hiding/deletion and image copies, with current fingerprints and protected retained references. Existing image grants do not widen. Publication remains separately granted and never publishes dependencies. Files and albums have independent grants; image permissions never imply private document/audio/video access. Mutations use atomic receipts; upload chunks/finalization/cancellation reuse durable actor-bound sessions."
   },
   "features/members": {
-    "operations": [],
-    "manual": "Member accounts, applications, approvals and access changes are human-controlled private workflows."
+    "operations": ["members_list", "members_decide", "members_role_set"],
+    "manual": "Separate opt-in grants cover private member metadata, membership decisions, staff roles and owner access. Current authority, exact membership version and recent identity are required for changes; no self-escalation or last-owner removal. Authentication policy and credentials remain administration-only."
   },
   "features/partners": {
     "operations": [
       "directory_list",
       "directory_create",
       "directory_save",
-      "directory_publish"
+      "directory_publish",
+      "directory_restore",
+      "directory_unpublish"
     ],
-    "manual": "Publishing saved profiles needs directory:publish and an explicit request; images must already be public. Restoration and contacting partners remain manual."
+    "manual": "Publishing saved profiles needs directory:publish and an explicit request; images must already be public. directory:manage separately permits requested draft restoration and reference-protected unpublication. Receipt payloads exclude event placement names whose access may later change. Contacting partners remains outside automation."
   },
   "integrations/automation": {
     "operations": [
@@ -118,13 +180,20 @@
       "automation_website_prompt",
       "automation_event_prompt",
       "automation_project_prompt",
-      "automation_review_prompt"
+      "automation_review_prompt",
+      "automation_task_prompt",
+      "automation_task_receipts"
     ],
-    "manual": "REST API and MCP have separate disabled-by-default switches, workspaces, documentation and credentials. REST keys cannot authorize MCP and MCP keys/OAuth cannot authorize REST. Staff register clients and approve actions; existing grants never widen automatically. OAuth connection owners can edit permissions with recent sign-in and revision checks, revoking tokens and requiring fresh consent while keeping client credentials. Activity review and permission editing are cookie-authenticated administration only, never tools or delegated REST operations. Optional renewal and remembered consent avoid routine reapproval while current session and permission checks remain. Publication needs an explicit grant, current authority, saved version and user request. Transport switches and applying operational proposals are never tools."
+    "manual": "REST and MCP have separate transport switches and credentials. Existing grants never widen. New private-data and operational grants require opt-in and fresh consent. Requested actions execute directly; receipts share domain transactions and recheck authority on replay. Task labels group completed operations, not background jobs. Resets invalidate generations and clear private receipt/export payloads. Connection management, provider setup and resets remain administration/maintenance-only."
   },
   "integrations/email": {
-    "operations": [],
-    "manual": "Provider credentials, templates, recipients and real delivery require staff configuration."
+    "operations": [
+      "communications_templates",
+      "communications_template_save",
+      "communications_template_publish",
+      "communications_retry_response_alert"
+    ],
+    "manual": "Explicit grants permit shared template draft/publication and retrying failed native form alerts to configured recipients. Queued is not delivered. Provider credentials, sender setup, arbitrary mail and campaigns remain outside automation."
   },
   "integrations/google": {
     "operations": [],
@@ -140,7 +209,7 @@
   },
   "core": {
     "operations": [],
-    "manual": "Identity is readable through website_context; installation, ownership, memberships, domains, settings and feature switches remain manual."
+    "manual": "Identity is readable through website_context. Installation, domains, authentication policy and feature switches remain manual. Explicit ownership scope can authorize requested membership owner changes through current native authority; it never permits self-escalation."
   },
   "infrastructure": {
     "operations": [],
@@ -159,7 +228,7 @@
     "manual": "Schema changes require review of DTOs, migrations, scopes and both automation interfaces."
   },
   "app/automation-preview": {
-    "operations": ["website_preview"],
+    "operations": ["website_preview", "website_composition_preview"],
     "manual": "One-use internal rendering only. Scripts and external requests are blocked; saved private media requires explicit inspection authority."
   }
 }

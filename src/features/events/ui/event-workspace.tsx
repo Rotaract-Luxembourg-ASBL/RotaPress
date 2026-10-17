@@ -214,10 +214,12 @@ function DraftForm({
   });
   function openSection(key: string) {
     setActiveSection(key);
+    const next = new URL(window.location.href);
+    next.searchParams.set("tab", key);
     window.history.replaceState(
       null,
       "",
-      `/admin/events/${saved.id}?tab=${key}`,
+      `${next.pathname}${next.search}`,
     );
     requestAnimationFrame(() => {
       document.querySelector(".event-studio-content")?.scrollTo({ top: 0 });

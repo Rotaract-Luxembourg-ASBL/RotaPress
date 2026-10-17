@@ -24,8 +24,10 @@ import {
 } from "./form_schemas";
 import type { FormDto, FormSettingsDto, PublicFormDto } from "./form_types";
 import { templateDefinition } from "./form_templates";
+import { FormCollectionService } from "./FormCollectionService";
 
 export class FormService {
+  readonly collection: FormCollectionService;
   private readonly scope: FormScopePolicy;
   private readonly repository: FormRepository;
   private readonly audit = new AuditRepository();
@@ -34,22 +36,9 @@ export class FormService {
     private readonly db: Database,
     private readonly authorization: AuthorizationService,
   ) {
+    this.collection = new FormCollectionService(db, authorization);
     this.repository = new FormRepository(db);
     this.scope = new FormScopePolicy(db, authorization);
-  }
-
-  async list(actor: TrustedActor): Promise<FormDto[]> {
-    const scope = await this.authorization.require(actor, "forms.edit");
-    const forms = await this.repository.list(scope.organizationId);
-    if (!scope.capabilities.includes("submissions.read")) return forms;
-    const counts = await this.repository.responseCounts(scope.organizationId);
-    const byForm = new Map(
-      counts.map(({ formId, ...values }) => [formId, values]),
-    );
-    return forms.map((item) => ({
-      ...item,
-      responses: byForm.get(item.id) ?? { total: 0, new: 0 },
-    }));
   }
 
   /** Copies content only; responses, recipients, webhooks and publication stay separate. */
@@ -120,14 +109,6 @@ export class FormService {
     return this.scope.dto(actor, row, tx);
   }
 
-  async eventForms(actor: TrustedActor, eventId: string): Promise<FormDto[]> {
-    await this.scope.events.detail(actor, eventId);
-    const { organizationId } = await this.authorization.approved(actor);
-    await this.authorization.features.require(organizationId, "forms");
-    const rows = await this.repository.list(organizationId, eventId);
-    return Promise.all(rows.map((row) => this.detail(actor, row.id)));
-  }
-
   /** Event readiness needs publication state, never questions or private answers. */
   async eventReadiness(
     actor: TrustedActor,
@@ -160,6 +141,7 @@ export class FormService {
     actor: TrustedActor,
     eventId: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<FormDto> {
     const values = z
       .strictObject({
@@ -167,7 +149,7 @@ export class FormService {
         title: z.string().trim().min(1).max(160),
       })
       .parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const { organizationId, event } = await this.scope.events.lockEvent(
         actor,
         eventId,
@@ -199,23 +181,29 @@ export class FormService {
         targetId: row.id,
       });
       return this.scope.dto(actor, row, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
-  async detail(actor: TrustedActor, id: string): Promise<FormDto> {
+  async detail(
+    actor: TrustedActor,
+    id: string,
+    executor: DatabaseExecutor = this.db,
+  ): Promise<FormDto> {
     z.uuid().parse(id);
-    const scope = await this.scope.require(actor, id, "read");
-    return this.scope.dto(actor, scope.current);
+    const scope = await this.scope.require(actor, id, "read", executor);
+    return this.scope.dto(actor, scope.current, executor);
   }
 
   async save(
     actor: TrustedActor,
     id: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<FormDto> {
     z.uuid().parse(id);
     const values = formSaveSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(actor, id, "edit", tx);
       const current = scope.current;
       this.expectRevision(current.draftRevision, values.expectedRevision);
@@ -237,17 +225,19 @@ export class FormService {
         )
         .returning();
       return this.scope.dto(actor, row, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async publish(
     actor: TrustedActor,
     id: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<FormDto> {
     z.uuid().parse(id);
     const values = formPublishSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(actor, id, "publish", tx);
       const current = scope.current;
       this.expectRevision(current.draftRevision, values.expectedRevision);
@@ -295,17 +285,19 @@ export class FormService {
         targetId: version.id,
       });
       return this.scope.dto(actor, row, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async archive(
     actor: TrustedActor,
     id: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<FormDto> {
     z.uuid().parse(id);
     const values = formArchiveSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(actor, id, "publish", tx);
       const current = scope.current;
       this.expectRevision(current.draftRevision, values.expectedRevision);
@@ -328,7 +320,8 @@ export class FormService {
         targetId: id,
       });
       return this.scope.dto(actor, row, tx);
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async settings(actor: TrustedActor, id: string): Promise<FormSettingsDto> {
@@ -344,10 +337,11 @@ export class FormService {
     actor: TrustedActor,
     id: string,
     input: unknown,
+    executor?: Transaction,
   ): Promise<FormSettingsDto> {
     z.uuid().parse(id);
     const values = formSettingsSchema.parse(input);
-    return this.db.transaction(async (tx) => {
+    const apply = async (tx: Transaction) => {
       const scope = await this.scope.lock(actor, id, "settings", tx);
       if (
         scope.current.kind === "registration" &&
@@ -371,7 +365,8 @@ export class FormService {
         targetId: id,
       });
       return values;
-    });
+    };
+    return executor ? apply(executor) : this.db.transaction(apply);
   }
 
   async publicForm(

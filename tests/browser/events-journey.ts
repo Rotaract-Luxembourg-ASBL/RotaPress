@@ -86,6 +86,14 @@ export async function eventDraftJourney(
   ).toBeVisible();
 
   await manager.goto("/admin/events");
+  await manager
+    .getByRole("searchbox", { name: "Search events" })
+    .fill("Synthetic Event A");
+  await expect(manager).toHaveURL(/search=Synthetic\+Event\+A/);
+  await manager.reload();
+  await expect(
+    manager.getByRole("searchbox", { name: "Search events" }),
+  ).toHaveValue("Synthetic Event A");
   await expect(
     manager.getByText("Synthetic Event A", { exact: true }),
   ).toBeVisible();
@@ -99,6 +107,22 @@ export async function eventDraftJourney(
   expect(
     (await manager.request.get(`/api/admin/events/${eventB}`)).status(),
   ).toBe(404);
+  await manager.getByRole("link", { name: "Open event", exact: true }).click();
+  await manager
+    .getByRole("link", { name: "Back to events", exact: true })
+    .click();
+  await expect(
+    manager.getByRole("searchbox", { name: "Search events" }),
+  ).toHaveValue("Synthetic Event A");
+  for (const width of [390, 320]) {
+    await manager.setViewportSize({ width, height: 900 });
+    expect(
+      await manager.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await manager.setViewportSize({ width: 1440, height: 1000 });
   await manager.getByRole("link", { name: "Open event", exact: true }).click();
   const beforeSectionNavigation = await manager.request
     .get(`/api/admin/events/${eventA}`)

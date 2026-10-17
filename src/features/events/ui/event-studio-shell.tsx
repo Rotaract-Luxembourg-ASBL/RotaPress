@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/ui/icon";
+import { useCollectionReturn } from "@/ui/collection-return";
 
 export function EventStudioShell({
   title,
@@ -26,6 +27,7 @@ export function EventStudioShell({
   onBeforeNavigate?: () => boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const returnTo = useCollectionReturn(backHref);
   return (
     <div
       className="event-studio"
@@ -49,7 +51,7 @@ export function EventStudioShell({
         <div className="event-studio-back-row">
           <Link
             className="event-studio-back"
-            href={backHref}
+            href={returnTo}
             onClick={(event) => {
               if (onBack && !onBack()) event.preventDefault();
             }}

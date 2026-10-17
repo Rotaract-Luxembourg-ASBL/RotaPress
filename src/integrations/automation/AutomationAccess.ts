@@ -23,6 +23,7 @@ import {
 } from "./scopes";
 import type { OAuthAccess } from "./oauth/OAuthAccess";
 import type { AutomationTransport } from "./availability_schemas";
+import { listAutomationConnections } from "./token_list";
 
 export type AutomationPrincipal = {
   actor: TrustedActor;
@@ -119,37 +120,8 @@ export class AutomationAccess {
     };
   }
 
-  async list(
-    actor: TrustedActor,
-    headers: Headers,
-    transport?: AutomationTransport,
-  ) {
-    await this.authorization.require(actor, "integrations.manage");
-    const result = await auth.api.listApiKeys({
-      headers,
-      query: { limit: 100, sortBy: "createdAt", sortDirection: "desc" },
-    });
-    return result.apiKeys.flatMap((key) => {
-      const metadata = connectionMetadata.safeParse(key.metadata);
-      if (!metadata.success) return [];
-      if (transport && metadata.data.transport !== transport) return [];
-      return [
-        {
-          id: key.id,
-          transport: metadata.data.transport,
-          name: key.name,
-          expiresAt: key.expiresAt,
-          expired:
-            key.expiresAt !== null && key.expiresAt.getTime() <= Date.now(),
-          enabled: key.enabled,
-          scopes: z
-            .object({ automation: z.array(automationScopeSchema) })
-            .parse(key.permissions).automation,
-          sourceOrigins: metadata.data.sourceOrigins,
-          currentSession: metadata.data.sessionId === actor.sessionId,
-        },
-      ];
-    });
+  async list(actor: TrustedActor, input: unknown = {}) {
+    return listAutomationConnections(this.db, this.authorization, actor, input);
   }
 
   async revoke(actor: TrustedActor, headers: Headers, id: string) {

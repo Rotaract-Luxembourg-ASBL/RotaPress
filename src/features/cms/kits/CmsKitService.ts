@@ -74,7 +74,7 @@ export class CmsKitService {
     private readonly local: boolean,
   ) {
     this.repository = new CmsRepository(db);
-    this.writer = new CmsRevisionWriter(media);
+    this.writer = new CmsRevisionWriter(media, db);
   }
   async import(actor: TrustedActor, input: unknown) {
     return this.db.transaction((tx) => this.importDrafts(actor, input, tx));

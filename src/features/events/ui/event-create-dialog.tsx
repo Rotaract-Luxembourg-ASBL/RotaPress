@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { collectionEditorHref } from "@/ui/collection-return";
 import { errorMessage, request, useResource } from "@/ui/api";
 import { Dialog } from "@/ui/dialog";
 import { Loading, Notice } from "@/ui/primitives";
@@ -21,6 +22,7 @@ import type { EventModuleKey } from "../event_modules";
 import { EventFields } from "./event-fields";
 import { EventFeaturePicker } from "./event-feature-picker";
 import { EventTemplateReviewPanel } from "./event-template-review";
+import { EventCopyPicker } from "./event-copy-picker";
 
 const steps = ["Basics", "Schedule & location", "Setup & features", "Review"];
 const basicsSchema = eventFieldsSchema.pick({
@@ -29,13 +31,7 @@ const basicsSchema = eventFieldsSchema.pick({
   visibility: true,
 });
 
-export function EventCreateDialog({
-  onClose,
-  sources,
-}: {
-  onClose: () => void;
-  sources: EventSummary[];
-}) {
+export function EventCreateDialog({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { data, error } = useResource<{ managers: ManagerOption[] }>(
     "/api/admin/events/managers",
@@ -114,6 +110,10 @@ export function EventCreateDialog({
     }
     setBusy(true);
     try {
+      if (template === "copy:") {
+        setProblem("Choose the event to copy before continuing.");
+        return;
+      }
       const selection: EventTemplateSelection = template.startsWith("copy:")
         ? { kind: "copy", id: template.slice(5) }
         : {
@@ -154,7 +154,9 @@ export function EventCreateDialog({
           }),
         },
       );
-      router.push(`/admin/events/${draft.id}`);
+      router.push(
+        collectionEditorHref(`/admin/events/${draft.id}`, "/admin/events"),
+      );
     } catch (cause) {
       setProblem(errorMessage(cause));
       setBusy(false);
@@ -305,7 +307,9 @@ export function EventCreateDialog({
                       <label>
                         Starting setup
                         <select
-                          value={template}
+                          value={
+                            template.startsWith("copy:") ? "copy:" : template
+                          }
                           onChange={(event) => {
                             const choice = event.target.value;
                             setTemplate(choice);
@@ -325,26 +329,21 @@ export function EventCreateDialog({
                               {preset.label}
                             </option>
                           ))}
-                          {sources.length > 0 && (
-                            <optgroup label="Copy an existing event">
-                              {sources.map((source) => (
-                                <option
-                                  key={source.id}
-                                  value={`copy:${source.id}`}
-                                >
-                                  {source.title}
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
+                          <option value="copy:">Copy an existing event</option>
                         </select>
                       </label>
                       {template.startsWith("copy:") ? (
-                        <p className="field-help">
-                          The copy keeps the source event's features and content
-                          as private drafts. You will review what is included
-                          before creating it.
-                        </p>
+                        <>
+                          <EventCopyPicker
+                            value={template.slice(5)}
+                            onChange={(id) => setTemplate(`copy:${id}`)}
+                          />
+                          <p className="field-help">
+                            The copy keeps the source event's features and
+                            content as private drafts. You will review what is
+                            included before creating it.
+                          </p>
+                        </>
                       ) : (
                         <EventFeaturePicker
                           selected={selectedModules}

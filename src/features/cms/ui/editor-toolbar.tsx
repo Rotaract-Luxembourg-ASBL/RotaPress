@@ -8,6 +8,8 @@ import { Icon as EditorIcon } from "@/ui/icon";
 import { useEditorPuck } from "./editor-blocks";
 import { isSitePart } from "../cms_schemas";
 import { UnsavedPreview } from "./unsaved-preview";
+import { editorEventTarget, observeEditorDocuments } from "./editor-documents";
+import { useCollectionReturn } from "@/ui/collection-return";
 
 export function EditorToolbar({
   document: doc,
@@ -25,6 +27,7 @@ export function EditorToolbar({
   openDialog: (name: EditorDialogName) => void;
 }) {
   const dispatch = useEditorPuck((state) => state.dispatch);
+  const collectionReturn = useCollectionReturn("/admin/website");
   const history = doc.history;
   const menu = useRef<HTMLDetailsElement>(null);
   const shared = isSitePart(doc.detail.kind);
@@ -35,15 +38,14 @@ export function EditorToolbar({
       : "Page settings";
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        menu.current &&
-        !menu.current.contains(event.target)
-      )
+      const target = editorEventTarget(event);
+      if (target && menu.current && !menu.current.contains(target))
         menu.current.open = false;
     };
-    document.addEventListener("pointerdown", dismiss);
-    return () => document.removeEventListener("pointerdown", dismiss);
+    return observeEditorDocuments((surface) => {
+      surface.addEventListener("pointerdown", dismiss);
+      return () => surface.removeEventListener("pointerdown", dismiss);
+    });
   }, []);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
@@ -55,16 +57,17 @@ export function EditorToolbar({
       if (
         !doc.isLocked() &&
         (document.querySelector("dialog[open]") ||
-          (event.target instanceof Element &&
-            event.target.closest("#editor-page-panel")))
+          editorEventTarget(event)?.closest("#editor-page-panel"))
       )
         return; // Keep native text undo in document metadata and dialogs.
       event.preventDefault();
       if (!doc.isLocked())
         history.step(key === "y" || event.shiftKey ? 1 : -1, dispatch);
     };
-    window.addEventListener("keydown", shortcut, true);
-    return () => window.removeEventListener("keydown", shortcut, true);
+    return observeEditorDocuments((surface) => {
+      surface.addEventListener("keydown", shortcut, true);
+      return () => surface.removeEventListener("keydown", shortcut, true);
+    });
   }, [dispatch, doc, history]);
   const currentIsPublished =
     doc.detail.publishedRevisionId === doc.detail.draft.id;
@@ -91,9 +94,11 @@ export function EditorToolbar({
       <div className="editor-toolbar-navigation">
         <Link
           href={
-            isSitePart(doc.detail.kind)
-              ? "/admin/website?tab=parts"
-              : "/admin/website?tab=pages"
+            collectionReturn !== "/admin/website"
+              ? collectionReturn
+              : isSitePart(doc.detail.kind)
+                ? "/admin/website?tab=parts"
+                : "/admin/website?tab=pages"
           }
           className="editor-back"
           aria-label="Back to Website"
@@ -181,6 +186,11 @@ export function EditorToolbar({
       </div>
       <div className="editor-toolbar-actions">
         <UnsavedPreview
+          compositionEndpoint={
+            !doc.detail.event
+              ? `/api/admin/cms/content/${doc.detail.id}/preview-composition`
+              : undefined
+          }
           endpoint={`/api/admin/cms/content/${doc.detail.id}/preview`}
           disabled={doc.readOnly || doc.busy}
           payload={{
@@ -267,7 +277,7 @@ export function EditorToolbar({
               {shared ? "Site part settings" : "Page settings & SEO"}
             </button>
             <button onClick={() => dialog("revisions")}>
-              Revision history <span>{doc.detail.revisions.length}</span>
+              Revision history
             </button>
             <Link
               href={`/admin/website/${doc.detail.id}/preview?locale=${doc.detail.locale}`}

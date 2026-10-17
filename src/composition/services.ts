@@ -1,4 +1,5 @@
 import "server-only";
+import { AutomationRuntime } from "@/integrations/automation/receipt_service";
 import { CalendarReader } from "@/features/calendar/CalendarReader";
 import { CalendarService } from "@/features/calendar/CalendarService";
 import { CalendarSubscriptionService } from "@/features/calendar/CalendarSubscriptionService";
@@ -19,8 +20,11 @@ import { GoogleAuthSettingsService } from "@/core/auth/GoogleAuthSettingsService
 import { config } from "@/core/config";
 import { resolve } from "node:path";
 import { MediaService } from "@/features/media/MediaService";
+import { MediaUploadService } from "@/features/media/MediaUploadService";
+import { AlbumService } from "@/features/media/AlbumService";
 import { LocalStorageDriver } from "@/infrastructure/storage/LocalStorageDriver";
 import { CmsService } from "@/features/cms/CmsService";
+import { CmsPageTreeService } from "@/features/cms/CmsPageTreeService";
 import { CmsPreviewService } from "@/features/cms/CmsPreviewService";
 import { CmsPartnerUsage } from "@/features/cms/CmsPartnerUsage";
 import { PartnerService } from "@/features/partners/PartnerService";
@@ -85,11 +89,8 @@ const storagePath =
   new URL(config.DATABASE_URL).pathname === "/rotapress_test"
     ? ".local/test-uploads"
     : ".data/uploads";
-const media = new MediaService(
-  db,
-  authorization,
-  new LocalStorageDriver(resolve(storagePath)),
-);
+const mediaStorage = new LocalStorageDriver(resolve(storagePath));
+const media = new MediaService(db, authorization, mediaStorage);
 const forms = new FormService(db, authorization);
 const members = new MembershipService(db, authorization, forms);
 const events = new EventService(db, authorization);
@@ -212,6 +213,7 @@ const calendarReader = new CalendarReader(db, () =>
   eventWebsite.publicList("en"),
 );
 export const services = {
+  automationRuntime: new AutomationRuntime(db),
   projects: new ProjectService(db, authorization, media),
   projectReader: new ProjectReader(db),
   emailTemplates: new ScopedEmailTemplateService(db, authorization),
@@ -331,7 +333,10 @@ export const services = {
   eventModules,
   eventWebsite,
   media,
+  mediaUploads: new MediaUploadService(db, authorization, mediaStorage),
+  albums: new AlbumService(db, authorization, media),
   cms,
+  pageTree: new CmsPageTreeService(db, authorization, cms),
   starter: new CmsStarterService(cms),
   kits,
   websiteSetup,

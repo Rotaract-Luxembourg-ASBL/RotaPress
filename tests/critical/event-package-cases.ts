@@ -666,7 +666,11 @@ export function eventPackageChecks(
         confirmed: true,
       }),
     ).rejects.toMatchObject({ code: "EVENT_TEMPLATE_REVIEW_CHANGED" });
-    expect(await s.events.list(s.owner)).toHaveLength(1);
+    expect(
+      await s.events
+        .query(s.owner, { status: "all", pageSize: 100 })
+        .then((result) => result.events),
+    ).toHaveLength(1);
     const refreshed = await s.templates.preview(s.owner, input);
     expect(refreshed.token).not.toBe(review.token);
     const copied = await s.templates.create(s.owner, {

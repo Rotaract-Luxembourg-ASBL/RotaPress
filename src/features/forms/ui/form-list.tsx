@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { FormDto } from "../form_types";
+import type { FormCollection } from "../form_collection";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { useResource } from "@/ui/api";
 import { Icon } from "@/ui/icon";
@@ -23,53 +25,41 @@ import { isContentElement } from "../form_elements";
 
 export function FormList() {
   const user = useCurrentUser();
-  const { data, error, refresh } = useResource<{ forms: FormDto[] }>(
-    "/api/admin/forms",
+  const { params, change, page } = useCollectionLocation();
+  const returnQuery = params.size
+    ? `?returnTo=${encodeURIComponent(`/admin/forms?${params}`)}`
+    : "";
+  const view =
+    ["active", "published", "draft", "archived"].find(
+      (value) => value === params.get("status"),
+    ) ?? "active";
+  const kind =
+    ["contact", "membership"].find((value) => value === params.get("kind")) ??
+    "all";
+  const sort =
+    ["name", "responses"].find((value) => value === params.get("sort")) ??
+    "updated";
+  const query = (params.get("search") ?? "").slice(0, 160);
+  const setView = (status: string) => change({ status });
+  const setKind = (kind: string) => change({ kind });
+  const setSort = (sort: string) => change({ sort });
+  const setQuery = (search: string) => change({ search });
+  const { data, error, refresh } = useResource<FormCollection>(
+    `/api/admin/forms?${new URLSearchParams({ status: view, kind, sort, search: query, page: String(page) })}`,
   );
   const [creating, setCreating] = useState(false);
-  const [view, setView] = useState("active");
-  const [query, setQuery] = useState("");
-  const [kind, setKind] = useState("all");
-  const [sort, setSort] = useState("updated");
   const [message, setMessage] = useState("");
   const forms = data?.forms ?? [];
-  const active = forms.filter((form) => !form.archived);
-  const counts = {
-    active: active.length,
-    published: active.filter((form) => form.publishedVersionId).length,
-    draft: active.filter((form) => !form.publishedVersionId).length,
-    archived: forms.filter((form) => form.archived).length,
+  const counts = data?.counts ?? {
+    all: 0,
+    active: 0,
+    published: 0,
+    draft: 0,
+    archived: 0,
   };
-  const visible = forms
-    .filter((form) => {
-      const matchesView =
-        view === "archived"
-          ? form.archived
-          : !form.archived &&
-            (view === "active" ||
-              (view === "published"
-                ? Boolean(form.publishedVersionId)
-                : !form.publishedVersionId));
-      return (
-        matchesView &&
-        (kind === "all" || form.kind === kind) &&
-        form.draft.title
-          .toLocaleLowerCase()
-          .includes(query.trim().toLocaleLowerCase())
-      );
-    })
-    .sort((a, b) =>
-      sort === "name"
-        ? a.draft.title.localeCompare(b.draft.title)
-        : sort === "responses"
-          ? (b.responses?.total ?? 0) - (a.responses?.total ?? 0)
-          : b.updatedAt.localeCompare(a.updatedAt),
-    );
+  const visible = forms;
   function clear() {
-    setQuery("");
-    setKind("all");
-    setView("active");
-    setSort("updated");
+    change({ search: "", kind: "", status: "active", sort: "" });
   }
   if (!user.capabilities.includes("forms.edit"))
     return <Notice>You do not have permission to manage forms.</Notice>;
@@ -210,8 +200,15 @@ export function FormList() {
           </>
         }
         footer={
-          data &&
-          `${visible.length} of ${forms.length} forms shown · Responses are managed in the Response center.`
+          data && (
+            <CollectionPagination
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              noun="forms"
+              onPage={(page) => change({ page }, false)}
+            />
+          )
         }
       >
         {!data && !error && <Loading />}
@@ -223,7 +220,7 @@ export function FormList() {
                   key={form.id}
                   icon={<Icon name="forms" />}
                   title={
-                    <Link href={`/admin/forms/${form.id}`}>
+                    <Link href={`/admin/forms/${form.id}${returnQuery}`}>
                       {form.draft.title}
                     </Link>
                   }
@@ -293,7 +290,7 @@ export function FormList() {
                       )}
                       <Link
                         className="button button-outline"
-                        href={`/admin/forms/${form.id}`}
+                        href={`/admin/forms/${form.id}${returnQuery}`}
                       >
                         {form.archived ? "View" : "Edit form"}
                       </Link>
@@ -317,19 +314,19 @@ export function FormList() {
               <CollectionEmpty
                 icon={view === "archived" ? "archive" : "forms"}
                 title={
-                  !forms.length
+                  !counts.all
                     ? "Start with your first form"
                     : "No forms to show"
                 }
                 description={
-                  !forms.length
+                  !counts.all
                     ? "Choose a template, make it yours, then share a link or add it to your website."
                     : view === "archived"
                       ? "Archived forms appear here. Their existing responses are kept."
                       : "Try another search or change the status and type filters."
                 }
               >
-                {!forms.length ? (
+                {!counts.all ? (
                   <button
                     className="button button-accent"
                     onClick={() => setCreating(true)}

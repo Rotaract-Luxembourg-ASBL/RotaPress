@@ -130,7 +130,11 @@ export function partnerChecks(get: () => Context) {
         (await cms.publicPage("en", "our-people"))!.partners![team.id].role,
       ).toBe("Chair");
       expect(
-        (await partners.list(owner))
+        (
+          await partners
+            .query(owner, { status: "all", pageSize: 100 })
+            .then((result) => result.items)
+        )
           .find((item) => item.id === team.id)!
           .placements.every((item) => item.dynamic),
       ).toBe(true);
@@ -269,7 +273,13 @@ export function partnerChecks(get: () => Context) {
         expectedVersion: site.version,
       });
       expect((await cms.publicPage("en", "partners"))?.data).toEqual(before);
-      expect((await partners.list(owner))[0]).toEqual(record);
+      expect(
+        (
+          await partners
+            .query(owner, { status: "all", pageSize: 100 })
+            .then((result) => result.items)
+        )[0],
+      ).toEqual(record);
     });
 
     it("enforces current membership and organization scope and keeps selected private logos protected", async () => {
@@ -302,7 +312,11 @@ export function partnerChecks(get: () => Context) {
           .toBuffer(),
       });
       let row = await partners.create(owner, { ...profile, logoId: logo.id });
-      await expect(partners.list(member)).rejects.toMatchObject({
+      await expect(
+        partners
+          .query(member, { status: "all", pageSize: 100 })
+          .then((result) => result.items),
+      ).rejects.toMatchObject({
         code: "ACCESS_DENIED",
       });
       await expect(
@@ -337,9 +351,13 @@ export function partnerChecks(get: () => Context) {
       await expect(
         cms.save(owner, save(page, collection(randomUUID()))),
       ).rejects.toMatchObject({ code: "PARTNER_UNAVAILABLE" });
-      expect((await partners.list(owner)).map((item) => item.id)).toEqual([
-        row.id,
-      ]);
+      expect(
+        (
+          await partners
+            .query(owner, { status: "all", pageSize: 100 })
+            .then((result) => result.items)
+        ).map((item) => item.id),
+      ).toEqual([row.id]);
       row = await partners.change(owner, row.id, "unpublish", action(row));
       expect(row.published).toBeNull();
       expect(row.draft.logoId).toBe(logo.id);

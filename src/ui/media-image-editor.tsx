@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
-import type { AdminMediaAssetDto } from "@/features/media/media_schemas";
+import { useEffect, useId, useRef, useState } from "react";
+import type {
+  AdminImageMediaAssetDto,
+  AdminMediaAssetDto,
+} from "@/features/media/media_schemas";
 import { errorMessage, request } from "./api";
 import { Notice } from "./primitives";
+import {
+  constrainCrop,
+  MediaCropCanvas,
+  type MediaCrop,
+} from "./media-crop-canvas";
 
-type Crop = { left: number; top: number; width: number; height: number };
 type Edit = {
-  crop: Crop;
+  crop: MediaCrop;
   rotate: 0 | 90 | 180 | 270;
   flipHorizontal: boolean;
   flipVertical: boolean;
@@ -21,7 +28,7 @@ export function MediaImageEditor({
   onDirty,
   onCancel,
 }: {
-  asset: AdminMediaAssetDto;
+  asset: AdminImageMediaAssetDto;
   onCreated: (asset: AdminMediaAssetDto) => void;
   onBusy: (busy: boolean) => void;
   onDirty: (dirty: boolean) => void;
@@ -36,10 +43,10 @@ export function MediaImageEditor({
   };
   const [history, setHistory] = useState<Edit[]>([initial]);
   const [index, setIndex] = useState(0);
-  const [dragCrop, setDragCrop] = useState<Crop>();
+  const [aspect, setAspect] = useState("free");
+  const [zoom, setZoom] = useState(100);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const drag = useRef<{ x: number; y: number } | undefined>(undefined);
   const retry = useRef<{ fingerprint: string; requestId: string } | undefined>(
     undefined,
   );
@@ -49,7 +56,13 @@ export function MediaImageEditor({
     back.current?.focus();
   }, []);
   const saved = history[index];
-  const edit = { ...saved, crop: dragCrop ?? saved.crop };
+  const edit = saved;
+  const ratio =
+    aspect === "original"
+      ? asset.width / asset.height
+      : aspect === "free"
+        ? 0
+        : Number(aspect);
   const quarter = edit.rotate === 90 || edit.rotate === 270;
   const resultWidth = quarter ? edit.crop.height : edit.crop.width;
   const resultHeight = quarter ? edit.crop.width : edit.crop.height;
@@ -64,8 +77,9 @@ export function MediaImageEditor({
           : "";
   const flips = `translate(${edit.flipHorizontal ? resultWidth : 0} ${edit.flipVertical ? resultHeight : 0}) scale(${edit.flipHorizontal ? -1 : 1} ${edit.flipVertical ? -1 : 1})`;
 
-  function change(next: Edit) {
+  function change(next: Edit, cropRatio = ratio) {
     if (busy) return;
+    next = { ...next, crop: constrainCrop(next.crop, asset, cropRatio) };
     const maxWidth =
       next.rotate === 90 || next.rotate === 270
         ? next.crop.height
@@ -78,33 +92,6 @@ export function MediaImageEditor({
     setIndex(nextHistory.length - 1);
     onDirty(JSON.stringify(next) !== JSON.stringify(initial));
     setError("");
-  }
-
-  function point(event: PointerEvent<SVGSVGElement>) {
-    const matrix = event.currentTarget.getScreenCTM();
-    const source = matrix
-      ? new DOMPoint(event.clientX, event.clientY).matrixTransform(
-          matrix.inverse(),
-        )
-      : { x: 0, y: 0 };
-    return {
-      x: Math.max(0, Math.min(asset.width - 1, Math.round(source.x))),
-      y: Math.max(0, Math.min(asset.height - 1, Math.round(source.y))),
-    };
-  }
-
-  function selection(event: PointerEvent<SVGSVGElement>) {
-    const start = drag.current;
-    if (!start) return;
-    const end = point(event);
-    const crop = {
-      left: Math.min(start.x, end.x),
-      top: Math.min(start.y, end.y),
-      width: Math.max(1, Math.abs(end.x - start.x)),
-      height: Math.max(1, Math.abs(end.y - start.y)),
-    };
-    setDragCrop(crop);
-    return crop;
   }
 
   async function save() {
@@ -142,253 +129,272 @@ export function MediaImageEditor({
       className="media-image-editor"
       aria-label="Image editor"
       aria-busy={busy}
+      data-media-editor
     >
-      <div className="media-editor-heading">
-        <h3>Edit image</h3>
-        <button
-          type="button"
-          className="inline-button"
-          ref={back}
-          onClick={onCancel}
-          disabled={busy}
-        >
-          Back to details
-        </button>
-      </div>
-      <p className="field-help">
-        Drag over the original to crop, or enter crop coordinates. Save creates
-        a copy in the library.
-      </p>
-      {error && <Notice>{error}</Notice>}
-      <div className="media-transform-toolbar">
-        <button
-          type="button"
-          className="button button-outline button-small"
-          disabled={busy}
-          onClick={() =>
-            change({
-              ...saved,
-              rotate: ((saved.rotate + 270) % 360) as Edit["rotate"],
-            })
-          }
-        >
-          Rotate left
-        </button>
-        <button
-          type="button"
-          className="button button-outline button-small"
-          disabled={busy}
-          onClick={() =>
-            change({
-              ...saved,
-              rotate: ((saved.rotate + 90) % 360) as Edit["rotate"],
-            })
-          }
-        >
-          Rotate right
-        </button>
-        <button
-          type="button"
-          className="button button-outline button-small"
-          aria-pressed={edit.flipHorizontal}
-          disabled={busy}
-          onClick={() =>
-            change({ ...saved, flipHorizontal: !saved.flipHorizontal })
-          }
-        >
-          Flip horizontally
-        </button>
-        <button
-          type="button"
-          className="button button-outline button-small"
-          aria-pressed={edit.flipVertical}
-          disabled={busy}
-          onClick={() =>
-            change({ ...saved, flipVertical: !saved.flipVertical })
-          }
-        >
-          Flip vertically
-        </button>
-        <button
-          type="button"
-          className="button button-outline button-small"
-          disabled={busy || !index}
-          onClick={() => {
-            setIndex(index - 1);
-            onDirty(
-              JSON.stringify(history[index - 1]) !== JSON.stringify(initial),
-            );
-          }}
-        >
-          Undo image edit
-        </button>
-        <button
-          type="button"
-          className="button button-outline button-small"
-          disabled={busy || index === history.length - 1}
-          onClick={() => {
-            setIndex(index + 1);
-            onDirty(
-              JSON.stringify(history[index + 1]) !== JSON.stringify(initial),
-            );
-          }}
-        >
-          Redo image edit
-        </button>
-        <button
-          type="button"
-          className="inline-button"
-          disabled={busy || !dirty}
-          onClick={() => {
-            setHistory([initial]);
-            setIndex(0);
-            onDirty(false);
-          }}
-        >
-          Reset edits
-        </button>
-      </div>
-      <div className="media-transform-previews">
-        <figure>
-          <figcaption>Original and crop</figcaption>
-          <svg
-            className="media-crop-canvas"
-            viewBox={`0 0 ${asset.width} ${asset.height}`}
-            role="img"
-            aria-label="Original image crop area"
-            onPointerDown={(event) => {
-              if (busy) return;
-              event.preventDefault();
-              drag.current = point(event);
-              event.currentTarget.setPointerCapture(event.pointerId);
-            }}
-            onPointerMove={(event) => selection(event)}
-            onPointerUp={(event) => {
-              const crop = selection(event);
-              drag.current = undefined;
-              setDragCrop(undefined);
-              if (crop) change({ ...saved, crop });
-            }}
-            onPointerCancel={() => {
-              drag.current = undefined;
-              setDragCrop(undefined);
+      <div className="media-image-editor-body">
+        <div className="media-editor-heading">
+          <h3>Edit image</h3>
+          <button
+            type="button"
+            className="inline-button"
+            ref={back}
+            onClick={onCancel}
+            disabled={busy}
+          >
+            Back to details
+          </button>
+        </div>
+        <p className="field-help">
+          Drag the corners to resize the crop, or drag inside it to move. Use
+          arrow keys on a handle for precise changes. Save creates a copy in the
+          library.
+        </p>
+        <div className="media-transform-toolbar">
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={busy}
+            onClick={() =>
+              change({
+                ...saved,
+                rotate: ((saved.rotate + 270) % 360) as Edit["rotate"],
+              })
+            }
+          >
+            Rotate left
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={busy}
+            onClick={() =>
+              change({
+                ...saved,
+                rotate: ((saved.rotate + 90) % 360) as Edit["rotate"],
+              })
+            }
+          >
+            Rotate right
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            aria-pressed={edit.flipHorizontal}
+            disabled={busy}
+            onClick={() =>
+              change({ ...saved, flipHorizontal: !saved.flipHorizontal })
+            }
+          >
+            Flip horizontally
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            aria-pressed={edit.flipVertical}
+            disabled={busy}
+            onClick={() =>
+              change({ ...saved, flipVertical: !saved.flipVertical })
+            }
+          >
+            Flip vertically
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={busy || !index}
+            onClick={() => {
+              setIndex(index - 1);
+              onDirty(
+                JSON.stringify(history[index - 1]) !== JSON.stringify(initial),
+              );
             }}
           >
-            <image
-              href={`/media/${asset.id}`}
-              width={asset.width}
-              height={asset.height}
-            />
-            <rect
-              x={edit.crop.left}
-              y={edit.crop.top}
-              width={edit.crop.width}
-              height={edit.crop.height}
-              fill="none"
-              stroke="white"
-              strokeWidth={Math.max(asset.width, asset.height) / 150}
-            />
-            <rect
-              x={edit.crop.left}
-              y={edit.crop.top}
-              width={edit.crop.width}
-              height={edit.crop.height}
-              fill="none"
-              stroke="#176b99"
-              strokeWidth={Math.max(asset.width, asset.height) / 300}
-              strokeDasharray={`${asset.width / 80} ${asset.width / 160}`}
-            />
-          </svg>
-        </figure>
-        <figure>
-          <figcaption>Edited preview</figcaption>
-          <svg
-            className="media-edit-preview"
-            viewBox={`0 0 ${resultWidth} ${resultHeight}`}
-            role="img"
-            aria-label="Edited image preview"
+            Undo image edit
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-small"
+            disabled={busy || index === history.length - 1}
+            onClick={() => {
+              setIndex(index + 1);
+              onDirty(
+                JSON.stringify(history[index + 1]) !== JSON.stringify(initial),
+              );
+            }}
           >
-            <g transform={`${flips} ${rotation}`}>
-              <svg
-                width={edit.crop.width}
-                height={edit.crop.height}
-                viewBox={`${edit.crop.left} ${edit.crop.top} ${edit.crop.width} ${edit.crop.height}`}
-              >
-                <image
-                  href={`/media/${asset.id}`}
-                  width={asset.width}
-                  height={asset.height}
-                />
-              </svg>
-            </g>
-          </svg>
-        </figure>
-      </div>
-      <fieldset disabled={busy} className="media-crop-fields">
-        <legend>Crop in original pixels</legend>
-        {(["left", "top", "width", "height"] as const).map((key) => (
-          <label key={key} htmlFor={`${prefix}-${key}`}>
-            {key === "left"
-              ? "Crop left"
-              : key === "top"
-                ? "Crop top"
-                : key === "width"
-                  ? "Crop width"
-                  : "Crop height"}
-            <input
-              id={`${prefix}-${key}`}
-              type="number"
-              min={key === "left" || key === "top" ? 0 : 1}
-              max={
-                key === "left" || key === "width" ? asset.width : asset.height
-              }
-              value={edit.crop[key]}
+            Redo image edit
+          </button>
+          <button
+            type="button"
+            className="inline-button"
+            disabled={busy || !dirty}
+            onClick={() => {
+              setHistory([initial]);
+              setIndex(0);
+              setAspect("free");
+              onDirty(false);
+            }}
+          >
+            Reset edits
+          </button>
+        </div>
+        <div className="media-crop-options">
+          <div>
+            <label htmlFor={`${prefix}-ratio`}>Crop ratio</label>
+            <select
+              id={`${prefix}-ratio`}
+              value={aspect}
+              disabled={busy}
               onChange={(event) => {
-                const value = Number(event.target.value);
-                if (
-                  Number.isInteger(value) &&
-                  value >= (key === "left" || key === "top" ? 0 : 1)
-                )
-                  change({ ...saved, crop: { ...saved.crop, [key]: value } });
+                const next = event.target.value;
+                setAspect(next);
+                change(
+                  saved,
+                  next === "free"
+                    ? 0
+                    : next === "original"
+                      ? asset.width / asset.height
+                      : Number(next),
+                );
               }}
+            >
+              <option value="free">Free crop</option>
+              <option value="original">Original ratio</option>
+              <option value="1">Square · 1:1</option>
+              <option value={String(4 / 3)}>Landscape · 4:3</option>
+              <option value={String(16 / 9)}>Wide · 16:9</option>
+              <option value={String(3 / 4)}>Portrait · 3:4</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`${prefix}-zoom`}>Preview zoom</label>
+            <select
+              id={`${prefix}-zoom`}
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+            >
+              <option value={100}>Fit image</option>
+              <option value={125}>125%</option>
+              <option value={150}>150%</option>
+              <option value={200}>200%</option>
+            </select>
+          </div>
+        </div>
+        <div className="media-transform-previews">
+          <figure>
+            <figcaption>Original and crop</figcaption>
+            <MediaCropCanvas
+              assetId={asset.id}
+              bounds={asset}
+              crop={edit.crop}
+              ratio={ratio}
+              zoom={zoom}
+              disabled={busy}
+              onChange={(crop) => change({ ...saved, crop })}
             />
-          </label>
-        ))}
-      </fieldset>
-      <label htmlFor={`${prefix}-resize`}>
-        Resize width (pixels)
-        <input
-          id={`${prefix}-resize`}
-          type="number"
-          min={1}
-          max={resultWidth}
-          disabled={busy}
-          value={edit.width}
-          onChange={(event) => {
-            const width = Number(event.target.value);
-            if (width > 0 && Number.isInteger(width))
-              change({ ...saved, width });
-          }}
-        />
-      </label>
-      <p className="field-help" role="status">
-        Result: {Math.min(edit.width, resultWidth)} ×{" "}
-        {Math.max(
-          1,
-          Math.round(
-            (resultHeight * Math.min(edit.width, resultWidth)) / resultWidth,
-          ),
-        )}{" "}
-        pixels. Original: {asset.width} × {asset.height} pixels.
-      </p>
-      <button
-        type="button"
-        className="button button-accent"
-        disabled={busy || !dirty}
-        onClick={save}
-      >
-        {busy ? "Saving edited copy…" : "Save edited copy"}
-      </button>
+          </figure>
+          <figure>
+            <figcaption>Edited preview</figcaption>
+            <svg
+              className="media-edit-preview"
+              viewBox={`0 0 ${resultWidth} ${resultHeight}`}
+              role="img"
+              aria-label="Edited image preview"
+            >
+              <g transform={`${flips} ${rotation}`}>
+                <svg
+                  width={edit.crop.width}
+                  height={edit.crop.height}
+                  viewBox={`${edit.crop.left} ${edit.crop.top} ${edit.crop.width} ${edit.crop.height}`}
+                >
+                  <image
+                    href={`/media/${asset.id}`}
+                    width={asset.width}
+                    height={asset.height}
+                  />
+                </svg>
+              </g>
+            </svg>
+          </figure>
+        </div>
+        <fieldset disabled={busy} className="media-crop-fields">
+          <legend>Crop in original pixels</legend>
+          {(["left", "top", "width", "height"] as const).map((key) => (
+            <label key={key} htmlFor={`${prefix}-${key}`}>
+              {key === "left"
+                ? "Crop left"
+                : key === "top"
+                  ? "Crop top"
+                  : key === "width"
+                    ? "Crop width"
+                    : "Crop height"}
+              <input
+                id={`${prefix}-${key}`}
+                type="number"
+                min={key === "left" || key === "top" ? 0 : 1}
+                max={
+                  key === "left" || key === "width" ? asset.width : asset.height
+                }
+                value={edit.crop[key]}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (
+                    Number.isInteger(value) &&
+                    value >= (key === "left" || key === "top" ? 0 : 1)
+                  )
+                    change({
+                      ...saved,
+                      crop: {
+                        ...saved.crop,
+                        [key]: value,
+                        ...(key === "height" && ratio
+                          ? { width: value * ratio }
+                          : {}),
+                      },
+                    });
+                }}
+              />
+            </label>
+          ))}
+        </fieldset>
+        <label htmlFor={`${prefix}-resize`}>
+          Resize width (pixels)
+          <input
+            id={`${prefix}-resize`}
+            type="number"
+            min={1}
+            max={resultWidth}
+            disabled={busy}
+            value={edit.width}
+            onChange={(event) => {
+              const width = Number(event.target.value);
+              if (width > 0 && Number.isInteger(width))
+                change({ ...saved, width });
+            }}
+          />
+        </label>
+      </div>
+      <footer className="media-image-editor-actions">
+        {error && <Notice>{error}</Notice>}
+        <p className="field-help" role="status">
+          Result: {Math.min(edit.width, resultWidth)} ×{" "}
+          {Math.max(
+            1,
+            Math.round(
+              (resultHeight * Math.min(edit.width, resultWidth)) / resultWidth,
+            ),
+          )}{" "}
+          pixels. Original: {asset.width} × {asset.height} pixels.
+        </p>
+        <button
+          type="button"
+          className="button button-accent"
+          disabled={busy || !dirty}
+          onClick={save}
+        >
+          {busy ? "Saving edited copy…" : "Save edited copy"}
+        </button>
+      </footer>
     </section>
   );
 }

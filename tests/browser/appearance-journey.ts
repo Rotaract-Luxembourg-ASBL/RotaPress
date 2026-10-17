@@ -258,6 +258,9 @@ export async function appearanceJourney({
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Editable template copy");
   await dialog
+    .getByRole("checkbox", { name: "Choose a custom page address", exact: true })
+    .check();
+  await dialog
     .getByRole("textbox", { name: /^URL slug/ })
     .fill("editable-template");
   await dialog
@@ -267,9 +270,9 @@ export async function appearanceJourney({
     .getByRole("button", { name: "Create draft", exact: true })
     .click();
   await expect(page.locator(".editor-toolbar")).toBeVisible();
-  await expect(page.locator(".cms-puck .cms-hero h1")).toHaveText(
-    "A little about us.",
-  );
+  await expect(
+    page.frameLocator(".editor-canvas iframe").locator(".cms-hero h1"),
+  ).toHaveText("A little about us.");
   expect(
     (
       await publicPage.request.get(`${origin}/pages/en/editable-template`)

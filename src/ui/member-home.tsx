@@ -128,7 +128,7 @@ function UpcomingActivities({ timezone }: { timezone: string }) {
 function BookingSummary() {
   const { data, error, refresh } = useResource<{
     registrations: RegistrationDto[];
-  }>("/api/registrations");
+  }>("/api/registrations?status=confirmed&pageSize=3");
   const items = data?.registrations
     .filter((item) => item.status === "confirmed")
     .slice(0, 2);

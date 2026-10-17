@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { publicationFor } from "./publication_policy";
 import { operation } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { requireReceiptEvent } from "./receipt_authority";
 import { exampleId, eventExample } from "./examples";
 import { eventPresets } from "@/features/events/event_templates";
 import { eventModules } from "@/features/events/event_modules";
@@ -8,7 +10,6 @@ import { packageSaveSchema } from "@/features/events/package_schemas";
 import { prizeSaveSchema } from "@/features/events/prize_schemas";
 import { formOutput } from "./response_schemas";
 import { preparedEvent, requirePreparationScopes } from "./event_preparation";
-import { proposalInput, proposalOutput } from "./proposal_schemas";
 import {
   eventPreparationInput,
   eventPreparationCreate,
@@ -28,6 +29,7 @@ export const eventOperations = [
   operation(
     {
       name: "events_blueprints",
+      effect: "read",
       path: "/events/blueprints",
       method: "GET",
       scope: "events:read",
@@ -68,6 +70,7 @@ export const eventOperations = [
   operation(
     {
       name: "events_prepare_preview",
+      effect: "read",
       path: "/events/preparation/preview",
       method: "POST",
       scope: "events:prepare",
@@ -89,9 +92,10 @@ export const eventOperations = [
       });
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_prepare",
+      effect: "draft",
       path: "/events/preparation",
       method: "POST",
       scope: "events:prepare",
@@ -105,8 +109,17 @@ export const eventOperations = [
         reviewToken: "a".repeat(64),
       },
     },
-    async (context, input) => {
-      await requirePreparationScopes(context, input.template);
+    async (context, input, tx) => {
+      await requirePreparationScopes(context, input.template, tx);
+      if (input.template.kind === "copy")
+        await requireReceiptEvent(
+          context,
+          input.template.id,
+          "events.edit",
+          tx,
+        );
+    },
+    async (context, input, tx) => {
       const event = await context.services.eventTemplates.create(
         context.principal.actor,
         {
@@ -117,13 +130,15 @@ export const eventOperations = [
           },
           confirmed: true,
         },
+        tx,
       );
-      return preparedEvent(context, event.id);
+      return preparedEvent(context, event.id, tx);
     },
   ),
   operation(
     {
       name: "events_workspace",
+      effect: "read",
       path: "/events/{id}/preparation",
       method: "GET",
       scope: "events:read",
@@ -162,9 +177,10 @@ export const eventOperations = [
       };
     },
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_form_create",
+      effect: "draft",
       path: "/events/{id}/forms",
       method: "POST",
       scope: "forms:write",
@@ -182,8 +198,10 @@ export const eventOperations = [
         title: "Dinner registration",
       },
     },
-    async ({ services: s, principal: p }, { id, ...input }) => {
-      const form = await s.forms.createEventForm(p.actor, id, input);
+    (context, { id }, tx) =>
+      requireReceiptEvent(context, id, "events.edit", tx),
+    async ({ services: s, principal: p }, { id, ...input }, tx) => {
+      const form = await s.forms.createEventForm(p.actor, id, input, tx);
       return {
         id: form.id,
         kind: form.kind,
@@ -197,6 +215,7 @@ export const eventOperations = [
   operation(
     {
       name: "events_packages",
+      effect: "read",
       path: "/events/{id}/packages",
       method: "GET",
       scope: "events:read",
@@ -215,9 +234,10 @@ export const eventOperations = [
       ),
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_package_save",
+      effect: "draft",
       path: "/events/{eventId}/packages",
       method: "PATCH",
       scope: "events:prepare",
@@ -245,8 +265,10 @@ export const eventOperations = [
         },
       },
     },
-    async ({ services: s, principal: p }, { eventId, ...input }) => {
-      const workspace = await s.eventPackages.save(p.actor, eventId, input);
+    (context, input, tx) =>
+      requireReceiptEvent(context, input.eventId, "events.edit", tx),
+    async ({ services: s, principal: p }, { eventId, ...input }, tx) => {
+      const workspace = await s.eventPackages.save(p.actor, eventId, input, tx);
       return {
         items: workspace.packages.map(({ published, ...item }) => ({
           ...item,
@@ -258,6 +280,7 @@ export const eventOperations = [
   operation(
     {
       name: "events_prizes",
+      effect: "read",
       path: "/events/{id}/prizes",
       method: "GET",
       scope: "events:read",
@@ -276,9 +299,10 @@ export const eventOperations = [
       ),
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "events_prize_save",
+      effect: "draft",
       path: "/events/{eventId}/prizes",
       method: "PATCH",
       scope: "events:prepare",
@@ -300,61 +324,14 @@ export const eventOperations = [
         },
       },
     },
-    async ({ services: s, principal: p }, { eventId, ...input }) => {
-      const workspace = await s.eventPrizes.save(p.actor, eventId, input);
+    (context, input, tx) =>
+      requireReceiptEvent(context, input.eventId, "events.edit", tx),
+    async ({ services: s, principal: p }, { eventId, ...input }, tx) => {
+      const workspace = await s.eventPrizes.save(p.actor, eventId, input, tx);
       const item = workspace.items.find(
         (item) => item.id === workspace.savedId,
       )!;
       return { ...item, published: Boolean(item.published) };
     },
-  ),
-  operation(
-    {
-      name: "events_propose_settings",
-      path: "/events/proposals",
-      method: "POST",
-      scope: "events:prepare",
-      description:
-        "Prepare an immutable registration or feature configuration suggestion for a human to review in RotaPress. This NEVER applies settings. Use a stable requestId and current target version; return the review URL to the owner.",
-      input: proposalInput,
-      output: proposalOutput,
-      example: {
-        eventId: exampleId,
-        requestId: exampleId,
-        proposal: {
-          kind: "registration",
-          settings: {
-            expectedVersion: 1,
-            authority: "native",
-            formId: exampleId,
-            capacity: 80,
-            open: false,
-          },
-        },
-      },
-    },
-    async ({ principal }, input) =>
-      (await import("./proposal_service")).automationProposals.create(
-        principal,
-        input,
-      ),
-  ),
-  operation(
-    {
-      name: "events_proposals",
-      path: "/events/{id}/proposals",
-      method: "GET",
-      scope: "events:read",
-      description:
-        "Read the status of scoped event configuration suggestions and human-review links. It does not grant authority to apply them.",
-      input: idInput,
-      output: z.strictObject({ items: z.array(proposalOutput) }),
-      example: { id: exampleId },
-    },
-    async ({ principal }, { id }) => ({
-      items: await (
-        await import("./proposal_service")
-      ).automationProposals.list(principal.actor, id),
-    }),
   ),
 ];

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useRouter } from "next/navigation";
+import { collectionEditorHref } from "@/ui/collection-return";
 import { useState, type FormEvent } from "react";
 import { formTemplateIds } from "../form_schemas";
 import {
@@ -39,7 +40,9 @@ export function FormCreatePanel({ onClose }: { onClose: () => void }) {
           ...(title.trim() ? { title: title.trim() } : {}),
         }),
       });
-      router.push(`/admin/forms/${form.id}`);
+      router.push(
+        collectionEditorHref(`/admin/forms/${form.id}`, "/admin/forms"),
+      );
     } catch (cause) {
       setError(errorMessage(cause));
       setBusy(false);

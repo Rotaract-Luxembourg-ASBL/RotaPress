@@ -4,6 +4,11 @@ Use event forms for enquiries and native free registration. Enquiries collect
 responses; registration also reserves a place against the event's capacity.
 Both use the [form editor](forms.md) and keep submitted answers private.
 
+Staff can search registration history, filter confirmed or cancelled bookings,
+and page through every authorized record. The registration form chooser also
+supports search and pagination. Account holders have the same complete history
+for their own bookings in **My bookings**, with no fixed recent-record cutoff.
+
 ## Workflow
 
 1. Open `/admin/events` and choose an event.

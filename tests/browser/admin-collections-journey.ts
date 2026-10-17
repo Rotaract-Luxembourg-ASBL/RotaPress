@@ -61,9 +61,16 @@ export async function adminCollectionsJourney(page: Page) {
   await actions.press("Escape");
   await expect(menu).toBeHidden();
   await expect(actions).toBeFocused();
+  const collectionUrl = new URL(page.url());
+  const returnTo = `${collectionUrl.pathname}${collectionUrl.search}`;
   await row.getByRole("link", { name: "Edit form", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/admin/forms/${editable.id}$`));
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === `/admin/forms/${editable.id}` &&
+      url.searchParams.get("returnTo") === returnTo,
+  );
   await page.getByRole("link", { name: "All forms", exact: true }).click();
+  await expect(page).toHaveURL(collectionUrl.href);
   await expect(
     page.getByRole("heading", { name: "Forms", exact: true }),
   ).toBeVisible();

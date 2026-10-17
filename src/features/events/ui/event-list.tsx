@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useCurrentUser } from "@/ui/admin-shell";
 import { useResource } from "@/ui/api";
 import { Icon } from "@/ui/icon";
@@ -15,67 +15,36 @@ import {
   StatusBadge,
   SummaryStats,
 } from "@/ui/collection";
-import type { EventSummary } from "../event_schemas";
+import type { EventCollection } from "../event_collection";
+import { useCollectionLocation } from "@/ui/collection-location";
+import { CollectionPagination } from "@/ui/collection-pagination";
 import { EventArchiveAction } from "./event-archive-action";
 import { EventActionsMenu } from "./event-actions-menu";
 import { EventCreateDialog } from "./event-create-dialog";
 
 export function EventList({ navigation }: { navigation?: ReactNode }) {
   const { capabilities } = useCurrentUser();
-  const { data, error, refresh } = useResource<{ events: EventSummary[] }>(
-    "/api/admin/events",
+  const { params, page, change } = useCollectionLocation();
+  const query = params.get("search") ?? "";
+  const view = params.get("status") ?? "active";
+  const timing = params.get("timing") ?? "all";
+  const sort = params.get("sort") ?? "newest";
+  const returnTo = encodeURIComponent(`/admin/events?${params}`);
+  const setView = (status: string) => change({ status });
+  const setTiming = (value: string) => change({ timing: value });
+  const { data, error, refresh } = useResource<EventCollection>(
+    `/api/admin/events?${new URLSearchParams({ page: String(page), search: query, status: view, timing, sort })}`,
   );
   const [creating, setCreating] = useState(false);
-  const [query, setQuery] = useState("");
-  const [view, setView] = useState("active");
-  const [timing, setTiming] = useState("all");
   const [message, setMessage] = useState("");
-  const [asOf, setAsOf] = useState(() => Date.now());
-  useEffect(() => {
-    const update = () => setAsOf(Date.now());
-    const timer = window.setInterval(update, 60_000);
-    window.addEventListener("focus", update);
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener("focus", update);
-    };
-  }, []);
-  const all = data?.events ?? [];
-  const active = all.filter((event) => !event.archived);
-  const published = active.filter(
-    (event) => !event.cancelled && event.published,
-  );
-  const drafts = active.filter((event) => !event.cancelled && !event.published);
-  const cancelled = active.filter((event) => event.cancelled);
-  const archived = all.filter((event) => event.archived);
-  // This is the saved planning schedule, not a claim about public listing visibility.
-  const upcoming = active.filter(
-    (event) => !event.cancelled && new Date(event.startsAt).getTime() >= asOf,
-  );
-  const events = all.filter((event) => {
-    const match =
-      view === "archived"
-        ? event.archived
-        : !event.archived &&
-          (view === "active" ||
-            (view === "cancelled"
-              ? event.cancelled
-              : !event.cancelled &&
-                (view === "published"
-                  ? Boolean(event.published)
-                  : !event.published)));
-    const future = new Date(event.startsAt).getTime() >= asOf;
-    return (
-      match &&
-      (timing === "all" ||
-        (timing === "upcoming" ? future && !event.cancelled : !future)) &&
-      event.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
-    );
-  });
+  const events = data?.events ?? [];
   function clear() {
-    setQuery("");
-    setView("active");
-    setTiming("all");
+    change({
+      search: undefined,
+      status: "active",
+      timing: "all",
+      sort: "newest",
+    });
   }
   return (
     <div className="event-directory">
@@ -109,7 +78,7 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
           items={[
             {
               label: "Active events",
-              value: active.length,
+              value: data.counts.active,
               hint: "Excludes archived events",
               icon: "calendar",
               onClick: () => {
@@ -120,7 +89,7 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
             },
             {
               label: "Upcoming",
-              value: upcoming.length,
+              value: data.counts.upcoming,
               hint: "Based on saved start dates",
               icon: "calendar",
               onClick: () => {
@@ -131,7 +100,7 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
             },
             {
               label: "Details published",
-              value: published.length,
+              value: data.counts.published,
               hint: "Page visibility is managed per event",
               icon: "check",
               onClick: () => {
@@ -142,7 +111,7 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
             },
             {
               label: "Drafts",
-              value: drafts.length,
+              value: data.counts.draft,
               hint: "Event details not published yet",
               icon: "edit",
               onClick: () => {
@@ -168,34 +137,34 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
                 {
                   value: "active",
                   label: "All active",
-                  count: data ? active.length : undefined,
+                  count: data?.counts.active,
                 },
                 {
                   value: "published",
                   label: "Details published",
-                  count: data ? published.length : undefined,
+                  count: data?.counts.published,
                 },
                 {
                   value: "draft",
                   label: "Drafts",
-                  count: data ? drafts.length : undefined,
+                  count: data?.counts.draft,
                 },
                 {
                   value: "cancelled",
                   label: "Cancelled",
-                  count: data ? cancelled.length : undefined,
+                  count: data?.counts.cancelled,
                 },
                 {
                   value: "archived",
                   label: "Archived",
-                  count: data ? archived.length : undefined,
+                  count: data?.counts.archived,
                 },
               ]}
             />
             <CollectionToolbar
               searchLabel="Search events"
               query={query}
-              onQuery={setQuery}
+              onQuery={(search) => change({ search })}
             >
               <select
                 aria-label="Event dates"
@@ -206,6 +175,15 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
                 <option value="upcoming">Upcoming</option>
                 <option value="past">Past</option>
               </select>
+              <select
+                aria-label="Sort events"
+                value={sort}
+                onChange={(event) => change({ sort: event.target.value })}
+              >
+                <option value="newest">Newest first</option>
+                <option value="starts">Start date</option>
+                <option value="title">Title</option>
+              </select>
               {(query || timing !== "all") && (
                 <button className="button button-outline" onClick={clear}>
                   Clear filters
@@ -215,8 +193,13 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
           </>
         }
         footer={
-          data &&
-          `${events.length} of ${all.length} events shown · Only events you can access are counted.`
+          data && (
+            <CollectionPagination
+              {...data}
+              noun="events"
+              onPage={(next) => change({ page: next }, false)}
+            />
+          )
         }
       >
         {!data && !error && <Loading />}
@@ -228,7 +211,9 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
                   key={event.id}
                   icon={<Icon name="calendar" />}
                   title={
-                    <Link href={`/admin/events/${event.id}`}>
+                    <Link
+                      href={`/admin/events/${event.id}?returnTo=${returnTo}`}
+                    >
                       {event.title}
                     </Link>
                   }
@@ -275,14 +260,14 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
                       {!event.archived && !event.cancelled && (
                         <Link
                           className="text-link"
-                          href={`/admin/events/${event.id}?tab=website`}
+                          href={`/admin/events/${event.id}?tab=website&returnTo=${returnTo}`}
                         >
                           Design page
                         </Link>
                       )}
                       <Link
                         className="button button-outline"
-                        href={`/admin/events/${event.id}`}
+                        href={`/admin/events/${event.id}?returnTo=${returnTo}`}
                       >
                         {event.archived ? "View event" : "Open event"}
                       </Link>
@@ -308,17 +293,17 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
               <CollectionEmpty
                 icon="calendar"
                 title={
-                  all.length
+                  data.counts.all
                     ? "No events match these filters"
                     : "Plan your first event"
                 }
                 description={
-                  all.length
+                  data.counts.all
                     ? "Try another search, date range or status. Archived events retain their content and records."
                     : "Start with the details, choose a layout, then publish when you are ready."
                 }
               >
-                {all.length ? (
+                {data.counts.all ? (
                   <button className="button button-outline" onClick={clear}>
                     Clear filters
                   </button>
@@ -337,9 +322,7 @@ export function EventList({ navigation }: { navigation?: ReactNode }) {
           </>
         )}
       </Collection>
-      {creating && (
-        <EventCreateDialog sources={all} onClose={() => setCreating(false)} />
-      )}
+      {creating && <EventCreateDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }

@@ -37,7 +37,7 @@ Selecting the current template again preserves edited content and settings. When
 switching back to a previously used template, its existing copies are reused.
 Unrelated pages are never deleted by selection. **Pages → Collection** distinguishes
 This website, All saved pages and Previous examples; Publication includes Archived.
-Archived copies remain readable and can be duplicated into an editable draft.
+Archived copies remain readable and can be restored as private drafts or duplicated.
 
 New template setups allocate readable page slugs such as `about` and `contact`,
 with numeric suffixes when a draft or published path is already reserved. Existing installed pages keep their URLs and edits.
@@ -50,24 +50,30 @@ and Partners. Home, About, Projects, Events, Calendar, Join and Contact form the
 initial menu. Our team, Partners and Gallery also have footer links. The homepage and menu can
 be changed, and menu links can be renamed, added, removed and reordered.
 
-| Layout          | Rotary Template                                                                      | Rotaract Template                                                                          |
-| --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Header/footer   | Compact family mark and club name, service invitation, light footer with blue accent | Compact family mark and club name, activity invitation, light footer with cranberry accent |
-| Home            | Photograph overlay, introduction, projects, events, agenda and partners              | Split hero, next activity, benefits, projects, agenda, partners and gallery                |
-| Projects/detail | Centered introduction, selected story cards, reading column                          | Left-aligned stories, strong card accents and invitation                                   |
-| About           | People/story section and club values                                                 | Reversed image/story composition and values                                                |
-| Events          | Real published upcoming and past event feeds                                         | Activity-led introduction with the same event service                                      |
-| Calendar        | Month calendar, event link and subscriptions                                         | Same connected calendar with an activity-led introduction                                  |
-| Our team        | Published Team directory profiles and membership invitation                          | Same directory connection with community-focused copy                                      |
-| Join            | Service introduction, steps and FAQ                                                  | People-led invitation, steps and FAQ                                                       |
-| Contact         | Narrow information beside a form area                                                | Balanced contact/form columns                                                              |
-| Gallery         | Captioned image grid and manual slider                                               | Captioned grid/slider with action styling                                                  |
-| Partners        | Automatic published Partner and Sponsor categories and invitation                    | Same directory connections and collaboration invitation                                    |
+| Layout          | Rotary Template                                                                                   | Rotaract Template                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Header/footer   | Compact family mark and club name, service invitation, light footer with blue accent              | Compact family mark and club name, activity invitation, light footer with cranberry accent |
+| Home            | Panoramic photograph overlay, three clear entry points, introduction, projects, events and agenda | Split hero, next activity, entry points, projects, agenda and masonry gallery              |
+| Projects/detail | Centered introduction, selected story cards, reading column                                       | Left-aligned stories, strong card accents and invitation                                   |
+| About           | People/story section and club values                                                              | Reversed image/story composition and values                                                |
+| Events          | Real published upcoming and past event feeds                                                      | Activity-led introduction with the same event service                                      |
+| Calendar        | Month calendar, event link and subscriptions                                                      | Same connected calendar with an activity-led introduction                                  |
+| Our team        | Published Team directory profiles and membership invitation                                       | Same directory connection with community-focused copy                                      |
+| Join            | Service introduction, steps and FAQ                                                               | People-led invitation, steps and FAQ                                                       |
+| Contact         | Narrow information beside a form area                                                             | Balanced contact/form columns                                                              |
+| Gallery         | Captioned image grid with keyboard-accessible lightbox                                            | Masonry photographs with the same lightbox and phone layout                                |
+| Partners        | Automatic published Partner and Sponsor categories and invitation                                 | Same directory connections and collaboration invitation                                    |
 
 Optional News, Story, Legal and event-detail starting layouts remain available to
 their existing editors. Legal content requires the club's actual reviewed text.
 Patterns and block controls support different arrangements without changing the
 template lifecycle. Sliders have named manual controls and do not autoplay.
+
+New copies use explicit phone spacing and gallery column overrides through the
+shared block editor. The gallery enlarges photographs with labelled controls,
+keyboard navigation and focus return. These updated recipes do not rewrite
+existing installed pages or their published designs. Catalogue previews and newly
+created copies use the same public renderer and saved-block schema.
 
 Both templates use a compact white header with the logo and community identity
 alongside navigation and account actions. The official family mark remains intact;

@@ -12,6 +12,7 @@ import { CmsRevisionWriter } from "./CmsRevisionWriter";
 import { MediaService } from "../media/MediaService";
 import { saveInput, restoreInput } from "./cms_commands";
 import { contentAssets, revisionDto, validateContent } from "./cms_validation";
+import { contentAssetKinds } from "./cms_asset_kinds";
 
 /** The same validation governs saved drafts, event restoration and unsaved previews. */
 export class CmsDraftService {
@@ -73,6 +74,11 @@ export class CmsDraftService {
     await this.media.assertOwnedAssets(
       organizationId,
       contentAssets(data, parsed.socialImageId),
+      tx,
+    );
+    await this.media.assertAssetKinds(
+      organizationId,
+      contentAssetKinds(data, parsed.socialImageId),
       tx,
     );
     return { organizationId, content, variant, draft: { ...parsed, data } };

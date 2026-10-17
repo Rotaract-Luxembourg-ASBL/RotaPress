@@ -8,7 +8,8 @@ export async function GET(request: Request, context: Context) {
     if (!actor) throw new HttpError(401, "Sign in to view your registrations.");
     if ((await context.params).path?.length)
       throw new HttpError(404, "Unavailable.");
-    return json({ registrations: await services.registrations.mine(actor) });
+    const result = await services.registrations.queryMine(actor, Object.fromEntries(new URL(request.url).searchParams));
+    return json({ ...result, registrations: result.items });
   });
 }
 export async function POST(request: Request, context: Context) {

@@ -54,10 +54,12 @@ export function AutomationWorkspace({
   const endpoint = `${origin}${rest ? "/api/v1" : "/api/mcp"}`;
   function activate(id: string) {
     setTab(id);
+    const query = new URLSearchParams(window.location.search);
+    query.set("tab", id);
     window.history.replaceState(
       null,
       "",
-      `/admin/integrations/${transport}?tab=${id}`,
+      `/admin/integrations/${transport}?${query}`,
     );
   }
   function keyboard(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -93,6 +95,34 @@ export function AutomationWorkspace({
           </StatusBadge>
         )}
       </PageHeading>
+      {!rest && (
+        <section
+          className="panel"
+          aria-label="Connect and verify your assistant"
+        >
+          <h2>Connect and verify your assistant</h2>
+          <ol>
+            <li>
+              Create a connection below and choose only the content and
+              operational permissions you want.
+            </li>
+            <li>
+              Open your AI app, add this MCP server URL and complete RotaPress
+              consent. Saved setup alone does not prove the app connected.
+            </li>
+            <li>
+              Ask the app to read RotaPress capabilities. Compare the returned
+              grants with your request, then use the tools test for local
+              troubleshooting.
+            </li>
+          </ol>
+          <p className="small muted">
+            Requested actions execute directly within chosen grants. New
+            private-data, file and operational permissions require explicit
+            opt-in; existing grants stay unchanged.
+          </p>
+        </section>
+      )}
       <div className="panel integration-endpoint">
         <div>
           <strong>{rest ? "API base URL" : "MCP server URL"}</strong>

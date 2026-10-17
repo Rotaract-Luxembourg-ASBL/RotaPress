@@ -4,7 +4,8 @@ import {
   calendarPageSchema,
   scheduleSchema,
 } from "@/features/calendar/calendar_schemas";
-import { operation } from "./operation";
+import { receiptOperation } from "./receipt_operation";
+import { requireReceiptCapability } from "./receipt_authority";
 import { exampleId } from "./examples";
 
 const version = z.int().positive();
@@ -50,9 +51,10 @@ const activity = {
 };
 
 function calendarLifecycle(action: "archive" | "restore") {
-  return operation(
+  return receiptOperation(
     {
       name: `calendar_${action}`,
+      effect: action === "archive" ? "archive" : "draft",
       method: "PATCH",
       path: `/calendar/calendars/{id}/${action}`,
       scope: "calendar:write",
@@ -61,11 +63,13 @@ function calendarLifecycle(action: "archive" | "restore") {
       output: changed,
       example: { id: exampleId, expectedVersion: 1 },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.calendar(
         principal.actor,
         { ...input, operation: action },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
@@ -73,9 +77,10 @@ function calendarLifecycle(action: "archive" | "restore") {
 }
 
 function activityLifecycle(action: "archive" | "restore") {
-  return operation(
+  return receiptOperation(
     {
       name: `calendar_schedule_${action}`,
+      effect: action === "archive" ? "archive" : "draft",
       method: "PATCH",
       path: `/calendar/calendars/{calendarId}/schedules/{id}/${action}`,
       scope: "calendar:write",
@@ -84,11 +89,13 @@ function activityLifecycle(action: "archive" | "restore") {
       output: changed,
       example: { calendarId: exampleId, id: exampleId, expectedVersion: 1 },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.schedule(
         principal.actor,
         { ...input, operation: action },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
@@ -96,30 +103,34 @@ function activityLifecycle(action: "archive" | "restore") {
 }
 
 export const calendarOperations = [
-  operation(
+  receiptOperation(
     {
       name: "calendar_create",
+      effect: "draft",
       method: "POST",
       path: "/calendar/calendars",
       scope: "calendar:write",
       description:
-        "Create a private calendar draft with audience, color, time zone and event selection. Publication is separate. Read calendar_read before retrying a create to avoid duplicates.",
+        "Create a private calendar draft with audience, color, time zone and event selection. Publication is separate.",
       input: calendarDraft,
       output: changed,
       example: { definition },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.calendar(
         principal.actor,
         { ...input, operation: "save", expectedVersion: 0 },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "calendar_save",
+      effect: "draft",
       method: "PATCH",
       path: "/calendar/calendars/{id}",
       scope: "calendar:write",
@@ -129,41 +140,47 @@ export const calendarOperations = [
       output: changed,
       example: { id: exampleId, expectedVersion: 1, definition },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.calendar(
         principal.actor,
         { ...input, operation: "save" },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
   ),
   calendarLifecycle("archive"),
   calendarLifecycle("restore"),
-  operation(
+  receiptOperation(
     {
       name: "calendar_schedule_create",
+      effect: "draft",
       method: "POST",
       path: "/calendar/calendars/{calendarId}/schedules",
       scope: "calendar:write",
       description:
-        "Add a private activity to a calendar. Supports one-off and recurring schedules, time zones, all-day dates and skipped occurrences. Read calendar_read before retrying a create; publishing requires the separate calendar:publish grant and an explicit user request.",
+        "Add a private activity to a calendar. Supports one-off and recurring schedules, time zones, all-day dates and skipped occurrences. Publishing requires the separate calendar:publish grant and an explicit user request.",
       input: activityDraft,
       output: changed,
       example: { calendarId: exampleId, definition: activity },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.schedule(
         principal.actor,
         { ...input, operation: "save", expectedVersion: 0 },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
   ),
-  operation(
+  receiptOperation(
     {
       name: "calendar_schedule_save",
+      effect: "draft",
       method: "PATCH",
       path: "/calendar/calendars/{calendarId}/schedules/{id}",
       scope: "calendar:write",
@@ -178,20 +195,23 @@ export const calendarOperations = [
         definition: activity,
       },
     },
-    async ({ services, principal }, input) => ({
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
       ...(await services.calendar.schedule(
         principal.actor,
         { ...input, operation: "save" },
         { draftOnly: true },
+        tx,
       )),
       reviewUrl,
     }),
   ),
   activityLifecycle("archive"),
   activityLifecycle("restore"),
-  operation(
+  receiptOperation(
     {
       name: "calendar_page_save",
+      effect: "draft",
       method: "PATCH",
       path: "/calendar/page",
       scope: "calendar:design",
@@ -217,11 +237,16 @@ export const calendarOperations = [
         },
       },
     },
-    async ({ services, principal }, input) => ({
-      ...(await services.calendar.page(principal.actor, {
-        ...input,
-        operation: "save",
-      })),
+    requireReceiptCapability("calendar.manage"),
+    async ({ services, principal }, input, tx) => ({
+      ...(await services.calendar.page(
+        principal.actor,
+        {
+          ...input,
+          operation: "save",
+        },
+        tx,
+      )),
       reviewUrl,
     }),
   ),

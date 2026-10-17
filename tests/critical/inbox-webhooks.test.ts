@@ -36,6 +36,7 @@ import {
   type WebhookSender,
 } from "../../src/infrastructure/http/WebhookClient";
 import { CredentialCipher } from "../../src/infrastructure/security/CredentialCipher";
+import { registerInboxCollectionCases } from "./inbox-collection-cases";
 
 let runtimePool: Pool;
 let migrationPool: Pool;
@@ -255,6 +256,7 @@ afterAll(async () => {
 });
 
 describe("C05 inbox and outbound webhook boundaries", () => {
+  registerInboxCollectionCases(() => ({ db, inbox, club, contact }));
   it("enforces global or assigned-event response scope and keeps claimed contact details distinct from verified identity", async () => {
     const { owner, scope } = await club();
     const editor = await actor("inbox-editor");
@@ -298,13 +300,26 @@ describe("C05 inbox and outbound webhook boundaries", () => {
       await expect(inbox.list(person)).rejects.toMatchObject({
         code: "ACCESS_DENIED",
       });
+      await expect(inbox.forms(person)).rejects.toMatchObject({
+        code: "ACCESS_DENIED",
+      });
     }
     const assigned = await inbox.list(manager);
     expect(assigned.messages.map((item) => item.id)).toEqual([eventReceipt.id]);
     expect(
-      assigned.forms.every((item) => item.eventId === ownEvent.event.id),
+      (await inbox.forms(manager)).forms.every(
+        (item) => item.eventId === ownEvent.event.id,
+      ),
     ).toBe(true);
     expect((await inbox.list(manager, { formId: published.id })).total).toBe(0);
+    for (const id of [published.id, otherEvent.form.id])
+      expect(await inbox.forms(manager, { id })).toMatchObject({
+        total: 0,
+        forms: [],
+      });
+    expect(
+      (await inbox.forms(manager, { q: "Synthetic inbox event" })).total,
+    ).toBe(1);
     expect(
       (await inbox.list(manager, { formId: otherEvent.form.id })).total,
     ).toBe(0);
@@ -375,7 +390,10 @@ describe("C05 inbox and outbound webhook boundaries", () => {
     await expect(inbox.list(outsider)).rejects.toMatchObject({
       code: "ACCESS_DENIED",
     });
-    await submissions.updateStatus(owner, receipt.id, { status: "closed" });
+    await submissions.updateStatus(owner, receipt.id, {
+      status: "closed",
+      expectedVersion: 1,
+    });
     expect(
       (await inbox.list(owner, { status: "closed" })).messages.map(
         (item) => item.id,
@@ -392,9 +410,9 @@ describe("C05 inbox and outbound webhook boundaries", () => {
     expect(withoutEvents.messages.map((item) => item.id).sort()).toEqual(
       [receipt.id, applicationReceipt.id].sort(),
     );
-    expect(withoutEvents.forms.map((item) => item.id).sort()).toEqual(
-      [published.id, application.id].sort(),
-    );
+    expect(
+      (await inbox.forms(owner)).forms.map((item) => item.id).sort(),
+    ).toEqual([published.id, application.id].sort());
     expect(
       withoutEvents.messages.some((item) => item.id === eventReceipt.id),
     ).toBe(false);
@@ -405,6 +423,9 @@ describe("C05 inbox and outbound webhook boundaries", () => {
       confirmed: true,
     });
     await expect(inbox.list(owner)).rejects.toMatchObject({
+      code: "FEATURE_DISABLED",
+    });
+    await expect(inbox.forms(owner)).rejects.toMatchObject({
       code: "FEATURE_DISABLED",
     });
   });

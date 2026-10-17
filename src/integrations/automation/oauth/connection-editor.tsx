@@ -112,7 +112,9 @@ export function ConnectionEditor({
   async function reload() {
     setBusy(true);
     try {
-      const result = await request<{ clients: OAuthClient[] }>(oauthEndpoint);
+      const result = await request<{ clients: OAuthClient[] }>(
+        `${oauthEndpoint}?search=${encodeURIComponent(client.clientId)}`,
+      );
       const current = result.clients.find(
         (item) => item.clientId === client.clientId,
       );
