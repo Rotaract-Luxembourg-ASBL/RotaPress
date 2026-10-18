@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { partner } from "../../../db/schema/partners";
 import {
@@ -10,6 +10,35 @@ import { partnerProfileSchema, type PublicPartner } from "./partner_schemas";
 
 /** Used by CMS reference checks and public projections; never returns a draft. */
 export class PartnerReader {
+  /** The staff caller owns authorization; inaccessible references reveal no private profile. */
+  async publicationIssues(
+    organizationId: string,
+    input: string[],
+    executor: DatabaseExecutor,
+  ) {
+    const ids = [...new Set(z.array(z.uuid()).max(3200).parse(input))];
+    if (!ids.length) return [];
+    const rows = await executor
+      .select({
+        id: partner.id,
+        published: sql<boolean>`${partner.published} is not null`,
+        name: sql<string | null>`${partner.draft}->>'name'`,
+      })
+      .from(partner)
+      .where(
+        and(
+          eq(partner.organizationId, organizationId),
+          inArray(partner.id, ids),
+        ),
+      );
+    return ids.flatMap((id) => {
+      const row = rows.find((item) => item.id === id);
+      if (row?.published) return [];
+      return [
+        { id, name: row?.name || "Unavailable profile", unavailable: !row },
+      ];
+    });
+  }
   async assertReferences(
     organizationId: string,
     input: string[],

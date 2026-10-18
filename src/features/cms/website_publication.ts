@@ -1,5 +1,7 @@
 import type { CmsLocale, SiteSettings } from "./cms_schemas";
 import type { WebsiteWorkspace } from "./website_setup_schemas";
+import type { FormPublicationReview } from "../forms/FormPublicationReviewService";
+import type { MediaKind, MediaMetadata } from "../media/media_schemas";
 
 export type WebsitePublicationScope = "website" | "menu";
 
@@ -60,7 +62,14 @@ export type WebsitePublicationReview = {
     id: string | null;
     name: string;
     status: "private" | "unavailable";
+    expectedRevision: string | null;
+    canPublish: boolean;
+    kind: MediaKind | null;
+    metadata: MediaMetadata | null;
     uses: { label: string; href: string }[];
   }[];
+  forms: (FormPublicationReview & {
+    uses: { label: string; href: string }[];
+  })[];
   problems: { message: string; href?: string }[];
 };

@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import type { WebsiteWorkspace } from "../../src/features/cms/website_setup_schemas";
+import type { WebsitePublicationReview } from "../../src/features/cms/website_publication";
 
 export async function saveWebsiteSettings(page: Page) {
   await page
@@ -21,6 +22,16 @@ export async function publishWebsite(page: Page) {
     exact: true,
   });
   await dialog.getByRole("radio", { name: /^Entire website/ }).check();
+  const review = (await page.request
+    .get("/api/admin/cms/website/review?locale=en&scope=website")
+    .then((response) => response.json())) as WebsitePublicationReview;
+  for (const form of review.forms.filter((item) => item.status === "draft"))
+    await dialog
+      .getByRole("checkbox", {
+        name: `Publish form: ${form.title}`,
+        exact: true,
+      })
+      .check();
   const confirm = dialog.getByRole("button", {
     name: "Publish reviewed website",
     exact: true,
@@ -267,16 +278,14 @@ export async function websiteWorkspaceJourney(page: Page, visitor: Page) {
   await expect(
     canvas.getByRole("button", { name: "Send message", exact: true }),
   ).toBeDisabled();
-  await page.goto(`/admin/forms/${contactId}`);
-  await page.getByRole("button", { name: "Publish form", exact: true }).click();
-  await expect(
-    page.getByText(
-      "Form published. Visitors now see your latest saved version.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  expect((await visitor.request.get(`/api/forms/${contactId}`)).status()).toBe(
+    404,
+  );
   await page.goto("/admin/website");
   await publishWebsite(page);
+  expect((await visitor.request.get(`/api/forms/${contactId}`)).status()).toBe(
+    200,
+  );
   await visitor.setViewportSize({ width: 1440, height: 1000 });
   const eventsPage = selected.contents.find(
     (item) => item.id === selected.site.draft.eventsPageId,

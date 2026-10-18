@@ -1,8 +1,16 @@
 # Website and menu publication
 
-**Website → Menus** owns the homepage choice, Events landing-page choice and navigation
-links. Save those settings, then use **Publish website**. Once the website has been
-published, the review opened from Menus defaults to **Menu only**.
+Save your changes, then use **Publish website** to review pages, shared parts,
+forms and private files in one place. The saved website preview stays beside the
+checklist on a wide screen and below it on a phone. Unsaved editor input is not
+included.
+
+You can reopen the review when only a related form has saved changes; no page or
+menu edit is needed.
+
+**Website → Menus** owns the homepage choice, Events landing-page choice and
+navigation links. Once the website has been published, opening its publication
+review from Menus defaults to **Menu only**.
 
 ## Choose what visitors will see
 
@@ -10,27 +18,49 @@ published, the review opened from Menus defaults to **Menu only**.
   Saved page edits, branding, search settings, theme and shared parts stay drafts.
   An unpublished destination is named and linked to its page editor; publish that
   page first or choose Entire website. The first website publication must be full.
-- **Entire website** publishes the reviewed saved pages and website settings in
-  one transaction. Other saved pages and unsaved editor input are not included.
-  Current version checks still reject stale reviews and prevent partial writes.
+- **Entire website** publishes the reviewed saved pages, shared parts and website
+  settings together with the forms and files you individually approve below.
+  Other saved pages are not included.
 
-The review reads current server data. It does not publish anything. The selected
-scope and named pages are reviewed before the final confirmation and publication.
+## Review forms and private files
 
-## Resolve a blocking image
+Each referenced club form appears once, with its locations and saved questions.
+Expand **Review questions** to try the form without sending a response. Select
+**Publish form: [name]** for each new form needed by the website. If a form already
+has a published version, its saved changes are optional: leave it unchecked to
+keep the current public questions, or approve its update. Publishing a form makes
+it available to accept responses under its existing rules; responses and private
+notification settings are not shown in this review.
 
-The review lists each private or unavailable image once, with its name, preview
-and locations: club logo, browser icon, site/page sharing image or page block.
-Bundled template pictures are already public application assets.
+Each private file appears with its name and locations, such as the club logo,
+browser icon, sharing image or page block. Use **Review file and details** to
+inspect it, then select **Make public: [name]** only if anyone should be able to
+open that file, including through its direct link. Bundled template pictures are
+already public application assets.
 
-**Review image in Media** opens that exact image in the existing Media editor,
-including images older than the library's initial list. Change **Visibility** to
-**Public** and **Save image details** only when that file should be accessible to
-everyone. Alternatively, follow its location link to remove or replace the image.
-Returning to the review refreshes its checks; **Check again** also refreshes them.
-Changing scope or refreshing clears the publication confirmation.
+Unavailable forms or files must be restored, replaced or removed before
+publication. If you lack permission to publish a dependency, the review explains
+which staff permission is needed. Current staff authorization still applies to
+the review, preview and final publication.
 
-An unavailable image does not expose another club's metadata. Review routes and
-image details require current staff capabilities; ordinary members cannot access
-them. Publication rechecks ownership and visibility in its transaction. The review
-never changes visibility automatically, and image details do not expose storage paths.
+The same checklist names unpublished photo albums, directory profiles and reusable
+sections, with links to review them in their own workspaces. These are not included
+in form or file approvals; publish or replace the affected item, then refresh this
+review.
+
+## Publish once
+
+Selecting an approval only records your choice in the open review. Nothing becomes
+public until you select the final confirmation and **Publish reviewed website**.
+The server checks current permissions and saved versions, then publishes all
+reviewed pages, settings and explicitly approved dependencies in one transaction.
+A changed or invalid item rejects the whole publication without partial writes.
+
+**Keep drafts** or closing the review leaves the public website unchanged.
+Changing scope or using **Refresh review** clears all item approvals and the final
+confirmation. A rejected publication refreshes the review and clears approvals
+too; check the latest saved content and approve it again. Moving between the
+preview and checklist keeps your choices.
+
+For delegated REST or MCP publication, each target still uses its own explicitly
+granted operation. See [AI & API publication](ai-and-api.md#publish-only-when-requested).

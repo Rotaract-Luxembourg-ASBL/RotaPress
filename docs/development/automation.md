@@ -124,6 +124,14 @@ manual when exposing it would disclose data or publish effects beyond the grant.
 
 ## Publication boundary
 
+The cookie-authenticated **Publish website** review is a staff workflow that
+coordinates existing page, settings, form and media services in one transaction.
+It requires per-item consent for each included form or private file and rechecks
+current capabilities, references and saved versions. This composite action is not
+a delegated REST/MCP operation. Delegated publication keeps separate exact-target
+operations and scopes; no existing grant expands to include dependencies. See the
+[website publication guide](../guides/website-publication.md).
+
 - Publication grants are separate from draft writes: `website:publish`,
   `calendar:publish`, `forms:publish`, `events:publish`, `projects:publish` and
   `directory:publish`, plus `media:publish` for reviewed image visibility.

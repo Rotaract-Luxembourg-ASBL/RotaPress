@@ -37,7 +37,12 @@ the entered content and offers an explicit reload of the saved version.
 
 The public form is available at `/forms/{formId}` once published. Forms can also
 be referenced from the website's Form block. Website publication checks that
-referenced forms belong to the club and are published. Archiving a form stops
+referenced forms belong to the club and are published. The
+[website publication review](website-publication.md) can show saved questions and
+publish each explicitly approved club form together with the website. New forms
+need approval; changes to an already published form are optional, so leaving them
+unchecked keeps its current public questions. No form changes become public until
+the final website publication succeeds. Archiving a form stops
 new submissions and clears its public version without deleting prior answers.
 Restore and publish it again to resume submissions.
 
