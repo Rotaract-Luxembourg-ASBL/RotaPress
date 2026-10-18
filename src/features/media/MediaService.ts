@@ -669,27 +669,54 @@ export class MediaService {
   }
 
   /** A private upload never becomes public simply by being selected in a block. */
-  async publicationIssues(actor: TrustedActor, inputIds: string[]) {
-    const scope = await this.authorization.require(actor, "media.manage");
+  async publicationIssues(
+    actor: TrustedActor,
+    inputIds: string[],
+    executor: DatabaseExecutor = this.db,
+  ) {
+    const scope = await this.authorization.require(
+      actor,
+      "media.manage",
+      executor,
+    );
     const ids = referencesSchema.parse(inputIds);
     const assets = await this.repository.references(
       scope.organizationId,
       ids,
-      this.db,
+      executor,
     );
     const byId = new Map(assets.map((asset) => [asset.id, asset]));
-    return ids.flatMap((referenceId) => {
+    const issues = [];
+    for (const referenceId of ids) {
       const asset = byId.get(referenceId);
-      if (asset?.visibility === "public") return [];
-      return [
-        {
-          referenceId,
-          id: asset?.id ?? null,
-          name: asset ? asset.title || asset.originalName : "Unavailable image",
-          status: asset ? ("private" as const) : ("unavailable" as const),
-        },
-      ];
-    });
+      if (asset?.visibility === "public") continue;
+      const detail = asset
+        ? await this.repository.details(
+            asset.id,
+            scope.organizationId,
+            executor,
+          )
+        : null;
+      issues.push({
+        referenceId,
+        id: asset?.id ?? null,
+        name: asset ? asset.title || asset.originalName : "Unavailable image",
+        status: asset ? ("private" as const) : ("unavailable" as const),
+        expectedRevision: detail ? mediaMetadataRevision(detail) : null,
+        canPublish: Boolean(detail),
+        kind: detail?.kind ?? null,
+        metadata: detail
+          ? {
+              title: detail.title,
+              alt: detail.alt,
+              caption: detail.caption,
+              tags: detail.tags,
+              collection: detail.collection,
+            }
+          : null,
+      });
+    }
+    return issues;
   }
 
   /** Enforced again inside the publishing transaction, regardless of the review. */

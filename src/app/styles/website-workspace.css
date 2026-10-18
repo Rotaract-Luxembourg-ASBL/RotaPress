@@ -131,23 +131,6 @@
   border-radius: 5px;
   font-size: 0.85rem;
 }
-.website-publication-list {
-  list-style: none;
-  padding: 0;
-  max-height: 38vh;
-  overflow: auto;
-}
-.website-publication-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--line);
-  padding: 12px 0;
-}
-.website-publication-list span {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
 .website-check {
   display: flex;
   gap: 10px;
@@ -213,9 +196,5 @@
   .website-section-actions {
     align-items: flex-start;
     flex-direction: column;
-  }
-  .website-publication-list li {
-    flex-direction: column;
-    gap: 4px;
   }
 }

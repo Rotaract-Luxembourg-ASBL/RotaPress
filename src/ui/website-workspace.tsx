@@ -89,11 +89,7 @@ function WebsiteLocale({ locale, tab }: { locale: CmsLocale; tab: string }) {
             <button
               className="button button-accent"
               disabled={
-                !data ||
-                dirty ||
-                !data.site.version ||
-                !publishItems.length ||
-                !changes
+                !data || dirty || !data.site.version || !publishItems.length
               }
               onClick={() => setReview(data)}
             >

@@ -41,6 +41,34 @@ const publishInput = versionInput
       .refine(
         (pages) => new Set(pages.map((page) => page.id)).size === pages.length,
       ),
+    forms: z
+      .array(
+        z.strictObject({
+          id: z.uuid(),
+          expectedRevision: z.int().positive(),
+          confirmed: z.literal(true),
+        }),
+      )
+      .max(100)
+      .default([])
+      .refine(
+        (items) => new Set(items.map((item) => item.id)).size === items.length,
+        "Review each form once.",
+      ),
+    assets: z
+      .array(
+        z.strictObject({
+          id: z.uuid(),
+          expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+          confirmed: z.literal(true),
+        }),
+      )
+      .max(500)
+      .default([])
+      .refine(
+        (items) => new Set(items.map((item) => item.id)).size === items.length,
+        "Review each file once.",
+      ),
   })
   .refine((input) => input.scope === "menu" || input.pages.length > 0);
 
@@ -53,7 +81,7 @@ export class WebsiteSetupService {
   constructor(
     private readonly db: Database,
     private readonly authorization: AuthorizationService,
-    media: MediaService,
+    private readonly media: MediaService,
     private readonly cms: CmsService,
     private readonly kits: CmsKitService,
   ) {
@@ -236,6 +264,12 @@ export class WebsiteSetupService {
       const current = await this.site.get(actor, parsed.locale, tx);
       if (current.version !== parsed.expectedVersion) this.conflict();
       if (parsed.scope === "menu") {
+        if (parsed.forms.length || parsed.assets.length)
+          throw new DomainError(
+            "WEBSITE_DEPENDENCY_INVALID",
+            "Menu publication cannot publish forms or files.",
+            422,
+          );
         const contents = (
           await this.repository.list(organizationId, tx)
         ).filter((item) => item.locale === parsed.locale);
@@ -279,16 +313,22 @@ export class WebsiteSetupService {
       const selected = setup?.installations.find(
         (item) => item.kitId === setup.selectedKitId,
       );
-      const activeIds = new Set(
-        (await this.repository.list(organizationId, tx))
-          .filter((item) => item.locale === parsed.locale && !item.archived)
-          .map((item) => item.id),
+      const contents = (await this.repository.list(organizationId, tx)).filter(
+        (item) => item.locale === parsed.locale,
       );
+      const workspace: WebsiteWorkspace = {
+        site: current,
+        contents,
+        selection: selected
+          ? {
+              kitId: selected.kitId,
+              contentIds: selected.recipes.map((item) => item.id),
+            }
+          : null,
+      };
       const required = new Set(
         [
-          ...(selected?.recipes
-            .filter((item) => activeIds.has(item.id))
-            .map((item) => item.id) ?? []),
+          ...websitePublicationItems(workspace).map((item) => item.id),
           current.draft.homePageId,
           current.draft.eventsPageId,
           current.draft.headerId,
@@ -299,12 +339,60 @@ export class WebsiteSetupService {
         ].filter((id): id is string => Boolean(id)),
       );
       const reviewed = new Set(parsed.pages.map((page) => page.id));
-      if ([...required].some((id) => !reviewed.has(id)))
+      if (
+        required.size !== reviewed.size ||
+        [...required].some((id) => !reviewed.has(id))
+      )
         throw new DomainError(
           "WEBSITE_REVIEW_INCOMPLETE",
           "Review the selected website pages, header, footer and menu targets together before publishing.",
           409,
         );
+      // Recompute dependencies from current saved content under the same organization lock.
+      const review = await this.publicationReview.read(
+        actor,
+        workspace,
+        parsed.locale,
+        "website",
+        tx,
+      );
+      const forms = new FormService(this.db, this.authorization);
+      for (const form of parsed.forms) {
+        const dependency = review.forms.find((item) => item.id === form.id);
+        if (!dependency || dependency.status === "unavailable")
+          throw new DomainError(
+            "WEBSITE_DEPENDENCY_INVALID",
+            "Choose only forms referenced by this reviewed website.",
+            422,
+          );
+        await forms.publish(
+          actor,
+          form.id,
+          { expectedRevision: form.expectedRevision },
+          tx,
+        );
+      }
+      for (const asset of parsed.assets) {
+        if (!review.images.some((item) => item.id === asset.id))
+          throw new DomainError(
+            "WEBSITE_DEPENDENCY_INVALID",
+            "Choose only private files referenced by this reviewed website.",
+            422,
+          );
+      }
+      for (let offset = 0; offset < parsed.assets.length; offset += 50) {
+        await this.media.publishReviewed(
+          actor,
+          {
+            assets: parsed.assets
+              .slice(offset, offset + 50)
+              .map(({ id, expectedRevision }) => ({ id, expectedRevision })),
+            confirmed: true,
+          },
+          tx,
+          ["image", "document", "audio", "video"],
+        );
+      }
       for (const page of parsed.pages) {
         const content = await this.repository.content(
           organizationId,

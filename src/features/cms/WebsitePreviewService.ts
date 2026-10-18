@@ -28,6 +28,7 @@ import type { OrganizationRepository } from "@/core/organization/OrganizationRep
 const selectedInput = z.strictObject({
   locale: cmsLocaleSchema,
   pageId: z.uuid().optional(),
+  inline: z.boolean().default(false),
 });
 const templateInput = z.strictObject({
   kitId: kitIdSchema,
@@ -100,7 +101,7 @@ export class WebsitePreviewService {
         404,
       );
     const href = (id: string) =>
-      `/admin/website/preview?locale=${parsed.locale}&pageId=${encodeURIComponent(id)}`;
+      `/admin/website/preview?locale=${parsed.locale}&pageId=${encodeURIComponent(id)}${parsed.inline ? "&inline=true" : ""}`;
     const links = new Map(
       items
         .filter((item) => item.kind === "page")

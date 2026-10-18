@@ -116,8 +116,9 @@ name in every page title. Existing recognized club suffixes are not duplicated.
 Website Search & sharing can override the homepage's title and description;
 changes to page/site drafts still require publication.
 
-A Form block uses a reusable form managed in **Forms**. Publish the form before
-publishing a page that uses it. Preview fields cannot submit real responses.
+A Form block uses a reusable form managed in **Forms**. Publish it there first, or
+review and approve it in the [website publication review](website-publication.md)
+to publish it together with the website. Preview fields cannot submit real responses.
 Event-owned forms and participation blocks stay within their event scope.
 See [forms](forms.md) and [event design](event-page-design.md).
 

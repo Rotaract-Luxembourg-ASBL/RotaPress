@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   mediaAlbum,
@@ -22,6 +22,44 @@ const idsSchema = z
 /** Public projection resolves the current published revision of linked albums. */
 export class AlbumReader {
   constructor(private readonly db: Database) {}
+
+  /** Private guidance is scoped by its caller; return names only, never draft image data. */
+  async publicationIssues(
+    organizationId: string,
+    inputIds: string[],
+    executor: DatabaseExecutor = this.db,
+  ) {
+    const ids = idsSchema.parse(inputIds);
+    if (!ids.length) return [];
+    const rows = await executor
+      .select({
+        id: mediaAlbum.id,
+        publishedRevisionId: mediaAlbum.publishedRevisionId,
+        title: sql<string | null>`${mediaAlbumRevision.data}->>'title'`,
+      })
+      .from(mediaAlbum)
+      .leftJoin(
+        mediaAlbumRevision,
+        and(
+          eq(mediaAlbum.draftRevisionId, mediaAlbumRevision.id),
+          eq(mediaAlbum.id, mediaAlbumRevision.albumId),
+          eq(mediaAlbum.organizationId, mediaAlbumRevision.organizationId),
+        ),
+      )
+      .where(
+        and(
+          eq(mediaAlbum.organizationId, organizationId),
+          inArray(mediaAlbum.id, ids),
+        ),
+      );
+    return ids.flatMap((id) => {
+      const row = rows.find((item) => item.id === id);
+      if (row?.publishedRevisionId) return [];
+      return [
+        { id, name: row?.title || "Unavailable album", unavailable: !row },
+      ];
+    });
+  }
 
   async published(
     organizationId: string,

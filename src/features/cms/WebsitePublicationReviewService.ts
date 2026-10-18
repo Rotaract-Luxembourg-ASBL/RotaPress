@@ -1,13 +1,21 @@
 import "server-only";
 import type {
   AuthorizationService,
+  DatabaseExecutor,
   TrustedActor,
 } from "@/core/authorization/AuthorizationService";
 import type { Database } from "@/infrastructure/database/client";
 import type { MediaService } from "../media/MediaService";
 import { CmsRepository } from "./CmsRepository";
-import { contentAssets, revisionDto } from "./cms_validation";
+import {
+  contentAssets,
+  contentForms,
+  contentSections,
+  revisionDto,
+} from "./cms_validation";
 import { flattenBlocks, type CmsLocale } from "./cms_schemas";
+import { FormPublicationReviewService } from "../forms/FormPublicationReviewService";
+import { WebsiteReferenceReviewService } from "./WebsiteReferenceReviewService";
 import type { WebsiteWorkspace } from "./website_setup_schemas";
 import {
   websitePublicationItems,
@@ -19,7 +27,7 @@ import {
 export class WebsitePublicationReviewService {
   private readonly repository: CmsRepository;
   constructor(
-    db: Database,
+    private readonly db: Database,
     private readonly authorization: AuthorizationService,
     private readonly media: MediaService,
   ) {
@@ -31,14 +39,17 @@ export class WebsitePublicationReviewService {
     workspace: WebsiteWorkspace,
     locale: CmsLocale,
     scope: WebsitePublicationScope,
+    executor: DatabaseExecutor = this.db,
   ): Promise<WebsitePublicationReview> {
     const { organizationId } = await this.authorization.require(
       actor,
       "cms.publish",
+      executor,
     );
     const items = websitePublicationItems(workspace, scope);
     const problems: WebsitePublicationReview["problems"] = [];
     const uses = new Map<string, { label: string; href: string }[]>();
+    const formUses = new Map<string, { label: string; href: string }[]>();
     const add = (
       id: string | null | undefined,
       label: string,
@@ -86,9 +97,14 @@ export class WebsitePublicationReviewService {
           organizationId,
           item.id,
           locale,
+          executor,
         );
         const row = variant
-          ? await this.repository.revision(variant.id, item.draftRevisionId)
+          ? await this.repository.revision(
+              variant.id,
+              item.draftRevisionId,
+              executor,
+            )
           : null;
         if (!row) {
           problems.push({
@@ -98,6 +114,61 @@ export class WebsitePublicationReviewService {
         }
         const draft = revisionDto(row, item.kind);
         const href = `/admin/website/${item.id}?locale=${locale}`;
+        problems.push(
+          ...(await new WebsiteReferenceReviewService(this.db).read(
+            organizationId,
+            locale,
+            draft.data,
+            item.title,
+            href,
+            executor,
+          )),
+        );
+        const addForms = (ids: string[], label: string) => {
+          for (const id of ids) {
+            const current = formUses.get(id) ?? [];
+            if (!current.some((use) => use.label === label))
+              current.push({ label, href });
+            formUses.set(id, current);
+          }
+        };
+        addForms(contentForms(draft.data), item.title);
+        for (const sectionId of contentSections(draft.data)) {
+          const section = await this.repository.variant(
+            organizationId,
+            sectionId,
+            locale,
+            executor,
+          );
+          const revision = section?.publishedRevisionId
+            ? await this.repository.revision(
+                section.id,
+                section.publishedRevisionId,
+                executor,
+              )
+            : null;
+          if (revision) {
+            const sectionData = revisionDto(revision, "section").data;
+            problems.push(
+              ...(await new WebsiteReferenceReviewService(this.db).read(
+                organizationId,
+                locale,
+                sectionData,
+                `${item.title} · Reusable section`,
+                href,
+                executor,
+              )),
+            );
+            addForms(
+              contentForms(sectionData),
+              `${item.title} · Reusable section`,
+            );
+          } else
+            problems.push({
+              message: `A reusable section used by “${item.title}” must be published first.`,
+              href: `/admin/website/${sectionId}?locale=${locale}`,
+            });
+        }
         add(draft.socialImageId, `${item.title} · Sharing image`, href);
         for (const block of flattenBlocks(draft.data.content)) {
           if (block.type === "Columns" || block.type === "SiteRow") continue;
@@ -116,20 +187,25 @@ export class WebsitePublicationReviewService {
       for (const issue of await this.media.publicationIssues(
         actor,
         ids.slice(offset, offset + 500),
+        executor,
       )) {
+        const { referenceId, ...image } = issue;
         images.push({
-          id: issue.id,
-          name: issue.name,
-          status: issue.status,
-          uses: uses.get(issue.referenceId)!,
+          ...image,
+          uses: uses.get(referenceId)!,
         });
       }
     }
+    const forms = await new FormPublicationReviewService(
+      this.db,
+      this.authorization,
+    ).read(actor, [...formUses.keys()], executor);
     return {
       scope,
       locale,
       version: workspace.site.version,
       images,
+      forms: forms.map((form) => ({ ...form, uses: formUses.get(form.id)! })),
       problems,
       pages: items.map((item) => ({
         id: item.id,

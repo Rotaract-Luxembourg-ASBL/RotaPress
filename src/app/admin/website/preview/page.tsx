@@ -42,6 +42,7 @@ export default async function WebsitePreview({
           })
         : await services.websiteSetup.preview(actor, {
             locale,
+            inline: query.inline === "true",
             ...(query.pageId ? { pageId: query.pageId } : {}),
           });
   } catch (cause) {
